@@ -24,10 +24,8 @@ def load():
     dict_dfs = {}
     with pd.ExcelFile(DB) as x:
         for s in sheets:
-            try:
-                df = pd.read_excel(x, s)
-            except:
-                df = pd.DataFrame(columns=["DNI"])
+            try: df = pd.read_excel(x, s)
+            except: df = pd.DataFrame(columns=["DNI"])
             if "DNI" in df.columns: df["DNI"] = df["DNI"].astype(str).str.strip()
             df.columns = [col.strip().lower() for col in df.columns]
             dict_dfs[s] = df
@@ -38,61 +36,48 @@ def save_all(dict_dfs):
         for s, df in dict_dfs.items():
             df.to_excel(w, sheet_name=s, index=False)
 
+def gen_doc(nom, dni, df):
+    doc = Document()
+    t = doc.add_paragraph(); t.alignment = 1; r = t.add_run("CERTIFICADO DE TRABAJO"); r.bold = True; r.font.size = Pt(16)
+    h = doc.add_paragraph(); h.alignment = 1; h.add_run(CAB).font.size = Pt(10)
+    b = doc.add_paragraph(); b.alignment = 3
+    b.add_run(f"\nEl TRABAJADOR {nom}, identificado con DNI {dni} laboró en nuestra Institución bajo el siguiente detalle:").font.size = Pt(11)
+    tb = doc.add_table(rows=1, cols=3); tb.style = 'Table Grid'
+    for i, v in enumerate(["Cargo", "Fecha Inicio", "Fecha Fin"]):
+        ph = tb.rows[0].cells[i].paragraphs[0]; ph.alignment = 1; rn = ph.add_run(v); rn.bold = True
+    for _, f in df.iterrows():
+        rc = tb.add_row().cells
+        rc[0].text, rc[1].text, rc[2].text = str(f.get('cargo','')), str(f.get('f_inicio','')), str(f.get('f_fin',''))
+    f_p = doc.add_paragraph(f"\nHuancayo, {date.today().day} de febrero del 2026"); f_p.alignment = 2
+    sig = doc.add_paragraph(f"\n\n\n{F_N}\n{F_C}"); sig.alignment = 1
+    for run in sig.runs: run.bold = True
+    buf = BytesIO(); doc.save(buf); buf.seek(0); return buf
+
 # --- INTERFAZ ---
-st.set_page_config(page_title="GTH Roosevelt - Legajo", layout="wide")
+st.set_page_config(page_title="GTH Roosevelt", layout="wide")
 dfs = load()
-
 st.sidebar.title("SISTEMA GTH")
-m = st.sidebar.radio("MENÚ PRINCIPAL", ["🔍 Consulta de Legajo", "➕ Registro Nuevo Personal", "📊 Nómina General"])
+m = st.sidebar.radio("MENÚ", ["🔍 Consulta", "➕ Registro Nuevo", "📊 Nómina"])
 
-if m == "🔍 Consulta de Legajo":
-    dni_busq = st.text_input("Ingrese DNI del Colaborador:").strip()
-    if dni_busq:
-        u = dfs["PERSONAL"][dfs["PERSONAL"]['dni'] == dni_busq]
+if m == "🔍 Consulta":
+    dni_b = st.text_input("Ingrese DNI:").strip()
+    if dni_b:
+        u = dfs["PERSONAL"][dfs["PERSONAL"]['dni'] == dni_b]
         if not u.empty:
             nom = u.iloc[0]['apellidos y nombres']
-            st.header(f"👤 Colaborador: {nom}")
+            st.header(f"👤 {nom}")
+            tabs = st.tabs(["Datos Generales", "Familia", "Form. Acad.", "Exp. Laboral", "Contratos", "Vacaciones", "Beneficios", "Méritos", "Liquidaciones"])
             
-            t1, t2, t3, t4, t5, t6, t7, t8, t9 = st.tabs([
-                "Datos Generales", "Familia", "Form. Acad.", "Exp. Laboral", 
-                "Contratos", "Vacaciones", "Otros Beneficios", "Mérit. y Demer.", "Liquidaciones"
-            ])
-
-            with t1: 
-                st.write("### Información Personal")
-                st.table(u.drop(columns=['id'], errors='ignore'))
-            
-            with t2: 
-                st.write("### Datos de Familia")
-                st.dataframe(dfs["FAMILIA"][dfs["FAMILIA"]['dni'] == dni_busq], use_container_width=True)
-                with st.expander("➕ Registrar Familiar"):
-                    with st.form("f_fam"):
-                        par = st.text_input("Parentesco / Nombre")
-                        if st.form_submit_button("Guardar"):
-                            dfs["FAMILIA"] = pd.concat([dfs["FAMILIA"], pd.DataFrame([{"dni":dni_busq, "familiar":par}])], ignore_index=True)
-                            save_all(dfs); st.rerun()
-            
-            with t3: 
-                st.write("### Formación Académica")
-                st.dataframe(dfs["FORM_ACAD"][dfs["FORM_ACAD"]['dni'] == dni_busq], use_container_width=True)
-            
-            with t4: 
-                st.write("### Experiencia Laboral")
-                st.dataframe(dfs["EXP_LABORAL"][dfs["EXP_LABORAL"]['dni'] == dni_busq], use_container_width=True)
-
-            with t5:
-                st.write("### Gestión de Contratos")
-                cn = dfs["CONTRATOS"][dfs["CONTRATOS"]['dni'] == dni_busq].reset_index(drop=True)
-                # Ocultar ID y columnas duplicadas
-                vista_c = cn.drop(columns=['id', 'tipo colaborador', 'link'], errors='ignore')
-                st.dataframe(vista_c, use_container_width=True, hide_index=True)
+            with tabs[4]: # PESTAÑA CONTRATOS
+                st.write("### Historial de Contratos")
+                cn = dfs["CONTRATOS"][dfs["CONTRATOS"]['dni'] == dni_b].reset_index(drop=True)
+                st.dataframe(cn.drop(columns=['id', 'tipo colaborador'], errors='ignore'), use_container_width=True, hide_index=True)
                 
-                c_acc1, c_acc2, c_acc3 = st.columns(3)
-                with c_acc1:
-                    with st.expander("➕ Nuevo Contrato"):
-                        with st.form("add_c"):
-                            f_car = st.text_input("Cargo")
-                            f_sue = st.number_input("Sueldo", min_value=0.0)
-                            f_est = st.selectbox("Estado", ["VIGENTE", "CESADO"])
-                            f_mot = "Vigente"
-                            if f_est == "CESADO": f_mot = st.selectbox("Motivo de Cese", MOTIVOS_
+                c1, c2, c3 = st.columns(3)
+                with c1:
+                    with st.expander("➕ Agregar"):
+                        with st.form("f_add"):
+                            n_car = st.text_input("Cargo")
+                            n_sue = st.number_input("Sueldo", min_value=0.0)
+                            n_est = st.selectbox("Estado", ["VIGENTE", "CESADO"])
+                            n_mot = "
