@@ -5,7 +5,7 @@ import os
 from datetime import date
 from io import BytesIO
 from docx import Document
-from docx.shared import Pt
+from docx.shared import Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 # --- 1. CONFIGURACIÓN Y CONSTANTES ---
@@ -60,6 +60,18 @@ def save_data(dfs):
 
 def gen_word(nom, dni, df_c):
     doc = Document()
+    
+    # --- AÑADIR LOGO AL INICIO ---
+    if os.path.exists("logo_universidad.png"):
+        # Esto inserta el logo centrado al inicio del documento
+        section = doc.sections[0]
+        header = section.header
+        p_logo = header.paragraphs[0]
+        p_logo.alignment = 1 # Centrado
+        r_logo = p_logo.add_run()
+        r_logo.add_picture("logo_universidad.png", width=Inches(1.5)) 
+    # -----------------------------
+
     p = doc.add_paragraph(); p.alignment = 1
     r = p.add_run("CERTIFICADO DE TRABAJO"); r.bold = True; r.font.name = 'Arial'; r.font.size = Pt(24)
     doc.add_paragraph("\n" + TEXTO_CERT)
@@ -182,3 +194,4 @@ else:
     elif m == "📊 Nómina General":
         st.header("Base de Datos General de Personal")
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
