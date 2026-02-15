@@ -4,8 +4,10 @@ import pandas as pd
 import os
 from datetime import date
 from io import BytesIO
+
+# Librerías para el Word (Aquí estaba el error)
 from docx import Document
-from docx.shared import Inches
+from docx.shared import Pt, Inches  # <--- SE AGREGÓ Pt e Inches AQUÍ
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 # --- 1. CONFIGURACIÓN Y CONSTANTES ---
@@ -59,34 +61,73 @@ def save_data(dfs):
             df_s.to_excel(w, sheet_name=h, index=False)
 
 def gen_word(nom, dni, df_c):
+    """
+    Esta función crea el archivo Word desde cero.
+    nom: Nombre del trabajador
+    dni: DNI del trabajador
+    df_c: Tabla de contratos filtrada
+    """
     doc = Document()
-    
-    # --- AÑADIR LOGO AL INICIO ---
+
+    # --- BLOQUE DEL LOGO ---
+    # Si subes el archivo 'logo_universidad.png' a GitHub, se pondrá aquí
     if os.path.exists("logo_universidad.png"):
-        # Esto inserta el logo centrado al inicio del documento
+        # Añadimos una sección para el encabezado
         section = doc.sections[0]
         header = section.header
         p_logo = header.paragraphs[0]
         p_logo.alignment = 1 # Centrado
-        r_logo = p_logo.add_run()
-        r_logo.add_picture("logo_universidad.png", width=Inches(1.5)) 
-    # -----------------------------
+        run_logo = p_logo.add_run()
+        run_logo.add_picture("logo_universidad.png", width=Inches(1.5))
 
-    p = doc.add_paragraph(); p.alignment = 1
-    r = p.add_run("CERTIFICADO DE TRABAJO"); r.bold = True; r.font.name = 'Arial'; r.font.size = Pt(24)
+    # --- TÍTULO ---
+    p = doc.add_paragraph()
+    p.alignment = 1 # Centrado
+    r = p.add_run("CERTIFICADO DE TRABAJO")
+    r.bold = True
+    r.font.name = 'Arial'
+    r.font.size = Pt(24) # Aquí daba el error; ahora Pt está definido arriba
+
+    # --- CUERPO ---
     doc.add_paragraph("\n" + TEXTO_CERT)
-    p2 = doc.add_paragraph(); p2.add_run("El TRABAJADOR "); p2.add_run(nom).bold = True
+    
+    p2 = doc.add_paragraph()
+    p2.add_run("El TRABAJADOR ")
+    p2.add_run(nom).bold = True
     p2.add_run(f", identificado con DNI N° {dni}, laboró en nuestra Institución bajo el siguiente detalle:")
-    t = doc.add_table(rows=1, cols=3); t.style = 'Table Grid'
-    for i, h in enumerate(["CARGO", "FECHA INICIO", "FECHA FIN"]): t.rows[0].cells[i].text = h
-    for _, row in df_c.iterrows():
-        c = t.add_row().cells
-        c[0].text = str(row.get('cargo', ''))
-        c[1].text = pd.to_datetime(row.get('f_inicio')).strftime('%d/%m/%Y') if pd.notnull(row.get('f_inicio')) else ""
-        c[2].text = pd.to_datetime(row.get('f_fin')).strftime('%d/%m/%Y') if pd.notnull(row.get('f_fin')) else ""
-    doc.add_paragraph("\n\nHuancayo, " + date.today().strftime("%d/%m/%Y")).alignment = 2
-    f = doc.add_paragraph(); f.alignment = 1; f.add_run("\n\n\n__________________________\n" + F_N + "\n" + F_C).bold = True
-    b = BytesIO(); doc.save(b); b.seek(0); return b
+
+    # --- TABLA DE CONTRATOS ---
+    # Creamos una tabla de 1 fila y 3 columnas
+    t = doc.add_table(rows=1, cols=3)
+    t.style = 'Table Grid'
+    # Encabezados de la tabla
+    columnas_tabla = ["CARGO", "FECHA INICIO", "FECHA FIN"]
+    for i, nombre_col in enumerate(columnas_tabla):
+        t.rows[0].cells[i].text = nombre_col
+
+    # Llenamos la tabla con los datos del Excel
+    for _, fila in df_c.iterrows():
+        celdas = t.add_row().cells
+        celdas[0].text = str(fila.get('cargo', ''))
+        # Convertimos la fecha a formato legible (DD/MM/AAAA)
+        celdas[1].text = pd.to_datetime(fila.get('f_inicio')).strftime('%d/%m/%Y') if pd.notnull(fila.get('f_inicio')) else ""
+        celdas[2].text = pd.to_datetime(fila.get('f_fin')).strftime('%d/%m/%Y') if pd.notnull(fila.get('f_fin')) else ""
+
+    # --- FIRMA ---
+    # Fecha alineada a la derecha
+    fecha_p = doc.add_paragraph("\n\nHuancayo, " + date.today().strftime("%d/%m/%Y"))
+    fecha_p.alignment = 2 
+
+    # Bloque de firma centrado y en negrita
+    f = doc.add_paragraph()
+    f.alignment = 1 
+    f.add_run("\n\n\n__________________________\n" + F_N + "\n" + F_C).bold = True
+
+    # Guardamos el archivo en la memoria (BytesIO) para que Streamlit lo pueda descargar
+    buffer = BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+    return buffer
 
 # --- 3. LOGIN ---
 st.set_page_config(page_title="GTH Roosevelt", layout="wide")
@@ -194,4 +235,5 @@ else:
     elif m == "📊 Nómina General":
         st.header("Base de Datos General de Personal")
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
