@@ -22,7 +22,6 @@ def load():
         p = pd.read_excel(x, "PERSONAL")
         c = pd.read_excel(x, "CONTRATOS")
     
-    # Limpieza y normalización de columnas
     p["DNI"] = p["DNI"].astype(str).str.strip()
     c["DNI"] = c["DNI"].astype(str).str.strip()
     p.columns = [col.strip().lower() for col in p.columns]
@@ -73,8 +72,7 @@ if m == "🔍 Consulta":
             st.write("### Historial de Contratos")
             st.dataframe(cn, use_container_width=True, hide_index=True)
             
-            # --- ACCIONES DE CONTRATOS ---
-            tab1, tab2, tab3 = st.tabs(["➕ Agregar", "📝 Modificar", "🗑️ Eliminar"])
+            tab1, tab2, tab3 = st.tabs(["➕ Agregar Contrato", "📝 Modificar Contrato", "🗑️ Eliminar Contrato"])
             
             with tab1:
                 with st.form("add_con"):
@@ -88,7 +86,7 @@ if m == "🔍 Consulta":
                     f_tem = c1.selectbox("Temporalidad", ["Plazo fijo", "Indeterminado"])
                     f_tip = c2.selectbox("Tipo", ["Administrativo", "Docente"])
                     f_mot = c3.text_input("Motivo Cese")
-                    if st.form_submit_button("Guardar Nuevo"):
+                    if st.form_submit_button("Guardar"):
                         new_id = dc['id'].max() + 1 if not dc.empty else 1
                         new_row = {"id":new_id, "dni":dni_busq, "cargo":f_car, "sueldo":f_sue, "f_inicio":f_ini, "f_fin":f_fin, "estado":f_est, "modalidad":f_mod, "temporalidad":f_tem, "tipo":f_tip, "motivo cese":f_mot}
                         dc = pd.concat([dc, pd.DataFrame([new_row])], ignore_index=True)
@@ -96,6 +94,39 @@ if m == "🔍 Consulta":
 
             with tab2:
                 if not cn.empty:
-                    sel_id = st.selectbox("ID a Modificar", cn['id'])
+                    sel_id = st.selectbox("Seleccione ID para editar", cn['id'])
                     idx = dc[dc['id'] == sel_id].index[0]
-                    with st.form
+                    with st.form("mod_con"):
+                        m1, m2, m3 = st.columns(3)
+                        m_car = m1.text_input("Cargo", value=str(dc.at[idx, 'cargo']))
+                        m_sue = m2.number_input("Sueldo", value=float(dc.at[idx, 'sueldo']))
+                        m_est = m3.selectbox("Estado", ["ACTIVO", "CESADO"], index=0 if dc.at[idx, 'estado']=="ACTIVO" else 1)
+                        if st.form_submit_button("Actualizar"):
+                            dc.at[idx, 'cargo'] = m_car
+                            dc.at[idx, 'sueldo'] = m_sue
+                            dc.at[idx, 'estado'] = m_est
+                            save(dp, dc); st.rerun()
+
+            with tab3:
+                if not cn.empty:
+                    del_id = st.selectbox("Seleccione ID para eliminar", cn['id'])
+                    if st.button("Confirmar Eliminación del Contrato"):
+                        dc = dc[dc['id'] != del_id]
+                        save(dp, dc); st.rerun()
+            
+            st.divider()
+            st.download_button("📄 Generar Certificado Word", gen_doc(nom, dni_busq, cn), f"Cert_{dni_busq}.docx")
+        else:
+            st.error("DNI no registrado.")
+
+elif m == "➕ Registro Personal":
+    st.subheader("Registrar Nuevo Trabajador")
+    with st.form("reg_p"):
+        d, n = st.text_input("DNI"), st.text_input("Apellidos y Nombres")
+        if st.form_submit_button("Registrar"):
+            dp = pd.concat([dp, pd.DataFrame([{"dni":d, "apellidos y nombres":n.upper()}])], ignore_index=True)
+            save(dp, dc); st.success("Registrado correctamente.")
+
+elif m == "📊 Nómina General":
+    st.subheader("Base de Datos General de Contratos")
+    st.dataframe(dc, use_container_width=True)
