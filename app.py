@@ -48,58 +48,65 @@ if m == "🔍 Consulta":
                 st.write("### Historial de Contratos")
                 cn = dfs["contratos"][dfs["contratos"]['dni'] == dni_b].reset_index(drop=True)
                 
-                # Preparamos la tabla con selección (Check)
+                # Vista con Check de Selección
                 vst = cn.drop(columns=['id','modalidad','tipo colaborador'], errors='ignore')
                 vst.columns = [c.title() for c in vst.columns]
                 vst.insert(0, "Seleccionar", False)
                 
-                # Usamos data_editor para permitir el check
-                ed_df = st.data_editor(vst, use_container_width=True, hide_index=True, key="df_ed")
-                
-                # Identificar cuál fila tiene el check marcado
+                ed_df = st.data_editor(vst, use_container_width=True, hide_index=True, key="editor_v1")
                 sel_rows = ed_df[ed_df["Seleccionar"] == True]
                 
-                c1, c2 = st.columns(2)
+                # BOTÓN ELIMINAR INDEPENDIENTE (Aparece si hay selección)
+                if not sel_rows.empty:
+                    idx_sel = sel_rows.index[0]
+                    id_db = cn.at[idx_sel, 'id']
+                    idx_db = dfs["contratos"][(dfs["contratos"]['dni']==dni_b) & (dfs["contratos"]['id']==id_db)].index[0]
+                    
+                    if st.button("🚨 Eliminar Contrato Seleccionado"):
+                        dfs["contratos"] = dfs["contratos"].drop(idx_db)
+                        save(dfs); st.rerun()
+
+                st.divider()
+                
+                c1, c2 = st.columns([1, 1.5])
                 with c1:
-                    with st.expander("➕ Agregar"):
+                    with st.expander("➕ Agregar Nuevo Contrato"):
                         with st.form("add_f"):
                             f_car, f_sue = st.text_input("Cargo"), st.number_input("Sueldo", 0.0)
-                            f_tip = st.selectbox("Tipo", ["Administrativo", "Docente"])
-                            f_est = st.selectbox("Estado", ["VIGENTE", "CESADO"])
-                            f_mot = st.selectbox("Motivo", MOTIVOS) if f_est == "CESADO" else "Vigente"
+                            f_ini, f_fin = st.date_input("Inicio"), st.date_input("Fin")
+                            f_est = st.selectbox("Estado", ["ACTIVO", "CESADO"])
                             if st.form_submit_button("Guardar"):
                                 nid = dfs["contratos"]['id'].max() + 1 if not dfs["contratos"].empty else 1
-                                nr = {"id":nid, "dni":dni_b, "cargo":f_car, "sueldo":f_sue, "tipo":f_tip, "estado":f_est, "motivo cese":f_mot, "f_inicio": date.today()}
+                                nr = {"id":nid, "dni":dni_b, "cargo":f_car, "sueldo":f_sue, "f_inicio":f_ini, "f_fin":f_fin, "estado":f_est}
                                 dfs["contratos"] = pd.concat([dfs["contratos"], pd.DataFrame([nr])], ignore_index=True)
                                 save(dfs); st.rerun()
                 
                 with c2:
                     if not sel_rows.empty:
-                        # Obtenemos la info de la fila marcada
-                        idx_sel = sel_rows.index[0]
-                        id_db = cn.at[idx_sel, 'id']
-                        idx_db = dfs["contratos"][(dfs["contratos"]['dni']==dni_b) & (dfs["contratos"]['id']==id_db)].index[0]
-                        
-                        with st.expander("📝 Editar / Eliminar Seleccionado", expanded=True):
-                            with st.form("form_edit_ok"):
-                                e_ca = st.text_input("Cargo", value=str(cn.at[idx_sel, 'cargo']))
-                                e_su = st.number_input("Sueldo", value=float(cn.at[idx_sel, 'sueldo']))
-                                e_es = st.selectbox("Estado", ["VIGENTE", "CESADO"], index=0 if cn.at[idx_sel, 'estado']=="VIGENTE" else 1)
-                                e_mo = st.selectbox("Motivo", MOTIVOS, index=MOTIVOS.index(cn.at[idx_sel, 'motivo cese']) if cn.at[idx_sel, 'motivo cese'] in MOTIVOS else 0) if e_es == "CESADO" else "Vigente"
+                        with st.expander("📝 Editar Información Completa", expanded=True):
+                            with st.form("form_edit_full"):
+                                col1, col2 = st.columns(2)
+                                with col1:
+                                    e_ca = st.text_input("Cargo", value=str(cn.at[idx_sel, 'cargo']))
+                                    e_su = st.number_input("Sueldo", value=float(cn.at[idx_sel, 'sueldo']))
+                                    e_fi = st.date_input("Fecha Inicio", value=pd.to_datetime(cn.at[idx_sel, 'f_inicio']))
+                                    e_ff = st.date_input("Fecha Fin", value=pd.to_datetime(cn.at[idx_sel, 'f_fin']))
+                                with col2:
+                                    e_ti = st.text_input("Tipo", value=str(cn.at[idx_sel].get('tipo', '')))
+                                    e_te = st.text_input("Temporalidad", value=str(cn.at[idx_sel].get('temporalidad', '')))
+                                    e_li = st.text_input("Link", value=str(cn.at[idx_sel].get('link', '')))
+                                    e_tc = st.text_input("Tipo Contrato", value=str(cn.at[idx_sel].get('tipo contrato', '')))
                                 
-                                # BOTONES DE ENVÍO (Cada uno debe ser submit_button)
-                                col_a, col_b = st.columns(2)
-                                if col_a.form_submit_button("✅ Actualizar"):
-                                    dfs["contratos"].at[idx_db, 'cargo'] = e_ca
-                                    dfs["contratos"].at[idx_db, 'sueldo'] = e_su
-                                    dfs["contratos"].at[idx_db, 'estado'] = e_es
-                                    dfs["contratos"].at[idx_db, 'motivo cese'] = e_mo
-                                    save(dfs); st.rerun()
-                                if col_b.form_submit_button("🚨 Eliminar"):
-                                    dfs["contratos"] = dfs["contratos"].drop(idx_db)
+                                e_es = st.selectbox("Estado", ["ACTIVO", "CESADO"], index=0 if cn.at[idx_sel, 'estado']=="ACTIVO" else 1)
+                                e_mo = st.selectbox("Motivo", MOTIVOS, index=MOTIVOS.index(cn.at[idx_sel, 'motivo cese']) if cn.at[idx_sel].get('motivo cese') in MOTIVOS else 0) if e_es == "CESADO" else "Vigente"
+                                
+                                if st.form_submit_button("✅ Actualizar Todos los Campos"):
+                                    upd = {'cargo':e_ca, 'sueldo':e_su, 'f_inicio':e_fi, 'f_fin':e_ff, 'tipo':e_ti, 
+                                           'temporalidad':e_te, 'link':e_li, 'tipo contrato':e_tc, 'estado':e_es, 'motivo cese':e_mo}
+                                    for k, v in upd.items(): dfs["contratos"].at[idx_db, k] = v
                                     save(dfs); st.rerun()
                     else:
-                        st.info("Seleccione un contrato con el check de la tabla para editar.")
+                        st.info("Seleccione un contrato arriba 👆 para editar sus datos.")
 
             for i, s in enumerate(SHS):
                 if i != 4:
@@ -115,10 +122,4 @@ elif m == "➕ Registro":
         if st.form_submit_button("Registrar"):
             new_p = pd.DataFrame([{"dni":d_in, "apellidos y nombres":n_in.upper()}])
             dfs["personal"] = pd.concat([dfs["personal"], new_p], ignore_index=True)
-            save(dfs); st.success("Ok.")
-
-elif m == "📊 Nómina":
-    st.subheader("Nómina Global")
-    nv = dfs["contratos"].drop(columns=['id','modalidad'], errors='ignore')
-    nv.columns = [c.title() for c in nv.columns]
-    st.dataframe(nv, use_container_width=True, hide_index=True)
+            save
