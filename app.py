@@ -181,9 +181,20 @@ else:
                         else:
                             c_df = pd.DataFrame(columns=COLUMNAS[h_name])
                         
-                        if h_name == "CONTRATOS":
-                            if not c_df.empty:
-                                st.download_button("📄 Generar Word Certificado", gen_word(nom_c, dni_b, c_df), f"Cert_{dni_b}.docx")
+                        # --- BUSCA ESTA PARTE EN TU CÓDIGO ---
+if h_name == "CONTRATOS":
+    if not c_df.empty:
+        # Generamos el archivo primero
+        doc_download = gen_word(nom_c, dni_b, c_df)
+        
+        # Botón con configuración reforzada para Brave
+        st.download_button(
+            label="📄 Generar Word Certificado",
+            data=doc_download,
+            file_name=f"Certificado_{dni_b}.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            use_container_width=True
+        )
                             
                             vst = c_df.copy()
                             vst.insert(0, "Sel", False)
@@ -235,5 +246,6 @@ else:
     elif m == "📊 Nómina General":
         st.header("Base de Datos General de Personal")
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
