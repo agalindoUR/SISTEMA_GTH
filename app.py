@@ -16,10 +16,16 @@ def load():
     if not os.path.exists(DB):
         with pd.ExcelWriter(DB) as w:
             for s in SHS: pd.DataFrame(columns=["dni"]).to_excel(w, sheet_name=s, index=False)
+    
     dfs = {}
     with pd.ExcelFile(DB) as x:
         for s in SHS:
-            df = pd.read_excel(x, s)
+            # LÓGICA DE SEGURIDAD: Si la pestaña no existe, crea un DataFrame vacío
+            if s in x.sheet_names:
+                df = pd.read_excel(x, s)
+            else:
+                df = pd.DataFrame(columns=["dni", "apellidos y nombres"])
+            
             df.columns = [c.strip().lower() for c in df.columns]
             if "dni" in df.columns: df["dni"] = df["dni"].astype(str).str.strip()
             dfs[s.lower()] = df
@@ -27,7 +33,10 @@ def load():
 
 def save(dfs):
     with pd.ExcelWriter(DB) as w:
-        for s in SHS: dfs[s.lower()].to_excel(w, sheet_name=s, index=False)
+        for s in SHS:
+            nombre_hoja = s
+            clave_dict = s.lower()
+            dfs[clave_dict].to_excel(w, sheet_name=nombre_hoja, index=False)
 
 def gen_doc(nom, dni, df):
     doc = Document()
@@ -55,7 +64,8 @@ if m == "🔍 Consulta":
             nom = u.iloc[0]['apellidos y nombres']
             st.header(f"👤 {nom}")
             tbs = st.tabs(SHS)
-            with tbs[4]: # CONTRATOS
+            
+            with tbs[4]: # PESTAÑA CONTRATOS
                 cn = dfs["contratos"][dfs["contratos"]['dni'] == dni_b].reset_index(drop=True)
                 st.dataframe(cn.drop(columns=['id','tipo colaborador'], errors='ignore'), use_container_width=True, hide_index=True)
                 c1, c2, c3 = st.columns(3)
@@ -77,7 +87,8 @@ if m == "🔍 Consulta":
                             sid = ops[st.selectbox("Contrato:", list(ops.keys()))]
                             idx = dfs["contratos"][dfs["contratos"]['id'] == sid].index[0]
                             with st.form("f2"):
-                                ns, ne = st.number_input("Sueldo", value=float(dfs["contratos"].at[idx, 'sueldo'])), st.selectbox("Estado", ["VIGENTE", "CESADO"])
+                                ns = st.number_input("Sueldo", value=float(dfs["contratos"].at[idx, 'sueldo']))
+                                ne = st.selectbox("Estado", ["VIGENTE", "CESADO"])
                                 if st.form_submit_button("Actualizar"):
                                     dfs["contratos"].at[idx, 'sueldo'], dfs["contratos"].at[idx, 'estado'] = ns, ne
                                     save(dfs); st.rerun()
@@ -90,16 +101,20 @@ if m == "🔍 Consulta":
                                 dfs["contratos"] = dfs["contratos"][dfs["contratos"]['id'] != sd]
                                 save(dfs); st.rerun()
                 if not cn.empty: st.download_button("📄 Word", gen_doc(nom, dni_b, cn), f"Cert_{dni_b}.docx")
+
             for i, s in enumerate(SHS):
                 if i != 4:
                     with tbs[i]: st.dataframe(dfs[s.lower()][dfs[s.lower()]['dni'] == dni_b], use_container_width=True)
-        else: st.error("No existe.")
+        else: st.error("No registrado.")
+
 elif m == "➕ Registro":
     with st.form("r"):
-        d_in, n_in = st.text_input("DNI"), st.text_input("Nombres")
+        d_in = st.text_input("DNI")
+        n_in = st.text_input("Nombres")
         if st.form_submit_button("Registrar"):
             new_p = pd.DataFrame([{"dni":d_in, "apellidos y nombres":n_in.upper()}])
             dfs["personal"] = pd.concat([dfs["personal"], new_p], ignore_index=True)
             save(dfs); st.success("Ok.")
+
 elif m == "📊 Nómina":
     st.dataframe(dfs["contratos"].drop(columns=['id'], errors='ignore'), use_container_width=True)
