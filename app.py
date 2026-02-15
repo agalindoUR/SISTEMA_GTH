@@ -54,36 +54,39 @@ m = st.sidebar.radio("MENÚ", ["🔍 Consulta", "➕ Registro", "📊 Nómina"])
 if m == "🔍 Consulta":
     dni_b = st.text_input("DNI:").strip()
     if dni_b:
-        u = dfs["PERSONAL"][dfs["PERSONAL"]['dni'] == dni_b]
+        u = dfs["personal"][dfs["personal"]['dni'] == dni_b]
         if not u.empty:
             nom = u.iloc[0]['apellidos y nombres']
             st.header(f"👤 {nom}")
             tbs = st.tabs(SHS)
             with tbs[4]: # CONTRATOS
-                cn = dfs["CONTRATOS"][dfs["CONTRATOS"]['dni'] == dni_b].reset_index(drop=True)
+                cn = dfs["contratos"][dfs["contratos"]['dni'] == dni_b].reset_index(drop=True)
                 st.dataframe(cn.drop(columns=['id','tipo colaborador'], errors='ignore'), use_container_width=True, hide_index=True)
                 c1, c2, c3 = st.columns(3)
                 with c1:
                     with st.expander("➕ Agregar"):
                         with st.form("f1"):
-                            car, sue = st.text_input("Cargo"), st.number_input("Sueldo", 0.0)
+                            car = st.text_input("Cargo")
+                            sue = st.number_input("Sueldo", 0.0)
                             est = st.selectbox("Estado", ["VIGENTE", "CESADO"])
                             mot = st.selectbox("Motivo", MOTIVOS) if est == "CESADO" else "Vigente"
-                            if st.form_submit_button("OK"):
-                                nid = dfs["CONTRATOS"]['id'].max() + 1 if not dfs["CONTRATOS"].empty else 1
+                            if st.form_submit_button("Guardar"):
+                                nid = dfs["contratos"]['id'].max() + 1 if not dfs["contratos"].empty else 1
                                 nr = {"id":nid, "dni":dni_b, "cargo":car, "sueldo":sue, "estado":est, "motivo cese":mot, "f_inicio": date.today()}
-                                dfs["CONTRATOS"] = pd.concat([dfs["CONTRATOS"], pd.DataFrame([nr])], ignore_index=True)
+                                dfs["contratos"] = pd.concat([dfs["contratos"], pd.DataFrame([nr])], ignore_index=True)
                                 save(dfs); st.rerun()
                 with c2:
                     if not cn.empty:
                         with st.expander("📝 Editar"):
                             ops = {f"{r['cargo']} ({r['f_inicio']})": r['id'] for _, r in cn.iterrows()}
                             sid = ops[st.selectbox("Editar:", list(ops.keys()))]
-                            idx = dfs["CONTRATOS"][dfs["CONTRATOS"]['id'] == sid].index[0]
+                            idx = dfs["contratos"][dfs["contratos"]['id'] == sid].index[0]
                             with st.form("f2"):
-                                ns, ne = st.number_input("Sueldo", value=float(dfs["CONTRATOS"].at[idx, 'sueldo'])), st.selectbox("Estado", ["VIGENTE", "CESADO"])
-                                if st.form_submit_button("Update"):
-                                    dfs["CONTRATOS"].at[idx, 'sueldo'], dfs["CONTRATOS"].at[idx, 'estado'] = ns, ne
+                                ns = st.number_input("Sueldo", value=float(dfs["contratos"].at[idx, 'sueldo']))
+                                ne = st.selectbox("Estado", ["VIGENTE", "CESADO"])
+                                if st.form_submit_button("Actualizar"):
+                                    dfs["contratos"].at[idx, 'sueldo'] = ns
+                                    dfs["contratos"].at[idx, 'estado'] = ne
                                     save(dfs); st.rerun()
                 with c3:
                     if not cn.empty:
@@ -91,14 +94,13 @@ if m == "🔍 Consulta":
                             ops_d = {f"{r['cargo']} ({r['f_inicio']})": r['id'] for _, r in cn.iterrows()}
                             sd = ops_d[st.selectbox("Borrar:", list(ops_d.keys()))]
                             if st.button("Eliminar"):
-                                dfs["CONTRATOS"] = dfs["CONTRATOS"][dfs["CONTRATOS"]['id'] != sd]
+                                dfs["contratos"] = dfs["contratos"][dfs["contratos"]['id'] != sd]
                                 save(dfs); st.rerun()
                 if not cn.empty: st.download_button("📄 Word", gen_doc(nom, dni_b, cn), f"Cert_{dni_b}.docx")
             for i, s in enumerate(SHS):
                 if i != 4:
-                    with tbs[i]: st.dataframe(dfs[s][dfs[s]['dni'] == dni_b], use_container_width=True)
+                    with tbs[i]: st.dataframe(dfs[s.lower()][dfs[s.lower()]['dni'] == dni_b], use_container_width=True)
         else: st.error("No existe.")
 elif m == "➕ Registro":
     with st.form("r"):
-        d, n = st.text_input("DNI"), st.text_input("Nombres")
-        if st.form_submit_button
+        d, n = st.
