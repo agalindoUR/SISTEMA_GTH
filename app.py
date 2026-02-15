@@ -15,7 +15,7 @@ CAB = "LA OFICINA DE GESTIÓN DE TALENTO HUMANO DE LA UNIVERSIDAD PRIVADA DE HUA
 
 def load():
     if not os.path.exists(DB):
-        p = pd.DataFrame(columns=["DNI", "Apellidos y nombres"])
+        p = pd.DataFrame(columns=["DNI", "Apellidos y Nombres"])
         c = pd.DataFrame(columns=["DNI", "Cargo", "Sueldo", "F_Inicio", "F_Fin", "Tipo", "Modalidad", "Temporalidad", "Link", "Estado", "Tipo Colaborador", "Tipo Contrato", "Motivo Cese"])
         return p, c
     with pd.ExcelFile(DB) as x:
@@ -56,7 +56,8 @@ if m == "🔍 Consulta":
     if dni:
         u = dp[dp['DNI'] == dni]
         if not u.empty:
-            nom = u.iloc[0]['Apellidos y nombres']
+            nom = u.iloc[0]['Apellidos y Nombres']
             st.success(f"Trabajador: {nom}")
             cn = dc[dc['DNI'] == dni].reset_index(drop=True)
             # Tabla con todas las columnas [cite: image_ba63bc.
+
