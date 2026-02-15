@@ -16,7 +16,7 @@ CAB = "LA OFICINA DE GESTIÓN DE TALENTO HUMANO DE LA UNIVERSIDAD PRIVADA DE HUA
 def load():
     if not os.path.exists(DB):
         p = pd.DataFrame(columns=["DNI", "Apellidos y nombres"])
-        c = pd.DataFrame(columns=["ID", "DNI", "Cargo", "Sueldo", "F_Inicio", "F_Fin", "Tipo", "Modalidad", "Temporalidad", "Estado", "Tipo Colaborador", "Tipo Contrato", "Motivo Cese"])
+        c = pd.DataFrame(columns=["ID", "DNI", "Cargo", "Sueldo", "F_Inicio", "F_Fin", "Tipo", "Modalidad", "Temporalidad", "Estado", "Motivo Cese"])
         return p, c
     with pd.ExcelFile(DB) as x:
         p = pd.read_excel(x, "PERSONAL")
@@ -60,6 +60,8 @@ dp, dc = load()
 st.sidebar.title("SISTEMA GTH")
 m = st.sidebar.radio("MENÚ", ["🔍 Consulta", "➕ Registro Personal", "📊 Nómina General"])
 
+MOTIVOS_CESE = ["Termino de contrato", "Renuncia", "Despido", "Mutuo acuerdo", "Fallecimiento", "Otros"]
+
 if m == "🔍 Consulta":
     dni_busq = st.text_input("Ingrese DNI:").strip()
     if dni_busq:
@@ -70,22 +72,29 @@ if m == "🔍 Consulta":
             cn = dc[dc['dni'] == dni_busq].reset_index(drop=True)
             
             st.write("### Historial de Contratos")
-            st.dataframe(cn, use_container_width=True, hide_index=True)
+            # Ocultamos 'id' y 'tipo colaborador' en la vista
+            vista = cn.drop(columns=['id', 'tipo colaborador'], errors='ignore')
+            st.dataframe(vista, use_container_width=True, hide_index=True)
             
-            tab1, tab2, tab3 = st.tabs(["➕ Agregar Contrato", "📝 Modificar Contrato", "🗑️ Eliminar Contrato"])
+            tab1, tab2, tab3 = st.tabs(["➕ Agregar", "📝 Modificar", "🗑️ Eliminar"])
             
             with tab1:
                 with st.form("add_con"):
                     c1, c2, c3 = st.columns(3)
                     f_car = c1.text_input("Cargo")
                     f_sue = c2.number_input("Sueldo", min_value=0.0)
-                    f_est = c3.selectbox("Estado", ["ACTIVO", "CESADO"])
+                    f_est = c3.selectbox("Estado", ["VIGENTE", "CESADO"])
                     f_ini = c1.date_input("Inicio")
                     f_fin = c2.date_input("Fin")
                     f_mod = c3.selectbox("Modalidad", ["Presencial", "Remoto", "Mixto"])
                     f_tem = c1.selectbox("Temporalidad", ["Plazo fijo", "Indeterminado"])
                     f_tip = c2.selectbox("Tipo", ["Administrativo", "Docente"])
-                    f_mot = c3.text_input("Motivo Cese")
+                    
+                    # Lógica de Motivo de Cese
+                    f_mot = "Vigente"
+                    if f_est == "CESADO":
+                        f_mot = c3.selectbox("Motivo de Cese", MOTIVOS_CESE)
+                    
                     if st.form_submit_button("Guardar"):
                         new_id = dc['id'].max() + 1 if not dc.empty else 1
                         new_row = {"id":new_id, "dni":dni_busq, "cargo":f_car, "sueldo":f_sue, "f_inicio":f_ini, "f_fin":f_fin, "estado":f_est, "modalidad":f_mod, "temporalidad":f_tem, "tipo":f_tip, "motivo cese":f_mot}
@@ -94,30 +103,42 @@ if m == "🔍 Consulta":
 
             with tab2:
                 if not cn.empty:
-                    sel_id = st.selectbox("Seleccione ID para editar", cn['id'])
+                    # Selección por Cargo y Fecha en lugar de ID
+                    opciones = {f"{r['cargo']} ({r['f_inicio']})": r['id'] for _, r in cn.iterrows()}
+                    sel_nom = st.selectbox("Seleccione contrato a editar", list(opciones.keys()))
+                    sel_id = opciones[sel_nom]
                     idx = dc[dc['id'] == sel_id].index[0]
+                    
                     with st.form("mod_con"):
                         m1, m2, m3 = st.columns(3)
                         m_car = m1.text_input("Cargo", value=str(dc.at[idx, 'cargo']))
                         m_sue = m2.number_input("Sueldo", value=float(dc.at[idx, 'sueldo']))
-                        m_est = m3.selectbox("Estado", ["ACTIVO", "CESADO"], index=0 if dc.at[idx, 'estado']=="ACTIVO" else 1)
+                        m_est = m3.selectbox("Estado", ["VIGENTE", "CESADO"], index=0 if dc.at[idx, 'estado']=="VIGENTE" else 1)
+                        
+                        m_mot = "Vigente"
+                        if m_est == "CESADO":
+                            m_mot = m3.selectbox("Motivo de Cese", MOTIVOS_CESE)
+                            
                         if st.form_submit_button("Actualizar"):
                             dc.at[idx, 'cargo'] = m_car
                             dc.at[idx, 'sueldo'] = m_sue
                             dc.at[idx, 'estado'] = m_est
+                            dc.at[idx, 'motivo cese'] = m_mot
                             save(dp, dc); st.rerun()
 
             with tab3:
                 if not cn.empty:
-                    del_id = st.selectbox("Seleccione ID para eliminar", cn['id'])
-                    if st.button("Confirmar Eliminación del Contrato"):
+                    opciones_del = {f"{r['cargo']} ({r['f_inicio']})": r['id'] for _, r in cn.iterrows()}
+                    del_nom = st.selectbox("Seleccione contrato a eliminar", list(opciones_del.keys()))
+                    del_id = opciones_del[del_nom]
+                    if st.button("Confirmar Eliminación"):
                         dc = dc[dc['id'] != del_id]
                         save(dp, dc); st.rerun()
             
             st.divider()
             st.download_button("📄 Generar Certificado Word", gen_doc(nom, dni_busq, cn), f"Cert_{dni_busq}.docx")
         else:
-            st.error("DNI no registrado.")
+            st.error("DNI no encontrado.")
 
 elif m == "➕ Registro Personal":
     st.subheader("Registrar Nuevo Trabajador")
@@ -129,4 +150,5 @@ elif m == "➕ Registro Personal":
 
 elif m == "📊 Nómina General":
     st.subheader("Base de Datos General de Contratos")
-    st.dataframe(dc, use_container_width=True)
+    # Ocultamos columnas técnicas en la vista general
+    st.dataframe(dc.drop(columns=['id', 'tipo colaborador'], errors='ignore'), use_container_width=True)
