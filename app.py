@@ -12,29 +12,27 @@ DB = "DB_SISTEMA_GTH.xlsx"
 F_N = "MG. ARTURO J. GALINDO MARTINEZ"
 F_C = "JEFE DE GESTIÓN DE TALENTO HUMANO"
 CAB = "LA OFICINA DE GESTIÓN DE TALENTO HUMANO DE LA UNIVERSIDAD PRIVADA DE HUANCAYO “FRANKLIN ROOSEVELT”, CERTIFICA QUE:"
-MOTIVOS_CESE = ["Termino de contrato", "Renuncia", "Despido", "Mutuo acuerdo", "Fallecimiento", "Otros"]
+MOTIVOS = ["Termino de contrato", "Renuncia", "Despido", "Mutuo acuerdo", "Fallecimiento", "Otros"]
 
 def load():
-    sheets = ["PERSONAL", "FAMILIA", "FORM_ACAD", "EXP_LABORAL", "CONTRATOS", "VACACIONES", "BENEFICIOS", "MERITOS", "LIQUIDACIONES"]
+    shs = ["PERSONAL", "FAMILIA", "FORM_ACAD", "EXP_LABORAL", "CONTRATOS", "VACACIONES", "BENEFICIOS", "MERITOS", "LIQUIDACIONES"]
     if not os.path.exists(DB):
         with pd.ExcelWriter(DB) as w:
-            for s in sheets: pd.DataFrame(columns=["DNI"]).to_excel(w, sheet_name=s, index=False)
-        return {s: pd.DataFrame(columns=["DNI"]) for s in sheets}
-    
-    dict_dfs = {}
+            for s in shs: pd.DataFrame(columns=["DNI"]).to_excel(w, sheet_name=s, index=False)
+        return {s: pd.DataFrame(columns=["DNI"]) for s in shs}
+    dfs = {}
     with pd.ExcelFile(DB) as x:
-        for s in sheets:
+        for s in shs:
             try: df = pd.read_excel(x, s)
             except: df = pd.DataFrame(columns=["DNI"])
             if "DNI" in df.columns: df["DNI"] = df["DNI"].astype(str).str.strip()
-            df.columns = [col.strip().lower() for col in df.columns]
-            dict_dfs[s] = df
-    return dict_dfs
+            df.columns = [c.strip().lower() for c in df.columns]
+            dfs[s] = df
+    return dfs
 
-def save_all(dict_dfs):
+def save_all(dfs):
     with pd.ExcelWriter(DB) as w:
-        for s, df in dict_dfs.items():
-            df.to_excel(w, sheet_name=s, index=False)
+        for s, df in dfs.items(): df.to_excel(w, sheet_name=s, index=False)
 
 def gen_doc(nom, dni, df):
     doc = Document()
@@ -66,18 +64,33 @@ if m == "🔍 Consulta":
         if not u.empty:
             nom = u.iloc[0]['apellidos y nombres']
             st.header(f"👤 {nom}")
-            tabs = st.tabs(["Datos Generales", "Familia", "Form. Acad.", "Exp. Laboral", "Contratos", "Vacaciones", "Beneficios", "Méritos", "Liquidaciones"])
+            tbs = st.tabs(["Datos Generales", "Familia", "Form. Acad.", "Exp. Laboral", "Contratos", "Vacaciones", "Beneficios", "Méritos", "Liquidaciones"])
             
-            with tabs[4]: # PESTAÑA CONTRATOS
-                st.write("### Historial de Contratos")
+            with tbs[4]: # PESTAÑA CONTRATOS
+                st.write("### Gestión de Contratos")
                 cn = dfs["CONTRATOS"][dfs["CONTRATOS"]['dni'] == dni_b].reset_index(drop=True)
                 st.dataframe(cn.drop(columns=['id', 'tipo colaborador'], errors='ignore'), use_container_width=True, hide_index=True)
-                
                 c1, c2, c3 = st.columns(3)
                 with c1:
                     with st.expander("➕ Agregar"):
-                        with st.form("f_add"):
-                            n_car = st.text_input("Cargo")
-                            n_sue = st.number_input("Sueldo", min_value=0.0)
-                            n_est = st.selectbox("Estado", ["VIGENTE", "CESADO"])
-                            n_mot = "
+                        with st.form("f1"):
+                            car, sue = st.text_input("Cargo"), st.number_input("Sueldo", min_value=0.0)
+                            est = st.selectbox("Estado", ["VIGENTE", "CESADO"])
+                            mot = "Vigente"
+                            if est == "CESADO": mot = st.selectbox("Motivo", MOTIVOS)
+                            if st.form_submit_button("Guardar"):
+                                nid = dfs["CONTRATOS"]['id'].max() + 1 if not dfs["CONTRATOS"].empty else 1
+                                nr = {"id":nid, "dni":dni_b, "cargo":car, "sueldo":sue, "estado":est, "motivo cese":mot, "f_inicio": date.today()}
+                                dfs["CONTRATOS"] = pd.concat([dfs["CONTRATOS"], pd.DataFrame([nr])], ignore_index=True)
+                                save_all(dfs); st.rerun()
+                with c2:
+                    if not cn.empty:
+                        with st.expander("📝 Editar"):
+                            op = {f"{r['cargo']} ({r['f_inicio']})": r['id'] for _, r in cn.iterrows()}
+                            sid = op[st.selectbox("Editar:", list(op.keys()))]
+                            idx = dfs["CONTRATOS"][dfs["CONTRATOS"]['id'] == sid].index[0]
+                            with st.form("f2"):
+                                ns = st.number_input("Sueldo", value=float(dfs["CONTRATOS"].at[idx, 'sueldo']))
+                                ne = st.selectbox("Estado", ["VIGENTE", "CESADO"])
+                                if st.form_submit_button("Actualizar"):
+                                    dfs["CONTRATOS"].at[idx
