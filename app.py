@@ -44,11 +44,20 @@ if m == "🔍 Consulta":
             st.header(f"👤 {nom}")
             tbs = st.tabs([s.replace("_"," ").title() for s in SHS])
             
-            with tbs[4]: # CONTRATOS
+            with tbs[4]: # PESTAÑA CONTRATOS
+                st.write("### Historial de Contratos")
                 cn = dfs["contratos"][dfs["contratos"]['dni'] == dni_b].reset_index(drop=True)
+                
+                # Preparamos la tabla con selección (Check)
                 vst = cn.drop(columns=['id','modalidad','tipo colaborador'], errors='ignore')
                 vst.columns = [c.title() for c in vst.columns]
-                st.dataframe(vst, use_container_width=True, hide_index=True)
+                vst.insert(0, "Seleccionar", False)
+                
+                # Usamos data_editor para permitir el check
+                ed_df = st.data_editor(vst, use_container_width=True, hide_index=True, key="df_ed")
+                
+                # Identificar cuál fila tiene el check marcado
+                sel_rows = ed_df[ed_df["Seleccionar"] == True]
                 
                 c1, c2 = st.columns(2)
                 with c1:
@@ -63,12 +72,53 @@ if m == "🔍 Consulta":
                                 nr = {"id":nid, "dni":dni_b, "cargo":f_car, "sueldo":f_sue, "tipo":f_tip, "estado":f_est, "motivo cese":f_mot, "f_inicio": date.today()}
                                 dfs["contratos"] = pd.concat([dfs["contratos"], pd.DataFrame([nr])], ignore_index=True)
                                 save(dfs); st.rerun()
+                
                 with c2:
-                    if not cn.empty:
-                        with st.expander("📝 Editar / Eliminar", expanded=True):
-                            ops = {f"{r['cargo']} ({r['f_inicio']})": i for i, r in cn.iterrows()}
-                            sel = st.selectbox("Seleccionar:", list(ops.keys()))
-                            idx_r = ops[sel]
-                            idx_d = dfs["contratos"][(dfs["contratos"]['dni']==dni_b) & (dfs["contratos"]['id']==cn.at[idx_r, 'id'])].index[0]
-                            with st.form("ed_f"):
-                                e_ca = st.text_input("Cargo", value=str(cn.at[idx_r, 'cargo']))
+                    if not sel_rows.empty:
+                        # Obtenemos la info de la fila marcada
+                        idx_sel = sel_rows.index[0]
+                        id_db = cn.at[idx_sel, 'id']
+                        idx_db = dfs["contratos"][(dfs["contratos"]['dni']==dni_b) & (dfs["contratos"]['id']==id_db)].index[0]
+                        
+                        with st.expander("📝 Editar / Eliminar Seleccionado", expanded=True):
+                            with st.form("form_edit_ok"):
+                                e_ca = st.text_input("Cargo", value=str(cn.at[idx_sel, 'cargo']))
+                                e_su = st.number_input("Sueldo", value=float(cn.at[idx_sel, 'sueldo']))
+                                e_es = st.selectbox("Estado", ["VIGENTE", "CESADO"], index=0 if cn.at[idx_sel, 'estado']=="VIGENTE" else 1)
+                                e_mo = st.selectbox("Motivo", MOTIVOS, index=MOTIVOS.index(cn.at[idx_sel, 'motivo cese']) if cn.at[idx_sel, 'motivo cese'] in MOTIVOS else 0) if e_es == "CESADO" else "Vigente"
+                                
+                                # BOTONES DE ENVÍO (Cada uno debe ser submit_button)
+                                col_a, col_b = st.columns(2)
+                                if col_a.form_submit_button("✅ Actualizar"):
+                                    dfs["contratos"].at[idx_db, 'cargo'] = e_ca
+                                    dfs["contratos"].at[idx_db, 'sueldo'] = e_su
+                                    dfs["contratos"].at[idx_db, 'estado'] = e_es
+                                    dfs["contratos"].at[idx_db, 'motivo cese'] = e_mo
+                                    save(dfs); st.rerun()
+                                if col_b.form_submit_button("🚨 Eliminar"):
+                                    dfs["contratos"] = dfs["contratos"].drop(idx_db)
+                                    save(dfs); st.rerun()
+                    else:
+                        st.info("Seleccione un contrato con el check de la tabla para editar.")
+
+            for i, s in enumerate(SHS):
+                if i != 4:
+                    with tbs[i]:
+                        df_v = dfs[s.lower()][dfs[s.lower()]['dni'] == dni_b]
+                        df_v.columns = [col.title() for col in df_v.columns]
+                        st.dataframe(df_v, use_container_width=True, hide_index=True)
+        else: st.error("No registrado.")
+
+elif m == "➕ Registro":
+    with st.form("r"):
+        d_in, n_in = st.text_input("DNI"), st.text_input("Nombres")
+        if st.form_submit_button("Registrar"):
+            new_p = pd.DataFrame([{"dni":d_in, "apellidos y nombres":n_in.upper()}])
+            dfs["personal"] = pd.concat([dfs["personal"], new_p], ignore_index=True)
+            save(dfs); st.success("Ok.")
+
+elif m == "📊 Nómina":
+    st.subheader("Nómina Global")
+    nv = dfs["contratos"].drop(columns=['id','modalidad'], errors='ignore')
+    nv.columns = [c.title() for c in nv.columns]
+    st.dataframe(nv, use_container_width=True, hide_index=True)
