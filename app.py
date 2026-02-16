@@ -55,42 +55,52 @@ def save_data(dfs):
 def gen_word(nom, dni, df_c):
     doc = Document()
     
-    # --- CONFIGURACIÓN DE LA MARCA DE AGUA (FONDO TOTAL) ---
+    # --- CONFIGURACIÓN DE LA MARCA DE AGUA ---
     if os.path.exists("logo_universidad.png"):
         from docx.oxml import OxmlElement
         from docx.oxml.ns import qn
 
         section = doc.sections[0]
         header = section.header
+        # Usamos el primer párrafo del encabezado
+        if not header.paragraphs:
+            header.add_paragraph()
         paragraph = header.paragraphs[0]
         run = paragraph.add_run()
         
-        # Insertamos el logo (tamaño grande para fondo)
-        imagen = run.add_picture("logo_universidad.png", width=Inches(6.5))
+        # Insertamos el logo
+        imagen = run.add_picture("logo_universidad.png", width=Inches(6.0))
         
-        # Accedemos al XML del dibujo
+        # Accedemos al XML
         el = imagen._inline.getparent().getparent().getparent()
         
-        # Convertimos a ANCHOR (Flotante) para que NO mueva el texto
+        # Convertimos a ANCHOR (Flotante)
         anchor = OxmlElement('wp:anchor')
+        # Definimos todos los atributos necesarios con sus prefijos correctos
         anchor.set(qn('wp:distT'), '0'); anchor.set(qn('wp:distB'), '0')
         anchor.set(qn('wp:distL'), '0'); anchor.set(qn('wp:distR'), '0')
         anchor.set(qn('wp:simplePos'), '0')
         anchor.set(qn('wp:relativeHeight'), '251658240')
-        anchor.set(qn('wp:behindDoc'), '1')  # DETRÁS DEL TEXTO
+        anchor.set(qn('wp:behindDoc'), '1') # Fondo
         anchor.set(qn('wp:locked'), '0')
         anchor.set(qn('wp:layoutInCell'), '1')
         anchor.set(qn('wp:allowOverlap'), '1')
 
-        # Posicionamiento absoluto centrado
+        # Posicionamiento (CORRECCIÓN DE PREFIJOS)
         simplePos = OxmlElement('wp:simplePos')
-        simplePos.set(qn('wp:x'), '0'); simplePos.set(qn('wp:y'), '0') # CORREGIDO qn('wp:x')
+        simplePos.set(qn('wp:x'), '0'); simplePos.set(qn('wp:y'), '0')
         
-        posH = OxmlElement('wp:positionH'); posH.set(qn('relativeFrom'), 'page')
-        posOffH = OxmlElement('wp:posOffset'); posOffH.text = '500000'; posH.append(posOffH)
+        posH = OxmlElement('wp:positionH')
+        posH.set(qn('wp:relativeFrom'), 'page') # Se añadió wp:
+        posOffH = OxmlElement('wp:posOffset')
+        posOffH.text = '750000'
+        posH.append(posOffH)
         
-        posV = OxmlElement('wp:positionV'); posV.set(qn('relativeFrom'), 'page')
-        posOffV = OxmlElement('wp:posOffset'); posOffV.text = '1200000'; posV.append(posOffV)
+        posV = OxmlElement('wp:positionV')
+        posV.set(qn('wp:relativeFrom'), 'page') # Se añadió wp:
+        posOffV = OxmlElement('wp:posOffset')
+        posOffV.text = '1500000'
+        posV.append(posOffV)
 
         anchor.append(simplePos); anchor.append(posH); anchor.append(posV)
         for child in el.getchildren(): anchor.append(child)
@@ -127,7 +137,7 @@ def gen_word(nom, dni, df_c):
     buf = BytesIO(); doc.save(buf); buf.seek(0)
     return buf
 
-# --- 3. INTERFAZ (RESTO DEL CÓDIGO IGUAL) ---
+# --- 3. INTERFAZ (Se mantiene todo lo demás intacto) ---
 st.set_page_config(page_title="GTH Roosevelt", layout="wide")
 if "rol" not in st.session_state: st.session_state.rol = None
 
@@ -235,4 +245,3 @@ else:
     elif m == "📊 Nómina General":
         st.header("Base de Datos General")
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
-
