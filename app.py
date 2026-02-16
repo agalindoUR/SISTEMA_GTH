@@ -55,62 +55,35 @@ def save_data(dfs):
 def gen_word(nom, dni, df_c):
     doc = Document()
     
-    # --- CONFIGURACIÓN DE LA MARCA DE AGUA ---
-    if os.path.exists("logo_universidad.png"):
-        from docx.oxml import OxmlElement
-        from docx.oxml.ns import qn
-
+    # --- CONFIGURACIÓN DEL LOGO (MÉTODO SEGURO) ---
+    if os.path.exists("logo_university.png"):
+        # Accedemos al encabezado de la primera sección
         section = doc.sections[0]
         header = section.header
-        # Usamos el primer párrafo del encabezado
-        if not header.paragraphs:
-            header.add_paragraph()
-        paragraph = header.paragraphs[0]
-        run = paragraph.add_run()
         
-        # Insertamos el logo
-        imagen = run.add_picture("logo_universidad.png", width=Inches(6.0))
+        # Usamos un párrafo en el encabezado
+        p_logo = header.paragraphs[0]
+        p_logo.alignment = WD_ALIGN_PARAGRAPH.CENTER
         
-        # Accedemos al XML
-        el = imagen._inline.getparent().getparent().getparent()
+        run_logo = p_logo.add_run()
+        # Insertamos la imagen con un tamaño que ocupe buen espacio
+        # Inches(7.5) es casi el ancho total de la hoja
+        run_logo.add_picture("logo_university.png", width=Inches(7.0))
         
-        # Convertimos a ANCHOR (Flotante)
-        anchor = OxmlElement('wp:anchor')
-        # Definimos todos los atributos necesarios con sus prefijos correctos
-        anchor.set(qn('wp:distT'), '0'); anchor.set(qn('wp:distB'), '0')
-        anchor.set(qn('wp:distL'), '0'); anchor.set(qn('wp:distR'), '0')
-        anchor.set(qn('wp:simplePos'), '0')
-        anchor.set(qn('wp:relativeHeight'), '251658240')
-        anchor.set(qn('wp:behindDoc'), '1') # Fondo
-        anchor.set(qn('wp:locked'), '0')
-        anchor.set(qn('wp:layoutInCell'), '1')
-        anchor.set(qn('wp:allowOverlap'), '1')
-
-        # Posicionamiento (CORRECCIÓN DE PREFIJOS)
-        simplePos = OxmlElement('wp:simplePos')
-        simplePos.set(qn('wp:x'), '0'); simplePos.set(qn('wp:y'), '0')
-        
-        posH = OxmlElement('wp:positionH')
-        posH.set(qn('wp:relativeFrom'), 'page') # Se añadió wp:
-        posOffH = OxmlElement('wp:posOffset')
-        posOffH.text = '750000'
-        posH.append(posOffH)
-        
-        posV = OxmlElement('wp:positionV')
-        posV.set(qn('wp:relativeFrom'), 'page') # Se añadió wp:
-        posOffV = OxmlElement('wp:posOffset')
-        posOffV.text = '1500000'
-        posV.append(posOffV)
-
-        anchor.append(simplePos); anchor.append(posH); anchor.append(posV)
-        for child in el.getchildren(): anchor.append(child)
-        el.getparent().replace(el, anchor)
+        # Reducimos los márgenes del encabezado para que el logo "flote" más arriba
+        section.header_distance = Inches(0.2)
+        section.top_margin = Inches(0.5)
 
     # --- CONTENIDO DEL CERTIFICADO ---
+    # Añadimos espacio para que el título empiece debajo del logo del encabezado
+    doc.add_paragraph("\n" * 2) 
+    
     p_tit = doc.add_paragraph()
     p_tit.alignment = WD_ALIGN_PARAGRAPH.CENTER
     r_tit = p_tit.add_run("CERTIFICADO DE TRABAJO")
-    r_tit.bold = True; r_tit.font.name = 'Arial'; r_tit.font.size = Pt(24)
+    r_tit.bold = True
+    r_tit.font.name = 'Arial'
+    r_tit.font.size = Pt(24)
 
     doc.add_paragraph("\n" + TEXTO_CERT)
     
@@ -119,10 +92,11 @@ def gen_word(nom, dni, df_c):
     p2.add_run(nom).bold = True
     p2.add_run(f", identificado con DNI N° {dni}, laboró en nuestra Institución bajo el siguiente detalle:")
 
-    # --- TABLA ---
+    # --- TABLA DE CONTRATOS ---
     t = doc.add_table(rows=1, cols=3)
     t.style = 'Table Grid'
-    for i, col in enumerate(["CARGO", "FECHA INICIO", "FECHA FIN"]): t.rows[0].cells[i].text = col
+    for i, col in enumerate(["CARGO", "FECHA INICIO", "FECHA FIN"]):
+        t.rows[0].cells[i].text = col
 
     for _, fila in df_c.iterrows():
         celdas = t.add_row().cells
@@ -130,11 +104,15 @@ def gen_word(nom, dni, df_c):
         celdas[1].text = pd.to_datetime(fila.get('f_inicio')).strftime('%d/%m/%Y') if pd.notnull(fila.get('f_inicio')) else ""
         celdas[2].text = pd.to_datetime(fila.get('f_fin')).strftime('%d/%m/%Y') if pd.notnull(fila.get('f_fin')) else ""
 
+    # --- FIRMA ---
     doc.add_paragraph("\n\nHuancayo, " + date.today().strftime("%d/%m/%Y")).alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    f = doc.add_paragraph(); f.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    f = doc.add_paragraph()
+    f.alignment = WD_ALIGN_PARAGRAPH.CENTER
     f.add_run("\n\n\n__________________________\n" + F_N + "\n" + F_C).bold = True
 
-    buf = BytesIO(); doc.save(buf); buf.seek(0)
+    buf = BytesIO()
+    doc.save(buf)
+    buf.seek(0)
     return buf
 
 # --- 3. INTERFAZ (Se mantiene todo lo demás intacto) ---
@@ -245,3 +223,4 @@ else:
     elif m == "📊 Nómina General":
         st.header("Base de Datos General")
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
