@@ -117,17 +117,26 @@ st.markdown("""
 if "rol" not in st.session_state: st.session_state.rol = None
 
 if st.session_state.rol is None:
-    col_logo1, col_logo2, col_logo3 = st.columns([1, 1, 1])
-with col_logo2:
-    if os.path.exists("logo_amarillo.png"):
-        st.image("logo_amarillo.png", use_container_width=True)
+    # 1. Título principal
     st.markdown('<p class="login-header">UNIVERSIDAD ROOSEVELT - SISTEMA GTH</p>', unsafe_allow_html=True)
+    
+    # 2. ESPACIO PARA EL LOGO (Insertado aquí)
+    col_logo1, col_logo2, col_logo3 = st.columns([1.2, 1, 1.2]) # Ajustamos proporciones para centrarlo
+    with col_logo2:
+        if os.path.exists("logo_amarillo.png"):
+            st.image("logo_amarillo.png", use_container_width=True)
+        else:
+            # Esto es por si el archivo tiene otro nombre, para que no de error
+            st.info("Asegúrate de que el archivo se llame logo_amarillo.png")
+
+    # 3. Campos de entrada
     col1, col2, col3 = st.columns([1, 1.5, 1])
     with col2:
         u = st.text_input("USUARIO")
         p = st.text_input("CONTRASEÑA", type="password")
         st.markdown('<p class="login-welcome">Bienvenido (a) al sistema de gestión de datos de los colaboradores</p>', unsafe_allow_html=True)
         if st.button("INGRESAR"):
+            # ... resto de tu lógica de ingreso ...
             u_low = u.lower().strip()
             if u_low == "admin": st.session_state.rol = "Admin"
             elif u_low == "supervisor" and p == "123": st.session_state.rol = "Supervisor"
@@ -223,4 +232,5 @@ else:
 
     elif m == "📊 Nómina General":
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
