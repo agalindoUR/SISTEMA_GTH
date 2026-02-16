@@ -57,52 +57,50 @@ def gen_word(nom, dni, df_c):
     
     # --- CONFIGURACIÓN DE LA MARCA DE AGUA (FONDO TOTAL) ---
     if os.path.exists("logo_universidad.png"):
+        from docx.oxml import OxmlElement
+        from docx.oxml.ns import qn
+
         section = doc.sections[0]
         header = section.header
         paragraph = header.paragraphs[0]
         run = paragraph.add_run()
         
-        # Insertamos la imagen con un tamaño grande para que cubra la hoja
-        # Puedes ajustar el width (ancho) según necesites
-        imagen = run.add_picture("logo_universidad.png", width=Inches(6.0))
+        # Insertamos el logo (tamaño grande para fondo)
+        imagen = run.add_picture("logo_universidad.png", width=Inches(6.5))
         
-        # --- LÓGICA PARA QUE SEA MARCA DE AGUA (DETRÁS DEL TEXTO) ---
-        from docx.oxml import OxmlElement
-        from docx.oxml.ns import qn
-
-        # Accedemos a la definición de la forma de la imagen
+        # Accedemos al XML del dibujo
         el = imagen._inline.getparent().getparent().getparent()
         
-        # Cambiamos el tipo de "inline" (en línea) a "anchor" (flotante)
+        # Convertimos a ANCHOR (Flotante) para que NO mueva el texto
         anchor = OxmlElement('wp:anchor')
         anchor.set(qn('wp:distT'), '0'); anchor.set(qn('wp:distB'), '0')
         anchor.set(qn('wp:distL'), '0'); anchor.set(qn('wp:distR'), '0')
-        anchor.set(qn('wp:simplePos'), '0'); anchor.set(qn('wp:relativeHeight'), '251658240')
-        anchor.set(qn('wp:behindDoc'), '1') # ESTO LO PONE DETRÁS DEL TEXTO
-        anchor.set(qn('wp:locked'), '0'); anchor.set(qn('wp:layoutInCell'), '1'); anchor.set(qn('wp:allowOverlap'), '1')
+        anchor.set(qn('wp:simplePos'), '0')
+        anchor.set(qn('wp:relativeHeight'), '251658240')
+        anchor.set(qn('wp:behindDoc'), '1')  # DETRÁS DEL TEXTO
+        anchor.set(qn('wp:locked'), '0')
+        anchor.set(qn('wp:layoutInCell'), '1')
+        anchor.set(qn('wp:allowOverlap'), '1')
 
-        # Posicionamiento centrado en la página
-        simplePos = OxmlElement('wp:simplePos'); simplePos.set(qn('x'), '0'); simplePos.set(qn('y'), '0')
-        positionH = OxmlElement('wp:positionH'); positionH.set(qn('relativeFrom'), 'page')
-        posOffsetH = OxmlElement('wp:posOffset'); posOffsetH.text = '700000' # Ajuste horizontal (centrado)
-        positionH.append(posOffsetH)
+        # Posicionamiento absoluto centrado
+        simplePos = OxmlElement('wp:simplePos')
+        simplePos.set(qn('wp:x'), '0'); simplePos.set(qn('wp:y'), '0') # CORREGIDO qn('wp:x')
         
-        positionV = OxmlElement('wp:positionV'); positionV.set(qn('relativeFrom'), 'page')
-        posOffsetV = OxmlElement('wp:posOffset'); posOffsetV.text = '1500000' # Ajuste vertical (centrado)
-        positionV.append(posOffsetV)
+        posH = OxmlElement('wp:positionH'); posH.set(qn('relativeFrom'), 'page')
+        posOffH = OxmlElement('wp:posOffset'); posOffH.text = '500000'; posH.append(posOffH)
+        
+        posV = OxmlElement('wp:positionV'); posV.set(qn('relativeFrom'), 'page')
+        posOffV = OxmlElement('wp:posOffset'); posOffV.text = '1200000'; posV.append(posOffV)
 
-        # Reemplazamos el elemento inline por el flotante
-        anchor.append(simplePos); anchor.append(positionH); anchor.append(positionV)
+        anchor.append(simplePos); anchor.append(posH); anchor.append(posV)
         for child in el.getchildren(): anchor.append(child)
         el.getparent().replace(el, anchor)
 
-    # --- CONTENIDO DEL CERTIFICADO (YA NO SE MOVERÁ) ---
-    p = doc.add_paragraph()
-    p.alignment = 1 
-    r = p.add_run("CERTIFICADO DE TRABAJO")
-    r.bold = True
-    r.font.name = 'Arial'
-    r.font.size = Pt(24) 
+    # --- CONTENIDO DEL CERTIFICADO ---
+    p_tit = doc.add_paragraph()
+    p_tit.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    r_tit = p_tit.add_run("CERTIFICADO DE TRABAJO")
+    r_tit.bold = True; r_tit.font.name = 'Arial'; r_tit.font.size = Pt(24)
 
     doc.add_paragraph("\n" + TEXTO_CERT)
     
@@ -111,11 +109,10 @@ def gen_word(nom, dni, df_c):
     p2.add_run(nom).bold = True
     p2.add_run(f", identificado con DNI N° {dni}, laboró en nuestra Institución bajo el siguiente detalle:")
 
-    # --- TABLA DE CONTRATOS ---
+    # --- TABLA ---
     t = doc.add_table(rows=1, cols=3)
     t.style = 'Table Grid'
-    for i, col in enumerate(["CARGO", "FECHA INICIO", "FECHA FIN"]):
-        t.rows[0].cells[i].text = col
+    for i, col in enumerate(["CARGO", "FECHA INICIO", "FECHA FIN"]): t.rows[0].cells[i].text = col
 
     for _, fila in df_c.iterrows():
         celdas = t.add_row().cells
@@ -123,15 +120,14 @@ def gen_word(nom, dni, df_c):
         celdas[1].text = pd.to_datetime(fila.get('f_inicio')).strftime('%d/%m/%Y') if pd.notnull(fila.get('f_inicio')) else ""
         celdas[2].text = pd.to_datetime(fila.get('f_fin')).strftime('%d/%m/%Y') if pd.notnull(fila.get('f_fin')) else ""
 
-    # --- FIRMA ---
-    doc.add_paragraph("\n\nHuancayo, " + date.today().strftime("%d/%m/%Y")).alignment = 2
-    f = doc.add_paragraph(); f.alignment = 1
+    doc.add_paragraph("\n\nHuancayo, " + date.today().strftime("%d/%m/%Y")).alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    f = doc.add_paragraph(); f.alignment = WD_ALIGN_PARAGRAPH.CENTER
     f.add_run("\n\n\n__________________________\n" + F_N + "\n" + F_C).bold = True
 
     buf = BytesIO(); doc.save(buf); buf.seek(0)
     return buf
 
-# --- 3. INTERFAZ ---
+# --- 3. INTERFAZ (RESTO DEL CÓDIGO IGUAL) ---
 st.set_page_config(page_title="GTH Roosevelt", layout="wide")
 if "rol" not in st.session_state: st.session_state.rol = None
 
@@ -159,8 +155,6 @@ else:
             if not pers.empty:
                 nom_c = pers.iloc[0]["apellidos y nombres"]
                 st.header(f"👤 {nom_c}")
-                
-                # --- PESTAÑAS ---
                 st.subheader("📁 Gestión de Información")
                 t_noms = ["Datos Generales", "Exp. Laboral", "Form. Académica", "Investigación", "Datos Familiares", "Contratos", "Vacaciones", "Otros Beneficios", "Méritos/Demer.", "Evaluación", "Liquidaciones"]
                 h_keys = ["DATOS GENERALES", "EXP. LABORAL", "FORM. ACADEMICA", "INVESTIGACION", "DATOS FAMILIARES", "CONTRATOS", "VACACIONES", "OTROS BENEFICIOS", "MERITOS Y DEMERITOS", "EVALUACION DEL DESEMPEÑO", "LIQUIDACIONES"]
@@ -172,11 +166,9 @@ else:
                         c_df = dfs[h_name][dfs[h_name]["dni"] == dni_b] if "dni" in dfs[h_name].columns else pd.DataFrame(columns=COLUMNAS[h_name])
                         
                         if h_name == "CONTRATOS":
-                            # Botón de Certificado
                             if not c_df.empty:
                                 st.download_button("📄 Certificado Word", gen_word(nom_c, dni_b, c_df), f"Cert_{dni_b}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
                             
-                            # Tabla de Contratos con selección
                             vst = c_df.copy()
                             vst.insert(0, "Sel", False)
                             ed = st.data_editor(vst, hide_index=True, use_container_width=True, key=f"ed_{h_name}")
@@ -216,7 +208,6 @@ else:
                                                 save_data(dfs); st.rerun()
                                         else: st.info("Selecciona una fila arriba")
                         else:
-                            # Pestañas genéricas (Vacaciones, Otros, etc.)
                             st.dataframe(c_df, use_container_width=True, hide_index=True)
                             if not es_lector:
                                 with st.expander(f"➕ Registrar en {h_name}"):
@@ -244,7 +235,4 @@ else:
     elif m == "📊 Nómina General":
         st.header("Base de Datos General")
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
-
-
-
 
