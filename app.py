@@ -29,6 +29,88 @@ COLUMNAS = {
     "EVALUACION DEL DESEMPEÑO": ["periodo", "merito o demerito", "motivo", "link"],
     "LIQUIDACIONES": ["periodo", "firmo", "link"]
 }
+# =========================================================
+# --- PARTE 2: DISEÑO VISUAL Y SISTEMA DE LOGIN ---
+# =========================================================
+
+# Configuramos la página y los estilos visuales (CSS)
+st.set_page_config(page_title="GTH Roosevelt", layout="wide")
+
+st.markdown("""
+    <style>
+    /* Fondo con degradado guindo */
+    .stApp { 
+        background: linear-gradient(135deg, #4a0000 0%, #800000 100%); 
+    }
+    
+    /* Título principal blanco y grande */
+    .login-header { 
+        color: white; 
+        text-align: center; 
+        font-size: 40px; 
+        font-weight: bold; 
+        text-shadow: 2px 2px 4px #000; 
+        margin-top: 50px; 
+    }
+    
+    /* Mensaje de bienvenida amarillo */
+    .login-welcome { 
+        color: #FFD700; 
+        text-align: center; 
+        font-size: 22px; 
+        margin-bottom: 30px; 
+    }
+    
+    /* Etiquetas de Usuario y Contraseña más grandes y blancas */
+    label { 
+        color: white !important; 
+        font-size: 24px !important; 
+        font-weight: bold !important; 
+    }
+    
+    /* Estilo para el botón INGRESAR (Amarillo, letras grandes) */
+    div.stButton > button { 
+        background-color: #FFD700 !important; 
+        color: #4a0000 !important; 
+        font-size: 26px !important; 
+        font-weight: bold !important; 
+        width: 100%; 
+        height: 60px;
+        border-radius: 15px; 
+        border: none;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# Inicializamos la sesión si no existe
+if "rol" not in st.session_state:
+    st.session_state.rol = None
+
+# Bloque de Login
+if st.session_state.rol is None:
+    st.markdown('<p class="login-header">UNIVERSIDAD ROOSEVELT - SISTEMA GTH</p>', unsafe_allow_html=True)
+    st.markdown('<p class="login-welcome">Bienvenido (a) al sistema de gestión de datos de los colaboradores</p>', unsafe_allow_html=True)
+    
+    # Centramos el formulario
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        u = st.text_input("USUARIO")
+        p = st.text_input("CONTRASEÑA", type="password")
+        if st.button("INGRESAR"):
+            if u.lower() == "admin": 
+                st.session_state.rol = "Admin"
+            elif u.lower() == "supervisor" and p == "123": 
+                st.session_state.rol = "Supervisor"
+            elif u.lower() == "lector" and p == "123": 
+                st.session_state.rol = "Lector"
+            else: 
+                st.error("Acceso denegado: Usuario o contraseña incorrectos")
+            
+            if st.session_state.rol:
+                st.rerun()
+
+# --- FIN DE PARTE 2 ---
+
 
 # --- 2. FUNCIONES DE DATOS ---
 def load_data():
@@ -251,3 +333,4 @@ else:
     elif m == "📊 Nómina General":
         st.header("Base de Datos General")
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
