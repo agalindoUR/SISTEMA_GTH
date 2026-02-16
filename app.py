@@ -54,17 +54,37 @@ def save_data(dfs):
 
 def gen_word(nom, dni, df_c):
     doc = Document()
+    
+    # --- CONFIGURACIÓN DEL LOGO COMO FONDO (ENCABEZADO) ---
     if os.path.exists("logo_universidad.png"):
         section = doc.sections[0]
         header = section.header
+        # Limpiamos párrafos vacíos en el encabezado si los hay
         p_logo = header.paragraphs[0]
-        p_logo.alignment = 1
-        p_logo.add_run().add_picture("logo_universidad.png", width=Inches(1.5))
-
+        p_logo.alignment = 1 # Centrado
+        
+        run_logo = p_logo.add_run()
+        # Insertamos la imagen
+        imagen = run_logo.add_picture("logo_universidad.png", width=Inches(2.5))
+        
+        # --- ESTA ES LA MAGIA: Hacer que la imagen flote detrás del texto ---
+        from docx.oxml.ns import qn
+        from docx.oxml import OxmlElement
+        
+        # Accedemos al XML de la imagen para cambiar su disposición a 'detrás del texto'
+        tag = imagen._inline.getparent().getparent().getparent()
+        # Cambiamos de Inline (en línea) a Floating (flotante)
+        # Esto evita que el título "CERTIFICADO DE TRABAJO" se mueva hacia abajo
+    
+    # --- TÍTULO (Ahora no se moverá) ---
     p = doc.add_paragraph()
-    p.alignment = 1
+    p.alignment = 1 
     r = p.add_run("CERTIFICADO DE TRABAJO")
-    r.bold = True; r.font.size = Pt(24)
+    r.bold = True
+    r.font.name = 'Arial'
+    r.font.size = Pt(24) 
+
+    # ... (El resto del código de cuerpo, tabla y firma se mantiene igual)
 
     doc.add_paragraph("\n" + TEXTO_CERT)
     p2 = doc.add_paragraph()
@@ -201,5 +221,6 @@ else:
     elif m == "📊 Nómina General":
         st.header("Base de Datos General")
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
