@@ -55,77 +55,89 @@ def save_data(dfs):
 def gen_word(nom, dni, df_c):
     doc = Document()
     
-    # --- CONFIGURACIÓN DEL LOGO EN EL ENCABEZADO (MARCA DE AGUA ESTABLE) ---
-    if os.path.exists("logo_universidad.png"):
-        section = doc.sections[0]
-        header = section.header
-        # Aseguramos que el encabezado tenga un párrafo
-        p_logo = header.paragraphs[0] if header.paragraphs else header.add_paragraph()
-        p_logo.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        
-        run_logo = p_logo.add_run()
-        # Insertamos la imagen (ajusta el width si quieres que sea más grande)
-        run_logo.add_picture("logo_universidad.png", width=Inches(6.5))
-        
-        # Reducimos distancias para que el logo no empuje el texto
-        section.header_distance = Inches(0.3)
-        section.top_margin = Inches(1.0)
+    # --- 1. AJUSTE DE MÁRGENES PARA QUE TODO QUEPA EN 1 PÁGINA ---
+    section = doc.sections[0]
+    section.top_margin = Inches(1.2)
+    section.bottom_margin = Inches(0.5)
+    section.left_margin = Inches(1.0)
+    section.right_margin = Inches(1.0)
 
-    # --- TÍTULO ---
-    doc.add_paragraph("\n") # Espacio extra para el logo
+    # --- 2. LOGO COMO FONDO TOTAL (MARCA DE AGUA) ---
+    if os.path.exists("logo_universidad.png"):
+        from docx.oxml import OxmlElement
+        from docx.oxml.ns import qn
+
+        header = section.header
+        p_logo = header.paragraphs[0] if header.paragraphs else header.add_paragraph()
+        run_logo = p_logo.add_run()
+        # El tamaño Inches(8.0) casi cubre el ancho total (8.5)
+        imagen = run_logo.add_picture("logo_universidad.png", width=Inches(8.0))
+        
+        # MAGIA XML PARA ESTIRAR Y PONER DETRÁS DEL TEXTO
+        el = imagen._inline.getparent().getparent().getparent()
+        anchor = OxmlElement('wp:anchor')
+        anchor.set(qn('wp:behindDoc'), '1') 
+        anchor.set(qn('wp:locked'), '0')
+        anchor.set(qn('wp:layoutInCell'), '1')
+        anchor.set(qn('wp:allowOverlap'), '1')
+        
+        # Posición absoluta (Centrado total en la hoja)
+        posH = OxmlElement('wp:positionH'); posH.set(qn('relativeFrom'), 'page')
+        posOffH = OxmlElement('wp:posOffset'); posOffH.text = '0'; posH.append(posOffH)
+        posV = OxmlElement('wp:positionV'); posV.set(qn('relativeFrom'), 'page')
+        posOffV = OxmlElement('wp:posOffset'); posOffV.text = '0'; posV.append(posOffV)
+        
+        anchor.append(posH); anchor.append(posV)
+        for child in el.getchildren(): anchor.append(child)
+        el.getparent().replace(el, anchor)
+
+    # --- 3. CONTENIDO DEL CERTIFICADO ---
     p_tit = doc.add_paragraph()
     p_tit.alignment = WD_ALIGN_PARAGRAPH.CENTER
     r_tit = p_tit.add_run("CERTIFICADO DE TRABAJO")
-    r_tit.bold = True
-    r_tit.font.name = 'Arial'
-    r_tit.font.size = Pt(24)
+    r_tit.bold = True; r_tit.font.name = 'Arial'; r_tit.font.size = Pt(24)
 
-    doc.add_paragraph("\n" + TEXTO_CERT)
-    
+    p_txt = doc.add_paragraph("\n" + TEXTO_CERT)
+    p_txt.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
     p2 = doc.add_paragraph()
     p2.add_run("El TRABAJADOR ").bold = False
     p2.add_run(nom).bold = True
     p2.add_run(f", identificado con DNI N° {dni}, laboró en nuestra Institución bajo el siguiente detalle:")
 
-    # --- TABLA CON ESTILO (NEGRILLA Y FONDO CELESTE) ---
-    from docx.oxml import OxmlElement
+    # --- 4. TABLA CON CABECERA CELESTE Y NEGRITA ---
     from docx.oxml.ns import qn
-
     t = doc.add_table(rows=1, cols=3)
     t.style = 'Table Grid'
+    t.alignment = WD_ALIGN_PARAGRAPH.CENTER
     
-    # Configurar Cabecera de la Tabla
-    cols_header = ["CARGO", "FECHA INICIO", "FECHA FIN"]
-    for i, col_name in enumerate(cols_header):
+    headers = ["CARGO", "FECHA INICIO", "FECHA FIN"]
+    for i, h_text in enumerate(headers):
         cell = t.rows[0].cells[i]
-        # Texto en Negrita
-        p_cell = cell.paragraphs[0]
-        run_cell = p_cell.add_run(col_name)
-        run_cell.bold = True
-        
-        # Fondo Celeste Suave (Shading)
-        shading_elm = OxmlElement('w:shd')
-        shading_elm.set(qn('w:fill'), 'E1EFFF') # Código Hex para celeste suave
-        cell._tc.get_or_add_tcPr().append(shading_elm)
+        cell.text = h_text
+        # Poner en Negrita
+        for p in cell.paragraphs:
+            for run in p.runs: run.bold = True
+        # Fondo Celeste Suave
+        shd = OxmlElement('w:shd')
+        shd.set(qn('w:fill'), 'E1EFFF')
+        cell._tc.get_or_add_tcPr().append(shd)
 
-    # Llenado de Datos
     for _, fila in df_c.iterrows():
         celdas = t.add_row().cells
         celdas[0].text = str(fila.get('cargo', ''))
         celdas[1].text = pd.to_datetime(fila.get('f_inicio')).strftime('%d/%m/%Y') if pd.notnull(fila.get('f_inicio')) else ""
         celdas[2].text = pd.to_datetime(fila.get('f_fin')).strftime('%d/%m/%Y') if pd.notnull(fila.get('f_fin')) else ""
 
-    # --- FIRMA ---
+    # --- 5. FIRMA (AL FINAL DE LA ÚNICA PÁGINA) ---
     doc.add_paragraph("\n\nHuancayo, " + date.today().strftime("%d/%m/%Y")).alignment = WD_ALIGN_PARAGRAPH.RIGHT
     f = doc.add_paragraph()
     f.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    f.add_run("\n\n\n__________________________\n" + F_N + "\n" + F_C).bold = True
+    # Reducimos saltos de línea para asegurar 1 sola página
+    f.add_run("\n\n__________________________\n" + F_N + "\n" + F_C).bold = True
 
-    buf = BytesIO()
-    doc.save(buf)
-    buf.seek(0)
+    buf = BytesIO(); doc.save(buf); buf.seek(0)
     return buf
-
 # --- 3. INTERFAZ (Se mantiene todo lo demás intacto) ---
 st.set_page_config(page_title="GTH Roosevelt", layout="wide")
 if "rol" not in st.session_state: st.session_state.rol = None
@@ -234,5 +246,6 @@ else:
     elif m == "📊 Nómina General":
         st.header("Base de Datos General")
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
