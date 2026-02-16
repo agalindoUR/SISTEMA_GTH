@@ -17,7 +17,6 @@ F_C = "JEFE DE GESTIÓN DEL TALENTO HUMANO"
 TEXTO_CERT = "LA OFICINA DE GESTIÓN DE TALENTO HUMANO DE LA UNIVERSIDAD PRIVADA DE HUANCAYO “FRANKLIN ROOSEVELT”, CERTIFICA QUE:"
 MOTIVOS_CESE = ["Término de contrato", "Renuncia", "Despido", "Mutuo acuerdo", "Fallecimiento", "Otros"]
 
-# Definición íntegra de todas las tablas y sus columnas
 COLUMNAS = {
     "PERSONAL": ["dni", "apellidos y nombres", "link"],
     "DATOS GENERALES": ["apellidos y nombres", "dni", "dirección", "link de dirección", "estado civil", "fecha de nacimiento", "edad"],
@@ -64,92 +63,29 @@ def save_data(dfs):
 def gen_word(nom, dni, df_c):
     doc = Document()
     section = doc.sections[0]
-    section.page_height = Inches(11.69)
-    section.page_width = Inches(8.27)
-    section.top_margin = Inches(1.6)
-    section.bottom_margin = Inches(1.2)
-    section.left_margin = Inches(1.0)
-    section.right_margin = Inches(1.0)
+    section.page_height, section.page_width = Inches(11.69), Inches(8.27)
+    section.top_margin, section.bottom_margin = Inches(1.6), Inches(1.2)
+    section.left_margin, section.right_margin = Inches(1.0), Inches(1.0)
 
     header = section.header
     if os.path.exists("header.png"):
         p_h = header.paragraphs[0]
         p_h.paragraph_format.left_indent = Inches(-1.0)
-        run_h = p_h.add_run()
-        run_h.add_picture("header.png", width=Inches(8.27))
+        p_h.add_run().add_picture("header.png", width=Inches(8.27))
 
     footer = section.footer
     if os.path.exists("footer.png"):
         p_f = footer.paragraphs[0]
         p_f.paragraph_format.left_indent = Inches(-1.0)
-        run_f = p_f.add_run()
-        run_f.add_picture("footer.png", width=Inches(8.27))
+        p_f.add_run().add_picture("footer.png", width=Inches(8.27))
 
     p_tit = doc.add_paragraph()
     p_tit.alignment = WD_ALIGN_PARAGRAPH.CENTER
     r_tit = p_tit.add_run("CERTIFICADO DE TRABAJO")
-    r_tit.bold = True
-    r_tit.font.name = 'Arial'
-    r_tit.font.size = Pt(24)
+    r_tit.bold = True; r_tit.font.name = 'Arial'; r_tit.font.size = Pt(24)
 
     doc.add_paragraph("\n" + TEXTO_CERT).alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-    
     p_inf = doc.add_paragraph()
     p_inf.add_run("El TRABAJADOR ").bold = False
     p_inf.add_run(nom).bold = True
-    p_inf.add_run(f", identificado con DNI N° {dni}, laboró bajo el siguiente detalle:")
-
-    from docx.oxml import OxmlElement
-    from docx.oxml.ns import qn
-
-    t = doc.add_table(rows=1, cols=3)
-    t.style = 'Table Grid'
-    t.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    
-    for i, h in enumerate(["CARGO", "FECHA INICIO", "FECHA FIN"]):
-        cell = t.rows[0].cells[i]
-        r = cell.paragraphs[0].add_run(h)
-        r.bold = True
-        shd = OxmlElement('w:shd')
-        shd.set(qn('w:fill'), 'E1EFFF')
-        cell._tc.get_or_add_tcPr().append(shd)
-
-    for _, fila in df_c.iterrows():
-        celdas = t.add_row().cells
-        celdas[0].text = str(fila.get('cargo', ''))
-        celdas[1].text = pd.to_datetime(fila.get('f_inicio')).strftime('%d/%m/%Y') if pd.notnull(fila.get('f_inicio')) else ""
-        celdas[2].text = pd.to_datetime(fila.get('f_fin')).strftime('%d/%m/%Y') if pd.notnull(fila.get('f_fin')) else ""
-
-    doc.add_paragraph("\n\nHuancayo, " + date.today().strftime("%d/%m/%Y")).alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    
-    f_p = doc.add_paragraph()
-    f_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    f_p.add_run("\n\n__________________________\n" + str(F_N) + "\n" + str(F_C)).bold = True
-
-    buf = BytesIO()
-    doc.save(buf)
-    buf.seek(0)
-    return buf
-
-# =========================================================
-# --- 4. INTERFAZ Y DISEÑO VISUAL (STREAMLIT) ---
-# =========================================================
-st.set_page_config(page_title="GTH Roosevelt", layout="wide")
-
-# Estilos CSS integrados
-st.markdown("""
-    <style>
-    .stApp { background: linear-gradient(135deg, #4a0000 0%, #800000 100%); }
-    .login-header { color: white; text-align: center; font-size: 35px; font-weight: bold; text-shadow: 2px 2px 4px #000; margin-top: 50px; }
-    .login-welcome { color: #FFD700; text-align: center; font-size: 18px; margin-bottom: 30px; }
-    label { color: white !important; font-size: 20px !important; font-weight: bold; }
-    div[data-baseweb="input"] { width: 50% !important; margin: auto !important; border-radius: 8px; }
-    div.stButton > button { background-color: #FFD700 !important; color: #4a0000 !important; font-size: 22px !important; font-weight: bold !important; width: 50%; display: block; margin: auto; border-radius: 10px; border: none; }
-    </style>
-""", unsafe_allow_html=True)
-
-if "rol" not in st.session_state:
-    st.session_state.rol = None
-
-# --- LÓGICA DE LOGIN ---
-if st.session_state.rol is None
+    p_inf.add_run(f", identificado
