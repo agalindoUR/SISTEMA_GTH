@@ -55,37 +55,37 @@ def save_data(dfs):
 def gen_word(nom, dni, df_c):
     doc = Document()
     
-    # 1. Ajuste de página A4 y eliminación de márgenes para el fondo
+    # 1. Configuración de página A4
     section = doc.sections[0]
     section.page_height = Inches(11.69)
     section.page_width = Inches(8.27)
     
-    # Estos márgenes son para el TEXTO, el logo los ignorará por ser absoluto
+    # Márgenes de seguridad para el texto
     section.top_margin = Inches(1.5)
     section.bottom_margin = Inches(1.0)
     section.left_margin = Inches(1.0)
     section.right_margin = Inches(1.0)
 
+    # 2. Logo de fondo (De esquina a esquina)
     if os.path.exists("logo_universidad.png"):
         from docx.oxml import OxmlElement
         from docx.oxml.ns import qn
 
         header = section.header
-        p = header.paragraphs[0] if header.paragraphs else header.add_paragraph()
+        # Limpiamos párrafos existentes en el header para evitar duplicados
+        for p in header.paragraphs:
+            p.text = ""
+        p = header.paragraphs[0]
         run = p.add_run()
         
-        # Insertamos al tamaño total de la hoja
-        imagen = run.add_picture("logo_universidad.png", width=Inches(8.27), height=Inches(11.69))
+        # Insertamos la imagen al tamaño total de la hoja
+        imagen = run.add_picture("logo_universidad.png", width=Inches(8.27), height=11.69)
         
-        # --- SOLUCIÓN TÉCNICA PARA "DETRÁS DEL TEXTO" SIN ERRORES ---
-        # Accedemos al objeto de dibujo
+        # --- AJUSTE XML PARA FONDO ABSOLUTO ---
         drawing = imagen._inline.getparent()
-        
-        # Creamos el elemento 'anchor' (flotante)
         anchor = OxmlElement('wp:anchor')
         
-        # Definimos las propiedades necesarias con prefijos correctos
-        # wp:behindDoc='1' es lo que hace que sea marca de agua
+        # Atributos esenciales con prefijos manuales para evitar el ValueError
         anchor.set(qn('wp:behindDoc'), '1')
         anchor.set(qn('wp:locked'), '0')
         anchor.set(qn('wp:layoutInCell'), '1')
@@ -93,35 +93,36 @@ def gen_word(nom, dni, df_c):
         anchor.set(qn('wp:simplePos'), '0')
         anchor.set(qn('wp:relativeHeight'), '251658240')
 
-        # Posicionamiento Horizontal Absoluto (Desde el borde de la página)
+        # Posición Horizontal (Desde la izquierda de la página)
         posH = OxmlElement('wp:positionH')
-        posH.set(qn('wp:relativeFrom'), 'page') # IMPORTANTE: 'page' con prefijo implícito por qn
+        posH.set(qn('wp:relativeFrom'), 'page')
         posOffH = OxmlElement('wp:posOffset')
         posOffH.text = '0'
         posH.append(posOffH)
         
-        # Posicionamiento Vertical Absoluto (Desde el borde de la página)
+        # Posición Vertical (Desde arriba de la página)
         posV = OxmlElement('wp:positionV')
         posV.set(qn('wp:relativeFrom'), 'page')
         posOffV = OxmlElement('wp:posOffset')
         posOffV.text = '0'
         posV.append(posOffV)
 
-        # Ensamblamos el XML moviendo el contenido del inline al anchor
         anchor.append(posH)
         anchor.append(posV)
+        
+        # Transferimos el contenido visual (el inline) al contenedor flotante (anchor)
         for child in imagen._inline.getchildren():
             anchor.append(child)
             
-        # Reemplazamos el inline original por nuestro anchor personalizado
         drawing.getparent().replace(drawing, anchor)
 
-    # --- CONTENIDO DEL CERTIFICADO (Se mantiene en una sola página) ---
+    # 3. Contenido del Certificado (Una sola página)
     p_tit = doc.add_paragraph()
     p_tit.alignment = WD_ALIGN_PARAGRAPH.CENTER
     r_tit = p_tit.add_run("CERTIFICADO DE TRABAJO")
     r_tit.bold = True; r_tit.font.name = 'Arial'; r_tit.font.size = Pt(24)
 
+    # Texto principal
     doc.add_paragraph("\n" + TEXTO_CERT).alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     
     p2 = doc.add_paragraph()
@@ -129,15 +130,18 @@ def gen_word(nom, dni, df_c):
     p2.add_run(nom).bold = True
     p2.add_run(f", identificado con DNI N° {dni}, laboró en nuestra Institución bajo el siguiente detalle:")
 
-    # Tabla con fondo celeste
+    # 4. Tabla con cabecera Celeste y Negrita
     t = doc.add_table(rows=1, cols=3)
     t.style = 'Table Grid'
     t.alignment = WD_ALIGN_PARAGRAPH.CENTER
     
-    for i, h in enumerate(["CARGO", "FECHA INICIO", "FECHA FIN"]):
+    headers = ["CARGO", "FECHA INICIO", "FECHA FIN"]
+    for i, h_text in enumerate(headers):
         cell = t.rows[0].cells[i]
-        r = cell.paragraphs[0].add_run(h)
-        r.bold = True
+        p_cell = cell.paragraphs[0]
+        r_cell = p_cell.add_run(h_text)
+        r_cell.bold = True
+        # Fondo celeste
         shd = OxmlElement('w:shd')
         shd.set(qn('w:fill'), 'E1EFFF')
         cell._tc.get_or_add_tcPr().append(shd)
@@ -148,7 +152,7 @@ def gen_word(nom, dni, df_c):
         celdas[1].text = pd.to_datetime(fila.get('f_inicio')).strftime('%d/%m/%Y') if pd.notnull(fila.get('f_inicio')) else ""
         celdas[2].text = pd.to_datetime(fila.get('f_fin')).strftime('%d/%m/%Y') if pd.notnull(fila.get('f_fin')) else ""
 
-    # Firma
+    # 5. Firma y Cierre
     doc.add_paragraph("\n\nHuancayo, " + date.today().strftime("%d/%m/%Y")).alignment = WD_ALIGN_PARAGRAPH.RIGHT
     f = doc.add_paragraph()
     f.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -266,6 +270,7 @@ else:
     elif m == "📊 Nómina General":
         st.header("Base de Datos General")
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
 
