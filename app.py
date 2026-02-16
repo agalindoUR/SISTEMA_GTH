@@ -55,58 +55,71 @@ def save_data(dfs):
 def gen_word(nom, dni, df_c):
     doc = Document()
     
-    # 1. Configuración de página A4 con márgenes para el texto
+    # 1. Configuración de página A4
     section = doc.sections[0]
     section.page_height = Inches(11.69)
     section.page_width = Inches(8.27)
     
-    # Márgenes donde vivirá el texto (entre el header y el footer)
-    section.top_margin = Inches(1.5)
+    # Márgenes para el TEXTO
+    section.top_margin = Inches(1.6)
     section.bottom_margin = Inches(1.2)
     section.left_margin = Inches(1.0)
     section.right_margin = Inches(1.0)
 
-    # 2. ENCABEZADO (Header)
+    # 2. ENCABEZADO (Header) - ESTIRADO TOTAL
     header = section.header
+    section.header_distance = Inches(0) # Pegado arriba
     if os.path.exists("header.png"):
         p_h = header.paragraphs[0]
-        p_h.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        # TRUCO: Margen negativo para anular el margen izquierdo de la página
+        p_h.paragraph_format.left_indent = Inches(-1.0) 
+        p_h.alignment = WD_ALIGN_PARAGRAPH.LEFT
         run_h = p_h.add_run()
-        # Se estira al ancho total
+        # Ancho exacto de una hoja A4
         run_h.add_picture("header.png", width=Inches(8.27))
 
-    # 3. PIE DE PÁGINA (Footer)
+    # 3. PIE DE PÁGINA (Footer) - ESTIRADO TOTAL
     footer = section.footer
+    section.footer_distance = Inches(0) # Pegado abajo
     if os.path.exists("footer.png"):
         p_f = footer.paragraphs[0]
-        p_f.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        # TRUCO: Margen negativo igual que el encabezado
+        p_f.paragraph_format.left_indent = Inches(-1.0)
+        p_f.alignment = WD_ALIGN_PARAGRAPH.LEFT
         run_f = p_f.add_run()
-        # Se estira al ancho total
         run_f.add_picture("footer.png", width=Inches(8.27))
 
-    # 4. FONDO / MARCA DE AGUA (Sin XML complejo para evitar errores)
-    if os.path.exists("logo_centro.png"):
-        # Usamos el método nativo de marca de agua que no desplaza texto
-        # Agregamos la imagen al header pero Word la permite flotar
-        run_bg = header.paragraphs[0].add_run()
-        bg = run_bg.add_picture("logo_centro.png", width=Inches(4.0)) 
-        # Nota: Aquí no tocamos XML complejo, dejamos que Word lo maneje 
-        # como un objeto de encabezado que se repite.
+    # 4. IMAGEN DE LA DERECHA (Como objeto flotante en el encabezado)
+    if os.path.exists("logo_derecha.png"):
+        # La agregamos al encabezado para que no mueva el texto del cuerpo
+        p_d = header.add_paragraph()
+        run_d = p_d.add_run()
+        img_d = run_d.add_picture("logo_derecha.png", width=Inches(1.5))
+        
+        # Ajuste simple para que no empuje el encabezado hacia abajo
+        p_d.paragraph_format.line_spacing = Pt(1)
+        p_d.paragraph_format.space_after = Pt(0)
+        # Alineación a la derecha
+        p_d.alignment = WD_ALIGN_PARAGRAPH.RIGHT
 
-    # 5. CONTENIDO DEL CERTIFICADO (Cuerpo)
+    # 5. CONTENIDO DEL CERTIFICADO
+    # Espaciado inicial para no chocar con el header
+    doc.add_paragraph("\n") 
+    
     p_tit = doc.add_paragraph()
     p_tit.alignment = WD_ALIGN_PARAGRAPH.CENTER
     r_tit = p_tit.add_run("CERTIFICADO DE TRABAJO")
     r_tit.bold = True; r_tit.font.name = 'Arial'; r_tit.font.size = Pt(24)
 
-    doc.add_paragraph("\n" + TEXTO_CERT).alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-    
+    p_txt = doc.add_paragraph("\n" + TEXTO_CERT)
+    p_txt.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
     p_inf = doc.add_paragraph()
     p_inf.add_run("El TRABAJADOR ").bold = False
     p_inf.add_run(nom).bold = True
     p_inf.add_run(f", identificado con DNI N° {dni}, laboró bajo el siguiente detalle:")
 
-    # 6. TABLA (Diseño solicitado)
+    # 6. TABLA (Manteniendo tu diseño celeste)
     t = doc.add_table(rows=1, cols=3)
     t.style = 'Table Grid'
     t.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -127,7 +140,7 @@ def gen_word(nom, dni, df_c):
         celdas[1].text = pd.to_datetime(fila.get('f_inicio')).strftime('%d/%m/%Y') if pd.notnull(fila.get('f_inicio')) else ""
         celdas[2].text = pd.to_datetime(fila.get('f_fin')).strftime('%d/%m/%Y') if pd.notnull(fila.get('f_fin')) else ""
 
-    # 7. CIERRE
+    # 7. CIERRE Y FIRMA
     doc.add_paragraph("\n\nHuancayo, " + date.today().strftime("%d/%m/%Y")).alignment = WD_ALIGN_PARAGRAPH.RIGHT
     f = doc.add_paragraph()
     f.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -245,6 +258,7 @@ else:
     elif m == "📊 Nómina General":
         st.header("Base de Datos General")
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
 
