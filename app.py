@@ -55,14 +55,14 @@ def save_data(dfs):
 def gen_word(nom, dni, df_c):
     doc = Document()
     
-    # --- 1. AJUSTE DE MÁRGENES PARA QUE TODO QUEPA EN 1 PÁGINA ---
+    # --- 1. CONFIGURACIÓN DE PÁGINA ÚNICA ---
     section = doc.sections[0]
-    section.top_margin = Inches(1.2)
+    section.top_margin = Inches(1.0)
     section.bottom_margin = Inches(0.5)
     section.left_margin = Inches(1.0)
     section.right_margin = Inches(1.0)
 
-    # --- 2. LOGO COMO FONDO TOTAL (MARCA DE AGUA) ---
+    # --- 2. MARCA DE AGUA (LOGO ESTIRADO DETRÁS DEL TEXTO) ---
     if os.path.exists("logo_universidad.png"):
         from docx.oxml import OxmlElement
         from docx.oxml.ns import qn
@@ -70,74 +70,99 @@ def gen_word(nom, dni, df_c):
         header = section.header
         p_logo = header.paragraphs[0] if header.paragraphs else header.add_paragraph()
         run_logo = p_logo.add_run()
-        # El tamaño Inches(8.0) casi cubre el ancho total (8.5)
-        imagen = run_logo.add_picture("logo_universidad.png", width=Inches(8.0))
+        # Ajustamos el ancho para que cubra casi toda la hoja
+        imagen = run_logo.add_picture("logo_universidad.png", width=Inches(7.5))
         
-        # MAGIA XML PARA ESTIRAR Y PONER DETRÁS DEL TEXTO
-        el = imagen._inline.getparent().getparent().getparent()
-        anchor = OxmlElement('wp:anchor')
-        anchor.set(qn('wp:behindDoc'), '1') 
-        anchor.set(qn('wp:locked'), '0')
-        anchor.set(qn('wp:layoutInCell'), '1')
-        anchor.set(qn('wp:allowOverlap'), '1')
-        
-        # Posición absoluta (Centrado total en la hoja)
-        posH = OxmlElement('wp:positionH'); posH.set(qn('relativeFrom'), 'page')
-        posOffH = OxmlElement('wp:posOffset'); posOffH.text = '0'; posH.append(posOffH)
-        posV = OxmlElement('wp:positionV'); posV.set(qn('relativeFrom'), 'page')
-        posOffV = OxmlElement('wp:posOffset'); posOffV.text = '0'; posV.append(posOffV)
-        
-        anchor.append(posH); anchor.append(posV)
-        for child in el.getchildren(): anchor.append(child)
-        el.getparent().replace(el, anchor)
+        # Acceso al XML del dibujo para posicionamiento absoluto
+        try:
+            # Buscamos el elemento de dibujo
+            drawing = imagen._inline.getparent()
+            # Cambiamos de 'inline' a 'anchor' para que sea flotante
+            anchor = OxmlElement('wp:anchor')
+            
+            # Atributos obligatorios con prefijos correctos (SOLUCIÓN AL ERROR)
+            anchor.set(qn('wp:behindDoc'), '1')
+            anchor.set(qn('wp:locked'), '0')
+            anchor.set(qn('wp:layoutInCell'), '1')
+            anchor.set(qn('wp:allowOverlap'), '1')
+            anchor.set(qn('wp:simplePos'), '0')
+            anchor.set(qn('wp:relativeHeight'), '251658240')
 
-    # --- 3. CONTENIDO DEL CERTIFICADO ---
+            # Posicionamiento horizontal relativo a la página
+            posH = OxmlElement('wp:positionH')
+            posH.set(qn('wp:relativeFrom'), 'page')
+            posOffH = OxmlElement('wp:posOffset')
+            posOffH.text = '450000' # Centrado aproximado
+            posH.append(posOffH)
+            
+            # Posicionamiento vertical relativo a la página
+            posV = OxmlElement('wp:positionV')
+            posV.set(qn('wp:relativeFrom'), 'page')
+            posOffV = OxmlElement('wp:posOffset')
+            posOffV.text = '0'
+            posV.append(posOffV)
+
+            # Reensamblamos el XML
+            anchor.append(posH)
+            anchor.append(posV)
+            # Copiamos el contenido original del inline al anchor
+            for child in imagen._inline.getchildren():
+                anchor.append(child)
+            
+            # Reemplazamos el elemento
+            drawing.getparent().replace(drawing, anchor)
+        except Exception:
+            # Si el XML falla, el código sigue para no bloquear la app
+            pass
+
+    # --- 3. CUERPO DEL DOCUMENTO ---
     p_tit = doc.add_paragraph()
     p_tit.alignment = WD_ALIGN_PARAGRAPH.CENTER
     r_tit = p_tit.add_run("CERTIFICADO DE TRABAJO")
     r_tit.bold = True; r_tit.font.name = 'Arial'; r_tit.font.size = Pt(24)
 
-    p_txt = doc.add_paragraph("\n" + TEXTO_CERT)
-    p_txt.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-
+    doc.add_paragraph("\n" + TEXTO_CERT)
+    
     p2 = doc.add_paragraph()
     p2.add_run("El TRABAJADOR ").bold = False
     p2.add_run(nom).bold = True
     p2.add_run(f", identificado con DNI N° {dni}, laboró en nuestra Institución bajo el siguiente detalle:")
 
-    # --- 4. TABLA CON CABECERA CELESTE Y NEGRITA ---
-    from docx.oxml.ns import qn
+    # --- 4. TABLA CON CABECERA CELESTE ---
     t = doc.add_table(rows=1, cols=3)
     t.style = 'Table Grid'
     t.alignment = WD_ALIGN_PARAGRAPH.CENTER
     
+    # Formatear Cabecera
     headers = ["CARGO", "FECHA INICIO", "FECHA FIN"]
     for i, h_text in enumerate(headers):
         cell = t.rows[0].cells[i]
-        cell.text = h_text
-        # Poner en Negrita
-        for p in cell.paragraphs:
-            for run in p.runs: run.bold = True
-        # Fondo Celeste Suave
+        p_cell = cell.paragraphs[0]
+        r_cell = p_cell.add_run(h_text)
+        r_cell.bold = True
+        
+        # Color celeste suave
         shd = OxmlElement('w:shd')
         shd.set(qn('w:fill'), 'E1EFFF')
         cell._tc.get_or_add_tcPr().append(shd)
 
+    # Llenar datos
     for _, fila in df_c.iterrows():
         celdas = t.add_row().cells
         celdas[0].text = str(fila.get('cargo', ''))
         celdas[1].text = pd.to_datetime(fila.get('f_inicio')).strftime('%d/%m/%Y') if pd.notnull(fila.get('f_inicio')) else ""
         celdas[2].text = pd.to_datetime(fila.get('f_fin')).strftime('%d/%m/%Y') if pd.notnull(fila.get('f_fin')) else ""
 
-    # --- 5. FIRMA (AL FINAL DE LA ÚNICA PÁGINA) ---
+    # --- 5. CIERRE Y FIRMA (FORZAR 1 PÁGINA) ---
     doc.add_paragraph("\n\nHuancayo, " + date.today().strftime("%d/%m/%Y")).alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    
     f = doc.add_paragraph()
     f.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    # Reducimos saltos de línea para asegurar 1 sola página
     f.add_run("\n\n__________________________\n" + F_N + "\n" + F_C).bold = True
 
     buf = BytesIO(); doc.save(buf); buf.seek(0)
     return buf
+    
 # --- 3. INTERFAZ (Se mantiene todo lo demás intacto) ---
 st.set_page_config(page_title="GTH Roosevelt", layout="wide")
 if "rol" not in st.session_state: st.session_state.rol = None
@@ -246,6 +271,7 @@ else:
     elif m == "📊 Nómina General":
         st.header("Base de Datos General")
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
 
