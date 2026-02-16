@@ -11,14 +11,12 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 # =========================================================
 # --- 1. CONFIGURACIÓN, CONSTANTES Y DATOS DEL FIRMANTE ---
 # =========================================================
-# Modifica aquí los nombres, cargos y archivos base.
 DB = "DB_SISTEMA_GTH.xlsx"
 F_N = "MG. ARTURO JAVIER GALINDO MARTINEZ"
 F_C = "JEFE DE GESTIÓN DEL TALENTO HUMANO"
 TEXTO_CERT = "LA OFICINA DE GESTIÓN DE TALENTO HUMANO DE LA UNIVERSIDAD PRIVADA DE HUANCAYO “FRANKLIN ROOSEVELT”, CERTIFICA QUE:"
 MOTIVOS_CESE = ["Término de contrato", "Renuncia", "Despido", "Mutuo acuerdo", "Fallecimiento", "Otros"]
 
-# Definición de las hojas de Excel y sus columnas
 COLUMNAS = {
     "PERSONAL": ["dni", "apellidos y nombres", "link"],
     "DATOS GENERALES": ["apellidos y nombres", "dni", "dirección", "link de dirección", "estado civil", "fecha de nacimiento", "edad"],
@@ -38,7 +36,6 @@ COLUMNAS = {
 # --- 2. FUNCIONES DE BASE DE DATOS (EXCEL) ---
 # =========================================================
 def load_data():
-    """Carga los datos desde Excel o crea el archivo si no existe."""
     if not os.path.exists(DB):
         with pd.ExcelWriter(DB) as w:
             for h, cols in COLUMNAS.items(): pd.DataFrame(columns=cols).to_excel(w, sheet_name=h, index=False)
@@ -53,7 +50,6 @@ def load_data():
     return dfs
 
 def save_data(dfs):
-    """Guarda todos los DataFrames en las pestañas correspondientes del Excel."""
     with pd.ExcelWriter(DB) as w:
         for h, df in dfs.items():
             df_s = df.copy()
@@ -64,14 +60,12 @@ def save_data(dfs):
 # --- 3. FUNCIÓN GENERADORA DEL CERTIFICADO (WORD) ---
 # =========================================================
 def gen_word(nom, dni, df_c):
-    """Crea el documento Word con encabezado y pie de página estirados."""
     doc = Document()
     section = doc.sections[0]
     section.page_height = Inches(11.69); section.page_width = Inches(8.27)
     section.top_margin = Inches(1.6); section.bottom_margin = Inches(1.2)
     section.left_margin = Inches(1.0); section.right_margin = Inches(1.0)
 
-    # Configuración de imágenes en bordes
     header = section.header
     section.header_distance = Inches(0)
     if os.path.exists("header.png"):
@@ -88,7 +82,6 @@ def gen_word(nom, dni, df_c):
         p_f.alignment = WD_ALIGN_PARAGRAPH.LEFT
         p_f.add_run().add_picture("footer.png", width=Inches(8.27))
 
-    # Título y Cuerpo
     p_tit = doc.add_paragraph()
     p_tit.alignment = WD_ALIGN_PARAGRAPH.CENTER
     r_tit = p_tit.add_run("CERTIFICADO DE TRABAJO")
@@ -100,7 +93,6 @@ def gen_word(nom, dni, df_c):
     p_inf.add_run(nom).bold = True
     p_inf.add_run(f", identificado con DNI N° {dni}, laboró bajo el siguiente detalle:")
 
-    # Tabla de historial laboral
     from docx.oxml import OxmlElement
     from docx.oxml.ns import qn
     t = doc.add_table(rows=1, cols=3); t.style = 'Table Grid'; t.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -116,4 +108,7 @@ def gen_word(nom, dni, df_c):
 
     doc.add_paragraph("\n\nHuancayo, " + date.today().strftime("%d/%m/%Y")).alignment = WD_ALIGN_PARAGRAPH.RIGHT
     f = doc.add_paragraph(); f.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    f.add_run("\n\n__________________________\n" + F_N + "\n" + F
+    # LÍNEA CORREGIDA ABAJO (119):
+    f.add_run("\n\n__________________________\n" + str(F_N) + "\n" + str(F_C)).bold = True
+
+    buf = BytesIO(); doc.save(buf); buf.seek(0)
