@@ -4,10 +4,8 @@ import pandas as pd
 import os
 from datetime import date
 from io import BytesIO
-
-# Librerías para el Word (Aquí estaba el error)
 from docx import Document
-from docx.shared import Pt, Inches  # <--- SE AGREGÓ Pt e Inches AQUÍ
+from docx.shared import Pt, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 # --- 1. CONFIGURACIÓN Y CONSTANTES ---
@@ -17,7 +15,6 @@ F_C = "JEFE DE GESTIÓN DEL TALENTO HUMANO"
 TEXTO_CERT = "LA OFICINA DE GESTIÓN DE TALENTO HUMANO DE LA UNIVERSIDAD PRIVADA DE HUANCAYO “FRANKLIN ROOSEVELT”, CERTIFICA QUE:"
 MOTIVOS_CESE = ["Término de contrato", "Renuncia", "Despido", "Mutuo acuerdo", "Fallecimiento", "Otros"]
 
-# Diccionario maestro de columnas para asegurar que nunca falten
 COLUMNAS = {
     "PERSONAL": ["dni", "apellidos y nombres", "link"],
     "DATOS GENERALES": ["apellidos y nombres", "dni", "dirección", "link de dirección", "estado civil", "fecha de nacimiento", "edad"],
@@ -25,8 +22,8 @@ COLUMNAS = {
     "EXP. LABORAL": ["tipo de experiencia", "lugar", "puesto", "fecha inicio", "fecha de fin", "motivo cese"],
     "FORM. ACADEMICA": ["grado, titulo o especialización", "descripcion", "universidad", "año"],
     "INVESTIGACION": ["año publicación", "autor, coautor o asesor", "tipo de investigación publicada", "nivel de publicación", "lugar de publicación"],
-    "CONTRATOS": ["id", "dni", "cargo", "sueldo", "f_inicio", "f_fin", "tipo", "tipo contrato", "temporalidad", "link", "estado", "motivo cese"],
-    "VACACIONES": ["periodo", "fecha de inicio", "fecha de fin", "días generados", "días gozados", "saldo", "fecha de goce inicial", "fecha de goce final", "link"],
+    "CONTRATOS": ["id", "dni", "cargo", "sueldo", "f_inicio", "f_fin", "tipo", "estado", "motivo cese"],
+    "VACACIONES": ["periodo", "fecha de inicio", "fecha de fin", "días generados", "días gozados", "saldo", "link"],
     "OTROS BENEFICIOS": ["periodo", "tipo de beneficio", "link"],
     "MERITOS Y DEMERITOS": ["periodo", "merito o demerito", "motivo", "link"],
     "EVALUACION DEL DESEMPEÑO": ["periodo", "merito o demerito", "motivo", "link"],
@@ -38,16 +35,11 @@ def load_data():
     if not os.path.exists(DB):
         with pd.ExcelWriter(DB) as w:
             for h, cols in COLUMNAS.items(): pd.DataFrame(columns=cols).to_excel(w, sheet_name=h, index=False)
-    
     dfs = {}
     with pd.ExcelFile(DB) as x:
         for h in COLUMNAS.keys():
             df = pd.read_excel(x, h) if h in x.sheet_names else pd.DataFrame(columns=COLUMNAS[h])
-            # Normalizar columnas a minúsculas y sin espacios para evitar el KeyError
             df.columns = [str(c).strip().lower() for c in df.columns]
-            # Asegurar que la columna 'dni' exista en el DataFrame cargado
-            if "dni" not in df.columns and h != "PERSONAL":
-                df["dni"] = None
             if "dni" in df.columns:
                 df["dni"] = df["dni"].astype(str).str.strip().replace(r'\.0$', '', regex=True)
             dfs[h] = df
@@ -61,75 +53,42 @@ def save_data(dfs):
             df_s.to_excel(w, sheet_name=h, index=False)
 
 def gen_word(nom, dni, df_c):
-    """
-    Esta función crea el archivo Word desde cero.
-    nom: Nombre del trabajador
-    dni: DNI del trabajador
-    df_c: Tabla de contratos filtrada
-    """
     doc = Document()
-
-    # --- BLOQUE DEL LOGO ---
-    # Si subes el archivo 'logo_universidad.png' a GitHub, se pondrá aquí
     if os.path.exists("logo_universidad.png"):
-        # Añadimos una sección para el encabezado
         section = doc.sections[0]
         header = section.header
         p_logo = header.paragraphs[0]
-        p_logo.alignment = 1 # Centrado
-        run_logo = p_logo.add_run()
-        run_logo.add_picture("logo_universidad.png", width=Inches(1.5))
+        p_logo.alignment = 1
+        p_logo.add_run().add_picture("logo_universidad.png", width=Inches(1.5))
 
-    # --- TÍTULO ---
     p = doc.add_paragraph()
-    p.alignment = 1 # Centrado
+    p.alignment = 1
     r = p.add_run("CERTIFICADO DE TRABAJO")
-    r.bold = True
-    r.font.name = 'Arial'
-    r.font.size = Pt(24) # Aquí daba el error; ahora Pt está definido arriba
+    r.bold = True; r.font.size = Pt(24)
 
-    # --- CUERPO ---
     doc.add_paragraph("\n" + TEXTO_CERT)
-    
     p2 = doc.add_paragraph()
-    p2.add_run("El TRABAJADOR ")
+    p2.add_run("El TRABAJADOR ").bold = False
     p2.add_run(nom).bold = True
     p2.add_run(f", identificado con DNI N° {dni}, laboró en nuestra Institución bajo el siguiente detalle:")
 
-    # --- TABLA DE CONTRATOS ---
-    # Creamos una tabla de 1 fila y 3 columnas
     t = doc.add_table(rows=1, cols=3)
     t.style = 'Table Grid'
-    # Encabezados de la tabla
-    columnas_tabla = ["CARGO", "FECHA INICIO", "FECHA FIN"]
-    for i, nombre_col in enumerate(columnas_tabla):
-        t.rows[0].cells[i].text = nombre_col
-
-    # Llenamos la tabla con los datos del Excel
+    for i, col in enumerate(["CARGO", "FECHA INICIO", "FECHA FIN"]): t.rows[0].cells[i].text = col
     for _, fila in df_c.iterrows():
         celdas = t.add_row().cells
         celdas[0].text = str(fila.get('cargo', ''))
-        # Convertimos la fecha a formato legible (DD/MM/AAAA)
         celdas[1].text = pd.to_datetime(fila.get('f_inicio')).strftime('%d/%m/%Y') if pd.notnull(fila.get('f_inicio')) else ""
         celdas[2].text = pd.to_datetime(fila.get('f_fin')).strftime('%d/%m/%Y') if pd.notnull(fila.get('f_fin')) else ""
 
-    # --- FIRMA ---
-    # Fecha alineada a la derecha
-    fecha_p = doc.add_paragraph("\n\nHuancayo, " + date.today().strftime("%d/%m/%Y"))
-    fecha_p.alignment = 2 
-
-    # Bloque de firma centrado y en negrita
-    f = doc.add_paragraph()
-    f.alignment = 1 
+    doc.add_paragraph("\n\nHuancayo, " + date.today().strftime("%d/%m/%Y")).alignment = 2
+    f = doc.add_paragraph(); f.alignment = 1
     f.add_run("\n\n\n__________________________\n" + F_N + "\n" + F_C).bold = True
+    
+    buf = BytesIO(); doc.save(buf); buf.seek(0)
+    return buf
 
-    # Guardamos el archivo en la memoria (BytesIO) para que Streamlit lo pueda descargar
-    buffer = BytesIO()
-    doc.save(buffer)
-    buffer.seek(0)
-    return buffer
-
-# --- 3. LOGIN ---
+# --- 3. INTERFAZ ---
 st.set_page_config(page_title="GTH Roosevelt", layout="wide")
 if "rol" not in st.session_state: st.session_state.rol = None
 
@@ -153,152 +112,94 @@ else:
     if m == "🔍 Consulta":
         dni_b = st.text_input("DNI del colaborador:").strip()
         if dni_b:
-            # Buscar en PERSONAL
             pers = dfs["PERSONAL"][dfs["PERSONAL"]["dni"] == dni_b]
             if not pers.empty:
                 nom_c = pers.iloc[0]["apellidos y nombres"]
                 st.header(f"👤 {nom_c}")
                 
-                # GRUPO 1: Presentados por el trabajador
-                st.subheader("📁 Documentos presentados por el trabajador")
-                t_trab = st.tabs(["Datos Generales", "Exp. Laboral", "Form. Académica", "Investigación", "Datos Familiares"])
-                h_trab = ["DATOS GENERALES", "EXP. LABORAL", "FORM. ACADEMICA", "INVESTIGACION", "DATOS FAMILIARES"]
-                
-                # GRUPO 2: Documentos internos
-                st.subheader("📂 Documentos internos / Gestión")
-                t_int = st.tabs(["Contratos", "Vacaciones", "Otros Beneficios", "Méritos/Demer.", "Evaluación", "Liquidaciones"])
-                h_int = ["CONTRATOS", "VACACIONES", "OTROS BENEFICIOS", "MERITOS Y DEMERITOS", "EVALUACION DEL DESEMPEÑO", "LIQUIDACIONES"]
-                
-                all_t = t_trab + t_int
-                all_h = h_trab + h_int
+                # --- PESTAÑAS ---
+                st.subheader("📁 Gestión de Información")
+                t_noms = ["Datos Generales", "Exp. Laboral", "Form. Académica", "Investigación", "Datos Familiares", "Contratos", "Vacaciones", "Otros Beneficios", "Méritos/Demer.", "Evaluación", "Liquidaciones"]
+                h_keys = ["DATOS GENERALES", "EXP. LABORAL", "FORM. ACADEMICA", "INVESTIGACION", "DATOS FAMILIARES", "CONTRATOS", "VACACIONES", "OTROS BENEFICIOS", "MERITOS Y DEMERITOS", "EVALUACION DEL DESEMPEÑO", "LIQUIDACIONES"]
+                tabs = st.tabs(t_noms)
 
-                for i, tab in enumerate(all_t):
-                    h_name = all_h[i]
+                for i, tab in enumerate(tabs):
+                    h_name = h_keys[i]
                     with tab:
-                        # Filtrado seguro
-                        if "dni" in dfs[h_name].columns:
-                            c_df = dfs[h_name][dfs[h_name]["dni"] == dni_b]
-                        else:
-                            c_df = pd.DataFrame(columns=COLUMNAS[h_name])
+                        c_df = dfs[h_name][dfs[h_name]["dni"] == dni_b] if "dni" in dfs[h_name].columns else pd.DataFrame(columns=COLUMNAS[h_name])
                         
-                        # --- BUSCA ESTA PARTE EN TU CÓDIGO ---
-# --- BLOQUE DE CONTRATOS CORREGIDO ---
-# ... (dentro de if h_name == "CONTRATOS":)
-
-        # 1. Mostrar la tabla con selección
-        vst = c_df.copy()
-        vst.insert(0, "Sel", False)
-        ed = st.data_editor(vst, hide_index=True, use_container_width=True, key=f"ed_{h_name}")
-        sel = ed[ed["Sel"] == True]
-
-        # --- BLOQUE DE EDICIÓN Y ELIMINACIÓN CORREGIDO ---
-        with st.expander("📝 Editar / Eliminar Seleccionado"):
-            if not sel.empty:
-                # El bloque de permisos debe estar alineado con el contenido del expander
-                if not es_lector: 
-                    with st.form("form_edicion"):
-                        st.write("### Editar Contrato")
-                        
-                        # Campos de edición alineados
-                        c1, c2 = st.columns(2)
-                        with c1:
-                            n_cargo = st.text_input("Cargo", value=sel.iloc[0]["cargo"])
-                            n_sueldo = st.number_input("Sueldo", value=float(sel.iloc[0]["sueldo"]))
-                            n_ini = st.date_input("F. Inicio", value=pd.to_datetime(sel.iloc[0]["f_inicio"]))
-                        with c2:
-                            n_fin = st.date_input("F. Fin", value=pd.to_datetime(sel.iloc[0]["f_fin"]))
-                            n_tipo = st.selectbox("Tipo", ["Docente", "Administrativo"], index=0 if sel.iloc[0]["tipo"]=="Docente" else 1)
-                        
-                        # Cálculo automático de estado según tus indicaciones
-                        estado_auto = "ACTIVO" if n_fin >= date.today() else "CESADO"
-                        st.info(f"Estado calculado: {estado_auto}") [cite: 51]
-                        
-                        n_motivo = "Vigente"
-                        if estado_auto == "CESADO":
-                            # Obliga a elegir motivo de cese si está cesado
-                            n_motivo = st.selectbox("Motivo Cese (Obligatorio)", ["Término de contrato", "Renuncia", "Despido", "Mutuo acuerdo", "Fallecimiento", "Otros"]) [cite: 51]
-
-                        if st.form_submit_button("✅ Actualizar y Guardar"):
-                            idx = sel.index[0]
-                            dfs[h_name].at[idx, "cargo"] = n_cargo
-                            dfs[h_name].at[idx, "sueldo"] = n_sueldo
-                            dfs[h_name].at[idx, "f_inicio"] = n_ini
-                            dfs[h_name].at[idx, "f_fin"] = n_fin
-                            dfs[h_name].at[idx, "estado"] = estado_auto
-                            dfs[h_name].at[idx, "motivo cese"] = n_motivo
-                            save_data(dfs) [cite: 52]
-                            st.success("Contrato actualizado correctamente.")
-                            st.rerun()
-
-                    # El botón de eliminar se coloca fuera del formulario
-                    if st.button("🚨 Eliminar Contrato Seleccionado"):
-                        dfs[h_name] = dfs[h_name].drop(sel.index) [cite: 55]
-                        save_data(dfs)
-                        st.rerun()
-                else:
-                    st.warning("Tu perfil de Lector no permite editar o eliminar datos.") [cite: 32]
-            else:
-                st.info("Seleccione un contrato en la tabla superior con el check para editarlo.") [cite: 49]
-    # 3. Mostrar el editor de datos
-    ed = st.data_editor(
-        vst, 
-        hide_index=True, 
-        use_container_width=True, 
-        key=f"ed_{h_name}", 
-        disabled=es_lector
-    )
-    
-    # 4. Filtrar lo que el usuario seleccionó
-    sel = ed[ed["Sel"] == True]
+                        if h_name == "CONTRATOS":
+                            # Botón de Certificado
+                            if not c_df.empty:
+                                st.download_button("📄 Certificado Word", gen_word(nom_c, dni_b, c_df), f"Cert_{dni_b}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                            
+                            # Tabla de Contratos con selección
+                            vst = c_df.copy()
+                            vst.insert(0, "Sel", False)
+                            ed = st.data_editor(vst, hide_index=True, use_container_width=True, key=f"ed_{h_name}")
+                            sel = ed[ed["Sel"] == True]
 
                             if not es_lector:
                                 c1, c2 = st.columns(2)
                                 with c1:
-                                    with st.expander("➕ Añadir Contrato"):
-                                        with st.form("f_add_cont"):
+                                    with st.expander("➕ Nuevo Contrato"):
+                                        with st.form("f_add"):
                                             car = st.text_input("Cargo"); sue = st.number_input("Sueldo", 0.0)
                                             ini = st.date_input("Inicio"); fin = st.date_input("Fin")
-                                            tip = st.selectbox("Tipo", ["Docente", "Administrativo"])
-                                            est = "ACTIVO" if fin >= date.today() else "CESADO"
-                                            mot = st.selectbox("Motivo Cese", ["Vigente"] + MOTIVOS_CESE) if est == "CESADO" else "Vigente"
+                                            est_a = "ACTIVO" if fin >= date.today() else "CESADO"
+                                            mot_a = st.selectbox("Motivo Cese", ["Vigente"] + MOTIVOS_CESE) if est_a == "CESADO" else "Vigente"
                                             if st.form_submit_button("Guardar"):
                                                 nid = dfs[h_name]["id"].max() + 1 if not dfs[h_name].empty else 1
-                                                new = {"id":nid, "dni":dni_b, "cargo":car, "sueldo":sue, "f_inicio":ini, "f_fin":fin, "tipo":tip, "estado":est, "motivo cese":mot}
-                                                dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new])], ignore_index=True); save_data(dfs); st.rerun()
+                                                new = {"id":nid, "dni":dni_b, "cargo":car, "sueldo":sue, "f_inicio":ini, "f_fin":fin, "estado":est_a, "motivo cese":mot_a}
+                                                dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new])], ignore_index=True)
+                                                save_data(dfs); st.rerun()
                                 with c2:
-                                    if not sel.empty and st.button("🚨 Eliminar Contrato"):
-                                        dfs[h_name] = dfs[h_name][dfs[h_name]["id"] != sel.iloc[0]["id"]]; save_data(dfs); st.rerun()
+                                    with st.expander("📝 Editar/Eliminar Seleccionado"):
+                                        if not sel.empty:
+                                            with st.form("f_edit"):
+                                                n_car = st.text_input("Cargo", value=sel.iloc[0]["cargo"])
+                                                n_fin = st.date_input("Fin", value=pd.to_datetime(sel.iloc[0]["f_fin"]))
+                                                est_e = "ACTIVO" if n_fin >= date.today() else "CESADO"
+                                                mot_e = st.selectbox("Motivo Cese", MOTIVOS_CESE) if est_e == "CESADO" else "Vigente"
+                                                if st.form_submit_button("Actualizar"):
+                                                    idx = sel.index[0]
+                                                    dfs[h_name].at[idx, "cargo"] = n_car
+                                                    dfs[h_name].at[idx, "f_fin"] = n_fin
+                                                    dfs[h_name].at[idx, "estado"] = est_e
+                                                    dfs[h_name].at[idx, "motivo cese"] = mot_e
+                                                    save_data(dfs); st.rerun()
+                                            if st.button("🚨 Eliminar Fila"):
+                                                dfs[h_name] = dfs[h_name].drop(sel.index)
+                                                save_data(dfs); st.rerun()
+                                        else: st.info("Selecciona una fila arriba")
                         else:
+                            # Pestañas genéricas (Vacaciones, Otros, etc.)
                             st.dataframe(c_df, use_container_width=True, hide_index=True)
                             if not es_lector:
                                 with st.expander(f"➕ Registrar en {h_name}"):
                                     with st.form(f"f_{h_name}"):
                                         new_row = {"dni": dni_b}
-                                        cols_fill = [c for c in COLUMNAS[h_name] if c not in ["dni", "apellidos y nombres", "edad"]]
-                                        for col in cols_fill:
-                                            new_row[col] = st.text_input(col.title())
+                                        cols_f = [c for c in COLUMNAS[h_name] if c not in ["dni", "apellidos y nombres", "edad", "id"]]
+                                        for col in cols_f: new_row[col] = st.text_input(col.title())
                                         if st.form_submit_button("Confirmar"):
-                                            dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new_row])], ignore_index=True); save_data(dfs); st.rerun()
+                                            dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new_row])], ignore_index=True)
+                                            save_data(dfs); st.rerun()
             else:
-                st.error("DNI no registrado en el personal principal.")
+                st.error("Trabajador no encontrado.")
 
     elif m == "➕ Registro":
         if es_lector: st.error("No autorizado")
         else:
             with st.form("reg_p"):
                 st.write("### Alta de Nuevo Trabajador")
-                d = st.text_input("DNI"); n = st.text_input("Apellidos y Nombres").upper(); l = st.text_input("Link File")
+                d = st.text_input("DNI"); n = st.text_input("Nombres").upper(); l = st.text_input("Link File")
                 if st.form_submit_button("Registrar"):
                     if d and n:
                         dfs["PERSONAL"] = pd.concat([dfs["PERSONAL"], pd.DataFrame([{"dni":d, "apellidos y nombres":n, "link":l}])], ignore_index=True)
                         save_data(dfs); st.success("Registrado correctamente")
 
     elif m == "📊 Nómina General":
-        st.header("Base de Datos General de Personal")
+        st.header("Base de Datos General")
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
-
-
-
-
 
 
