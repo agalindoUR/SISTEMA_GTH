@@ -55,13 +55,13 @@ def save_data(dfs):
 def gen_word(nom, dni, df_c):
     doc = Document()
     
-    # --- 1. CONFIGURACIÓN DE PÁGINA Y MÁRGENES ---
+    # --- 1. CONFIGURACIÓN DE PÁGINA A4 ---
     section = doc.sections[0]
     section.page_height = Inches(11.69)
     section.page_width = Inches(8.27)
-    # Márgenes del texto (no afectan al logo ahora)
+    # Márgenes para el texto (el logo los ignorará)
     section.top_margin = Inches(1.5) 
-    section.bottom_margin = Inches(0.5)
+    section.bottom_margin = Inches(0.8)
     section.left_margin = Inches(1.0)
     section.right_margin = Inches(1.0)
 
@@ -74,13 +74,14 @@ def gen_word(nom, dni, df_c):
         p_logo = header.paragraphs[0] if header.paragraphs else header.add_paragraph()
         run_logo = p_logo.add_run()
         
-        # Insertamos la imagen al tamaño total de una hoja A4
+        # Tamaño exacto de la hoja A4
         imagen = run_logo.add_picture("logo_universidad.png", width=Inches(8.27), height=Inches(11.69))
         
-        # MAGIA XML PARA POSICIÓN ABSOLUTA (Ignora sangrías y márgenes)
+        # XML PARA POSICIÓN ABSOLUTA DETRÁS DEL TEXTO
         el = imagen._inline.getparent().getparent().getparent()
         anchor = OxmlElement('wp:anchor')
-        # Parámetros críticos: detrás del texto y permitir solapamiento total
+        
+        # ATRIBUTOS CON PREFIJOS CORRECTOS (Evita el ValueError)
         anchor.set(qn('wp:behindDoc'), '1')
         anchor.set(qn('wp:locked'), '0')
         anchor.set(qn('wp:layoutInCell'), '1')
@@ -88,35 +89,35 @@ def gen_word(nom, dni, df_c):
         anchor.set(qn('wp:simplePos'), '0')
         anchor.set(qn('wp:relativeHeight'), '251658240')
 
-        # Posición Horizontal: Desde el borde izquierdo de la página (0 offset)
+        # Posición Horizontal (Desde el borde de la página)
         posH = OxmlElement('wp:positionH')
-        posH.set(qn('relativeFrom'), 'page') 
+        posH.set(qn('wp:relativeFrom'), 'page') # Se añadió wp:
         posOffH = OxmlElement('wp:posOffset'); posOffH.text = '0'; posH.append(posOffH)
         
-        # Posición Vertical: Desde el borde superior de la página (0 offset)
+        # Posición Vertical (Desde el borde de la página)
         posV = OxmlElement('wp:positionV')
-        posV.set(qn('relativeFrom'), 'page')
+        posV.set(qn('wp:relativeFrom'), 'page') # Se añadió wp:
         posOffV = OxmlElement('wp:posOffset'); posOffV.text = '0'; posV.append(posOffV)
 
         anchor.append(posH); anchor.append(posV)
         for child in el.getchildren(): anchor.append(child)
         el.getparent().replace(el, anchor)
 
-    # --- 3. CONTENIDO DEL CERTIFICADO ---
-    # Usamos saltos de línea controlados para evitar que el texto salte de hoja
+    # --- 3. CONTENIDO (ASEGURANDO 1 SOLA PÁGINA) ---
     p_tit = doc.add_paragraph()
     p_tit.alignment = WD_ALIGN_PARAGRAPH.CENTER
     r_tit = p_tit.add_run("CERTIFICADO DE TRABAJO")
-    r_tit.bold = True; r_tit.font.name = 'Arial'; r_tit.font.size = Pt(26)
+    r_tit.bold = True; r_tit.font.name = 'Arial'; r_tit.font.size = Pt(24)
 
-    doc.add_paragraph("\n" + TEXTO_CERT).alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-    
+    p_txt = doc.add_paragraph("\n" + TEXTO_CERT)
+    p_txt.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
     p2 = doc.add_paragraph()
     p2.add_run("El TRABAJADOR ").bold = False
     p2.add_run(nom).bold = True
     p2.add_run(f", identificado con DNI N° {dni}, laboró en nuestra Institución bajo el siguiente detalle:")
 
-    # --- 4. TABLA CON ESTILO ---
+    # --- 4. TABLA CON CABECERA CELESTE Y NEGRITA ---
     t = doc.add_table(rows=1, cols=3)
     t.style = 'Table Grid'
     t.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -124,9 +125,10 @@ def gen_word(nom, dni, df_c):
     headers = ["CARGO", "FECHA INICIO", "FECHA FIN"]
     for i, h_text in enumerate(headers):
         cell = t.rows[0].cells[i]
-        run = cell.paragraphs[0].add_run(h_text)
-        run.bold = True
-        # Fondo celeste suave
+        # Texto Negrita
+        r = cell.paragraphs[0].add_run(h_text)
+        r.bold = True
+        # Fondo Celeste
         shd = OxmlElement('w:shd')
         shd.set(qn('w:fill'), 'E1EFFF')
         cell._tc.get_or_add_tcPr().append(shd)
@@ -137,7 +139,7 @@ def gen_word(nom, dni, df_c):
         celdas[1].text = pd.to_datetime(fila.get('f_inicio')).strftime('%d/%m/%Y') if pd.notnull(fila.get('f_inicio')) else ""
         celdas[2].text = pd.to_datetime(fila.get('f_fin')).strftime('%d/%m/%Y') if pd.notnull(fila.get('f_fin')) else ""
 
-    # --- 5. FIRMA (UN SOLO PÁRRAFO PARA EVITAR SALTOS) ---
+    # --- 5. FIRMA (OPTIMIZADA PARA NO SALTAR DE PÁGINA) ---
     doc.add_paragraph("\n\nHuancayo, " + date.today().strftime("%d/%m/%Y")).alignment = WD_ALIGN_PARAGRAPH.RIGHT
     f = doc.add_paragraph()
     f.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -254,6 +256,7 @@ else:
     elif m == "📊 Nómina General":
         st.header("Base de Datos General")
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
 
