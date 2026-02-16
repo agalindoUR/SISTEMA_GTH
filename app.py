@@ -59,65 +59,52 @@ def gen_word(nom, dni, df_c):
     section = doc.sections[0]
     section.page_height = Inches(11.69)
     section.page_width = Inches(8.27)
-    # Márgenes para el texto (el logo los ignorará)
-    section.top_margin = Inches(1.5) 
-    section.bottom_margin = Inches(0.8)
-    section.left_margin = Inches(1.0)
-    section.right_margin = Inches(1.0)
+    
+    # Márgenes estrechos para asegurar que todo quepa en una página
+    section.top_margin = Inches(0.8)
+    section.bottom_margin = Inches(0.5)
+    section.left_margin = Inches(0.8)
+    section.right_margin = Inches(0.8)
 
-    # --- 2. LOGO TOTAL (ESQUINA A ESQUINA) ---
+    # --- 2. LOGO COMO FONDO (MÉTODO ULTRA-ESTABLE) ---
     if os.path.exists("logo_universidad.png"):
-        from docx.oxml import OxmlElement
-        from docx.oxml.ns import qn
-
+        # Usamos el encabezado para que la imagen sea de fondo
         header = section.header
-        p_logo = header.paragraphs[0] if header.paragraphs else header.add_paragraph()
+        p_logo = header.paragraphs[0]
+        p_logo.alignment = WD_ALIGN_PARAGRAPH.CENTER
         run_logo = p_logo.add_run()
         
-        # Tamaño exacto de la hoja A4
-        imagen = run_logo.add_picture("logo_universidad.png", width=Inches(8.27), height=Inches(11.69))
+        # Insertamos la imagen al ancho de la página
+        # Nota: Usamos un ancho ligeramente menor al total para evitar que Word cree páginas extra
+        run_logo.add_picture("logo_universidad.png", width=Inches(8.2))
         
-        # XML PARA POSICIÓN ABSOLUTA DETRÁS DEL TEXTO
-        el = imagen._inline.getparent().getparent().getparent()
-        anchor = OxmlElement('wp:anchor')
-        
-        # ATRIBUTOS CON PREFIJOS CORRECTOS (Evita el ValueError)
-        anchor.set(qn('wp:behindDoc'), '1')
-        anchor.set(qn('wp:locked'), '0')
-        anchor.set(qn('wp:layoutInCell'), '1')
-        anchor.set(qn('wp:allowOverlap'), '1')
-        anchor.set(qn('wp:simplePos'), '0')
-        anchor.set(qn('wp:relativeHeight'), '251658240')
+        # Reducimos la distancia del encabezado a cero para que no desplace el texto
+        section.header_distance = Inches(0)
+        # El truco: Hacemos que el margen superior sea suficiente para el logo de arriba
+        # pero que el texto empiece donde debe.
+        section.top_margin = Inches(1.2)
 
-        # Posición Horizontal (Desde el borde de la página)
-        posH = OxmlElement('wp:positionH')
-        posH.set(qn('wp:relativeFrom'), 'page') # Se añadió wp:
-        posOffH = OxmlElement('wp:posOffset'); posOffH.text = '0'; posH.append(posOffH)
-        
-        # Posición Vertical (Desde el borde de la página)
-        posV = OxmlElement('wp:positionV')
-        posV.set(qn('wp:relativeFrom'), 'page') # Se añadió wp:
-        posOffV = OxmlElement('wp:posOffset'); posOffV.text = '0'; posV.append(posOffV)
-
-        anchor.append(posH); anchor.append(posV)
-        for child in el.getchildren(): anchor.append(child)
-        el.getparent().replace(el, anchor)
-
-    # --- 3. CONTENIDO (ASEGURANDO 1 SOLA PÁGINA) ---
+    # --- 3. CUERPO DEL DOCUMENTO (TEXTO SOBRE EL LOGO) ---
+    # Título principal
     p_tit = doc.add_paragraph()
     p_tit.alignment = WD_ALIGN_PARAGRAPH.CENTER
     r_tit = p_tit.add_run("CERTIFICADO DE TRABAJO")
-    r_tit.bold = True; r_tit.font.name = 'Arial'; r_tit.font.size = Pt(24)
+    r_tit.bold = True
+    r_tit.font.name = 'Arial'
+    r_tit.font.size = Pt(24)
 
-    p_txt = doc.add_paragraph("\n" + TEXTO_CERT)
-    p_txt.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-
+    # Texto del certificado
+    doc.add_paragraph("\n" + TEXTO_CERT).alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    
     p2 = doc.add_paragraph()
     p2.add_run("El TRABAJADOR ").bold = False
     p2.add_run(nom).bold = True
     p2.add_run(f", identificado con DNI N° {dni}, laboró en nuestra Institución bajo el siguiente detalle:")
 
     # --- 4. TABLA CON CABECERA CELESTE Y NEGRITA ---
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+
     t = doc.add_table(rows=1, cols=3)
     t.style = 'Table Grid'
     t.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -125,28 +112,35 @@ def gen_word(nom, dni, df_c):
     headers = ["CARGO", "FECHA INICIO", "FECHA FIN"]
     for i, h_text in enumerate(headers):
         cell = t.rows[0].cells[i]
-        # Texto Negrita
-        r = cell.paragraphs[0].add_run(h_text)
-        r.bold = True
-        # Fondo Celeste
+        p_cell = cell.paragraphs[0]
+        r_cell = p_cell.add_run(h_text)
+        r_cell.bold = True
+        
+        # Aplicamos el fondo celeste suave
         shd = OxmlElement('w:shd')
         shd.set(qn('w:fill'), 'E1EFFF')
         cell._tc.get_or_add_tcPr().append(shd)
 
+    # Llenamos los datos de los contratos
     for _, fila in df_c.iterrows():
         celdas = t.add_row().cells
         celdas[0].text = str(fila.get('cargo', ''))
         celdas[1].text = pd.to_datetime(fila.get('f_inicio')).strftime('%d/%m/%Y') if pd.notnull(fila.get('f_inicio')) else ""
         celdas[2].text = pd.to_datetime(fila.get('f_fin')).strftime('%d/%m/%Y') if pd.notnull(fila.get('f_fin')) else ""
 
-    # --- 5. FIRMA (OPTIMIZADA PARA NO SALTAR DE PÁGINA) ---
+    # --- 5. FIRMA Y CIERRE ---
     doc.add_paragraph("\n\nHuancayo, " + date.today().strftime("%d/%m/%Y")).alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    
     f = doc.add_paragraph()
     f.alignment = WD_ALIGN_PARAGRAPH.CENTER
     f.add_run("\n\n__________________________\n" + F_N + "\n" + F_C).bold = True
 
-    buf = BytesIO(); doc.save(buf); buf.seek(0)
+    # Generación del archivo en memoria
+    buf = BytesIO()
+    doc.save(buf)
+    buf.seek(0)
     return buf
+    
     
 # --- 3. INTERFAZ (Se mantiene todo lo demás intacto) ---
 st.set_page_config(page_title="GTH Roosevelt", layout="wide")
@@ -256,6 +250,7 @@ else:
     elif m == "📊 Nómina General":
         st.header("Base de Datos General")
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
 
