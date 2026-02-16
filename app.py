@@ -106,11 +106,46 @@ def gen_word(nom, dni, df_c):
 st.set_page_config(page_title="GTH Roosevelt", layout="wide")
 st.markdown("""
     <style>
-    .stApp { background: linear-gradient(135deg, #4a0000 0%, #800000 100%); }
-    .login-header { color: white; text-align: center; font-size: 42px; font-weight: bold; margin-top: 40px; }
-    .login-welcome { color: #FFD700; text-align: center; font-size: 20px; margin-bottom: 20px; font-style: italic; }
-    label { color: white !important; font-size: 22px !important; font-weight: bold !important; }
-    div.stButton > button { background-color: #FFD700 !important; color: #4a0000 !important; font-size: 24px !important; font-weight: bold !important; border-radius: 12px; }
+    /* 1. Fondo principal guindo */
+    .stApp { 
+        background: linear-gradient(135deg, #4a0000 0%, #800000 100%); 
+    }
+    
+    /* 2. Barra lateral AMARILLA */
+    [data-testid="stSidebar"] {
+        background-color: #FFD700 !important;
+    }
+    
+    /* 3. Texto de la barra lateral en GUINDO */
+    [data-testid="stSidebar"] .st-emotion-cache-17l6y9p, 
+    [data-testid="stSidebar"] p, 
+    [data-testid="stSidebar"] span,
+    [data-testid="stSidebar"] label {
+        color: #4a0000 !important;
+        font-weight: bold !important;
+    }
+
+    /* 4. Radio buttons y textos del menú lateral */
+    div[data-testid="stMarkdownContainer"] p {
+        color: #4a0000 !important;
+    }
+
+    /* 5. Títulos y etiquetas en el área GUINDA (ahora blancas/amarillas) */
+    h1, h2, h3, .stMarkdown p, label {
+        color: white !important;
+    }
+    
+    /* 6. Inputs y Tabs (Texto blanco para que resalte en el guindo) */
+    .stTabs [data-baseweb="tab"] p {
+        color: #FFD700 !important; /* Pestañas en amarillo */
+    }
+
+    /* Estilo para el Logo reducido */
+    .logo-container {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 20px;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -148,15 +183,32 @@ else:
     # --- 4. SISTEMA PRINCIPAL ---
     dfs = load_data()
     es_lector = st.session_state.rol == "Lector"
-    m = st.sidebar.radio("MENÚ", ["🔍 Consulta", "➕ Registro", "📊 Nómina General"])
-    if st.sidebar.button("Cerrar Sesión"): st.session_state.rol = None; st.rerun()
+    
+    # LOGO REDUCIDO EN EL ÁREA PRINCIPAL
+    col_l1, col_l2, col_l3 = st.columns([2, 1, 2]) # Columna central pequeña para reducir el logo
+    with col_l2:
+        if os.path.exists("Logo_amarillo.png"):
+            st.image("Logo_amarillo.png", width=150) # Tamaño reducido a 150px
 
+    # BARRA LATERAL (Sidebar)
+    st.sidebar.markdown(f"<h2 style='text-align: center;'>GTH</h2>", unsafe_allow_html=True)
+    m = st.sidebar.radio("MENÚ PRINCIPAL", ["🔍 Consulta", "➕ Registro", "📊 Nómina General"])
+    
+    st.sidebar.markdown("---")
+    if st.sidebar.button("Cerrar Sesión"):
+        st.session_state.rol = None
+        st.rerun()
+
+    # CONTENIDO POR SECCIÓN
     if m == "🔍 Consulta":
-        dni_b = st.text_input("DNI del colaborador:").strip()
+        st.markdown("<h2 style='color: #FFD700;'>Búsqueda de Colaborador</h2>", unsafe_allow_html=True)
+        dni_b = st.text_input("Ingrese DNI para consultar:").strip()
+        
         if dni_b:
             pers = dfs["PERSONAL"][dfs["PERSONAL"]["dni"] == dni_b]
             if not pers.empty:
                 nom_c = pers.iloc[0]["apellidos y nombres"]
+                st.markdown(f"<h1 style='color: white; border-bottom: 2px solid #FFD700;'>👤 {nom_c}</h1>", unsafe_allow_html=True)
                 st.header(f"👤 {nom_c}")
                 t_noms = ["Datos Generales", "Exp. Laboral", "Form. Académica", "Investigación", "Datos Familiares", "Contratos", "Vacaciones", "Otros Beneficios", "Méritos/Demer.", "Evaluación", "Liquidaciones"]
                 h_keys = ["DATOS GENERALES", "EXP. LABORAL", "FORM. ACADEMICA", "INVESTIGACION", "DATOS FAMILIARES", "CONTRATOS", "VACACIONES", "OTROS BENEFICIOS", "MERITOS Y DEMERITOS", "EVALUACION DEL DESEMPEÑO", "LIQUIDACIONES"]
@@ -233,6 +285,7 @@ else:
 
     elif m == "📊 Nómina General":
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
 
