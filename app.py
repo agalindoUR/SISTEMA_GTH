@@ -191,49 +191,54 @@ else:
         ed = st.data_editor(vst, hide_index=True, use_container_width=True, key=f"ed_{h_name}")
         sel = ed[ed["Sel"] == True]
 
-        # 2. Bloque de Edición y Eliminación (Alineado correctamente)
+        # --- BLOQUE DE EDICIÓN Y ELIMINACIÓN CORREGIDO ---
         with st.expander("📝 Editar / Eliminar Seleccionado"):
             if not sel.empty:
-                with st.form("form_edicion"):
-                    st.write("### Editar Contrato")
-                    
-                    # Campos de edición
-                    c1, c2 = st.columns(2)
-                    with c1:
-                        n_cargo = st.text_input("Cargo", value=sel.iloc[0]["cargo"])
-                        n_sueldo = st.number_input("Sueldo", value=float(sel.iloc[0]["sueldo"]))
-                        n_ini = st.date_input("F. Inicio", value=pd.to_datetime(sel.iloc[0]["f_inicio"]))
-                    with c2:
-                        n_fin = st.date_input("F. Fin", value=pd.to_datetime(sel.iloc[0]["f_fin"]))
-                        n_tipo = st.selectbox("Tipo", ["Docente", "Administrativo"], index=0 if sel.iloc[0]["tipo"]=="Docente" else 1)
-                    
-                    # Lógica automática de Estado y Motivo de Cese 
-                    estado_auto = "ACTIVO" if n_fin >= date.today() else "CESADO"
-                    st.info(f"Estado calculado: {estado_auto}")
-                    
-                    n_motivo = "Vigente"
-                    if estado_auto == "CESADO":
-                        n_motivo = st.selectbox("Motivo Cese (Obligatorio)", MOTIVOS_CESE) [cite: 51, 53]
+                # El bloque de permisos debe estar alineado con el contenido del expander
+                if not es_lector: 
+                    with st.form("form_edicion"):
+                        st.write("### Editar Contrato")
+                        
+                        # Campos de edición alineados
+                        c1, c2 = st.columns(2)
+                        with c1:
+                            n_cargo = st.text_input("Cargo", value=sel.iloc[0]["cargo"])
+                            n_sueldo = st.number_input("Sueldo", value=float(sel.iloc[0]["sueldo"]))
+                            n_ini = st.date_input("F. Inicio", value=pd.to_datetime(sel.iloc[0]["f_inicio"]))
+                        with c2:
+                            n_fin = st.date_input("F. Fin", value=pd.to_datetime(sel.iloc[0]["f_fin"]))
+                            n_tipo = st.selectbox("Tipo", ["Docente", "Administrativo"], index=0 if sel.iloc[0]["tipo"]=="Docente" else 1)
+                        
+                        # Cálculo automático de estado según tus indicaciones
+                        estado_auto = "ACTIVO" if n_fin >= date.today() else "CESADO"
+                        st.info(f"Estado calculado: {estado_auto}") [cite: 51]
+                        
+                        n_motivo = "Vigente"
+                        if estado_auto == "CESADO":
+                            # Obliga a elegir motivo de cese si está cesado
+                            n_motivo = st.selectbox("Motivo Cese (Obligatorio)", ["Término de contrato", "Renuncia", "Despido", "Mutuo acuerdo", "Fallecimiento", "Otros"]) [cite: 51]
 
-                    if st.form_submit_button("✅ Actualizar y Guardar"):
-                        idx = sel.index[0]
-                        dfs[h_name].at[idx, "cargo"] = n_cargo
-                        dfs[h_name].at[idx, "sueldo"] = n_sueldo
-                        dfs[h_name].at[idx, "f_inicio"] = n_ini
-                        dfs[h_name].at[idx, "f_fin"] = n_fin
-                        dfs[h_name].at[idx, "estado"] = estado_auto
-                        dfs[h_name].at[idx, "motivo cese"] = n_motivo
-                        save_data(dfs) [cite: 52, 54]
-                        st.success("Contrato actualizado correctamente.")
+                        if st.form_submit_button("✅ Actualizar y Guardar"):
+                            idx = sel.index[0]
+                            dfs[h_name].at[idx, "cargo"] = n_cargo
+                            dfs[h_name].at[idx, "sueldo"] = n_sueldo
+                            dfs[h_name].at[idx, "f_inicio"] = n_ini
+                            dfs[h_name].at[idx, "f_fin"] = n_fin
+                            dfs[h_name].at[idx, "estado"] = estado_auto
+                            dfs[h_name].at[idx, "motivo cese"] = n_motivo
+                            save_data(dfs) [cite: 52]
+                            st.success("Contrato actualizado correctamente.")
+                            st.rerun()
+
+                    # El botón de eliminar se coloca fuera del formulario
+                    if st.button("🚨 Eliminar Contrato Seleccionado"):
+                        dfs[h_name] = dfs[h_name].drop(sel.index) [cite: 55]
+                        save_data(dfs)
                         st.rerun()
-
-                if st.button("🚨 Eliminar Contrato Seleccionado"):
-                    dfs[h_name] = dfs[h_name].drop(sel.index) [cite: 55]
-                    save_data(dfs)
-                    st.rerun()
+                else:
+                    st.warning("Tu perfil de Lector no permite editar o eliminar datos.") [cite: 32]
             else:
-                st.info("Seleccione un contrato en la tabla superior para editarlo.")
-    
+                st.info("Seleccione un contrato en la tabla superior con el check para editarlo.") [cite: 49]
     # 3. Mostrar el editor de datos
     ed = st.data_editor(
         vst, 
@@ -291,6 +296,7 @@ else:
     elif m == "📊 Nómina General":
         st.header("Base de Datos General de Personal")
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
 
