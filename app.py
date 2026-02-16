@@ -117,6 +117,10 @@ st.markdown("""
 if "rol" not in st.session_state: st.session_state.rol = None
 
 if st.session_state.rol is None:
+    col_logo1, col_logo2, col_logo3 = st.columns([1, 1, 1])
+with col_logo2:
+    if os.path.exists("logo_amarillo.png"):
+        st.image("logo_amarillo.png", use_container_width=True)
     st.markdown('<p class="login-header">UNIVERSIDAD ROOSEVELT - SISTEMA GTH</p>', unsafe_allow_html=True)
     col1, col2, col3 = st.columns([1, 1.5, 1])
     with col2:
@@ -219,3 +223,4 @@ else:
 
     elif m == "📊 Nómina General":
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
