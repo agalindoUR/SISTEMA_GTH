@@ -55,29 +55,24 @@ def save_data(dfs):
 def gen_word(nom, dni, df_c):
     doc = Document()
     
-    # --- CONFIGURACIÓN DEL LOGO (MÉTODO SEGURO) ---
-    if os.path.exists("logo_university.png"):
-        # Accedemos al encabezado de la primera sección
+    # --- CONFIGURACIÓN DEL LOGO EN EL ENCABEZADO (MARCA DE AGUA ESTABLE) ---
+    if os.path.exists("logo_universidad.png"):
         section = doc.sections[0]
         header = section.header
-        
-        # Usamos un párrafo en el encabezado
-        p_logo = header.paragraphs[0]
+        # Aseguramos que el encabezado tenga un párrafo
+        p_logo = header.paragraphs[0] if header.paragraphs else header.add_paragraph()
         p_logo.alignment = WD_ALIGN_PARAGRAPH.CENTER
         
         run_logo = p_logo.add_run()
-        # Insertamos la imagen con un tamaño que ocupe buen espacio
-        # Inches(7.5) es casi el ancho total de la hoja
-        run_logo.add_picture("logo_university.png", width=Inches(7.0))
+        # Insertamos la imagen (ajusta el width si quieres que sea más grande)
+        run_logo.add_picture("logo_universidad.png", width=Inches(6.5))
         
-        # Reducimos los márgenes del encabezado para que el logo "flote" más arriba
-        section.header_distance = Inches(0.2)
-        section.top_margin = Inches(0.5)
+        # Reducimos distancias para que el logo no empuje el texto
+        section.header_distance = Inches(0.3)
+        section.top_margin = Inches(1.0)
 
-    # --- CONTENIDO DEL CERTIFICADO ---
-    # Añadimos espacio para que el título empiece debajo del logo del encabezado
-    doc.add_paragraph("\n" * 2) 
-    
+    # --- TÍTULO ---
+    doc.add_paragraph("\n") # Espacio extra para el logo
     p_tit = doc.add_paragraph()
     p_tit.alignment = WD_ALIGN_PARAGRAPH.CENTER
     r_tit = p_tit.add_run("CERTIFICADO DE TRABAJO")
@@ -92,12 +87,28 @@ def gen_word(nom, dni, df_c):
     p2.add_run(nom).bold = True
     p2.add_run(f", identificado con DNI N° {dni}, laboró en nuestra Institución bajo el siguiente detalle:")
 
-    # --- TABLA DE CONTRATOS ---
+    # --- TABLA CON ESTILO (NEGRILLA Y FONDO CELESTE) ---
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+
     t = doc.add_table(rows=1, cols=3)
     t.style = 'Table Grid'
-    for i, col in enumerate(["CARGO", "FECHA INICIO", "FECHA FIN"]):
-        t.rows[0].cells[i].text = col
+    
+    # Configurar Cabecera de la Tabla
+    cols_header = ["CARGO", "FECHA INICIO", "FECHA FIN"]
+    for i, col_name in enumerate(cols_header):
+        cell = t.rows[0].cells[i]
+        # Texto en Negrita
+        p_cell = cell.paragraphs[0]
+        run_cell = p_cell.add_run(col_name)
+        run_cell.bold = True
+        
+        # Fondo Celeste Suave (Shading)
+        shading_elm = OxmlElement('w:shd')
+        shading_elm.set(qn('w:fill'), 'E1EFFF') # Código Hex para celeste suave
+        cell._tc.get_or_add_tcPr().append(shading_elm)
 
+    # Llenado de Datos
     for _, fila in df_c.iterrows():
         celdas = t.add_row().cells
         celdas[0].text = str(fila.get('cargo', ''))
@@ -223,4 +234,5 @@ else:
     elif m == "📊 Nómina General":
         st.header("Base de Datos General")
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
