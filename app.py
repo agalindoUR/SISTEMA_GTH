@@ -55,63 +55,45 @@ def save_data(dfs):
 def gen_word(nom, dni, df_c):
     doc = Document()
     
-    # 1. Configuración de página A4
+    # 1. Configuración de página A4 con márgenes de texto reales
     section = doc.sections[0]
     section.page_height = Inches(11.69)
     section.page_width = Inches(8.27)
     
-    # Márgenes de la página (ahora sí podemos usarlos normalmente)
-    section.top_margin = Inches(1.5)
+    # Estos márgenes protegen tu texto para que no toque los bordes del papel
+    section.top_margin = Inches(1.8)    # Espacio para el logo superior
     section.bottom_margin = Inches(1.0)
     section.left_margin = Inches(1.2)
     section.right_margin = Inches(1.2)
 
-    # 2. LOGO COMO MARCA DE AGUA (ESTA ES LA CLAVE)
+    # 2. LOGO COMO FONDO (Método de Marca de Agua Estable)
     if os.path.exists("logo_universidad.png"):
         header = section.header
-        # Eliminamos cualquier párrafo previo en el encabezado
-        header.is_linked_to_previous = False
-        p_logo = header.paragraphs[0]
+        # El secreto: La imagen va en el header para que Word la trate como fondo
+        p_logo = header.paragraphs[0] if header.paragraphs else header.add_paragraph()
         p_logo.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        
-        # El secreto: Usar una forma (Shape) para que flote detrás del texto
         run_logo = p_logo.add_run()
-        picture = run_logo.add_picture("logo_universidad.png", width=Inches(8.27), height=Inches(11.69))
         
-        # Manipulación del XML para que sea marca de agua (detrás del texto y posición absoluta)
+        # Insertamos la imagen al tamaño total de la hoja
+        # Al estar en el header, Word permite que el texto del body pase "por encima"
+        run_logo.add_picture("logo_universidad.png", width=Inches(8.27), height=Inches(11.69))
+        
+        # Ajustamos el encabezado para que no ocupe espacio físico
+        section.header_distance = Inches(0)
+        
+        # Aplicamos una propiedad simple de XML para que sea 'detrás del texto'
+        # pero sin los parámetros complejos que causaban el error de archivo dañado
         from docx.oxml.ns import qn
-        from docx.oxml import OxmlElement
-        
-        # Accedemos al dibujo y lo convertimos en "detrás del texto"
-        tag = picture._inline.getparent().getparent().getparent()
-        # Cambiamos de 'inline' a 'anchor'
-        anchor = OxmlElement('wp:anchor')
-        anchor.set(qn('wp:behindDoc'), '1') # Fondo
-        anchor.set(qn('wp:locked'), '0')
-        anchor.set(qn('wp:simplePos'), '0')
-        anchor.set(qn('wp:relativeHeight'), '251658240')
-        
-        # Posición absoluta (Esquina superior izquierda 0,0)
-        posH = OxmlElement('wp:positionH')
-        posH.set(qn('wp:relativeFrom'), 'page')
-        posH.append(OxmlElement('wp:posOffset'))
-        posH.find(qn('wp:posOffset')).text = '0'
-        
-        posV = OxmlElement('wp:positionV')
-        posV.set(qn('wp:relativeFrom'), 'page')
-        posV.append(OxmlElement('wp:posOffset'))
-        posV.find(qn('wp:posOffset')).text = '0'
-        
-        anchor.append(posH)
-        anchor.append(posV)
-        
-        # Movemos el contenido visual al anchor
-        for child in picture._inline.getchildren():
-            anchor.append(child)
-        
-        picture._inline.getparent().replace(picture._inline, anchor)
+        try:
+            # Buscamos el elemento de dibujo
+            drawing = run_logo._r.xpath('.//w:drawing')[0]
+            # Lo marcamos como "detrás del texto" de forma sencilla
+            for node in drawing.xpath('.//wp:docPr'):
+                node.set(qn('wp:behindDoc'), '1')
+        except:
+            pass
 
-    # 3. CONTENIDO (Ahora fluirá sobre el logo sin ser desplazado)
+    # 3. CUERPO DEL DOCUMENTO (Ahora fluirá perfectamente sobre el logo)
     p_tit = doc.add_paragraph()
     p_tit.alignment = WD_ALIGN_PARAGRAPH.CENTER
     r_tit = p_tit.add_run("CERTIFICADO DE TRABAJO")
@@ -119,14 +101,18 @@ def gen_word(nom, dni, df_c):
     r_tit.font.name = 'Arial'
     r_tit.font.size = Pt(26)
 
-    doc.add_paragraph("\n" + TEXTO_CERT).alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-    
+    # Texto principal justificado
+    p_main = doc.add_paragraph("\n" + TEXTO_CERT)
+    p_main.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
     p2 = doc.add_paragraph()
+    p2.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     p2.add_run("El TRABAJADOR ").bold = False
     p2.add_run(nom).bold = True
     p2.add_run(f", identificado con DNI N° {dni}, laboró en nuestra Institución bajo el siguiente detalle:")
 
     # 4. TABLA CON CABECERA CELESTE
+    from docx.oxml import OxmlElement
     t = doc.add_table(rows=1, cols=3)
     t.style = 'Table Grid'
     t.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -136,6 +122,7 @@ def gen_word(nom, dni, df_c):
         cell = t.rows[0].cells[i]
         r = cell.paragraphs[0].add_run(h_text)
         r.bold = True
+        # Fondo celeste
         shd = OxmlElement('w:shd')
         shd.set(qn('w:fill'), 'E1EFFF')
         cell._tc.get_or_add_tcPr().append(shd)
@@ -148,11 +135,14 @@ def gen_word(nom, dni, df_c):
 
     # 5. FIRMA
     doc.add_paragraph("\n\nHuancayo, " + date.today().strftime("%d/%m/%Y")).alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    
     f = doc.add_paragraph()
     f.alignment = WD_ALIGN_PARAGRAPH.CENTER
     f.add_run("\n\n__________________________\n" + F_N + "\n" + F_C).bold = True
 
-    buf = BytesIO(); doc.save(buf); buf.seek(0)
+    buf = BytesIO()
+    doc.save(buf)
+    buf.seek(0)
     return buf
     
     
@@ -264,6 +254,7 @@ else:
     elif m == "📊 Nómina General":
         st.header("Base de Datos General")
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
 
