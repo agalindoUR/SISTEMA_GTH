@@ -55,12 +55,12 @@ def save_data(dfs):
 def gen_word(nom, dni, df_c):
     doc = Document()
     
-    # 1. Configuración de página A4 con márgenes de texto normales
+    # 1. Configuración de página A4
     section = doc.sections[0]
     section.page_height = Inches(11.69)
     section.page_width = Inches(8.27)
     
-    # Márgenes para el texto (el logo los ignorará)
+    # Márgenes para el texto (el logo los ignorará por ser absoluto)
     section.top_margin = Inches(1.8)
     section.bottom_margin = Inches(1.0)
     section.left_margin = Inches(1.2)
@@ -68,24 +68,21 @@ def gen_word(nom, dni, df_c):
 
     # 2. LOGO DE FONDO ABSOLUTO (ESQUINA A ESQUINA)
     if os.path.exists("logo_universidad.png"):
-        header = section.header
-        p_logo = header.paragraphs[0]
-        run_logo = p_logo.add_run()
-        
-        # Insertamos la imagen
-        picture = run_logo.add_picture("logo_universidad.png", width=Inches(8.27), height=Inches(11.69))
-        
-        # --- EL TRUCO DEFINITIVO: Convertir a posicionamiento flotante absoluto ---
         from docx.oxml import OxmlElement
         from docx.oxml.ns import qn
 
+        header = section.header
+        p_logo = header.paragraphs[0] if header.paragraphs else header.add_paragraph()
+        run_logo = p_logo.add_run()
+        
+        # Insertamos la imagen al tamaño total
+        picture = run_logo.add_picture("logo_universidad.png", width=Inches(8.27), height=Inches(11.69))
+        
         # Accedemos al elemento de dibujo
         drawing = picture._inline.getparent()
-        
-        # Cambiamos 'inline' por 'anchor' para que sea flotante
         anchor = OxmlElement('wp:anchor')
         
-        # Atributos para que esté detrás del texto y no lo mueva
+        # ATRIBUTOS CON PREFIJOS CORRECTOS (Evita el ValueError)
         anchor.set(qn('wp:behindDoc'), '1')
         anchor.set(qn('wp:locked'), '0')
         anchor.set(qn('wp:layoutInCell'), '1')
@@ -93,33 +90,26 @@ def gen_word(nom, dni, df_c):
         anchor.set(qn('wp:simplePos'), '0')
         anchor.set(qn('wp:relativeHeight'), '251658240')
 
-        # Posición Horizontal: Desde el borde izquierdo (0)
+        # Posición Horizontal (Desde el borde izquierdo absoluto)
         posH = OxmlElement('wp:positionH')
-        posH.set(qn('relativeFrom'), 'page') # 'page' es la clave para ignorar márgenes
-        posOffH = OxmlElement('wp:posOffset')
-        posOffH.text = '0'
-        posH.append(posOffH)
+        posH.set(qn('wp:relativeFrom'), 'page') # SE AGREGÓ 'wp:' PARA EVITAR EL ERROR
+        posOffH = OxmlElement('wp:posOffset'); posOffH.text = '0'; posH.append(posOffH)
         
-        # Posición Vertical: Desde el borde superior (0)
+        # Posición Vertical (Desde el borde superior absoluto)
         posV = OxmlElement('wp:positionV')
-        posV.set(qn('relativeFrom'), 'page')
-        posOffV = OxmlElement('wp:posOffset')
-        posOffV.text = '0'
-        posV.append(posOffV)
+        posV.set(qn('wp:relativeFrom'), 'page') # SE AGREGÓ 'wp:' PARA EVITAR EL ERROR
+        posOffV = OxmlElement('wp:posOffset'); posOffV.text = '0'; posV.append(posOffV)
 
-        anchor.append(posH)
-        anchor.append(posV)
+        anchor.append(posH); anchor.append(posV)
         
-        # Movemos el contenido del gráfico al nuevo contenedor flotante
+        # Transferimos el contenido del inline al anchor
         for child in picture._inline.getchildren():
             anchor.append(child)
         
         drawing.getparent().replace(drawing, anchor)
-        
-        # Reducimos el espacio del encabezado a cero
         section.header_distance = Inches(0)
 
-    # 3. CONTENIDO (Aparecerá ENCIMA del logo)
+    # 3. CONTENIDO (Aparecerá ENCIMA del logo sin desplazarse)
     p_tit = doc.add_paragraph()
     p_tit.alignment = WD_ALIGN_PARAGRAPH.CENTER
     r_tit = p_tit.add_run("CERTIFICADO DE TRABAJO")
@@ -269,6 +259,7 @@ else:
     elif m == "📊 Nómina General":
         st.header("Base de Datos General")
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
 
