@@ -11,12 +11,14 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 # =========================================================
 # --- 1. CONFIGURACIÓN, CONSTANTES Y DATOS DEL FIRMANTE ---
 # =========================================================
+# Modifica aquí los nombres, cargos y archivos base.
 DB = "DB_SISTEMA_GTH.xlsx"
 F_N = "MG. ARTURO JAVIER GALINDO MARTINEZ"
 F_C = "JEFE DE GESTIÓN DEL TALENTO HUMANO"
 TEXTO_CERT = "LA OFICINA DE GESTIÓN DE TALENTO HUMANO DE LA UNIVERSIDAD PRIVADA DE HUANCAYO “FRANKLIN ROOSEVELT”, CERTIFICA QUE:"
 MOTIVOS_CESE = ["Término de contrato", "Renuncia", "Despido", "Mutuo acuerdo", "Fallecimiento", "Otros"]
 
+# Definición de las hojas de Excel y sus columnas
 COLUMNAS = {
     "PERSONAL": ["dni", "apellidos y nombres", "link"],
     "DATOS GENERALES": ["apellidos y nombres", "dni", "dirección", "link de dirección", "estado civil", "fecha de nacimiento", "edad"],
@@ -33,9 +35,10 @@ COLUMNAS = {
 }
 
 # =========================================================
-# --- 2. FUNCIONES DE BASE DE DATOS ---
+# --- 2. FUNCIONES DE BASE DE DATOS (EXCEL) ---
 # =========================================================
 def load_data():
+    """Carga los datos desde Excel o crea el archivo si no existe."""
     if not os.path.exists(DB):
         with pd.ExcelWriter(DB) as w:
             for h, cols in COLUMNAS.items(): pd.DataFrame(columns=cols).to_excel(w, sheet_name=h, index=False)
@@ -50,6 +53,7 @@ def load_data():
     return dfs
 
 def save_data(dfs):
+    """Guarda todos los DataFrames en las pestañas correspondientes del Excel."""
     with pd.ExcelWriter(DB) as w:
         for h, df in dfs.items():
             df_s = df.copy()
@@ -60,12 +64,14 @@ def save_data(dfs):
 # --- 3. FUNCIÓN GENERADORA DEL CERTIFICADO (WORD) ---
 # =========================================================
 def gen_word(nom, dni, df_c):
+    """Crea el documento Word con encabezado y pie de página estirados."""
     doc = Document()
     section = doc.sections[0]
     section.page_height = Inches(11.69); section.page_width = Inches(8.27)
     section.top_margin = Inches(1.6); section.bottom_margin = Inches(1.2)
     section.left_margin = Inches(1.0); section.right_margin = Inches(1.0)
 
+    # Configuración de imágenes en bordes
     header = section.header
     section.header_distance = Inches(0)
     if os.path.exists("header.png"):
@@ -82,6 +88,7 @@ def gen_word(nom, dni, df_c):
         p_f.alignment = WD_ALIGN_PARAGRAPH.LEFT
         p_f.add_run().add_picture("footer.png", width=Inches(8.27))
 
+    # Título y Cuerpo
     p_tit = doc.add_paragraph()
     p_tit.alignment = WD_ALIGN_PARAGRAPH.CENTER
     r_tit = p_tit.add_run("CERTIFICADO DE TRABAJO")
@@ -93,6 +100,7 @@ def gen_word(nom, dni, df_c):
     p_inf.add_run(nom).bold = True
     p_inf.add_run(f", identificado con DNI N° {dni}, laboró bajo el siguiente detalle:")
 
+    # Tabla de historial laboral
     from docx.oxml import OxmlElement
     from docx.oxml.ns import qn
     t = doc.add_table(rows=1, cols=3); t.style = 'Table Grid'; t.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -108,56 +116,4 @@ def gen_word(nom, dni, df_c):
 
     doc.add_paragraph("\n\nHuancayo, " + date.today().strftime("%d/%m/%Y")).alignment = WD_ALIGN_PARAGRAPH.RIGHT
     f = doc.add_paragraph(); f.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    f.add_run("\n\n__________________________\n" + F_N + "\n" + F_C).bold = True
-
-    buf = BytesIO(); doc.save(buf); buf.seek(0)
-    return buf
-
-# =========================================================
-# --- 4. INTERFAZ Y DISEÑO VISUAL (STREAMLIT) ---
-# =========================================================
-st.set_page_config(page_title="GTH Roosevelt", layout="wide")
-
-st.markdown("""
-    <style>
-    .stApp { background: linear-gradient(135deg, #4a0000 0%, #800000 100%); }
-    .login-header { color: white; text-align: center; font-size: 35px; font-weight: bold; text-shadow: 2px 2px 4px #000; }
-    .login-welcome { color: #FFD700; text-align: center; font-size: 18px; margin-bottom: 30px; }
-    label { color: white !important; font-size: 20px !important; font-weight: bold; }
-    div[data-baseweb="input"] { width: 50% !important; margin: auto !important; }
-    div.stButton > button { background-color: #FFD700 !important; color: #4a0000 !important; font-size: 22px !important; font-weight: bold !important; width: 50%; display: block; margin: auto; border-radius: 10px; }
-    </style>
-""", unsafe_allow_html=True)
-
-if "rol" not in st.session_state: st.session_state.rol = None
-
-# --- LÓGICA DE LOGIN ---
-if st.session_state.rol is None:
-    st.markdown('<p class="login-header">UNIVERSIDAD ROOSEVELT - SISTEMA GTH</p>', unsafe_allow_html=True)
-    st.markdown('<p class="login-welcome">Bienvenido (a) al sistema de gestión de datos de los colaboradores de la Universidad Roosevelt</p>', unsafe_allow_html=True)
-    u = st.text_input("Usuario")
-    p = st.text_input("Contraseña", type="password")
-    if st.button("INGRESAR"):
-        if u.lower() == "admin": st.session_state.rol = "Admin"
-        elif u.lower() == "supervisor" and p == "123": st.session_state.rol = "Supervisor"
-        elif u.lower() == "lector" and p == "123": st.session_state.rol = "Lector"
-        else: st.error("Acceso denegado")
-        if st.session_state.rol: st.rerun()
-
-# --- SISTEMA PRINCIPAL ---
-else:
-    dfs = load_data()
-    es_lector = st.session_state.rol == "Lector"
-    m = st.sidebar.radio("MENÚ", ["🔍 Consulta", "➕ Registro", "📊 Nómina General"])
-    if st.sidebar.button("Cerrar Sesión"): st.session_state.rol = None; st.rerun()
-
-    if m == "🔍 Consulta":
-        dni_b = st.text_input("DNI del colaborador:").strip()
-        if dni_b:
-            pers = dfs["PERSONAL"][dfs["PERSONAL"]["dni"] == dni_b]
-            if not pers.empty:
-                nom_c = pers.iloc[0]["apellidos y nombres"]
-                st.header(f"👤 {nom_c}")
-                t_noms = ["Datos Generales", "Exp. Laboral", "Form. Académica", "Investigación", "Datos Familiares", "Contratos", "Vacaciones", "Otros Beneficios", "Méritos/Demer.", "Evaluación", "Liquidaciones"]
-                h_keys = ["DATOS GENERALES", "EXP. LABORAL", "FORM. ACADEMICA", "INVESTIGACION", "DATOS FAMILIARES", "CONTRATOS", "VACACIONES", "OTROS BENEFICIOS", "MERITOS Y DEMERITOS", "EVALUACION DEL DESEMPEÑO", "LIQUIDACIONES"]
-                tabs = st.tabs(t_noms
+    f.add_run("\n\n__________________________\n" + F_N + "\n" + F
