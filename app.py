@@ -63,75 +63,81 @@ def gen_word(nom, dni, df_c):
     # Márgenes para el TEXTO
     section.top_margin = Inches(1.6)
     section.bottom_margin = Inches(1.2)
-    section.left_margin = Inches(1.0)
-    section.right_margin = Inches(1.0)
+    section.left_margin = Inches(1.2)
+    section.right_margin = Inches(1.2)
 
-    # 2. ENCABEZADO (Header) - ESTIRADO TOTAL
+    # 2. ENCABEZADO Y PIE (Estirados de borde a borde)
     header = section.header
-    section.header_distance = Inches(0) # Pegado arriba
+    footer = section.footer
+    section.header_distance = Inches(0)
+    section.footer_distance = Inches(0)
+
     if os.path.exists("header.png"):
         p_h = header.paragraphs[0]
-        # TRUCO: Margen negativo para anular el margen izquierdo de la página
-        p_h.paragraph_format.left_indent = Inches(-1.0) 
-        p_h.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        p_h.paragraph_format.left_indent = Inches(-1.2) # Anula margen izquierdo
         run_h = p_h.add_run()
-        # Ancho exacto de una hoja A4
         run_h.add_picture("header.png", width=Inches(8.27))
 
-    # 3. PIE DE PÁGINA (Footer) - ESTIRADO TOTAL
-    footer = section.footer
-    section.footer_distance = Inches(0) # Pegado abajo
     if os.path.exists("footer.png"):
         p_f = footer.paragraphs[0]
-        # TRUCO: Margen negativo igual que el encabezado
-        p_f.paragraph_format.left_indent = Inches(-1.0)
-        p_f.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        p_f.paragraph_format.left_indent = Inches(-1.2) # Anula margen izquierdo
         run_f = p_f.add_run()
         run_f.add_picture("footer.png", width=Inches(8.27))
 
-    # 4. IMAGEN DE LA DERECHA (Como objeto flotante en el encabezado)
-    if os.path.exists("logo_derecha.png"):
-        # La agregamos al encabezado para que no mueva el texto del cuerpo
-        p_d = header.add_paragraph()
-        run_d = p_d.add_run()
-        img_d = run_d.add_picture("logo_derecha.png", width=Inches(1.5))
+    # 3. IMAGEN FONDO DERECHA (Marca de agua absoluta)
+    if os.path.exists("fondo_derecha.png"):
+        from docx.oxml import OxmlElement
+        from docx.oxml.ns import qn
         
-        # Ajuste simple para que no empuje el encabezado hacia abajo
-        p_d.paragraph_format.line_spacing = Pt(1)
-        p_d.paragraph_format.space_after = Pt(0)
-        # Alineación a la derecha
-        p_d.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        # La ponemos en el encabezado para que flote detrás de todo
+        p_bg = header.add_paragraph()
+        run_bg = p_bg.add_run()
+        img_bg = run_bg.add_picture("fondo_derecha.png", height=Inches(11.69)) # Alto total
+        
+        # XML para moverla a la derecha absoluta
+        drawing = img_bg._inline.getparent()
+        anchor = OxmlElement('wp:anchor')
+        anchor.set(qn('wp:behindDoc'), '1') # Detrás del texto
+        anchor.set(qn('wp:locked'), '0')
+        anchor.set(qn('wp:simplePos'), '0')
+        anchor.set(qn('wp:relativeHeight'), '251658240')
 
-    # 5. CONTENIDO DEL CERTIFICADO
-    # Espaciado inicial para no chocar con el header
-    doc.add_paragraph("\n") 
-    
+        # Posición Horizontal: Pegado a la DERECHA de la página
+        posH = OxmlElement('wp:positionH')
+        posH.set(qn('wp:relativeFrom'), 'page')
+        posOffH = OxmlElement('wp:posOffset')
+        # Calculamos: Ancho hoja (8.27) - Ancho imagen (ej. 1.5) = Offset para que pegue a la derecha
+        # Si quieres que se pegue al borde, el offset debe ser alto. 
+        # Probemos con 6.7 pulgadas para que quede al borde derecho.
+        posOffH.text = str(int(Inches(6.7))) 
+        posH.append(posOffH)
+        
+        # Posición Vertical: Desde el tope (0)
+        posV = OxmlElement('wp:positionV')
+        posV.set(qn('wp:relativeFrom'), 'page')
+        posOffV = OxmlElement('wp:posOffset'); posOffV.text = '0'; posV.append(posOffV)
+
+        anchor.append(posH); anchor.append(posV)
+        for child in img_bg._inline.getchildren(): anchor.append(child)
+        drawing.getparent().replace(drawing, anchor)
+
+    # 4. CUERPO DEL DOCUMENTO
+    doc.add_paragraph("\n")
     p_tit = doc.add_paragraph()
     p_tit.alignment = WD_ALIGN_PARAGRAPH.CENTER
     r_tit = p_tit.add_run("CERTIFICADO DE TRABAJO")
     r_tit.bold = True; r_tit.font.name = 'Arial'; r_tit.font.size = Pt(24)
 
-    p_txt = doc.add_paragraph("\n" + TEXTO_CERT)
-    p_txt.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    doc.add_paragraph("\n" + TEXTO_CERT).alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
 
-    p_inf = doc.add_paragraph()
-    p_inf.add_run("El TRABAJADOR ").bold = False
-    p_inf.add_run(nom).bold = True
-    p_inf.add_run(f", identificado con DNI N° {dni}, laboró bajo el siguiente detalle:")
-
-    # 6. TABLA (Manteniendo tu diseño celeste)
+    # (Tabla y firmas se mantienen igual que tu código anterior...)
     t = doc.add_table(rows=1, cols=3)
     t.style = 'Table Grid'
     t.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    
     for i, h in enumerate(["CARGO", "FECHA INICIO", "FECHA FIN"]):
         cell = t.rows[0].cells[i]
-        r = cell.paragraphs[0].add_run(h)
-        r.bold = True
-        from docx.oxml import OxmlElement
-        from docx.oxml.ns import qn
-        shd = OxmlElement('w:shd')
-        shd.set(qn('w:fill'), 'E1EFFF')
+        r = cell.paragraphs[0].add_run(h); r.bold = True
+        shd = OxmlElement('w:shd'); shd.set(qn('w:fill'), 'E1EFFF')
         cell._tc.get_or_add_tcPr().append(shd)
 
     for _, fila in df_c.iterrows():
@@ -140,10 +146,8 @@ def gen_word(nom, dni, df_c):
         celdas[1].text = pd.to_datetime(fila.get('f_inicio')).strftime('%d/%m/%Y') if pd.notnull(fila.get('f_inicio')) else ""
         celdas[2].text = pd.to_datetime(fila.get('f_fin')).strftime('%d/%m/%Y') if pd.notnull(fila.get('f_fin')) else ""
 
-    # 7. CIERRE Y FIRMA
     doc.add_paragraph("\n\nHuancayo, " + date.today().strftime("%d/%m/%Y")).alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    f = doc.add_paragraph()
-    f.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    f = doc.add_paragraph(); f.alignment = WD_ALIGN_PARAGRAPH.CENTER
     f.add_run("\n\n__________________________\n" + F_N + "\n" + F_C).bold = True
 
     buf = BytesIO(); doc.save(buf); buf.seek(0)
@@ -258,6 +262,7 @@ else:
     elif m == "📊 Nómina General":
         st.header("Base de Datos General")
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
 
