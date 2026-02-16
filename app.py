@@ -55,28 +55,48 @@ def save_data(dfs):
 def gen_word(nom, dni, df_c):
     doc = Document()
     
-    # --- CONFIGURACIÓN DEL LOGO COMO FONDO (ENCABEZADO) ---
+    # --- CONFIGURACIÓN DE LA MARCA DE AGUA (FONDO TOTAL) ---
     if os.path.exists("logo_universidad.png"):
         section = doc.sections[0]
         header = section.header
-        # Limpiamos párrafos vacíos en el encabezado si los hay
-        p_logo = header.paragraphs[0]
-        p_logo.alignment = 1 # Centrado
+        paragraph = header.paragraphs[0]
+        run = paragraph.add_run()
         
-        run_logo = p_logo.add_run()
-        # Insertamos la imagen
-        imagen = run_logo.add_picture("logo_universidad.png", width=Inches(2.5))
+        # Insertamos la imagen con un tamaño grande para que cubra la hoja
+        # Puedes ajustar el width (ancho) según necesites
+        imagen = run.add_picture("logo_universidad.png", width=Inches(6.0))
         
-        # --- ESTA ES LA MAGIA: Hacer que la imagen flote detrás del texto ---
-        from docx.oxml.ns import qn
+        # --- LÓGICA PARA QUE SEA MARCA DE AGUA (DETRÁS DEL TEXTO) ---
         from docx.oxml import OxmlElement
+        from docx.oxml.ns import qn
+
+        # Accedemos a la definición de la forma de la imagen
+        el = imagen._inline.getparent().getparent().getparent()
         
-        # Accedemos al XML de la imagen para cambiar su disposición a 'detrás del texto'
-        tag = imagen._inline.getparent().getparent().getparent()
-        # Cambiamos de Inline (en línea) a Floating (flotante)
-        # Esto evita que el título "CERTIFICADO DE TRABAJO" se mueva hacia abajo
-    
-    # --- TÍTULO (Ahora no se moverá) ---
+        # Cambiamos el tipo de "inline" (en línea) a "anchor" (flotante)
+        anchor = OxmlElement('wp:anchor')
+        anchor.set(qn('wp:distT'), '0'); anchor.set(qn('wp:distB'), '0')
+        anchor.set(qn('wp:distL'), '0'); anchor.set(qn('wp:distR'), '0')
+        anchor.set(qn('wp:simplePos'), '0'); anchor.set(qn('wp:relativeHeight'), '251658240')
+        anchor.set(qn('wp:behindDoc'), '1') # ESTO LO PONE DETRÁS DEL TEXTO
+        anchor.set(qn('wp:locked'), '0'); anchor.set(qn('wp:layoutInCell'), '1'); anchor.set(qn('wp:allowOverlap'), '1')
+
+        # Posicionamiento centrado en la página
+        simplePos = OxmlElement('wp:simplePos'); simplePos.set(qn('x'), '0'); simplePos.set(qn('y'), '0')
+        positionH = OxmlElement('wp:positionH'); positionH.set(qn('relativeFrom'), 'page')
+        posOffsetH = OxmlElement('wp:posOffset'); posOffsetH.text = '700000' # Ajuste horizontal (centrado)
+        positionH.append(posOffsetH)
+        
+        positionV = OxmlElement('wp:positionV'); positionV.set(qn('relativeFrom'), 'page')
+        posOffsetV = OxmlElement('wp:posOffset'); posOffsetV.text = '1500000' # Ajuste vertical (centrado)
+        positionV.append(posOffsetV)
+
+        # Reemplazamos el elemento inline por el flotante
+        anchor.append(simplePos); anchor.append(positionH); anchor.append(positionV)
+        for child in el.getchildren(): anchor.append(child)
+        el.getparent().replace(el, anchor)
+
+    # --- CONTENIDO DEL CERTIFICADO (YA NO SE MOVERÁ) ---
     p = doc.add_paragraph()
     p.alignment = 1 
     r = p.add_run("CERTIFICADO DE TRABAJO")
@@ -84,27 +104,30 @@ def gen_word(nom, dni, df_c):
     r.font.name = 'Arial'
     r.font.size = Pt(24) 
 
-    # ... (El resto del código de cuerpo, tabla y firma se mantiene igual)
-
     doc.add_paragraph("\n" + TEXTO_CERT)
+    
     p2 = doc.add_paragraph()
     p2.add_run("El TRABAJADOR ").bold = False
     p2.add_run(nom).bold = True
     p2.add_run(f", identificado con DNI N° {dni}, laboró en nuestra Institución bajo el siguiente detalle:")
 
+    # --- TABLA DE CONTRATOS ---
     t = doc.add_table(rows=1, cols=3)
     t.style = 'Table Grid'
-    for i, col in enumerate(["CARGO", "FECHA INICIO", "FECHA FIN"]): t.rows[0].cells[i].text = col
+    for i, col in enumerate(["CARGO", "FECHA INICIO", "FECHA FIN"]):
+        t.rows[0].cells[i].text = col
+
     for _, fila in df_c.iterrows():
         celdas = t.add_row().cells
         celdas[0].text = str(fila.get('cargo', ''))
         celdas[1].text = pd.to_datetime(fila.get('f_inicio')).strftime('%d/%m/%Y') if pd.notnull(fila.get('f_inicio')) else ""
         celdas[2].text = pd.to_datetime(fila.get('f_fin')).strftime('%d/%m/%Y') if pd.notnull(fila.get('f_fin')) else ""
 
+    # --- FIRMA ---
     doc.add_paragraph("\n\nHuancayo, " + date.today().strftime("%d/%m/%Y")).alignment = 2
     f = doc.add_paragraph(); f.alignment = 1
     f.add_run("\n\n\n__________________________\n" + F_N + "\n" + F_C).bold = True
-    
+
     buf = BytesIO(); doc.save(buf); buf.seek(0)
     return buf
 
@@ -221,6 +244,7 @@ else:
     elif m == "📊 Nómina General":
         st.header("Base de Datos General")
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
 
