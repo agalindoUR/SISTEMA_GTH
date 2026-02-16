@@ -30,87 +30,120 @@ COLUMNAS = {
     "LIQUIDACIONES": ["periodo", "firmo", "link"]
 }
 # =========================================================
-# --- PARTE 2: DISEÑO VISUAL Y SISTEMA DE LOGIN ---
+# --- PARTE 2: DISEÑO VISUAL, LOGIN Y FUNCIONES ---
 # =========================================================
 
-# Configuramos la página y los estilos visuales (CSS)
+# 1. Configuración de página y Estilos CSS
 st.set_page_config(page_title="GTH Roosevelt", layout="wide")
 
 st.markdown("""
     <style>
-    /* Fondo con degradado guindo */
+    /* Fondo guindo institucional */
     .stApp { 
         background: linear-gradient(135deg, #4a0000 0%, #800000 100%); 
     }
     
-    /* Título principal blanco y grande */
+    /* Título principal arriba */
     .login-header { 
         color: white; 
         text-align: center; 
-        font-size: 40px; 
+        font-size: 42px; 
         font-weight: bold; 
         text-shadow: 2px 2px 4px #000; 
-        margin-top: 50px; 
+        margin-top: 40px;
+        margin-bottom: 40px;
     }
     
-    /* Mensaje de bienvenida amarillo */
+    /* Mensaje de bienvenida amarillo (ahora para usar debajo) */
     .login-welcome { 
         color: #FFD700; 
         text-align: center; 
-        font-size: 22px; 
-        margin-bottom: 30px; 
+        font-size: 20px; 
+        margin-top: 20px;
+        margin-bottom: 20px;
+        font-style: italic;
     }
     
-    /* Etiquetas de Usuario y Contraseña más grandes y blancas */
+    /* Texto de etiquetas */
     label { 
         color: white !important; 
-        font-size: 24px !important; 
+        font-size: 22px !important; 
         font-weight: bold !important; 
     }
     
-    /* Estilo para el botón INGRESAR (Amarillo, letras grandes) */
+    /* Botón INGRESAR grande y llamativo */
     div.stButton > button { 
         background-color: #FFD700 !important; 
         color: #4a0000 !important; 
-        font-size: 26px !important; 
+        font-size: 24px !important; 
         font-weight: bold !important; 
         width: 100%; 
-        height: 60px;
-        border-radius: 15px; 
-        border: none;
+        height: 55px;
+        border-radius: 12px; 
+        border: 2px solid #b8860b;
+        transition: 0.3s;
+    }
+    div.stButton > button:hover {
+        transform: scale(1.02);
+        background-color: #fceabb !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# Inicializamos la sesión si no existe
+# 2. Funciones de Gestión de Datos (Excel)
+def load_data():
+    if not os.path.exists(DB):
+        with pd.ExcelWriter(DB) as w:
+            for h, cols in COLUMNAS.items(): 
+                pd.DataFrame(columns=cols).to_excel(w, sheet_name=h, index=False)
+    dfs = {}
+    with pd.ExcelFile(DB) as x:
+        for h in COLUMNAS.keys():
+            df = pd.read_excel(x, h) if h in x.sheet_names else pd.DataFrame(columns=COLUMNAS[h])
+            df.columns = [str(c).strip().lower() for c in df.columns]
+            if "dni" in df.columns:
+                df["dni"] = df["dni"].astype(str).str.strip().replace(r'\.0$', '', regex=True)
+            dfs[h] = df
+    return dfs
+
+def save_data(dfs):
+    with pd.ExcelWriter(DB) as w:
+        for h, df in dfs.items():
+            df_s = df.copy()
+            df_s.columns = [c.upper() for c in df_s.columns]
+            df_s.to_excel(w, sheet_name=h, index=False)
+
+# 3. Lógica de Control de Sesión y Pantalla de Login
 if "rol" not in st.session_state:
     st.session_state.rol = None
 
-# Bloque de Login
 if st.session_state.rol is None:
+    # Título en la parte superior
     st.markdown('<p class="login-header">UNIVERSIDAD ROOSEVELT - SISTEMA GTH</p>', unsafe_allow_html=True)
-    st.markdown('<p class="login-welcome">Bienvenido (a) al sistema de gestión de datos de los colaboradores</p>', unsafe_allow_html=True)
     
-    # Centramos el formulario
-    col1, col2, col3 = st.columns([1, 2, 1])
+    col1, col2, col3 = st.columns([1, 1.5, 1])
     with col2:
+        # Campos de entrada
         u = st.text_input("USUARIO")
         p = st.text_input("CONTRASEÑA", type="password")
+        
+        # Mensaje de bienvenida DEBAJO de los campos
+        st.markdown('<p class="login-welcome">Bienvenido (a) al sistema de gestión de datos de los colaboradores</p>', unsafe_allow_html=True)
+        
+        # Botón de ingreso
         if st.button("INGRESAR"):
-            if u.lower() == "admin": 
+            u_low = u.lower().strip()
+            if u_low == "admin": 
                 st.session_state.rol = "Admin"
-            elif u.lower() == "supervisor" and p == "123": 
+            elif u_low == "supervisor" and p == "123": 
                 st.session_state.rol = "Supervisor"
-            elif u.lower() == "lector" and p == "123": 
+            elif u_low == "lector" and p == "123": 
                 st.session_state.rol = "Lector"
             else: 
-                st.error("Acceso denegado: Usuario o contraseña incorrectos")
+                st.error("Credenciales incorrectas. Intente nuevamente.")
             
             if st.session_state.rol:
                 st.rerun()
-
-# --- FIN DE PARTE 2 ---
-
 
 # --- 2. FUNCIONES DE DATOS ---
 def load_data():
@@ -333,4 +366,5 @@ else:
     elif m == "📊 Nómina General":
         st.header("Base de Datos General")
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
