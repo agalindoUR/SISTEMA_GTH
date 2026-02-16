@@ -55,74 +55,92 @@ def save_data(dfs):
 def gen_word(nom, dni, df_c):
     doc = Document()
     
-    # 1. Configuración de página A4 con márgenes de texto reales
+    # 1. Configuración de página A4 con márgenes de texto normales
     section = doc.sections[0]
     section.page_height = Inches(11.69)
     section.page_width = Inches(8.27)
     
-    # Estos márgenes protegen tu texto para que no toque los bordes del papel
-    section.top_margin = Inches(1.8)    # Espacio para el logo superior
+    # Márgenes para el texto (el logo los ignorará)
+    section.top_margin = Inches(1.8)
     section.bottom_margin = Inches(1.0)
     section.left_margin = Inches(1.2)
     section.right_margin = Inches(1.2)
 
-    # 2. LOGO COMO FONDO (Método de Marca de Agua Estable)
+    # 2. LOGO DE FONDO ABSOLUTO (ESQUINA A ESQUINA)
     if os.path.exists("logo_universidad.png"):
         header = section.header
-        # El secreto: La imagen va en el header para que Word la trate como fondo
-        p_logo = header.paragraphs[0] if header.paragraphs else header.add_paragraph()
-        p_logo.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p_logo = header.paragraphs[0]
         run_logo = p_logo.add_run()
         
-        # Insertamos la imagen al tamaño total de la hoja
-        # Al estar en el header, Word permite que el texto del body pase "por encima"
-        run_logo.add_picture("logo_universidad.png", width=Inches(8.27), height=Inches(11.69))
+        # Insertamos la imagen
+        picture = run_logo.add_picture("logo_universidad.png", width=Inches(8.27), height=Inches(11.69))
         
-        # Ajustamos el encabezado para que no ocupe espacio físico
-        section.header_distance = Inches(0)
-        
-        # Aplicamos una propiedad simple de XML para que sea 'detrás del texto'
-        # pero sin los parámetros complejos que causaban el error de archivo dañado
+        # --- EL TRUCO DEFINITIVO: Convertir a posicionamiento flotante absoluto ---
+        from docx.oxml import OxmlElement
         from docx.oxml.ns import qn
-        try:
-            # Buscamos el elemento de dibujo
-            drawing = run_logo._r.xpath('.//w:drawing')[0]
-            # Lo marcamos como "detrás del texto" de forma sencilla
-            for node in drawing.xpath('.//wp:docPr'):
-                node.set(qn('wp:behindDoc'), '1')
-        except:
-            pass
 
-    # 3. CUERPO DEL DOCUMENTO (Ahora fluirá perfectamente sobre el logo)
+        # Accedemos al elemento de dibujo
+        drawing = picture._inline.getparent()
+        
+        # Cambiamos 'inline' por 'anchor' para que sea flotante
+        anchor = OxmlElement('wp:anchor')
+        
+        # Atributos para que esté detrás del texto y no lo mueva
+        anchor.set(qn('wp:behindDoc'), '1')
+        anchor.set(qn('wp:locked'), '0')
+        anchor.set(qn('wp:layoutInCell'), '1')
+        anchor.set(qn('wp:allowOverlap'), '1')
+        anchor.set(qn('wp:simplePos'), '0')
+        anchor.set(qn('wp:relativeHeight'), '251658240')
+
+        # Posición Horizontal: Desde el borde izquierdo (0)
+        posH = OxmlElement('wp:positionH')
+        posH.set(qn('relativeFrom'), 'page') # 'page' es la clave para ignorar márgenes
+        posOffH = OxmlElement('wp:posOffset')
+        posOffH.text = '0'
+        posH.append(posOffH)
+        
+        # Posición Vertical: Desde el borde superior (0)
+        posV = OxmlElement('wp:positionV')
+        posV.set(qn('relativeFrom'), 'page')
+        posOffV = OxmlElement('wp:posOffset')
+        posOffV.text = '0'
+        posV.append(posOffV)
+
+        anchor.append(posH)
+        anchor.append(posV)
+        
+        # Movemos el contenido del gráfico al nuevo contenedor flotante
+        for child in picture._inline.getchildren():
+            anchor.append(child)
+        
+        drawing.getparent().replace(drawing, anchor)
+        
+        # Reducimos el espacio del encabezado a cero
+        section.header_distance = Inches(0)
+
+    # 3. CONTENIDO (Aparecerá ENCIMA del logo)
     p_tit = doc.add_paragraph()
     p_tit.alignment = WD_ALIGN_PARAGRAPH.CENTER
     r_tit = p_tit.add_run("CERTIFICADO DE TRABAJO")
-    r_tit.bold = True
-    r_tit.font.name = 'Arial'
-    r_tit.font.size = Pt(26)
+    r_tit.bold = True; r_tit.font.name = 'Arial'; r_tit.font.size = Pt(26)
 
-    # Texto principal justificado
-    p_main = doc.add_paragraph("\n" + TEXTO_CERT)
-    p_main.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-
+    doc.add_paragraph("\n" + TEXTO_CERT).alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    
     p2 = doc.add_paragraph()
-    p2.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     p2.add_run("El TRABAJADOR ").bold = False
     p2.add_run(nom).bold = True
     p2.add_run(f", identificado con DNI N° {dni}, laboró en nuestra Institución bajo el siguiente detalle:")
 
     # 4. TABLA CON CABECERA CELESTE
-    from docx.oxml import OxmlElement
     t = doc.add_table(rows=1, cols=3)
     t.style = 'Table Grid'
     t.alignment = WD_ALIGN_PARAGRAPH.CENTER
     
-    headers = ["CARGO", "FECHA INICIO", "FECHA FIN"]
-    for i, h_text in enumerate(headers):
+    for i, h in enumerate(["CARGO", "FECHA INICIO", "FECHA FIN"]):
         cell = t.rows[0].cells[i]
-        r = cell.paragraphs[0].add_run(h_text)
+        r = cell.paragraphs[0].add_run(h)
         r.bold = True
-        # Fondo celeste
         shd = OxmlElement('w:shd')
         shd.set(qn('w:fill'), 'E1EFFF')
         cell._tc.get_or_add_tcPr().append(shd)
@@ -135,14 +153,11 @@ def gen_word(nom, dni, df_c):
 
     # 5. FIRMA
     doc.add_paragraph("\n\nHuancayo, " + date.today().strftime("%d/%m/%Y")).alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    
     f = doc.add_paragraph()
     f.alignment = WD_ALIGN_PARAGRAPH.CENTER
     f.add_run("\n\n__________________________\n" + F_N + "\n" + F_C).bold = True
 
-    buf = BytesIO()
-    doc.save(buf)
-    buf.seek(0)
+    buf = BytesIO(); doc.save(buf); buf.seek(0)
     return buf
     
     
@@ -254,6 +269,7 @@ else:
     elif m == "📊 Nómina General":
         st.header("Base de Datos General")
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
 
