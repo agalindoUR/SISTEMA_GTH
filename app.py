@@ -182,24 +182,32 @@ else:
                             c_df = pd.DataFrame(columns=COLUMNAS[h_name])
                         
                         # --- BUSCA ESTA PARTE EN TU CÓDIGO ---
+# --- BLOQUE DE CONTRATOS CORREGIDO ---
 if h_name == "CONTRATOS":
+    # 1. Botón de certificado (Si hay datos)
     if not c_df.empty:
-        # Generamos el archivo primero
-        doc_download = gen_word(nom_c, dni_b, c_df)
-        
-        # Botón con configuración reforzada para Brave
         st.download_button(
             label="📄 Generar Word Certificado",
-            data=doc_download,
-            file_name=f"Certificado_{dni_b}.docx",
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            use_container_width=True
+            data=gen_word(nom_c, dni_b, c_df),
+            file_name=f"Cert_{dni_b}.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
-                            
-                            vst = c_df.copy()
-                            vst.insert(0, "Sel", False)
-                            ed = st.data_editor(vst, hide_index=True, use_container_width=True, key=f"ed_{h_name}", disabled=es_lector)
-                            sel = ed[ed["Sel"] == True]
+    
+    # 2. Preparar la tabla para mostrar (Aquí estaba el error de espacios)
+    vst = c_df.copy()
+    vst.insert(0, "Sel", False) # Añade la columna de selección
+    
+    # 3. Mostrar el editor de datos
+    ed = st.data_editor(
+        vst, 
+        hide_index=True, 
+        use_container_width=True, 
+        key=f"ed_{h_name}", 
+        disabled=es_lector
+    )
+    
+    # 4. Filtrar lo que el usuario seleccionó
+    sel = ed[ed["Sel"] == True]
 
                             if not es_lector:
                                 c1, c2 = st.columns(2)
@@ -246,6 +254,7 @@ if h_name == "CONTRATOS":
     elif m == "📊 Nómina General":
         st.header("Base de Datos General de Personal")
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
 
