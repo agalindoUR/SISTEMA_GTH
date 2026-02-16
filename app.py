@@ -183,19 +183,56 @@ else:
                         
                         # --- BUSCA ESTA PARTE EN TU CÓDIGO ---
 # --- BLOQUE DE CONTRATOS CORREGIDO ---
-if h_name == "CONTRATOS":
-    # 1. Botón de certificado (Si hay datos)
-    if not c_df.empty:
-        st.download_button(
-            label="📄 Generar Word Certificado",
-            data=gen_word(nom_c, dni_b, c_df),
-            file_name=f"Cert_{dni_b}.docx",
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        )
-    
-    # 2. Preparar la tabla para mostrar (Aquí estaba el error de espacios)
-    vst = c_df.copy()
-    vst.insert(0, "Sel", False) # Añade la columna de selección
+# ... (dentro de if h_name == "CONTRATOS":)
+
+        # 1. Mostrar la tabla con selección
+        vst = c_df.copy()
+        vst.insert(0, "Sel", False)
+        ed = st.data_editor(vst, hide_index=True, use_container_width=True, key=f"ed_{h_name}")
+        sel = ed[ed["Sel"] == True]
+
+        # 2. Bloque de Edición y Eliminación (Alineado correctamente)
+        with st.expander("📝 Editar / Eliminar Seleccionado"):
+            if not sel.empty:
+                with st.form("form_edicion"):
+                    st.write("### Editar Contrato")
+                    
+                    # Campos de edición
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        n_cargo = st.text_input("Cargo", value=sel.iloc[0]["cargo"])
+                        n_sueldo = st.number_input("Sueldo", value=float(sel.iloc[0]["sueldo"]))
+                        n_ini = st.date_input("F. Inicio", value=pd.to_datetime(sel.iloc[0]["f_inicio"]))
+                    with c2:
+                        n_fin = st.date_input("F. Fin", value=pd.to_datetime(sel.iloc[0]["f_fin"]))
+                        n_tipo = st.selectbox("Tipo", ["Docente", "Administrativo"], index=0 if sel.iloc[0]["tipo"]=="Docente" else 1)
+                    
+                    # Lógica automática de Estado y Motivo de Cese 
+                    estado_auto = "ACTIVO" if n_fin >= date.today() else "CESADO"
+                    st.info(f"Estado calculado: {estado_auto}")
+                    
+                    n_motivo = "Vigente"
+                    if estado_auto == "CESADO":
+                        n_motivo = st.selectbox("Motivo Cese (Obligatorio)", MOTIVOS_CESE) [cite: 51, 53]
+
+                    if st.form_submit_button("✅ Actualizar y Guardar"):
+                        idx = sel.index[0]
+                        dfs[h_name].at[idx, "cargo"] = n_cargo
+                        dfs[h_name].at[idx, "sueldo"] = n_sueldo
+                        dfs[h_name].at[idx, "f_inicio"] = n_ini
+                        dfs[h_name].at[idx, "f_fin"] = n_fin
+                        dfs[h_name].at[idx, "estado"] = estado_auto
+                        dfs[h_name].at[idx, "motivo cese"] = n_motivo
+                        save_data(dfs) [cite: 52, 54]
+                        st.success("Contrato actualizado correctamente.")
+                        st.rerun()
+
+                if st.button("🚨 Eliminar Contrato Seleccionado"):
+                    dfs[h_name] = dfs[h_name].drop(sel.index) [cite: 55]
+                    save_data(dfs)
+                    st.rerun()
+            else:
+                st.info("Seleccione un contrato en la tabla superior para editarlo.")
     
     # 3. Mostrar el editor de datos
     ed = st.data_editor(
@@ -254,6 +291,7 @@ if h_name == "CONTRATOS":
     elif m == "📊 Nómina General":
         st.header("Base de Datos General de Personal")
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
 
