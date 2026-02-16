@@ -145,27 +145,6 @@ if st.session_state.rol is None:
             if st.session_state.rol:
                 st.rerun()
 
-# --- 2. FUNCIONES DE DATOS ---
-def load_data():
-    if not os.path.exists(DB):
-        with pd.ExcelWriter(DB) as w:
-            for h, cols in COLUMNAS.items(): pd.DataFrame(columns=cols).to_excel(w, sheet_name=h, index=False)
-    dfs = {}
-    with pd.ExcelFile(DB) as x:
-        for h in COLUMNAS.keys():
-            df = pd.read_excel(x, h) if h in x.sheet_names else pd.DataFrame(columns=COLUMNAS[h])
-            df.columns = [str(c).strip().lower() for c in df.columns]
-            if "dni" in df.columns:
-                df["dni"] = df["dni"].astype(str).str.strip().replace(r'\.0$', '', regex=True)
-            dfs[h] = df
-    return dfs
-
-def save_data(dfs):
-    with pd.ExcelWriter(DB) as w:
-        for h, df in dfs.items():
-            df_s = df.copy()
-            df_s.columns = [c.upper() for c in df_s.columns]
-            df_s.to_excel(w, sheet_name=h, index=False)
 
 def gen_word(nom, dni, df_c):
     doc = Document()
@@ -257,21 +236,6 @@ def gen_word(nom, dni, df_c):
     buf.seek(0)
     return buf
 
-
-# --- 3. INTERFAZ (Se mantiene todo lo demás intacto) ---
-st.set_page_config(page_title="GTH Roosevelt", layout="wide")
-if "rol" not in st.session_state: st.session_state.rol = None
-
-if st.session_state.rol is None:
-    st.markdown("<h2 style='text-align:center;'>UNIVERSIDAD ROOSEVELT - SISTEMA GTH</h2>", unsafe_allow_html=True)
-    u = st.text_input("Usuario")
-    p = st.text_input("Contraseña", type="password")
-    if st.button("Ingresar"):
-        if u.lower() == "admin": st.session_state.rol = "Admin"
-        elif u.lower() == "supervisor" and p == "123": st.session_state.rol = "Supervisor"
-        elif u.lower() == "lector" and p == "123": st.session_state.rol = "Lector"
-        else: st.error("Acceso denegado")
-        if st.session_state.rol: st.rerun()
 else:
     dfs = load_data()
     es_lector = st.session_state.rol == "Lector"
@@ -366,5 +330,6 @@ else:
     elif m == "📊 Nómina General":
         st.header("Base de Datos General")
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
