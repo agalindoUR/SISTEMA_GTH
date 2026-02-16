@@ -55,82 +55,56 @@ def save_data(dfs):
 def gen_word(nom, dni, df_c):
     doc = Document()
     
-    # 1. Configuración de página A4
+    # 1. Configuración de página A4 con márgenes mínimos
     section = doc.sections[0]
     section.page_height = Inches(11.69)
     section.page_width = Inches(8.27)
     
-    # Márgenes de seguridad para el texto
-    section.top_margin = Inches(1.5)
-    section.bottom_margin = Inches(1.0)
-    section.left_margin = Inches(1.0)
-    section.right_margin = Inches(1.0)
+    # Márgenes de la hoja
+    section.top_margin = Inches(0.5)
+    section.bottom_margin = Inches(0.5)
+    section.left_margin = Inches(0.5)
+    section.right_margin = Inches(0.5)
 
-    # 2. Logo de fondo (De esquina a esquina)
+    # 2. Logo como fondo usando el Header (Forma estable)
     if os.path.exists("logo_universidad.png"):
-        from docx.oxml import OxmlElement
-        from docx.oxml.ns import qn
-
         header = section.header
-        # Limpiamos párrafos existentes en el header para evitar duplicados
-        for p in header.paragraphs:
-            p.text = ""
-        p = header.paragraphs[0]
-        run = p.add_run()
+        p_logo = header.paragraphs[0]
+        p_logo.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run_logo = p_logo.add_run()
+        # El ancho total de la hoja es 8.27, usamos 8.2 para evitar errores de borde
+        run_logo.add_picture("logo_universidad.png", width=Inches(8.2))
         
-        # Insertamos la imagen al tamaño total de la hoja
-        imagen = run.add_picture("logo_universidad.png", width=Inches(8.27), height=11.69)
-        
-        # --- AJUSTE XML PARA FONDO ABSOLUTO ---
-        drawing = imagen._inline.getparent()
-        anchor = OxmlElement('wp:anchor')
-        
-        # Atributos esenciales con prefijos manuales para evitar el ValueError
-        anchor.set(qn('wp:behindDoc'), '1')
-        anchor.set(qn('wp:locked'), '0')
-        anchor.set(qn('wp:layoutInCell'), '1')
-        anchor.set(qn('wp:allowOverlap'), '1')
-        anchor.set(qn('wp:simplePos'), '0')
-        anchor.set(qn('wp:relativeHeight'), '251658240')
+        # Eliminamos el espacio que reserva el encabezado
+        section.header_distance = Inches(0)
+        # Ajustamos para que el contenido empiece "dentro" de la zona de la imagen
+        section.top_margin = Inches(0.5)
 
-        # Posición Horizontal (Desde la izquierda de la página)
-        posH = OxmlElement('wp:positionH')
-        posH.set(qn('wp:relativeFrom'), 'page')
-        posOffH = OxmlElement('wp:posOffset')
-        posOffH.text = '0'
-        posH.append(posOffH)
-        
-        # Posición Vertical (Desde arriba de la página)
-        posV = OxmlElement('wp:positionV')
-        posV.set(qn('wp:relativeFrom'), 'page')
-        posOffV = OxmlElement('wp:posOffset')
-        posOffV.text = '0'
-        posV.append(posOffV)
-
-        anchor.append(posH)
-        anchor.append(posV)
-        
-        # Transferimos el contenido visual (el inline) al contenedor flotante (anchor)
-        for child in imagen._inline.getchildren():
-            anchor.append(child)
-            
-        drawing.getparent().replace(drawing, anchor)
-
-    # 3. Contenido del Certificado (Una sola página)
+    # 3. CUERPO DEL DOCUMENTO
+    # TRUCO: Usamos un espacio inicial para posicionar el título sobre el área blanca del logo
+    doc.add_paragraph("\n" * 4) 
+    
     p_tit = doc.add_paragraph()
     p_tit.alignment = WD_ALIGN_PARAGRAPH.CENTER
     r_tit = p_tit.add_run("CERTIFICADO DE TRABAJO")
-    r_tit.bold = True; r_tit.font.name = 'Arial'; r_tit.font.size = Pt(24)
+    r_tit.bold = True
+    r_tit.font.name = 'Arial'
+    r_tit.font.size = Pt(26)
 
-    # Texto principal
-    doc.add_paragraph("\n" + TEXTO_CERT).alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-    
+    # Texto principal con interlineado sencillo para que no salte de página
+    p_main = doc.add_paragraph("\n" + TEXTO_CERT)
+    p_main.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    p_main.paragraph_format.line_spacing = 1.0
+
     p2 = doc.add_paragraph()
     p2.add_run("El TRABAJADOR ").bold = False
     p2.add_run(nom).bold = True
     p2.add_run(f", identificado con DNI N° {dni}, laboró en nuestra Institución bajo el siguiente detalle:")
 
-    # 4. Tabla con cabecera Celeste y Negrita
+    # 4. TABLA CON DISEÑO (FONDO CELESTE)
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+
     t = doc.add_table(rows=1, cols=3)
     t.style = 'Table Grid'
     t.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -138,9 +112,8 @@ def gen_word(nom, dni, df_c):
     headers = ["CARGO", "FECHA INICIO", "FECHA FIN"]
     for i, h_text in enumerate(headers):
         cell = t.rows[0].cells[i]
-        p_cell = cell.paragraphs[0]
-        r_cell = p_cell.add_run(h_text)
-        r_cell.bold = True
+        r = cell.paragraphs[0].add_run(h_text)
+        r.bold = True
         # Fondo celeste
         shd = OxmlElement('w:shd')
         shd.set(qn('w:fill'), 'E1EFFF')
@@ -152,13 +125,17 @@ def gen_word(nom, dni, df_c):
         celdas[1].text = pd.to_datetime(fila.get('f_inicio')).strftime('%d/%m/%Y') if pd.notnull(fila.get('f_inicio')) else ""
         celdas[2].text = pd.to_datetime(fila.get('f_fin')).strftime('%d/%m/%Y') if pd.notnull(fila.get('f_fin')) else ""
 
-    # 5. Firma y Cierre
+    # 5. FIRMA Y CIERRE
     doc.add_paragraph("\n\nHuancayo, " + date.today().strftime("%d/%m/%Y")).alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    
     f = doc.add_paragraph()
     f.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    # Reducimos saltos para asegurar 1 página
     f.add_run("\n\n__________________________\n" + F_N + "\n" + F_C).bold = True
 
-    buf = BytesIO(); doc.save(buf); buf.seek(0)
+    buf = BytesIO()
+    doc.save(buf)
+    buf.seek(0)
     return buf
     
     
@@ -270,6 +247,7 @@ else:
     elif m == "📊 Nómina General":
         st.header("Base de Datos General")
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
 
