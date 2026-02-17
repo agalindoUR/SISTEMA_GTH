@@ -116,16 +116,20 @@ st.markdown("""
         background-color: #FFD700 !important;
     }
     
-    /* 3. Títulos del Menú Lateral (GUINDA ORIGINAL) */
-    /* Forzamos el color guinda solo para los encabezados del sidebar */
-    [data-testid="stSidebar"] h3, 
-    [data-testid="stSidebar"] .stMarkdown h3 {
-        color: #4a0000 !important;
+    /* 3. MEJORA LOGIN: Mensaje de bienvenida (Amarillo Neón con sombra) */
+    .login-welcome { 
+        color: #FFFF00 !important; 
+        text-align: center; 
+        font-size: 19px !important; 
+        font-style: italic;
         font-weight: bold !important;
-        border-bottom: 1px solid #4a0000;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.8); /* Sombra para que se lea perfecto */
     }
 
-    /* 4. Textos de opciones y etiquetas en el SIDEBAR (GUINDOS) */
+    /* 4. MEJORA SIDEBAR: Letras Guindas (Para que resalten en el amarillo) */
+    /* Aplicamos el color guinda a títulos, etiquetas y textos del panel lateral */
+    [data-testid="stSidebar"] h3, 
+    [data-testid="stSidebar"] .stMarkdown h3,
     [data-testid="stSidebar"] label, 
     [data-testid="stSidebar"] p, 
     [data-testid="stSidebar"] span {
@@ -133,8 +137,8 @@ st.markdown("""
         font-weight: bold !important;
     }
 
-    /* 5. TEXTO DE REGISTRO EN EL ÁREA GUINDA (PLOMO CLARO) */
-    /* Solo afectamos los títulos que NO están en el sidebar */
+    /* 5. ÁREA GUINDA (Derecha): Textos de Registro y Etiquetas */
+    /* Títulos en Plomo Claro */
     .stApp:not([data-testid="stSidebar"]) .stForm h3, 
     .stApp:not([data-testid="stSidebar"]) .stMarkdown h3 {
         color: #D3D3D3 !important;
@@ -142,12 +146,12 @@ st.markdown("""
         padding-bottom: 5px;
     }
 
-    /* 6. Etiquetas de campos en área guinda (BLANCAS) */
+    /* Etiquetas de campos en Blanco puro */
     .stApp:not([data-testid="stSidebar"]) label p {
         color: white !important;
     }
 
-    /* 7. BOTÓN REGISTRAR / INGRESAR */
+    /* 6. BOTÓNES (Amarillo con letras guindas para máximo contraste) */
     div.stButton > button {
         background-color: #FFD700 !important;
         color: #4a0000 !important;
@@ -325,6 +329,7 @@ else:
 
     elif m == "📊 Nómina General":
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
 
