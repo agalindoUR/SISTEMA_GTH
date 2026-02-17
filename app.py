@@ -159,7 +159,7 @@ if "rol" not in st.session_state: st.session_state.rol = None
 
 if st.session_state.rol is None:
     # 1. Título principal
-    st.markdown('<p class="login-welcome">Mejorando día a día</p>', unsafe_allow_html=True)
+    st.markdown('<p class="login-welcome"> ¡Tu talento es importante! :)</p>', unsafe_allow_html=True)
     
     # 2. LOGO (Nombre corregido a Logo_amarillo.png)
     col_logo1, col_logo2, col_logo3 = st.columns([1, 1.2, 1]) 
@@ -291,6 +291,7 @@ else:
 
     elif m == "📊 Nómina General":
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
 
