@@ -113,7 +113,10 @@ st.markdown("""
     
     /* 2. Barra lateral AMARILLA */
     [data-testid="stSidebar"] {
-        /* CAMBIAR SOLO ESTA PARTE PARA EL COLOR DE LETRA DEL PANEL AMARILLO */
+        background-color: #FFD700 !important;
+    }
+
+    /* 3. Letras del panel amarillo en GUINDO */
     [data-testid="stSidebar"] h3, 
     [data-testid="stSidebar"] label, 
     [data-testid="stSidebar"] p, 
@@ -335,6 +338,7 @@ else:
 
     elif m == "📊 Nómina General":
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
 
