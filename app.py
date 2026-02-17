@@ -186,6 +186,26 @@ st.markdown("""
         background-color: #f0f0f0 !important;
         color: #4a0000 !important;
     }
+/* 1. ESTILO DE TABLAS (DataFrames) */
+    /* Pone el texto del encabezado en MAYÚSCULAS */
+    thead tr th {
+        text-transform: uppercase !important;
+        background-color: #D3D3D3 !important; /* Plomo claro */
+        color: #4a0000 !important; /* Letras guindas para que combine */
+        font-weight: bold !important;
+    }
+
+    /* 2. Color de fondo para las celdas del encabezado en tablas interactivas */
+    .stDataFrame thead tr th {
+        background-color: #D3D3D3 !important;
+        text-transform: uppercase !important;
+    }
+
+    /* 3. Asegura que el texto dentro de las celdas de datos sea legible */
+    [data-testid="stTable"] td {
+        color: #333333 !important; /* Texto oscuro para celdas blancas */
+    }
+    
     </style>
 """, unsafe_allow_html=True)
 
@@ -349,6 +369,7 @@ else:
 
     elif m == "📊 Nómina General":
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
 
