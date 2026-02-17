@@ -116,49 +116,50 @@ st.markdown("""
         background-color: #FFD700 !important;
     }
     
-    /* 3. Textos Generales (BLANCOS) */
-    .stApp label, .stApp p, .stApp .stMarkdown p {
-        color: white !important;
+    /* 3. Títulos del Menú Lateral (GUINDA ORIGINAL) */
+    /* Forzamos el color guinda solo para los encabezados del sidebar */
+    [data-testid="stSidebar"] h3, 
+    [data-testid="stSidebar"] .stMarkdown h3 {
+        color: #4a0000 !important;
         font-weight: bold !important;
+        border-bottom: 1px solid #4a0000;
     }
 
-    /* --- CAMBIO: TEXTO DE FORMULARIOS EN PLOMO CLARO --- */
-    .stForm h3, .stMarkdown h3 {
-        color: #D3D3D3 !important; /* Plomo claro/Gris seda */
-        border-bottom: 2px solid #FFD700;
-        padding-bottom: 5px;
-    }
-
-    /* 4. Mensaje de bienvenida en AMARILLO */
-    .login-welcome { 
-        color: #FFD700 !important; 
-        text-align: center; 
-        font-size: 18px !important; 
-        font-style: italic;
-        font-weight: bold !important;
-    }
-
-    /* 5. Textos dentro de la barra lateral (GUINDOS) */
+    /* 4. Textos de opciones y etiquetas en el SIDEBAR (GUINDOS) */
+    [data-testid="stSidebar"] label, 
     [data-testid="stSidebar"] p, 
-    [data-testid="stSidebar"] span,
-    [data-testid="stSidebar"] label,
-    [data-testid="stSidebar"] .st-emotion-cache-17l6y9p {
+    [data-testid="stSidebar"] span {
         color: #4a0000 !important;
         font-weight: bold !important;
     }
 
-    /* --- CAMBIO: BOTÓN REGISTRAR / INGRESAR --- */
+    /* 5. TEXTO DE REGISTRO EN EL ÁREA GUINDA (PLOMO CLARO) */
+    /* Solo afectamos los títulos que NO están en el sidebar */
+    .stApp:not([data-testid="stSidebar"]) .stForm h3, 
+    .stApp:not([data-testid="stSidebar"]) .stMarkdown h3 {
+        color: #D3D3D3 !important;
+        border-bottom: 2px solid #FFD700;
+        padding-bottom: 5px;
+    }
+
+    /* 6. Etiquetas de campos en área guinda (BLANCAS) */
+    .stApp:not([data-testid="stSidebar"]) label p {
+        color: white !important;
+    }
+
+    /* 7. BOTÓN REGISTRAR / INGRESAR */
     div.stButton > button {
-        background-color: #FFD700 !important; /* Fondo amarillo */
-        color: #4a0000 !important; /* Letras guindas para contraste */
+        background-color: #FFD700 !important;
+        color: #4a0000 !important;
         font-weight: bold !important;
         border-radius: 10px !important;
         width: 100% !important;
         border: none !important;
+        height: 3em !important;
     }
 
     div.stButton > button:hover {
-        background-color: #f0f0f0 !important; /* Cambio a plomo claro al pasar el mouse */
+        background-color: #f0f0f0 !important;
         color: #4a0000 !important;
     }
     </style>
@@ -324,6 +325,7 @@ else:
 
     elif m == "📊 Nómina General":
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
 
