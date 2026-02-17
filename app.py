@@ -162,18 +162,36 @@ st.markdown("""
         background-color: #f0f0f0 !important;
     }
 
-    /* 5. TABLAS (EL CAMBIO QUE BUSCAMOS) */
-    /* Forzamos Mayúsculas y Fondo Plomo en el encabezado */
-    thead tr th, .stDataFrame thead tr th {
-        text-transform: uppercase !important;
-        background-color: #D3D3D3 !important; /* Plomo claro */
-        color: #4a0000 !important; /* Letras guindas */
+   /* 5. TABLAS (FORZAR ENCABEZADO PLOMO Y MAYÚSCULAS) */
+    /* Este bloque apunta a todos los tipos de tablas de Streamlit */
+    
+    /* 5.1 Para st.table (tablas estáticas) */
+    [data-testid="stTable"] thead tr th {
+        background-color: #D3D3D3 !important; /* Plomo Claro */
+        text-transform: uppercase !important; /* MAYÚSCULAS */
+        color: #4a0000 !important; /* Letras Guindas */
         font-weight: bold !important;
-        font-size: 14px !important;
+        text-align: center !important;
     }
-    /* Color de los datos dentro de la tabla */
-    [data-testid="stTable"] td, .stDataFrame td {
-        color: #333333 !important;
+
+    /* 5.2 Para st.dataframe (tablas interactivas modernas) */
+    [data-testid="stDataFrame"] div[data-testid="stTable"] thead tr th,
+    div[data-cell-contents="true"] {
+        text-transform: uppercase !important;
+    }
+
+    /* 5.3 Selector universal para cualquier celda de encabezado */
+    th {
+        background-color: #D3D3D3 !important;
+        text-transform: uppercase !important;
+        color: #4a0000 !important;
+    }
+
+    /* 6. COLOR DE LOS DATOS (Para que no se vean claros sobre blanco) */
+    [data-testid="stTable"] td {
+        color: #000000 !important; /* Negro puro para los datos */
+        background-color: white !important;
+    }
     }
     </style>
 """, unsafe_allow_html=True)
@@ -338,6 +356,7 @@ else:
 
     elif m == "📊 Nómina General":
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
 
