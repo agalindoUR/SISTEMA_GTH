@@ -185,9 +185,9 @@ else:
     
     # --- SIDEBAR PERSONALIZADO ---
     with st.sidebar:
-        # LOGO GUINDO: Reducido a la mitad (usando columnas para crear margen)
-        col_side1, col_side2, col_side3 = st.columns([0.5, 1, 0.5])
-        with col_side2:
+        # LOGO GUINDO: Alineado a la izquierda y tamaño reducido
+        col_s1, col_s2 = st.columns([1, 0.5]) # La columna vacía a la derecha lo empuja a la izquierda
+        with col_s1:
             if os.path.exists("Logo_guindo.png"):
                 st.image("Logo_guindo.png", use_container_width=True)
             else:
@@ -197,25 +197,28 @@ else:
         
         # PANEL 1: GESTIÓN
         st.markdown("### 🛠️ MENÚ PRINCIPAL")
-        m = st.sidebar.radio("", ["🔍 Consulta", "➕ Registro", "📊 Nómina General"], key="menu_p")
+        m = st.radio("", ["🔍 Consulta", "➕ Registro", "📊 Nómina General"], key="menu_p")
         
         st.markdown("---")
         
         # PANEL 2: REPORTES
         st.markdown("### 📈 REPORTES")
-        r = st.sidebar.radio("", ["Vencimientos", "Vacaciones", "Estadísticas"], key="menu_r")
+        r = st.radio("", ["Vencimientos", "Vacaciones", "Estadísticas"], key="menu_r")
         
         st.markdown("---")
-        if st.sidebar.button("🚪 Cerrar Sesión"):
+        if st.button("🚪 Cerrar Sesión"):
             st.session_state.rol = None
             st.rerun()
 
     # --- CONTENIDO PRINCIPAL (Área Guinda) ---
-    # LOGO AMARILLO: Aumentado al doble (columna central más ancha)
-    col_main1, col_main2, col_main3 = st.columns([1, 2, 1]) 
-    with col_main2:
+    # LOGO AMARILLO: Reducido a la mitad (usando columnas laterales más anchas)
+    col_m1, col_m2, col_m3 = st.columns([1.5, 1, 1.5]) 
+    with col_m2:
         if os.path.exists("Logo_amarillo.png"):
-            st.image("Logo_amarillo.png", use_container_width=True) # Ahora ocupa más espacio
+            st.image("Logo_amarillo.png", use_container_width=True) 
+    
+    # Espacio estético antes del título
+    st.markdown("<br>", unsafe_allow_html=True)
 
     # Aquí sigue la lógica de m (Consulta, Registro, etc.)
 
@@ -305,6 +308,7 @@ else:
 
     elif m == "📊 Nómina General":
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
 
