@@ -111,46 +111,39 @@ st.markdown("""
         background: linear-gradient(135deg, #4a0000 0%, #800000 100%); 
     }
     
-    /* 2. TEXTO DEL LOGIN (USUARIO Y CONTRASEÑA) EN BLANCO */
-    .stApp [data-testid="stText"] p, 
-    .stApp label, 
-    .stApp .stMarkdown p {
-        color: white !important;
-        font-weight: bold !important;
-        font-size: 18px !important;
-    }
-
-    /* 3. MENSAJE DE BIENVENIDA EN AMARILLO */
-    .login-welcome { 
-        color: #FFD700 !important; 
-        text-align: center; 
-        font-size: 18px !important; 
-        margin-bottom: 20px; 
-        font-style: italic;
-        font-weight: bold !important;
-    }
-
-    /* 4. BARRA LATERAL AMARILLA (Para la siguiente interfaz) */
+    /* 2. Barra lateral AMARILLA */
     [data-testid="stSidebar"] {
         background-color: #FFD700 !important;
     }
     
-    /* 5. TEXTO BARRA LATERAL EN GUINDO */
-    [data-testid="stSidebar"] .st-emotion-cache-17l6y9p, 
-    [data-testid="stSidebar"] p, 
-    [data-testid="stSidebar"] span,
-    [data-testid="stSidebar"] label {
-        color: #4a0000 !important;
+    /* 3. Textos del Login y etiquetas en área guinda (BLANCOS) */
+    .stApp label, .stApp p, .stApp .stMarkdown p {
+        color: white !important;
+        font-weight: bold !important;
     }
 
-    /* 6. BOTÓN INGRESAR AMARILLO */
-    div.stButton > button {
-        background-color: #FFD700 !important;
-        color: #4a0000 !important;
-        border-radius: 10px;
-        border: none;
-        width: 100%;
+    /* 4. Mensaje de bienvenida en AMARILLO */
+    .login-welcome { 
+        color: #FFD700 !important; 
+        text-align: center; 
+        font-size: 18px !important; 
+        font-style: italic;
         font-weight: bold !important;
+    }
+
+    /* 5. Textos dentro de la barra lateral (GUINDOS) */
+    [data-testid="stSidebar"] p, 
+    [data-testid="stSidebar"] span,
+    [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] .st-emotion-cache-17l6y9p {
+        color: #4a0000 !important;
+        font-weight: bold !important;
+    }
+
+    /* 6. Botones del Menú Lateral */
+    .st-emotion-cache-6qob1r {
+        background-color: #4a0000 !important;
+        color: white !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -190,20 +183,39 @@ else:
     dfs = load_data()
     es_lector = st.session_state.rol == "Lector"
     
-    # LOGO REDUCIDO EN EL ÁREA PRINCIPAL
-    col_l1, col_l2, col_l3 = st.columns([2, 1, 2]) # Columna central pequeña para reducir el logo
+    # --- SIDEBAR PERSONALIZADO ---
+    with st.sidebar:
+        # Logo Guindo en la parte superior del menú amarillo
+        if os.path.exists("Logo_guindo.png"):
+            st.image("Logo_guindo.png", use_container_width=True)
+        else:
+            st.warning("Subir Logo_guindo.png")
+            
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        # PANEL 1: GESTIÓN
+        st.markdown("### 🛠️ MENÚ PRINCIPAL")
+        m = st.radio("", ["🔍 Consulta", "➕ Registro", "📊 Nómina General"], key="menu_principal")
+        
+        st.markdown("---")
+        
+        # PANEL 2: REPORTES (Nueva sección)
+        st.markdown("### 📈 REPORTES")
+        r = st.radio("", ["Proximos Vencimientos", "Resumen de Vacaciones", "Estadísticas GTH"], key="menu_reportes")
+        
+        st.markdown("---")
+        if st.button("🚪 Cerrar Sesión"):
+            st.session_state.rol = None
+            st.rerun()
+
+    # --- CONTENIDO PRINCIPAL ---
+    # Logo amarillo reducido arriba en el área guinda
+    col_l1, col_l2, col_l3 = st.columns([2, 1, 2])
     with col_l2:
         if os.path.exists("Logo_amarillo.png"):
-            st.image("Logo_amarillo.png", width=150) # Tamaño reducido a 150px
+            st.image("Logo_amarillo.png", width=120)
 
-    # BARRA LATERAL (Sidebar)
-    st.sidebar.markdown(f"<h2 style='text-align: center;'>GTH</h2>", unsafe_allow_html=True)
-    m = st.sidebar.radio("MENÚ PRINCIPAL", ["🔍 Consulta", "➕ Registro", "📊 Nómina General"])
-    
-    st.sidebar.markdown("---")
-    if st.sidebar.button("Cerrar Sesión"):
-        st.session_state.rol = None
-        st.rerun()
+    # Aquí sigue la lógica de m (Consulta, Registro, etc.)
 
     # CONTENIDO POR SECCIÓN
     if m == "🔍 Consulta":
@@ -291,6 +303,7 @@ else:
 
     elif m == "📊 Nómina General":
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
 
