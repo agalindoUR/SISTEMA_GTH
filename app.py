@@ -354,12 +354,12 @@ else:
                     save_data(dfs); st.success("Registrado correctamente")
 
     elif m == "📊 Nómina General":
-        elif m == "📊 Nómina General":
-    # 1. Convertimos los nombres de las columnas a MAYÚSCULAS en Python
-    df_nom = dfs["PERSONAL"].copy()
-    df_nom.columns = [col.upper() for col in df_nom.columns]
-    # 2. Usamos st.table para que el CSS funcione
-    st.table(df_nom)
+            # 1. Convertimos los nombres de las columnas a MAYÚSCULAS en Python
+            df_nom = dfs["PERSONAL"].copy()
+            df_nom.columns = [col.upper() for col in df_nom.columns]
+            # 2. Usamos st.table para que el CSS funcione
+            st.table(df_nom)
+
 
 
 
