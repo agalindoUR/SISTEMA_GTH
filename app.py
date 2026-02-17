@@ -113,7 +113,13 @@ st.markdown("""
     
     /* 2. Barra lateral AMARILLA */
     [data-testid="stSidebar"] {
-        background-color: #FFD700 !important;
+        /* CAMBIAR SOLO ESTA PARTE PARA EL COLOR DE LETRA DEL PANEL AMARILLO */
+    [data-testid="stSidebar"] h3, 
+    [data-testid="stSidebar"] label, 
+    [data-testid="stSidebar"] p, 
+    [data-testid="stSidebar"] span {
+        color: #4a0000 !important;
+        font-weight: bold !important;
     }
     
     /* 3. MEJORA LOGIN: Mensaje de bienvenida (Amarillo Neón con sombra) */
@@ -329,6 +335,7 @@ else:
 
     elif m == "📊 Nómina General":
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
 
