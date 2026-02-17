@@ -106,7 +106,7 @@ def gen_word(nom, dni, df_c):
 st.set_page_config(page_title="GTH Roosevelt", layout="wide")
 st.markdown("""
     <style>
-    /* 1. Fondo principal guindo */
+    /* 1. Fondo principal y Login (MANTENIDO) */
     .stApp { 
         background: linear-gradient(135deg, #4a0000 0%, #800000 100%); 
     }
@@ -116,59 +116,43 @@ st.markdown("""
         background-color: #FFD700 !important;
     }
     
-    /* 3. MEJORA LOGIN: Mensaje de bienvenida (Amarillo Neón con sombra) */
-    .login-welcome { 
-        color: #FFFF00 !important; 
-        text-align: center; 
-        font-size: 19px !important; 
-        font-style: italic;
-        font-weight: bold !important;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.8); /* Sombra para que se lea perfecto */
-    }
-
-    /* 4. MEJORA SIDEBAR: Letras Guindas (Para que resalten en el amarillo) */
-    /* Aplicamos el color guinda a títulos, etiquetas y textos del panel lateral */
+    /* 3. CONTRASTE SIDEBAR (CAMBIO SOLICITADO) */
+    /* Forzamos el color GUINDA en todos los textos del panel amarillo */
     [data-testid="stSidebar"] h3, 
     [data-testid="stSidebar"] .stMarkdown h3,
     [data-testid="stSidebar"] label, 
     [data-testid="stSidebar"] p, 
-    [data-testid="stSidebar"] span {
-        color: #4a0000 !important;
+    [data-testid="stSidebar"] span,
+    [data-testid="stSidebar"] .st-emotion-cache-17l6y9p {
+        color: #4a0000 !important; /* Guinda institucional oscuro */
         font-weight: bold !important;
+        opacity: 1 !important; /* Asegura que no se vea transparente */
     }
 
-    /* 5. ÁREA GUINDA (Derecha): Textos de Registro y Etiquetas */
-    /* Títulos en Plomo Claro */
+    /* 4. Color de los iconos y botones de radio en el Sidebar */
+    [data-testid="stSidebar"] .st-emotion-cache-6qob1r {
+        color: #4a0000 !important;
+    }
+
+    /* 5. ÁREA DERECHA (MANTENIDO SIN CAMBIOS) */
+    .stApp:not([data-testid="stSidebar"]) label p {
+        color: white !important;
+    }
     .stApp:not([data-testid="stSidebar"]) .stForm h3, 
     .stApp:not([data-testid="stSidebar"]) .stMarkdown h3 {
         color: #D3D3D3 !important;
         border-bottom: 2px solid #FFD700;
-        padding-bottom: 5px;
     }
 
-    /* Etiquetas de campos en Blanco puro */
-    .stApp:not([data-testid="stSidebar"]) label p {
-        color: white !important;
-    }
-
-    /* 6. BOTÓNES (Amarillo con letras guindas para máximo contraste) */
+    /* 6. BOTONES (MANTENIDO) */
     div.stButton > button {
         background-color: #FFD700 !important;
         color: #4a0000 !important;
         font-weight: bold !important;
         border-radius: 10px !important;
-        width: 100% !important;
-        border: none !important;
-        height: 3em !important;
-    }
-
-    div.stButton > button:hover {
-        background-color: #f0f0f0 !important;
-        color: #4a0000 !important;
     }
     </style>
 """, unsafe_allow_html=True)
-
 if "rol" not in st.session_state: st.session_state.rol = None
 
 if st.session_state.rol is None:
@@ -329,6 +313,7 @@ else:
 
     elif m == "📊 Nómina General":
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
 
