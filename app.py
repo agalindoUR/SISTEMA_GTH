@@ -111,40 +111,46 @@ st.markdown("""
         background: linear-gradient(135deg, #4a0000 0%, #800000 100%); 
     }
     
-    /* 2. Barra lateral AMARILLA */
+    /* 2. TEXTO DEL LOGIN (USUARIO Y CONTRASEÑA) EN BLANCO */
+    .stApp [data-testid="stText"] p, 
+    .stApp label, 
+    .stApp .stMarkdown p {
+        color: white !important;
+        font-weight: bold !important;
+        font-size: 18px !important;
+    }
+
+    /* 3. MENSAJE DE BIENVENIDA EN AMARILLO */
+    .login-welcome { 
+        color: #FFD700 !important; 
+        text-align: center; 
+        font-size: 18px !important; 
+        margin-bottom: 20px; 
+        font-style: italic;
+        font-weight: bold !important;
+    }
+
+    /* 4. BARRA LATERAL AMARILLA (Para la siguiente interfaz) */
     [data-testid="stSidebar"] {
         background-color: #FFD700 !important;
     }
     
-    /* 3. Texto de la barra lateral en GUINDO */
+    /* 5. TEXTO BARRA LATERAL EN GUINDO */
     [data-testid="stSidebar"] .st-emotion-cache-17l6y9p, 
     [data-testid="stSidebar"] p, 
     [data-testid="stSidebar"] span,
     [data-testid="stSidebar"] label {
         color: #4a0000 !important;
-        font-weight: bold !important;
     }
 
-    /* 4. Radio buttons y textos del menú lateral */
-    div[data-testid="stMarkdownContainer"] p {
+    /* 6. BOTÓN INGRESAR AMARILLO */
+    div.stButton > button {
+        background-color: #FFD700 !important;
         color: #4a0000 !important;
-    }
-
-    /* 5. Títulos y etiquetas en el área GUINDA (ahora blancas/amarillas) */
-    h1, h2, h3, .stMarkdown p, label {
-        color: white !important;
-    }
-    
-    /* 6. Inputs y Tabs (Texto blanco para que resalte en el guindo) */
-    .stTabs [data-baseweb="tab"] p {
-        color: #FFD700 !important; /* Pestañas en amarillo */
-    }
-
-    /* Estilo para el Logo reducido */
-    .logo-container {
-        display: flex;
-        justify-content: center;
-        margin-bottom: 20px;
+        border-radius: 10px;
+        border: none;
+        width: 100%;
+        font-weight: bold !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -153,7 +159,7 @@ if "rol" not in st.session_state: st.session_state.rol = None
 
 if st.session_state.rol is None:
     # 1. Título principal
-    st.markdown('<p class="login-header">UNIVERSIDAD ROOSEVELT - SISTEMA GTH</p>', unsafe_allow_html=True)
+    st.markdown('<p class="login-welcome">Bienvenido (a) al sistema de gestión de datos de los colaboradores</p>', unsafe_allow_html=True)
     
     # 2. LOGO (Nombre corregido a Logo_amarillo.png)
     col_logo1, col_logo2, col_logo3 = st.columns([1, 1.2, 1]) 
@@ -285,6 +291,7 @@ else:
 
     elif m == "📊 Nómina General":
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
 
