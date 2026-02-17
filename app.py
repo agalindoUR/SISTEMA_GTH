@@ -110,25 +110,32 @@ st.markdown("""
     .stApp { 
         background: linear-gradient(135deg, #4a0000 0%, #800000 100%); 
     }
-    /* 1. Fondo del Sidebar */
-[data-testid="stSidebar"] {
-    background-color: #FFD700 !important;
-}
+   /* 1. COLOR DEL PANEL LATERAL (FONDO AMARILLO) */
+    [data-testid="stSidebar"] {
+        background-color: #FFD700 !important;
+    }
 
-/* 2. Color de letra GUINDA solo para el contenido del Sidebar */
-/* Usamos 'section' para asegurar que solo afecte al bloque lateral */
-[data-testid="stSidebar"] section[data-testid="stSidebarNav"] span,
-[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
-[data-testid="stSidebar"] [data-testid="stWidgetLabel"] p,
-[data-testid="stSidebar"] h3 {
-    color: #4a0000 !important;
-    font-weight: bold !important;
-}
+    /* 2. LETRAS DEL PANEL LATERAL (GUINDAS) */
+    /* Usamos selectores muy específicos para no afectar al login */
+    [data-testid="stSidebar"] h3, 
+    [data-testid="stSidebar"] label, 
+    [data-testid="stSidebar"] p, 
+    [data-testid="stSidebar"] span,
+    [data-testid="stSidebar"] .stMarkdown p {
+        color: #4a0000 !important;
+        font-weight: bold !important;
+    }
 
-/* 3. Color de los textos de 'Cerrar Sesión' y otros botones del sidebar */
-[data-testid="stSidebar"] .stButton button p {
-    color: #4a0000 !important;
-}
+    /* 3. MENSAJE DE BIENVENIDA LOGIN (AMARILLO) */
+    /* Lo aislamos totalmente para que vuelva a su color */
+    .login-welcome { 
+        color: #FFD700 !important; 
+        text-align: center; 
+        font-size: 19px !important; 
+        font-weight: bold !important;
+        display: block;
+        margin-top: 15px;
+    }
 
 /* 4. Color de los Radio Buttons (el circulito y la opción) */
 [data-testid="stSidebar"] [data-testid="stRadioButton"] label span {
@@ -338,6 +345,7 @@ else:
 
     elif m == "📊 Nómina General":
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
 
