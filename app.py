@@ -110,21 +110,25 @@ st.markdown("""
     .stApp { 
         background: linear-gradient(135deg, #4a0000 0%, #800000 100%); 
     }
-   /* 1. COLOR DEL PANEL LATERAL (FONDO AMARILLO) */
-    [data-testid="stSidebar"] {
-        background-color: #FFD700 !important;
-    }
+   /* 1. FONDO DEL SIDEBAR: Amarillo más oscuro (Dorado) */
+[data-testid="stSidebar"] {
+    background-color: #C5A059 !important; /* Un tono más oscuro y elegante */
+}
 
-    /* 2. LETRAS DEL PANEL LATERAL (GUINDAS) */
-    /* Usamos selectores muy específicos para no afectar al login */
-    [data-testid="stSidebar"] h3, 
-    [data-testid="stSidebar"] label, 
-    [data-testid="stSidebar"] p, 
-    [data-testid="stSidebar"] span,
-    [data-testid="stSidebar"] .stMarkdown p {
-        color: #4a0000 !important;
-        font-weight: bold !important;
-    }
+/* 2. COLOR DE LETRAS EN EL SIDEBAR: Guinda Intenso */
+[data-testid="stSidebar"] h3, 
+[data-testid="stSidebar"] label, 
+[data-testid="stSidebar"] p, 
+[data-testid="stSidebar"] span,
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
+    color: #4a0000 !important;
+    font-weight: bold !important;
+}
+
+/* 3. LÍNEAS DIVISORIAS EN EL SIDEBAR */
+[data-testid="stSidebar"] hr {
+    border-color: #4a0000 !important;
+}
 
     /* 3. MENSAJE DE BIENVENIDA LOGIN (AMARILLO) */
     /* Lo aislamos totalmente para que vuelva a su color */
@@ -345,6 +349,7 @@ else:
 
     elif m == "📊 Nómina General":
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
 
