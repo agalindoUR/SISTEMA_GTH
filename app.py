@@ -111,20 +111,31 @@ st.markdown("""
         background: linear-gradient(135deg, #4a0000 0%, #800000 100%); 
     }
     
-    /* 2. Barra lateral AMARILLA */
+    /* 1. COLOR DEL PANEL LATERAL (FONDO AMARILLO) */
     [data-testid="stSidebar"] {
         background-color: #FFD700 !important;
     }
 
-    /* 3. FUERZA BRUTA PARA LETRAS GUINDAS EN EL PANEL AMARILLO */
-    /* Este selector ataca títulos, etiquetas, radio buttons y texto plano */
-    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
-    [data-testid="stSidebar"] [data-testid="stWidgetLabel"] p,
+    /* 2. LETRAS DEL PANEL LATERAL (GUINDAS) */
+    /* Usamos selectores muy específicos para no afectar al login */
+    [data-testid="stSidebar"] h3, 
+    [data-testid="stSidebar"] label, 
+    [data-testid="stSidebar"] p, 
     [data-testid="stSidebar"] span,
-    [data-testid="stSidebar"] h3 {
+    [data-testid="stSidebar"] .stMarkdown p {
         color: #4a0000 !important;
         font-weight: bold !important;
-        -webkit-text-fill-color: #4a0000 !important; /* Refuerzo para algunos navegadores */
+    }
+
+    /* 3. MENSAJE DE BIENVENIDA LOGIN (AMARILLO) */
+    /* Lo aislamos totalmente para que vuelva a su color */
+    .login-welcome { 
+        color: #FFD700 !important; 
+        text-align: center; 
+        font-size: 19px !important; 
+        font-weight: bold !important;
+        display: block;
+        margin-top: 15px;
     }
 
     /* Color de los círculos de selección (Radio Buttons) */
@@ -335,6 +346,7 @@ else:
 
     elif m == "📊 Nómina General":
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
 
