@@ -185,35 +185,37 @@ else:
     
     # --- SIDEBAR PERSONALIZADO ---
     with st.sidebar:
-        # Logo Guindo en la parte superior del menú amarillo
-        if os.path.exists("Logo_guindo.png"):
-            st.image("Logo_guindo.png", use_container_width=True)
-        else:
-            st.warning("Subir Logo_guindo.png")
+        # LOGO GUINDO: Reducido a la mitad (usando columnas para crear margen)
+        col_side1, col_side2, col_side3 = st.columns([0.5, 1, 0.5])
+        with col_side2:
+            if os.path.exists("Logo_guindo.png"):
+                st.image("Logo_guindo.png", use_container_width=True)
+            else:
+                st.warning("Subir Logo_guindo.png")
             
         st.markdown("<br>", unsafe_allow_html=True)
         
         # PANEL 1: GESTIÓN
         st.markdown("### 🛠️ MENÚ PRINCIPAL")
-        m = st.radio("", ["🔍 Consulta", "➕ Registro", "📊 Nómina General"], key="menu_principal")
+        m = st.sidebar.radio("", ["🔍 Consulta", "➕ Registro", "📊 Nómina General"], key="menu_p")
         
         st.markdown("---")
         
-        # PANEL 2: REPORTES (Nueva sección)
+        # PANEL 2: REPORTES
         st.markdown("### 📈 REPORTES")
-        r = st.radio("", ["Proximos Vencimientos", "Resumen de Vacaciones", "Estadísticas GTH"], key="menu_reportes")
+        r = st.sidebar.radio("", ["Vencimientos", "Vacaciones", "Estadísticas"], key="menu_r")
         
         st.markdown("---")
-        if st.button("🚪 Cerrar Sesión"):
+        if st.sidebar.button("🚪 Cerrar Sesión"):
             st.session_state.rol = None
             st.rerun()
 
-    # --- CONTENIDO PRINCIPAL ---
-    # Logo amarillo reducido arriba en el área guinda
-    col_l1, col_l2, col_l3 = st.columns([2, 1, 2])
-    with col_l2:
+    # --- CONTENIDO PRINCIPAL (Área Guinda) ---
+    # LOGO AMARILLO: Aumentado al doble (columna central más ancha)
+    col_main1, col_main2, col_main3 = st.columns([1, 2, 1]) 
+    with col_main2:
         if os.path.exists("Logo_amarillo.png"):
-            st.image("Logo_amarillo.png", width=120)
+            st.image("Logo_amarillo.png", use_container_width=True) # Ahora ocupa más espacio
 
     # Aquí sigue la lógica de m (Consulta, Registro, etc.)
 
@@ -303,6 +305,7 @@ else:
 
     elif m == "📊 Nómina General":
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
 
