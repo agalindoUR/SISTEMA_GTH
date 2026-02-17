@@ -327,8 +327,12 @@ else:
                                                 dfs[h_name] = dfs[h_name].drop(sel.index)
                                                 save_data(dfs); st.rerun()
                                         else: st.info("Selecciona una fila arriba")
-                        else:
-                            st.dataframe(c_df, use_container_width=True, hide_index=True)
+                       else:
+    # Pasamos a mayúsculas los encabezados
+    c_df_v = c_df.copy()
+    c_df_v.columns = [col.upper() for col in c_df_v.columns]
+    # Mostramos como tabla para que se pinte de PLOMO
+    st.table(c_df_v)
                             if not es_lector:
                                 with st.expander(f"➕ Registrar en {h_name}"):
                                     with st.form(f"f_{h_name}"):
@@ -350,7 +354,13 @@ else:
                     save_data(dfs); st.success("Registrado correctamente")
 
     elif m == "📊 Nómina General":
-        st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+        elif m == "📊 Nómina General":
+    # 1. Convertimos los nombres de las columnas a MAYÚSCULAS en Python
+    df_nom = dfs["PERSONAL"].copy()
+    df_nom.columns = [col.upper() for col in df_nom.columns]
+    # 2. Usamos st.table para que el CSS funcione
+    st.table(df_nom)
+
 
 
 
