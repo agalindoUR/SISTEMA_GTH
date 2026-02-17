@@ -116,10 +116,17 @@ st.markdown("""
         background-color: #FFD700 !important;
     }
     
-    /* 3. Textos del Login y etiquetas en área guinda (BLANCOS) */
+    /* 3. Textos Generales (BLANCOS) */
     .stApp label, .stApp p, .stApp .stMarkdown p {
         color: white !important;
         font-weight: bold !important;
+    }
+
+    /* --- CAMBIO: TEXTO DE FORMULARIOS EN PLOMO CLARO --- */
+    .stForm h3, .stMarkdown h3 {
+        color: #D3D3D3 !important; /* Plomo claro/Gris seda */
+        border-bottom: 2px solid #FFD700;
+        padding-bottom: 5px;
     }
 
     /* 4. Mensaje de bienvenida en AMARILLO */
@@ -140,10 +147,19 @@ st.markdown("""
         font-weight: bold !important;
     }
 
-    /* 6. Botones del Menú Lateral */
-    .st-emotion-cache-6qob1r {
-        background-color: #4a0000 !important;
-        color: white !important;
+    /* --- CAMBIO: BOTÓN REGISTRAR / INGRESAR --- */
+    div.stButton > button {
+        background-color: #FFD700 !important; /* Fondo amarillo */
+        color: #4a0000 !important; /* Letras guindas para contraste */
+        font-weight: bold !important;
+        border-radius: 10px !important;
+        width: 100% !important;
+        border: none !important;
+    }
+
+    div.stButton > button:hover {
+        background-color: #f0f0f0 !important; /* Cambio a plomo claro al pasar el mouse */
+        color: #4a0000 !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -308,6 +324,7 @@ else:
 
     elif m == "📊 Nómina General":
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
 
