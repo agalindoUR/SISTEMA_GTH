@@ -116,24 +116,21 @@ st.markdown("""
         background-color: #FFD700 !important;
     }
 
-    /* 3. Letras del panel amarillo en GUINDO */
-    [data-testid="stSidebar"] h3, 
-    [data-testid="stSidebar"] label, 
-    [data-testid="stSidebar"] p, 
-    [data-testid="stSidebar"] span {
+    /* 3. FUERZA BRUTA PARA LETRAS GUINDAS EN EL PANEL AMARILLO */
+    /* Este selector ataca títulos, etiquetas, radio buttons y texto plano */
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
+    [data-testid="stSidebar"] [data-testid="stWidgetLabel"] p,
+    [data-testid="stSidebar"] span,
+    [data-testid="stSidebar"] h3 {
         color: #4a0000 !important;
         font-weight: bold !important;
+        -webkit-text-fill-color: #4a0000 !important; /* Refuerzo para algunos navegadores */
     }
-    
-    /* 3. MEJORA LOGIN: Mensaje de bienvenida (Amarillo Neón con sombra) */
-    .login-welcome { 
-        color: #FFFF00 !important; 
-        text-align: center; 
-        font-size: 19px !important; 
-        font-style: italic;
-        font-weight: bold !important;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.8); /* Sombra para que se lea perfecto */
-    }
+
+    /* Color de los círculos de selección (Radio Buttons) */
+    [data-testid="stSidebar"] [data-testid="stRadioButton"] div {
+        color: #4a0000 !important;
+    }    
 
     /* 4. MEJORA SIDEBAR: Letras Guindas (Para que resalten en el amarillo) */
     /* Aplicamos el color guinda a títulos, etiquetas y textos del panel lateral */
@@ -338,6 +335,7 @@ else:
 
     elif m == "📊 Nómina General":
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
 
