@@ -327,12 +327,12 @@ else:
                                                 dfs[h_name] = dfs[h_name].drop(sel.index)
                                                 save_data(dfs); st.rerun()
                                         else: st.info("Selecciona una fila arriba")
-                       else:
-    # Pasamos a mayúsculas los encabezados
-    c_df_v = c_df.copy()
-    c_df_v.columns = [col.upper() for col in c_df_v.columns]
-    # Mostramos como tabla para que se pinte de PLOMO
-    st.table(c_df_v)
+                        else:
+                            # TABLA PLOMA Y MAYÚSCULAS PARA EL RESTO DE PESTAÑAS
+                            c_df_v = c_df.copy()
+                            c_df_v.columns = [col.upper() for col in c_df_v.columns]
+                            st.table(c_df_v)
+
                             if not es_lector:
                                 with st.expander(f"➕ Registrar en {h_name}"):
                                     with st.form(f"f_{h_name}"):
@@ -342,7 +342,8 @@ else:
                                         if st.form_submit_button("Confirmar"):
                                             dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new_row])], ignore_index=True)
                                             save_data(dfs); st.rerun()
-            else: st.error("No encontrado")
+            else:
+                st.error("No encontrado")
 
     elif m == "➕ Registro" and not es_lector:
         with st.form("reg_p"):
@@ -354,11 +355,10 @@ else:
                     save_data(dfs); st.success("Registrado correctamente")
 
     elif m == "📊 Nómina General":
-            # 1. Convertimos los nombres de las columnas a MAYÚSCULAS en Python
-            df_nom = dfs["PERSONAL"].copy()
-            df_nom.columns = [col.upper() for col in df_nom.columns]
-            # 2. Usamos st.table para que el CSS funcione
-            st.table(df_nom)
+        df_nom = dfs["PERSONAL"].copy()
+        df_nom.columns = [col.upper() for col in df_nom.columns]
+        st.table(df_nom)
+
 
 
 
