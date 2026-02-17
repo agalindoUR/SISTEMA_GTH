@@ -106,32 +106,10 @@ def gen_word(nom, dni, df_c):
 st.set_page_config(page_title="GTH Roosevelt", layout="wide")
 st.markdown("""
     <style>
-    /* 1. Fondo principal guindo */
+    /* 1. FONDO PRINCIPAL Y LOGIN */
     .stApp { 
         background: linear-gradient(135deg, #4a0000 0%, #800000 100%); 
     }
-   /* 1. FONDO DEL SIDEBAR: Amarillo más oscuro (Dorado) */
-[data-testid="stSidebar"] {
-    background-color: #C5A059 !important; /* Un tono más oscuro y elegante */
-}
-
-/* 2. COLOR DE LETRAS EN EL SIDEBAR: Guinda Intenso */
-[data-testid="stSidebar"] h3, 
-[data-testid="stSidebar"] label, 
-[data-testid="stSidebar"] p, 
-[data-testid="stSidebar"] span,
-[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
-    color: #4a0000 !important;
-    font-weight: bold !important;
-}
-
-/* 3. LÍNEAS DIVISORIAS EN EL SIDEBAR */
-[data-testid="stSidebar"] hr {
-    border-color: #4a0000 !important;
-}
-
-    /* 3. MENSAJE DE BIENVENIDA LOGIN (AMARILLO) */
-    /* Lo aislamos totalmente para que vuelva a su color */
     .login-welcome { 
         color: #FFD700 !important; 
         text-align: center; 
@@ -141,37 +119,36 @@ st.markdown("""
         margin-top: 15px;
     }
 
-/* 4. Color de los Radio Buttons (el circulito y la opción) */
-[data-testid="stSidebar"] [data-testid="stRadioButton"] label span {
-    color: #4a0000 !important;
-}
-
-    /* 4. MEJORA SIDEBAR: Letras Guindas (Para que resalten en el amarillo) */
-    /* Aplicamos el color guinda a títulos, etiquetas y textos del panel lateral */
+    /* 2. BARRA LATERAL (SIDEBAR) */
+    [data-testid="stSidebar"] {
+        background-color: #C5A059 !important; /* Dorado oscuro */
+    }
+    /* Color Guinda para TODO el texto del sidebar */
     [data-testid="stSidebar"] h3, 
-    [data-testid="stSidebar"] .stMarkdown h3,
     [data-testid="stSidebar"] label, 
     [data-testid="stSidebar"] p, 
-    [data-testid="stSidebar"] span {
+    [data-testid="stSidebar"] span,
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
+    [data-testid="stSidebar"] [data-testid="stRadioButton"] label span {
         color: #4a0000 !important;
         font-weight: bold !important;
     }
+    [data-testid="stSidebar"] hr {
+        border-color: #4a0000 !important;
+    }
 
-    /* 5. ÁREA GUINDA (Derecha): Textos de Registro y Etiquetas */
-    /* Títulos en Plomo Claro */
+    /* 3. ÁREA DE TRABAJO (DERECHA) */
     .stApp:not([data-testid="stSidebar"]) .stForm h3, 
     .stApp:not([data-testid="stSidebar"]) .stMarkdown h3 {
-        color: #D3D3D3 !important;
+        color: #D3D3D3 !important; /* Plomo claro títulos */
         border-bottom: 2px solid #FFD700;
         padding-bottom: 5px;
     }
-
-    /* Etiquetas de campos en Blanco puro */
     .stApp:not([data-testid="stSidebar"]) label p {
-        color: white !important;
+        color: white !important; /* Etiquetas blancas */
     }
 
-    /* 6. BOTÓNES (Amarillo con letras guindas para máximo contraste) */
+    /* 4. BOTONES */
     div.stButton > button {
         background-color: #FFD700 !important;
         color: #4a0000 !important;
@@ -181,31 +158,23 @@ st.markdown("""
         border: none !important;
         height: 3em !important;
     }
-
     div.stButton > button:hover {
         background-color: #f0f0f0 !important;
-        color: #4a0000 !important;
     }
-/* 1. ESTILO DE TABLAS (DataFrames) */
-    /* Pone el texto del encabezado en MAYÚSCULAS */
-    thead tr th {
+
+    /* 5. TABLAS (EL CAMBIO QUE BUSCAMOS) */
+    /* Forzamos Mayúsculas y Fondo Plomo en el encabezado */
+    thead tr th, .stDataFrame thead tr th {
         text-transform: uppercase !important;
         background-color: #D3D3D3 !important; /* Plomo claro */
-        color: #4a0000 !important; /* Letras guindas para que combine */
+        color: #4a0000 !important; /* Letras guindas */
         font-weight: bold !important;
+        font-size: 14px !important;
     }
-
-    /* 2. Color de fondo para las celdas del encabezado en tablas interactivas */
-    .stDataFrame thead tr th {
-        background-color: #D3D3D3 !important;
-        text-transform: uppercase !important;
+    /* Color de los datos dentro de la tabla */
+    [data-testid="stTable"] td, .stDataFrame td {
+        color: #333333 !important;
     }
-
-    /* 3. Asegura que el texto dentro de las celdas de datos sea legible */
-    [data-testid="stTable"] td {
-        color: #333333 !important; /* Texto oscuro para celdas blancas */
-    }
-    
     </style>
 """, unsafe_allow_html=True)
 
@@ -369,6 +338,7 @@ else:
 
     elif m == "📊 Nómina General":
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
 
