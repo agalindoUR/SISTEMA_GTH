@@ -162,36 +162,31 @@ st.markdown("""
         background-color: #f0f0f0 !important;
     }
 
-   /* 5. TABLAS (FORZAR ENCABEZADO PLOMO Y MAYÚSCULAS) */
-    /* Este bloque apunta a todos los tipos de tablas de Streamlit */
-    
-    /* 5.1 Para st.table (tablas estáticas) */
-    [data-testid="stTable"] thead tr th {
-        background-color: #D3D3D3 !important; /* Plomo Claro */
-        text-transform: uppercase !important; /* MAYÚSCULAS */
-        color: #4a0000 !important; /* Letras Guindas */
-        font-weight: bold !important;
-        text-align: center !important;
-    }
-
-    /* 5.2 Para st.dataframe (tablas interactivas modernas) */
-    [data-testid="stDataFrame"] div[data-testid="stTable"] thead tr th,
-    div[data-cell-contents="true"] {
-        text-transform: uppercase !important;
-    }
-
-    /* 5.3 Selector universal para cualquier celda de encabezado */
+  /* 5. TABLAS: ENCABEZADO MAYÚSCULAS Y PLOMO */
+    /* Este selector apunta a la estructura base de la tabla */
+    [data-testid="stTable"] thead tr th, 
+    .stTable thead tr th,
     th {
+        background-color: #D3D3D3 !important; /* Plomo claro */
+        color: #4a0000 !important; /* Letra Guinda */
+        text-transform: uppercase !important; /* FORZAR MAYÚSCULAS */
+        font-weight: bold !important;
+        border: 1px solid #C0C0C0 !important;
+    }
+
+    /* 6. REFUERZO PARA TABLAS INTERACTIVAS */
+    div[data-testid="stDataFrame"] table thead tr th {
         background-color: #D3D3D3 !important;
         text-transform: uppercase !important;
         color: #4a0000 !important;
     }
 
-    /* 6. COLOR DE LOS DATOS (Para que no se vean claros sobre blanco) */
-    [data-testid="stTable"] td {
-        color: #000000 !important; /* Negro puro para los datos */
-        background-color: white !important;
-    }
+    /* 7. COLOR DE LAS CELDAS (Blanco con letras negras para que se lea) */
+    [data-testid="stTable"] td, 
+    .stTable td {
+        background-color: #FFFFFF !important;
+        color: #000000 !important;
+        text-transform: none !important; /* Los datos no se ponen en mayúsculas */
     }
     </style>
 """, unsafe_allow_html=True)
@@ -356,6 +351,7 @@ else:
 
     elif m == "📊 Nómina General":
         st.dataframe(dfs["PERSONAL"], use_container_width=True, hide_index=True)
+
 
 
 
