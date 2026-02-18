@@ -134,6 +134,7 @@ def gen_word(nom, dni, df_c):
 st.set_page_config(page_title="GTH Roosevelt", layout="wide")
 st.markdown("""
 <style>
+/* 1. ESTILOS GENERALES QUE YA TENÍAS */
 .stApp {
     background-color: #4a0000 !important;
 }
@@ -162,13 +163,12 @@ st.markdown("""
     ) !important;
 }
 
-/* 2. LOGO: MÁS PEQUEÑO Y MÁS ARRIBA */
-    [data-testid="stSidebar"] [data-testid="stImage"] {
-        margin-top: -80px !important; /* Sube más el logo */
-        width: 70% !important;        /* Lo hace más pequeño */
-        margin-left: auto;
-        margin-right: auto;
-    }
+[data-testid="stSidebar"] [data-testid="stImage"] {
+    margin-top: -80px !important;
+    width: 70% !important;
+    margin-left: auto;
+    margin-right: auto;
+}
 
 [data-testid="stSidebar"] h3,
 [data-testid="stSidebar"] label,
@@ -192,45 +192,54 @@ div.stButton > button {
     height: 3em !important;
 }
 
-[data-testid="stTable"] thead tr th,
-th {
-    background-color: #D3D3D3 !important;
-    color: #4a0000 !important;
-    text-transform: uppercase !important;
-    font-weight: bold !important;
-}
-
-[data-testid="stTable"] td {
-    background-color: #FFFFFF !important;
-    color: #000000 !important;
-}
-
 .stTabs [data-baseweb="tab"] p {
     color: white !important;
 }
-</style>
-""", unsafe_allow_html=True)
-st.markdown("""
-/* ARREGLO PARA EL BOTÓN DE CERRAR SESIÓN */
+
+/* 2. ARREGLO ESPECÍFICO PARA EL BOTÓN DEL SIDEBAR (CERRAR SESIÓN) */
+[data-testid="stSidebar"] button {
+    background-color: #FFD700 !important; 
+    border: 2px solid #FFD700 !important;
+    border-radius: 10px !important;
+    width: 100% !important;
+}
+
+/* Esto asegura que el texto sea visible (Guindo sobre Amarillo) */
 [data-testid="stSidebar"] button p {
-    color: #4a0000 !important; /* Forza el texto a Guindo Oscuro */
+    color: #4a0000 !important; 
     font-weight: bold !important;
 }
 
-[data-testid="stSidebar"] button {
-    background-color: #FFD700 !important; /* Asegura el fondo amarillo */
-    border: 2px solid #FFD700 !important;
-}
-
-/* Efecto al pasar el mouse */
+/* Efecto al pasar el mouse: se vuelve Guindo con letras Doradas */
 [data-testid="stSidebar"] button:hover {
-    background-color: #800000 !important; /* Cambia a guindo al pasar el mouse */
+    background-color: #800000 !important; 
     border: 2px solid #FFD700 !important;
 }
 
 [data-testid="stSidebar"] button:hover p {
-    color: #FFD700 !important; /* El texto se vuelve dorado al pasar el mouse */
+    color: #FFD700 !important; 
 }
+</style>
+""", unsafe_allow_html=True)
+
+/* 2. Color del TEXTO (el párrafo <p> dentro del botón) */
+[data-testid="stSidebar"] button p {
+    color: #4a0000 !important; 
+    font-weight: bold !important;
+}
+
+/* 3. Efecto Hover (al pasar el mouse) */
+[data-testid="stSidebar"] button:hover {
+    background-color: #800000 !important; 
+    border: 2px solid #FFD700 !important;
+}
+
+/* 4. Color del TEXTO al pasar el mouse */
+[data-testid="stSidebar"] button:hover p {
+    color: #FFD700 !important; 
+}
+</style>
+""", unsafe_allow_html=True)
 
 <style>
 /* ... (Todo tu código anterior se mantiene igual) ... */
@@ -541,6 +550,7 @@ else:
         df_nom = dfs["PERSONAL"].copy()
         df_nom.columns = [col.upper() for col in df_nom.columns]
         st.table(df_nom)
+
 
 
 
