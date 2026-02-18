@@ -106,78 +106,44 @@ def gen_word(nom, dni, df_c):
 st.set_page_config(page_title="GTH Roosevelt", layout="wide")
 st.markdown("""
     <style>
-    <style>
-
-    /* 1. FONDO PRINCIPAL Y LOGIN */
-
+    /* 1. FONDO PRINCIPAL GUINDO */
     .stApp { 
-
-        background: linear-gradient(135deg, #4a0000 0%, #800000 100%); 
-
+        background-color: #4a0000 !important; 
     }
 
     .login-welcome { 
-
         color: #FFD700 !important; 
-
         text-align: center; 
-
         font-size: 19px !important; 
-
         font-weight: bold !important;
-
         display: block;
-
         margin-top: 15px;
-
     }
-
-
 
     /* 2. BARRA LATERAL (SIDEBAR) CON DOS COLORES */
-
     [data-testid="stSidebar"] {
-
-        /* Creamos el corte: Amarillo arriba (30%) y Guindo abajo (70%) */
-
         background: linear-gradient(
-
             to bottom, 
-
             #FFD700 0%, 
-
-            #FFD700 30%, 
-
-            #4a0000 30%, 
-
+            #FFD700 25%, 
+            #4a0000 25%, 
             #4a0000 100%
-
         ) !important;
-
-    }
-    
-    /* COLOR DE TEXTO PARA QUE SE LEA EN EL FONDO GUINDO */
-    [data-testid="stSidebar"] .stMarkdown p, 
-    [data-testid="stSidebar"] label {
-        color: #FFD700 !important; /* Dorado sobre guindo queda elegante */
     }
 
-    /* Color de los textos en la zona Guindo (Menu y Reportes) */
+    /* SUBIR EL LOGO EN EL SIDEBAR */
+    [data-testid="stSidebar"] [data-testid="stImage"] {
+        margin-top: -50px !important;
+        padding-top: 0px !important;
+    }
+
+    /* TEXTOS EN EL SIDEBAR */
     [data-testid="stSidebar"] h3, 
     [data-testid="stSidebar"] label, 
     [data-testid="stSidebar"] p, 
     [data-testid="stSidebar"] span {
-        color: #FFD700 !important; /* Texto amarillo sobre fondo guindo */
+        color: #FFD700 !important;
         font-weight: bold !important;
-    }
-/* SUBIR EL LOGO EN EL SIDEBAR */
-    [data-testid="stSidebar"] img {
-        margin-top: -60px !important; /* Ajusta este número si quieres que suba más o menos */
-        margin-bottom: -20px !important;
-    }
-    /* Ajuste para los iconos y radios para que resalten */
-    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
-        color: white !important;
     }
 
     /* Líneas divisorias */
@@ -185,18 +151,7 @@ st.markdown("""
         border-color: #FFD700 !important;
     }
 
-    /* 3. ÁREA DE TRABAJO (DERECHA) */
-    .stApp:not([data-testid="stSidebar"]) .stForm h3, 
-    .stApp:not([data-testid="stSidebar"]) .stMarkdown h3 {
-        color: #D3D3D3 !important; /* Plomo claro títulos */
-        border-bottom: 2px solid #FFD700;
-        padding-bottom: 5px;
-    }
-    .stApp:not([data-testid="stSidebar"]) label p {
-        color: white !important; /* Etiquetas blancas */
-    }
-
-    /* 4. BOTONES */
+    /* 3. BOTONES */
     div.stButton > button {
         background-color: #FFD700 !important;
         color: #4a0000 !important;
@@ -206,37 +161,26 @@ st.markdown("""
         border: none !important;
         height: 3em !important;
     }
-    div.stButton > button:hover {
-        background-color: #f0f0f0 !important;
-    }
 
-  /* 5. TABLAS: ENCABEZADO MAYÚSCULAS Y PLOMO */
-    /* Este selector apunta a la estructura base de la tabla */
-    [data-testid="stTable"] thead tr th, 
-    .stTable thead tr th,
-    th {
-        background-color: #D3D3D3 !important; /* Plomo claro */
-        color: #4a0000 !important; /* Letra Guinda */
-        text-transform: uppercase !important; /* FORZAR MAYÚSCULAS */
-        font-weight: bold !important;
-        border: 1px solid #C0C0C0 !important;
-    }
-
-    /* 6. REFUERZO PARA TABLAS INTERACTIVAS */
-    div[data-testid="stDataFrame"] table thead tr th {
+    /* 4. TABLAS */
+    [data-testid="stTable"] thead tr th, th {
         background-color: #D3D3D3 !important;
-        text-transform: uppercase !important;
         color: #4a0000 !important;
+        text-transform: uppercase !important;
+        font-weight: bold !important;
     }
 
-    /* 7. COLOR DE LAS CELDAS (Blanco con letras negras para que se lea) */
-    [data-testid="stTable"] td, 
-    .stTable td {
+    [data-testid="stTable"] td {
         background-color: #FFFFFF !important;
         color: #000000 !important;
-        text-transform: none !important; /* Los datos no se ponen en mayúsculas */
+    }
+    
+    /* Pestañas (Tabs) */
+    .stTabs [data-baseweb="tab"] p {
+        color: white !important;
     }
     </style>
+    
 """, unsafe_allow_html=True)
 
 if "rol" not in st.session_state: st.session_state.rol = None
@@ -413,6 +357,7 @@ else:
         df_nom = dfs["PERSONAL"].copy()
         df_nom.columns = [col.upper() for col in df_nom.columns]
         st.table(df_nom)
+
 
 
 
