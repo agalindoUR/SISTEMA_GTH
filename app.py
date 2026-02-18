@@ -111,6 +111,13 @@ st.markdown("""
         background-color: #4a0000 !important; 
     }
 
+    /* --- ESTA ES LA PARTE NUEVA --- */
+    [data-testid="stWidgetLabel"] p {
+        color: #FFFFFF !important; /* Texto de Usuario/Contraseña en blanco */
+        font-size: 16px !important;
+    }
+    /* ------------------------------ */
+
     .login-welcome { 
         color: #FFD700 !important; 
         text-align: center; 
@@ -346,6 +353,7 @@ else:
         df_nom = dfs["PERSONAL"].copy()
         df_nom.columns = [col.upper() for col in df_nom.columns]
         st.table(df_nom)
+
 
 
 
