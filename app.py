@@ -139,7 +139,11 @@ st.markdown("""
         color: #FFD700 !important; /* Texto amarillo sobre fondo guindo */
         font-weight: bold !important;
     }
-
+/* SUBIR EL LOGO EN EL SIDEBAR */
+    [data-testid="stSidebar"] img {
+        margin-top: -60px !important; /* Ajusta este número si quieres que suba más o menos */
+        margin-bottom: -20px !important;
+    }
     /* Ajuste para los iconos y radios para que resalten */
     [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
         color: white !important;
@@ -255,7 +259,14 @@ else:
         st.markdown("### 🛠️ MENÚ PRINCIPAL")
         m = st.radio("", ["🔍 Consulta", "➕ Registro", "📊 Nómina General"], key="menu_p")
         
-        st.markdown("---")
+        # --- SIDEBAR PERSONALIZADO ---
+    with st.sidebar:
+        # Quitamos cualquier st.markdown("<br>") que esté antes de la imagen
+        col_s1, col_s2 = st.columns([1, 0.5]) 
+        with col_s1:
+            if os.path.exists("Logo_guindo.png"):
+                # Aquí se aplica el margen negativo del CSS
+                st.image("Logo_guindo.png", use_container_width=True)
         
         # PANEL 2: REPORTES
         st.markdown("### 📈 REPORTES")
@@ -371,6 +382,7 @@ else:
         df_nom = dfs["PERSONAL"].copy()
         df_nom.columns = [col.upper() for col in df_nom.columns]
         st.table(df_nom)
+
 
 
 
