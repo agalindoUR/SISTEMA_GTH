@@ -220,28 +220,22 @@ else:
     
     # --- SIDEBAR PERSONALIZADO ---
     with st.sidebar:
-        # LOGO GUINDO: Alineado a la izquierda y tamaño reducido
-        col_s1, col_s2 = st.columns([1, 0.5]) # La columna vacía a la derecha lo empuja a la izquierda
+        # LOGO GUINDO: En la parte superior amarilla
+        col_s1, col_s2 = st.columns([1, 0.2])
         with col_s1:
             if os.path.exists("Logo_guindo.png"):
                 st.image("Logo_guindo.png", use_container_width=True)
-            else:
-                st.warning("Subir Logo_guindo.png")
-            
-        st.markdown("<br>", unsafe_allow_html=True)
         
-        # PANEL 1: GESTIÓN
         st.markdown("### 🛠️ MENÚ PRINCIPAL")
         m = st.radio("", ["🔍 Consulta", "➕ Registro", "📊 Nómina General"], key="menu_p")
         
-        # --- SIDEBAR PERSONALIZADO ---
-    with st.sidebar:
-        # Quitamos cualquier st.markdown("<br>") que esté antes de la imagen
-        col_s1, col_s2 = st.columns([1, 0.5]) 
-        with col_s1:
-            if os.path.exists("Logo_guindo.png"):
-                # Aquí se aplica el margen negativo del CSS
-                st.image("Logo_guindo.png", use_container_width=True)
+        st.markdown("### 📈 REPORTES")
+        r = st.radio("", ["Vencimientos", "Vacaciones", "Estadísticas"], key="menu_r")
+        
+        st.markdown("---")
+        if st.button("🚪 Cerrar Sesión"):
+            st.session_state.rol = None
+            st.rerun()
         
         # PANEL 2: REPORTES
         st.markdown("### 📈 REPORTES")
@@ -357,6 +351,7 @@ else:
         df_nom = dfs["PERSONAL"].copy()
         df_nom.columns = [col.upper() for col in df_nom.columns]
         st.table(df_nom)
+
 
 
 
