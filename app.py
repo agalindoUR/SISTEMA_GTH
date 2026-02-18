@@ -162,10 +162,13 @@ st.markdown("""
     ) !important;
 }
 
-[data-testid="stSidebar"] [data-testid="stImage"] {
-    margin-top: -50px !important;
-    padding-top: 0px !important;
-}
+/* 2. LOGO: MÁS PEQUEÑO Y MÁS ARRIBA */
+    [data-testid="stSidebar"] [data-testid="stImage"] {
+        margin-top: -80px !important; /* Sube más el logo */
+        width: 70% !important;        /* Lo hace más pequeño */
+        margin-left: auto;
+        margin-right: auto;
+    }
 
 [data-testid="stSidebar"] h3,
 [data-testid="stSidebar"] label,
@@ -207,7 +210,35 @@ th {
 }
 </style>
 """, unsafe_allow_html=True)
+st.markdown("""
+<style>
+/* ... (Todo tu código anterior se mantiene igual) ... */
 
+.stTabs [data-baseweb="tab"] p {
+    color: white !important;
+}
+
+/* ============================================================ */
+/* NUEVO: AÑADE ESTO AQUÍ AL FINAL (DENTRO DEL STYLE)           */
+/* ============================================================ */
+
+/* 4. BOTÓN CERRAR SESIÓN (ROJO) */
+/* Este selector busca botones específicamente dentro del Sidebar */
+[data-testid="stSidebar"] button {
+    background-color: #800000 !important; /* Rojo oscuro/Guindo */
+    color: white !important;
+    border: 2px solid #FFD700 !important; /* Borde dorado */
+    transition: 0.3s;
+}
+
+[data-testid="stSidebar"] button:hover {
+    background-color: #ff4b4b !important; /* Rojo brillante al pasar el mouse */
+    color: white !important;
+}
+/* ============================================================ */
+
+</style>
+""", unsafe_allow_html=True)
 
 if "rol" not in st.session_state:
     st.session_state.rol = None
@@ -487,4 +518,5 @@ else:
         df_nom = dfs["PERSONAL"].copy()
         df_nom.columns = [col.upper() for col in df_nom.columns]
         st.table(df_nom)
+
 
