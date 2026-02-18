@@ -119,23 +119,31 @@ st.markdown("""
         margin-top: 15px;
     }
 
-    /* 2. BARRA LATERAL (SIDEBAR) CON DOS COLORES */
+    /* 2. BARRA LATERAL (SIDEBAR) - VOLVIENDO AL ANTERIOR */
     [data-testid="stSidebar"] {
-        background: linear-gradient(
-            to bottom, 
-            #C5A059 0%,    /* Dorado Roosevelt */
-            #C5A059 25%,   /* Corte a la altura del logo aprox */
-            #4a0000 25%,   /* Guindo desde aquí hacia abajo */
-            #4a0000 100%
-        ) !important;
+        background-color: #C5A059 !important; /* Dorado oscuro sólido */
     }
 
-    /* FORZAR EL LOGO HACIA ARRIBA EN LA ZONA DORADA */
+    /* SUBIR EL LOGO PARA QUE CALCE ARRIBA */
     [data-testid="stSidebar"] [data-testid="stImage"] {
-        margin-top: -50px !important; /* Sube el logo para que entre en el amarillo */
+        margin-top: -65px !important; /* Esto lo empuja hacia el borde superior */
         padding-top: 0px !important;
     }
 
+    /* Color Guinda para TODO el texto del sidebar */
+    [data-testid="stSidebar"] h3, 
+    [data-testid="stSidebar"] label, 
+    [data-testid="stSidebar"] p, 
+    [data-testid="stSidebar"] span,
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
+    [data-testid="stSidebar"] [data-testid="stRadioButton"] label span {
+        color: #4a0000 !important;
+        font-weight: bold !important;
+    }
+    [data-testid="stSidebar"] hr {
+        border-color: #4a0000 !important;
+    }
+    
     /* COLOR DE TEXTO PARA QUE SE LEA EN EL FONDO GUINDO */
     [data-testid="stSidebar"] .stMarkdown p, 
     [data-testid="stSidebar"] label {
@@ -393,6 +401,7 @@ else:
         df_nom = dfs["PERSONAL"].copy()
         df_nom.columns = [col.upper() for col in df_nom.columns]
         st.table(df_nom)
+
 
 
 
