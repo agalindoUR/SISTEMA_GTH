@@ -106,42 +106,54 @@ def gen_word(nom, dni, df_c):
 st.set_page_config(page_title="GTH Roosevelt", layout="wide")
 st.markdown("""
     <style>
+    <style>
+
     /* 1. FONDO PRINCIPAL Y LOGIN */
+
     .stApp { 
+
         background: linear-gradient(135deg, #4a0000 0%, #800000 100%); 
+
     }
+
     .login-welcome { 
+
         color: #FFD700 !important; 
+
         text-align: center; 
+
         font-size: 19px !important; 
+
         font-weight: bold !important;
+
         display: block;
+
         margin-top: 15px;
+
     }
 
-    /* 2. BARRA LATERAL (SIDEBAR) - VOLVIENDO AL ANTERIOR */
+
+
+    /* 2. BARRA LATERAL (SIDEBAR) CON DOS COLORES */
+
     [data-testid="stSidebar"] {
-        background-color: #C5A059 !important; /* Dorado oscuro sólido */
-    }
 
-    /* SUBIR EL LOGO PARA QUE CALCE ARRIBA */
-    [data-testid="stSidebar"] [data-testid="stImage"] {
-        margin-top: -65px !important; /* Esto lo empuja hacia el borde superior */
-        padding-top: 0px !important;
-    }
+        /* Creamos el corte: Amarillo arriba (30%) y Guindo abajo (70%) */
 
-    /* Color Guinda para TODO el texto del sidebar */
-    [data-testid="stSidebar"] h3, 
-    [data-testid="stSidebar"] label, 
-    [data-testid="stSidebar"] p, 
-    [data-testid="stSidebar"] span,
-    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
-    [data-testid="stSidebar"] [data-testid="stRadioButton"] label span {
-        color: #4a0000 !important;
-        font-weight: bold !important;
-    }
-    [data-testid="stSidebar"] hr {
-        border-color: #4a0000 !important;
+        background: linear-gradient(
+
+            to bottom, 
+
+            #FFD700 0%, 
+
+            #FFD700 30%, 
+
+            #4a0000 30%, 
+
+            #4a0000 100%
+
+        ) !important;
+
     }
     
     /* COLOR DE TEXTO PARA QUE SE LEA EN EL FONDO GUINDO */
@@ -401,6 +413,7 @@ else:
         df_nom = dfs["PERSONAL"].copy()
         df_nom.columns = [col.upper() for col in df_nom.columns]
         st.table(df_nom)
+
 
 
 
