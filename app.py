@@ -222,19 +222,21 @@ st.markdown("""
 /* NUEVO: AÑADE ESTO AQUÍ AL FINAL (DENTRO DEL STYLE)           */
 /* ============================================================ */
 
-/* 4. BOTÓN CERRAR SESIÓN (ROJO) */
-/* Este selector busca botones específicamente dentro del Sidebar */
+/* 4. BOTÓN CERRAR SESIÓN (AMARILLO CON LETRAS OSCURAS) */
 [data-testid="stSidebar"] button {
-    background-color: #800000 !important; /* Rojo oscuro/Guindo */
-    color: white !important;
-    border: 2px solid #FFD700 !important; /* Borde dorado */
+    background-color: #FFD700 !important; /* El amarillo que ya tienes */
+    color: #4a0000 !important;           /* Texto guindo oscuro para que sea legible */
+    border: 2px solid #FFD700 !important; 
+    font-weight: bold !important;
     transition: 0.3s;
 }
 
 [data-testid="stSidebar"] button:hover {
-    background-color: #ff4b4b !important; /* Rojo brillante al pasar el mouse */
-    color: white !important;
+    background-color: #ff4b4b !important; /* Cambia a rojo al pasar el mouse */
+    color: white !important;              /* Al ponerse rojo, las letras vuelven a ser blancas */
+    border: 2px solid #ff4b4b !important;
 }
+
 /* ============================================================ */
 
 </style>
@@ -518,5 +520,6 @@ else:
         df_nom = dfs["PERSONAL"].copy()
         df_nom.columns = [col.upper() for col in df_nom.columns]
         st.table(df_nom)
+
 
 
