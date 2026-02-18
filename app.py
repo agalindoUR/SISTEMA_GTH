@@ -400,3 +400,176 @@ with st.sidebar:
 
 
 
+# -*- coding: utf-8 -*-
+
+import streamlit as st
+import pandas as pd
+import os
+from datetime import date
+from io import BytesIO
+from docx import Document
+from docx.shared import Pt, Inches
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+
+# --- 1. CONFIGURACIÓN Y CONSTANTES ---
+
+DB = "DB_SISTEMA_GTH.xlsx"
+F_N = "MG. ARTURO JAVIER GALINDO MARTINEZ"
+F_C = "JEFE DE GESTIÓN DEL TALENTO HUMANO"
+
+TEXTO_CERT = "LA OFICINA DE GESTIÓN DE TALENTO HUMANO DE LA UNIVERSIDAD PRIVADA DE HUANCAYO “FRANKLIN ROOSEVELT”, CERTIFICA QUE:"
+
+MOTIVOS_CESE = [
+    "Término de contrato",
+    "Renuncia",
+    "Despido",
+    "Mutuo acuerdo",
+    "Fallecimiento",
+    "Otros"
+]
+
+COLUMNAS = {
+    "PERSONAL": ["dni", "apellidos y nombres", "link"],
+    "DATOS GENERALES": ["apellidos y nombres", "dni", "dirección", "link de dirección", "estado civil", "fecha de nacimiento", "edad"],
+    "DATOS FAMILIARES": ["parentesco", "apellidos y nombres", "dni", "fecha de nacimiento", "edad", "estudios", "telefono"],
+    "EXP. LABORAL": ["tipo de experiencia", "lugar", "puesto", "fecha inicio", "fecha de fin", "motivo cese"],
+    "FORM. ACADEMICA": ["grado, titulo o especialización", "descripcion", "universidad", "año"],
+    "INVESTIGACION": ["año publicación", "autor, coautor o asesor", "tipo de investigación publicada", "nivel de publicación", "lugar de publicación"],
+    "CONTRATOS": ["id", "dni", "cargo", "sueldo", "f_inicio", "f_fin", "tipo", "estado", "motivo cese"],
+    "VACACIONES": ["periodo", "fecha de inicio", "fecha de fin", "días generados", "días gozados", "saldo", "link"],
+    "OTROS BENEFICIOS": ["periodo", "tipo de beneficio", "link"],
+    "MERITOS Y DEMERITOS": ["periodo", "merito o demerito", "motivo", "link"],
+    "EVALUACION DEL DESEMPEÑO": ["periodo", "merito o demerito", "motivo", "link"],
+    "LIQUIDACIONES": ["periodo", "firmo", "link"]
+}
+
+
+# --- 2. FUNCIONES ---
+
+def load_data():
+    if not os.path.exists(DB):
+        with pd.ExcelWriter(DB) as w:
+            for h, cols in COLUMNAS.items():
+                pd.DataFrame(columns=cols).to_excel(w, sheet_name=h, index=False)
+
+    dfs = {}
+
+    with pd.ExcelFile(DB) as x:
+        for h in COLUMNAS.keys():
+            df = pd.read_excel(x, h) if h in x.sheet_names else pd.DataFrame(columns=COLUMNAS[h])
+            df.columns = [str(c).strip().lower() for c in df.columns]
+
+            if "dni" in df.columns:
+                df["dni"] = df["dni"].astype(str).str.strip().replace(r'\.0$', '', regex=True)
+
+            dfs[h] = df
+
+    return dfs
+
+
+def save_data(dfs):
+    with pd.ExcelWriter(DB) as w:
+        for h, df in dfs.items():
+            df_s = df.copy()
+            df_s.columns = [c.upper() for c in df_s.columns]
+            df_s.to_excel(w, sheet_name=h, index=False)
+
+
+# --- 3. CONFIGURACIÓN VISUAL ---
+
+st.set_page_config(page_title="GTH Roosevelt", layout="wide")
+
+st.markdown("""
+<style>
+.stApp { background-color: #4a0000 !important; }
+
+[data-testid="stSidebar"] {
+    background: linear-gradient(
+        to bottom,
+        #FFD700 0%,
+        #FFD700 25%,
+        #4a0000 25%,
+        #4a0000 100%
+    ) !important;
+}
+
+div.stButton > button {
+    background-color: #FFD700 !important;
+    color: #4a0000 !important;
+    font-weight: bold !important;
+    border-radius: 10px !important;
+    width: 100% !important;
+    border: none !important;
+    height: 3em !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
+# --- 4. CONTROL DE SESIÓN ---
+
+if "rol" not in st.session_state:
+    st.session_state.rol = None
+
+
+# --- 5. LOGIN ---
+
+if st.session_state.rol is None:
+
+    st.markdown("## ¡Tu talento es importante!")
+
+    col1, col2, col3 = st.columns([1, 1.2, 1])
+
+    with col2:
+        if os.path.exists("Logo_amarillo.png"):
+            st.image("Logo_amarillo.png", width=250)
+
+    col1, col2, col3 = st.columns([1, 1.5, 1])
+
+    with col2:
+        u = st.text_input("USUARIO")
+        p = st.text_input("CONTRASEÑA", type="password")
+
+        if st.button("INGRESAR"):
+            if u.lower() == "admin":
+                st.session_state.rol = "Admin"
+            elif u.lower() == "supervisor" and p == "123":
+                st.session_state.rol = "Supervisor"
+            elif u.lower() == "lector" and p == "123":
+                st.session_state.rol = "Lector"
+            else:
+                st.error("Credenciales incorrectas")
+
+            if st.session_state.rol:
+                st.rerun()
+
+
+# --- 6. SISTEMA PRINCIPAL ---
+
+else:
+
+    dfs = load_data()
+
+    with st.sidebar:
+
+        # LOGO PEQUEÑO CENTRADO EN EL BLOQUE AMARILLO
+        col_s1, col_s2, col_s3 = st.columns([1, 2, 1])
+        with col_s2:
+            if os.path.exists("Logo_guindo.png"):
+                st.image("Logo_guindo.png", width=110)
+
+        st.markdown("### MENÚ PRINCIPAL")
+        m = st.radio("", ["Consulta", "Registro", "Nómina General"])
+
+        st.markdown("### REPORTES")
+        r = st.radio("", ["Vencimientos", "Vacaciones", "Estadísticas"])
+
+        st.markdown("---")
+
+        if st.button("Cerrar Sesión"):
+            st.session_state.rol = None
+            st.rerun()
+
+    st.title("Sistema de Gestión de Talento Humano")
+
