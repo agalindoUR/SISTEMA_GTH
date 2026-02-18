@@ -228,7 +228,7 @@ else:
     # --- SIDEBAR ÚNICO Y CORREGIDO ---
     with st.sidebar:
         # 1. LOGO (Solo una vez)
-        c# LOGO MÁS PEQUEÑO Y CENTRADO EN EL FONDO AMARILLO
+        # LOGO MÁS PEQUEÑO Y CENTRADO EN EL FONDO AMARILLO
 col_s1, col_s2 = st.columns([1, 0.2])
 with col_s1:
     if os.path.exists("Logo_guindo.png"):
@@ -354,6 +354,7 @@ with col_s1:
         df_nom = dfs["PERSONAL"].copy()
         df_nom.columns = [col.upper() for col in df_nom.columns]
         st.table(df_nom)
+
 
 
 
