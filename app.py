@@ -121,14 +121,25 @@ st.markdown("""
 
     /* 2. BARRA LATERAL (SIDEBAR) CON DOS COLORES */
     [data-testid="stSidebar"] {
-        /* Creamos el corte: Amarillo arriba (30%) y Guindo abajo (70%) */
         background: linear-gradient(
             to bottom, 
-            #FFD700 0%, 
-            #FFD700 30%, 
-            #4a0000 30%, 
+            #C5A059 0%,    /* Dorado Roosevelt */
+            #C5A059 25%,   /* Corte a la altura del logo aprox */
+            #4a0000 25%,   /* Guindo desde aquí hacia abajo */
             #4a0000 100%
         ) !important;
+    }
+
+    /* FORZAR EL LOGO HACIA ARRIBA EN LA ZONA DORADA */
+    [data-testid="stSidebar"] [data-testid="stImage"] {
+        margin-top: -50px !important; /* Sube el logo para que entre en el amarillo */
+        padding-top: 0px !important;
+    }
+
+    /* COLOR DE TEXTO PARA QUE SE LEA EN EL FONDO GUINDO */
+    [data-testid="stSidebar"] .stMarkdown p, 
+    [data-testid="stSidebar"] label {
+        color: #FFD700 !important; /* Dorado sobre guindo queda elegante */
     }
 
     /* Color de los textos en la zona Guindo (Menu y Reportes) */
@@ -382,6 +393,7 @@ else:
         df_nom = dfs["PERSONAL"].copy()
         df_nom.columns = [col.upper() for col in df_nom.columns]
         st.table(df_nom)
+
 
 
 
