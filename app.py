@@ -132,143 +132,96 @@ def gen_word(nom, dni, df_c):
 
 # --- 3. DISEÑO Y LOGIN ---
 st.set_page_config(page_title="GTH Roosevelt", layout="wide")
+
 st.markdown("""
 <style>
-/* 1. ESTILOS GENERALES QUE YA TENÍAS */
-.stApp {
-    background-color: #4a0000 !important;
-}
+    /* 1. CONFIGURACIÓN DE APP Y FONDO */
+    .stApp {
+        background-color: #4a0000 !important;
+    }
 
-[data-testid="stWidgetLabel"] p {
-    color: #FFFFFF !important;
-    font-size: 16px !important;
-}
+    [data-testid="stWidgetLabel"] p {
+        color: #FFFFFF !important;
+        font-size: 16px !important;
+    }
 
-.login-welcome {
-    color: #FFD700 !important;
-    text-align: center;
-    font-size: 19px !important;
-    font-weight: bold !important;
-    display: block;
-    margin-top: 15px;
-}
+    .login-welcome {
+        color: #FFD700 !important;
+        text-align: center;
+        font-size: 19px !important;
+        font-weight: bold !important;
+        display: block;
+        margin-top: 15px;
+    }
 
-[data-testid="stSidebar"] {
-    background: linear-gradient(
-        to bottom,
-        #FFD700 0%,
-        #FFD700 25%,
-        #4a0000 25%,
-        #4a0000 100%
-    ) !important;
-}
+    /* 2. SIDEBAR (BARRA LATERAL) */
+    [data-testid="stSidebar"] {
+        background: linear-gradient(
+            to bottom,
+            #FFD700 0%,
+            #FFD700 25%,
+            #4a0000 25%,
+            #4a0000 100%
+        ) !important;
+    }
 
-[data-testid="stSidebar"] [data-testid="stImage"] {
-    margin-top: -80px !important;
-    width: 70% !important;
-    margin-left: auto;
-    margin-right: auto;
-}
+    [data-testid="stSidebar"] [data-testid="stImage"] {
+        margin-top: -80px !important;
+        width: 70% !important;
+        margin-left: auto;
+        margin-right: auto;
+    }
 
-[data-testid="stSidebar"] h3,
-[data-testid="stSidebar"] label,
-[data-testid="stSidebar"] p,
-[data-testid="stSidebar"] span {
-    color: #FFD700 !important;
-    font-weight: bold !important;
-}
+    [data-testid="stSidebar"] h3,
+    [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] span {
+        color: #FFD700 !important;
+        font-weight: bold !important;
+    }
 
-[data-testid="stSidebar"] hr {
-    border-color: #FFD700 !important;
-}
+    [data-testid="stSidebar"] hr {
+        border-color: #FFD700 !important;
+    }
 
-div.stButton > button {
-    background-color: #FFD700 !important;
-    color: #4a0000 !important;
-    font-weight: bold !important;
-    border-radius: 10px !important;
-    width: 100% !important;
-    border: none !important;
-    height: 3em !important;
-}
+    /* 3. BOTONES GENERALES (DENTRO DE LA APP) */
+    div.stButton > button {
+        background-color: #FFD700 !important;
+        color: #4a0000 !important;
+        font-weight: bold !important;
+        border-radius: 10px !important;
+        width: 100% !important;
+        border: none !important;
+        height: 3em !important;
+    }
 
-.stTabs [data-baseweb="tab"] p {
-    color: white !important;
-}
+    .stTabs [data-baseweb="tab"] p {
+        color: white !important;
+    }
 
-/* 2. ARREGLO ESPECÍFICO PARA EL BOTÓN DEL SIDEBAR (CERRAR SESIÓN) */
-[data-testid="stSidebar"] button {
-    background-color: #FFD700 !important; 
-    border: 2px solid #FFD700 !important;
-    border-radius: 10px !important;
-    width: 100% !important;
-}
+    /* 4. ARREGLO ESPECÍFICO PARA EL BOTÓN DE CERRAR SESIÓN (SIDEBAR) */
+    [data-testid="stSidebar"] button {
+        background-color: #FFD700 !important; 
+        border: 2px solid #FFD700 !important;
+        border-radius: 10px !important;
+        width: 100% !important;
+    }
 
-/* Esto asegura que el texto sea visible (Guindo sobre Amarillo) */
-[data-testid="stSidebar"] button p {
-    color: #4a0000 !important; 
-    font-weight: bold !important;
-}
+    /* Asegura que el texto sea visible: Guindo sobre Amarillo */
+    [data-testid="stSidebar"] button p {
+        color: #4a0000 !important; 
+        font-weight: bold !important;
+    }
 
-/* Efecto al pasar el mouse: se vuelve Guindo con letras Doradas */
-[data-testid="stSidebar"] button:hover {
-    background-color: #800000 !important; 
-    border: 2px solid #FFD700 !important;
-}
+    /* Efecto al pasar el mouse (Hover) */
+    [data-testid="stSidebar"] button:hover {
+        background-color: #800000 !important; 
+        border: 2px solid #FFD700 !important;
+    }
 
-[data-testid="stSidebar"] button:hover p {
-    color: #FFD700 !important; 
-}
-</style>
-""", unsafe_allow_html=True)
-
-/* 2. Color del TEXTO (el párrafo <p> dentro del botón) */
-[data-testid="stSidebar"] button p {
-    color: #4a0000 !important; 
-    font-weight: bold !important;
-}
-
-/* 3. Efecto Hover (al pasar el mouse) */
-[data-testid="stSidebar"] button:hover {
-    background-color: #800000 !important; 
-    border: 2px solid #FFD700 !important;
-}
-
-/* 4. Color del TEXTO al pasar el mouse */
-[data-testid="stSidebar"] button:hover p {
-    color: #FFD700 !important; 
-}
-</style>
-""", unsafe_allow_html=True)
-
-<style>
-/* ... (Todo tu código anterior se mantiene igual) ... */
-
-.stTabs [data-baseweb="tab"] p {
-    color: white !important;
-}
-
-/* ============================================================ */
-/* NUEVO: AÑADE ESTO AQUÍ AL FINAL (DENTRO DEL STYLE)           */
-/* ============================================================ */
-
-/* 4. BOTÓN CERRAR SESIÓN (AMARILLO CON LETRAS OSCURAS) */
-[data-testid="stSidebar"] button {
-    background-color: #FFD700 !important; /* El amarillo que ya tienes */
-    color: #4a0000 !important;           /* Texto guindo oscuro para que sea legible */
-    border: 2px solid #FFD700 !important; 
-    font-weight: bold !important;
-    transition: 0.3s;
-}
-
-[data-testid="stSidebar"] button:hover {
-    background-color: #ff4b4b !important; /* Cambia a rojo al pasar el mouse */
-    color: white !important;              /* Al ponerse rojo, las letras vuelven a ser blancas */
-    border: 2px solid #ff4b4b !important;
-}
-
-/* ============================================================ */
-
+    [data-testid="stSidebar"] button:hover p {
+        color: #FFD700 !important; 
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -550,6 +503,7 @@ else:
         df_nom = dfs["PERSONAL"].copy()
         df_nom.columns = [col.upper() for col in df_nom.columns]
         st.table(df_nom)
+
 
 
 
