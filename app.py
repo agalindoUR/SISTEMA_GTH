@@ -211,6 +211,27 @@ th {
 </style>
 """, unsafe_allow_html=True)
 st.markdown("""
+/* ARREGLO PARA EL BOTÓN DE CERRAR SESIÓN */
+[data-testid="stSidebar"] button p {
+    color: #4a0000 !important; /* Forza el texto a Guindo Oscuro */
+    font-weight: bold !important;
+}
+
+[data-testid="stSidebar"] button {
+    background-color: #FFD700 !important; /* Asegura el fondo amarillo */
+    border: 2px solid #FFD700 !important;
+}
+
+/* Efecto al pasar el mouse */
+[data-testid="stSidebar"] button:hover {
+    background-color: #800000 !important; /* Cambia a guindo al pasar el mouse */
+    border: 2px solid #FFD700 !important;
+}
+
+[data-testid="stSidebar"] button:hover p {
+    color: #FFD700 !important; /* El texto se vuelve dorado al pasar el mouse */
+}
+
 <style>
 /* ... (Todo tu código anterior se mantiene igual) ... */
 
@@ -520,6 +541,7 @@ else:
         df_nom = dfs["PERSONAL"].copy()
         df_nom.columns = [col.upper() for col in df_nom.columns]
         st.table(df_nom)
+
 
 
 
