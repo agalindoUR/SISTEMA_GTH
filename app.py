@@ -218,31 +218,26 @@ else:
     dfs = load_data()
     es_lector = st.session_state.rol == "Lector"
     
-    # --- SIDEBAR PERSONALIZADO ---
+    # --- SIDEBAR ÚNICO Y CORREGIDO ---
     with st.sidebar:
-        # LOGO GUINDO: En la parte superior amarilla
+        # 1. LOGO (Solo una vez)
         col_s1, col_s2 = st.columns([1, 0.2])
         with col_s1:
             if os.path.exists("Logo_guindo.png"):
                 st.image("Logo_guindo.png", use_container_width=True)
         
+        # 2. MENÚ PRINCIPAL
         st.markdown("### 🛠️ MENÚ PRINCIPAL")
-        m = st.radio("", ["🔍 Consulta", "➕ Registro", "📊 Nómina General"], key="menu_p")
+        m = st.radio("", ["🔍 Consulta", "➕ Registro", "📊 Nómina General"], key="menu_p_unico")
         
+        # 3. REPORTES
         st.markdown("### 📈 REPORTES")
-        r = st.radio("", ["Vencimientos", "Vacaciones", "Estadísticas"], key="menu_r")
+        r = st.radio("", ["Vencimientos", "Vacaciones", "Estadísticas"], key="menu_r_unico")
         
         st.markdown("---")
-        if st.button("🚪 Cerrar Sesión"):
-            st.session_state.rol = None
-            st.rerun()
         
-        # PANEL 2: REPORTES
-        st.markdown("### 📈 REPORTES")
-        r = st.radio("", ["Vencimientos", "Vacaciones", "Estadísticas"], key="menu_r")
-        
-        st.markdown("---")
-        if st.button("🚪 Cerrar Sesión"):
+        # 4. BOTÓN CERRAR SESIÓN
+        if st.button("🚪 Cerrar Sesión", key="btn_logout"):
             st.session_state.rol = None
             st.rerun()
 
@@ -351,6 +346,7 @@ else:
         df_nom = dfs["PERSONAL"].copy()
         df_nom.columns = [col.upper() for col in df_nom.columns]
         st.table(df_nom)
+
 
 
 
