@@ -226,28 +226,29 @@ else:
     es_lector = st.session_state.rol == "Lector"
     
     # --- SIDEBAR ÚNICO Y CORREGIDO ---
-    with st.sidebar:
-        # 1. LOGO (Solo una vez)
-        # LOGO MÁS PEQUEÑO Y CENTRADO EN EL FONDO AMARILLO
-col_s1, col_s2 = st.columns([1, 0.2])
-with col_s1:
-    if os.path.exists("Logo_guindo.png"):
-        st.image("Logo_guindo.png", use_container_width=True)
-        
-        # 2. MENÚ PRINCIPAL
-        st.markdown("### 🛠️ MENÚ PRINCIPAL")
-        m = st.radio("", ["🔍 Consulta", "➕ Registro", "📊 Nómina General"], key="menu_p_unico")
-        
-        # 3. REPORTES
-        st.markdown("### 📈 REPORTES")
-        r = st.radio("", ["Vencimientos", "Vacaciones", "Estadísticas"], key="menu_r_unico")
-        
-        st.markdown("---")
-        
-        # 4. BOTÓN CERRAR SESIÓN
-        if st.button("🚪 Cerrar Sesión", key="btn_logout"):
-            st.session_state.rol = None
-            st.rerun()
+with st.sidebar:
+
+    # LOGO MÁS PEQUEÑO Y CENTRADO
+    col_s1, col_s2, col_s3 = st.columns([1, 2, 1])
+    with col_s2:
+        if os.path.exists("Logo_guindo.png"):
+            st.image("Logo_guindo.png", width=110)
+
+    # MENÚ PRINCIPAL
+    st.markdown("### 🛠️ MENÚ PRINCIPAL")
+    m = st.radio("", ["🔍 Consulta", "➕ Registro", "📊 Nómina General"], key="menu_p_unico")
+
+    # REPORTES
+    st.markdown("### 📈 REPORTES")
+    r = st.radio("", ["Vencimientos", "Vacaciones", "Estadísticas"], key="menu_r_unico")
+
+    st.markdown("---")
+
+    # BOTÓN CERRAR SESIÓN
+    if st.button("🚪 Cerrar Sesión", key="btn_logout"):
+        st.session_state.rol = None
+        st.rerun()
+
 
     # --- CONTENIDO PRINCIPAL (Área Guinda) ---
     # LOGO AMARILLO: Reducido a la mitad (usando columnas laterales más anchas)
@@ -354,6 +355,7 @@ with col_s1:
         df_nom = dfs["PERSONAL"].copy()
         df_nom.columns = [col.upper() for col in df_nom.columns]
         st.table(df_nom)
+
 
 
 
