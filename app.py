@@ -228,10 +228,12 @@ else:
     # --- SIDEBAR ÚNICO Y CORREGIDO ---
     with st.sidebar:
         # 1. LOGO (Solo una vez)
-        col_s1, col_s2 = st.columns([1, 0.2])
-        with col_s1:
-            if os.path.exists("Logo_guindo.png"):
-                st.image("Logo_guindo.png", use_container_width=True)
+        c# LOGO MÁS PEQUEÑO Y CENTRADO EN EL FONDO AMARILLO
+col_s1, col_s2, col_s3 = st.columns([1, 2, 1])
+with col_s2:
+    if os.path.exists("Logo_guindo.png"):
+        st.image("Logo_guindo.png", width=120)  # <-- tamaño controlado aquí
+
         
         # 2. MENÚ PRINCIPAL
         st.markdown("### 🛠️ MENÚ PRINCIPAL")
@@ -353,6 +355,7 @@ else:
         df_nom = dfs["PERSONAL"].copy()
         df_nom.columns = [col.upper() for col in df_nom.columns]
         st.table(df_nom)
+
 
 
 
