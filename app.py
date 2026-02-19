@@ -505,8 +505,10 @@ else:
         df_nom = dfs["PERSONAL"].copy()
         df_nom.columns = [col.upper() for col in df_nom.columns]
     
-    # Esto elimina la primera columna de números (índice) por completo
-        st.write(df_nom.to_html(index=False, escape=False), unsafe_allow_html=True)
+    # Generamos el HTML sin índice y con una clase para el CSS
+        html_tabla = df_nom.to_html(index=False, escape=False)
+        st.markdown(f'<div class="stTable">{html_tabla}</div>', unsafe_allow_html=True)
+
 
 
 
