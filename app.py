@@ -146,6 +146,24 @@ st.markdown("""
     [data-testid="stSidebar"] {
         background: linear-gradient(to bottom, #FFD700 0%, #FFD700 25%, #4a0000 25%, #4a0000 100%) !important;
     }
+    /* 2. SIDEBAR (BARRA LATERAL) - Ajuste de color sólido para evitar desconfiguración */
+    [data-testid="stSidebar"] {
+        background-color: #4a0000 !important; /* Fondo Guindo sólido */
+        border-right: 2px solid #FFD700; /* Línea dorada divisoria */
+    }
+
+    /* Estilo para los textos del menú lateral */
+    [data-testid="stSidebar"] .stRadio label p, 
+    [data-testid="stSidebar"] h3 {
+        color: #FFD700 !important; /* Texto Dorado */
+        font-weight: bold !important;
+    }
+    
+    /* Ajuste para que el logo superior no se corte */
+    [data-testid="stSidebarNav"] {
+        background-color: #FFD700 !important; /* Fondo amarillo solo tras el logo si lo deseas */
+        margin-bottom: 20px;
+    }
 
     /* 3. FORZAR FONDO BLANCO EN TABLAS Y EDITORES */
     [data-testid="stDataEditor"], 
@@ -454,6 +472,7 @@ else:
                 save_data(dfs) # Guarda los cambios en tu Excel subido
                 st.success("Registros eliminados correctamente del sistema y del Excel.")
                 st.rerun()
+
 
 
 
