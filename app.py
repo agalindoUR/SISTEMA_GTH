@@ -504,7 +504,10 @@ else:
     elif m == "📊 Nómina General":
         df_nom = dfs["PERSONAL"].copy()
         df_nom.columns = [col.upper() for col in df_nom.columns]
-        st.table(df_nom)
+    
+    # Esto elimina la primera columna de números (índice) por completo
+        st.write(df_nom.to_html(index=False, escape=False), unsafe_allow_html=True)
+
 
 
 
