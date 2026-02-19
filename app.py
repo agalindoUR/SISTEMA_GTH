@@ -382,17 +382,17 @@ else:
 
                         if h_name == "CONTRATOS":
     # 1. Copiamos y preparamos columnas en mayúsculas
-                        vst = c_df.copy()
-                        vst.columns = [col.upper() for col in vst.columns] # Cabeceras Mayúsculas
-                        vst.insert(0, "SEL", False) # Columna de selección en mayúsculas
+                            vst = c_df.copy()
+                            vst.columns = [col.upper() for col in vst.columns] # Cabeceras Mayúsculas
+                            vst.insert(0, "SEL", False) # Columna de selección en mayúsculas
 
     # 2. El editor de datos SIN el índice de la izquierda
-                        ed = st.data_editor(
-                            vst,
-                            hide_index=True,  # ESTO QUITA LA COLUMNA QUE SOBRA
-                            use_container_width=True,
-                            key=f"ed_{h_name}"
-                        )
+                            ed = st.data_editor(
+                                vst,
+                                hide_index=True,  # ESTO QUITA LA COLUMNA QUE SOBRA
+                                use_container_width=True,
+                                key=f"ed_{h_name}"
+                            )
 
                             sel = ed[ed["Sel"] == True]
 
@@ -496,6 +496,7 @@ else:
         df_nom = dfs["PERSONAL"].copy()
         df_nom.columns = [col.upper() for col in df_nom.columns]
         st.table(df_nom)
+
 
 
 
