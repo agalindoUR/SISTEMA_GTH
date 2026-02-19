@@ -142,27 +142,31 @@ st.markdown("""
         font-size: 16px !important;
     }
 
-    /* 2. SIDEBAR (BARRA LATERAL) */
+    /* 2. SIDEBAR (BARRA LATERAL) - Arreglo de Logo y Colores */
     [data-testid="stSidebar"] {
-        background: linear-gradient(to bottom, #FFD700 0%, #FFD700 25%, #4a0000 25%, #4a0000 100%) !important;
-    }
-    /* 2. SIDEBAR (BARRA LATERAL) - Ajuste de color sólido para evitar desconfiguración */
-    [data-testid="stSidebar"] {
-        background-color: #4a0000 !important; /* Fondo Guindo sólido */
-        border-right: 2px solid #FFD700; /* Línea dorada divisoria */
+        background: linear-gradient(to bottom, #FFD700 0%, #FFD700 150px, #4a0000 150px, #4a0000 100%) !important;
     }
 
-    /* Estilo para los textos del menú lateral */
-    [data-testid="stSidebar"] .stRadio label p, 
-    [data-testid="stSidebar"] h3 {
-        color: #FFD700 !important; /* Texto Dorado */
+    /* Forzar que el logo no se agrande y se mantenga arriba */
+    [data-testid="stSidebar"] img {
+        max-height: 100px !important;
+        width: auto !important;
+        margin-top: -30px !important; /* Sube el logo si se bajó */
+    }
+
+    /* Ajuste de los textos del menú para que no choquen con el amarillo */
+    [data-testid="stSidebar"] .stRadio {
+        padding-top: 20px !important;
+    }
+
+    [data-testid="stSidebar"] .stRadio label p {
+        color: #FFD700 !important;
         font-weight: bold !important;
     }
     
-    /* Ajuste para que el logo superior no se corte */
-    [data-testid="stSidebarNav"] {
-        background-color: #FFD700 !important; /* Fondo amarillo solo tras el logo si lo deseas */
-        margin-bottom: 20px;
+    [data-testid="stSidebar"] h3 {
+        color: #FFD700 !important;
+        padding-top: 10px;
     }
 
     /* 3. FORZAR FONDO BLANCO EN TABLAS Y EDITORES */
@@ -472,6 +476,7 @@ else:
                 save_data(dfs) # Guarda los cambios en tu Excel subido
                 st.success("Registros eliminados correctamente del sistema y del Excel.")
                 st.rerun()
+
 
 
 
