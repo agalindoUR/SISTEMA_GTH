@@ -381,24 +381,18 @@ else:
                             c_df = pd.DataFrame(columns=COLUMNAS[h_name])
 
                         if h_name == "CONTRATOS":
-                            if not c_df.empty:
-                                # Botón de descarga con estilo
-                                st.download_button(
-                                    "📄 Generar Certificado de Trabajo",
-                                    gen_word(nom_c, dni_b, c_df),
-                                    f"Cert_{dni_b}.docx",
-                                    use_container_width=True
-                                )
+    # 1. Copiamos y preparamos columnas en mayúsculas
+                        vst = c_df.copy()
+                        vst.columns = [col.upper() for col in vst.columns] # Cabeceras Mayúsculas
+                        vst.insert(0, "SEL", False) # Columna de selección en mayúsculas
 
-                            vst = c_df.copy()
-                            vst.insert(0, "Sel", False)
-
-                            ed = st.data_editor(
-                                vst,
-                                hide_index=True,
-                                use_container_width=True,
-                                key=f"ed_{h_name}"
-                            )
+    # 2. El editor de datos SIN el índice de la izquierda
+                        ed = st.data_editor(
+                            vst,
+                            hide_index=True,  # ESTO QUITA LA COLUMNA QUE SOBRA
+                            use_container_width=True,
+                            key=f"ed_{h_name}"
+                        )
 
                             sel = ed[ed["Sel"] == True]
 
@@ -502,6 +496,7 @@ else:
         df_nom = dfs["PERSONAL"].copy()
         df_nom.columns = [col.upper() for col in df_nom.columns]
         st.table(df_nom)
+
 
 
 
