@@ -225,13 +225,7 @@ st.markdown("""
     [data-testid="stSidebar"] button:hover p {
         color: #FFD700 !important; 
     }
-    # --- BUSCA ESTO EN TU CÓDIGO (Línea 130 aprox.) ---
-st.markdown("""
-<style>
-    /* ... aquí ya tienes varios estilos de fondo y sidebar ... */
-    /* ... baja hasta el final de esa lista de estilos ... */
-
-    /* PÉGALO AQUÍ, JUSTO ANTES DE QUE SE CIERRE EL STYLE */
+   # ... (esto va después de los estilos del botón de cerrar sesión que ya tienes)
 
     /* 1. TABLAS ESTÁTICAS (st.table) */
     .stTable { 
@@ -267,9 +261,8 @@ st.markdown("""
         border: 2px solid #FDFD96 !important; 
         width: 100% !important;
     }
-
 </style>
-""", unsafe_allow_html=True) # <-- ESTO CIERRA EL BLOQUE
+""", unsafe_allow_html=True)
 
 if "rol" not in st.session_state:
     st.session_state.rol = None
@@ -509,6 +502,7 @@ else:
         df_nom = dfs["PERSONAL"].copy()
         df_nom.columns = [col.upper() for col in df_nom.columns]
         st.table(df_nom)
+
 
 
 
