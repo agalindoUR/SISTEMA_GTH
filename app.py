@@ -225,8 +225,51 @@ st.markdown("""
     [data-testid="stSidebar"] button:hover p {
         color: #FFD700 !important; 
     }
+    # --- BUSCA ESTO EN TU CÓDIGO (Línea 130 aprox.) ---
+st.markdown("""
+<style>
+    /* ... aquí ya tienes varios estilos de fondo y sidebar ... */
+    /* ... baja hasta el final de esa lista de estilos ... */
+
+    /* PÉGALO AQUÍ, JUSTO ANTES DE QUE SE CIERRE EL STYLE */
+
+    /* 1. TABLAS ESTÁTICAS (st.table) */
+    .stTable { 
+        background-color: white !important; 
+        border-radius: 10px !important; 
+    }
+    .stTable thead tr th { 
+        background-color: #FDFD96 !important; 
+        color: #4a0000 !important; 
+        text-transform: uppercase !important; 
+        font-weight: bold !important;
+        border: 1px solid #dee2e6 !important;
+    }
+    .stTable tbody tr td { 
+        color: black !important; 
+        background-color: white !important; 
+        border: 1px solid #dee2e6 !important;
+    }
+
+    /* 2. TABLAS EDITABLES (st.data_editor) */
+    [data-testid="stDataEditor"] { 
+        background-color: white !important; 
+        border-radius: 10px; 
+        padding: 5px; 
+    }
+
+    /* 3. BOTONES DE ACCIÓN */
+    div.stButton > button, .stDownloadButton > button {
+        background-color: #FFD700 !important; 
+        color: #4a0000 !important; 
+        font-weight: bold !important;
+        border-radius: 10px !important;
+        border: 2px solid #FDFD96 !important; 
+        width: 100% !important;
+    }
+
 </style>
-""", unsafe_allow_html=True)
+""", unsafe_allow_html=True) # <-- ESTO CIERRA EL BLOQUE
 
 if "rol" not in st.session_state:
     st.session_state.rol = None
@@ -466,6 +509,7 @@ else:
         df_nom = dfs["PERSONAL"].copy()
         df_nom.columns = [col.upper() for col in df_nom.columns]
         st.table(df_nom)
+
 
 
 
