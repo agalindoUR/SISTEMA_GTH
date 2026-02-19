@@ -509,47 +509,36 @@ else:
         
         df_nom = dfs["PERSONAL"].copy()
         
-        # Filtro dinámico
         if busqueda:
             df_nom = df_nom[
-                df_nom['apellidos y nombres'].str.lower().str.contains(busqueda) | 
-                df_nom['dni'].astype(str).contains(busqueda)
+                df_nom['apellidos y nombres'].str.lower().str.contains(busqueda, na=False) | 
+                df_nom['dni'].astype(str).str.contains(busqueda, na=False)
             ]
 
-        # 2. TABLA CON FORMATO ROOSEVELT (Sin columna de números)
+        # 2. TABLA SIN ÍNDICE (Para evitar la columna de más)
         df_ver = df_nom.copy()
         df_ver.columns = [col.upper() for col in df_ver.columns]
-        
-        # Insertamos columna de selección para poder eliminar
         df_ver.insert(0, "SEL", False)
         
-        # Usamos data_editor para permitir la selección y mantener estilo
         ed_nom = st.data_editor(
             df_ver,
-            hide_index=True, # QUITA LA COLUMNA DE MÁS
+            hide_index=True, # ELIMINA LA COLUMNA 0, 1, 2...
             use_container_width=True,
             key="editor_nomina_general"
         )
 
-        # 3. LÓGICA PARA ELIMINAR TRABAJADOR (Botón Rojo)
+        # 3. ELIMINAR REGISTROS (Botón Rojo)
         filas_sel = ed_nom[ed_nom["SEL"] == True]
         
         if not filas_sel.empty:
-            st.warning(f"⚠️ Has seleccionado {len(filas_sel)} trabajador(es) para eliminar.")
             if st.button("🚨 Eliminar Trabajador(es) Seleccionado(s)"):
-                # Obtenemos los DNI de las filas seleccionadas
-                dnis_a_borrar = filas_sel["DNI"].tolist()
+                # Filtramos para quedarnos con los que NO fueron seleccionados
+                dnis_a_borrar = filas_sel["DNI"].astype(str).tolist()
+                dfs["PERSONAL"] = dfs["PERSONAL"][~dfs["PERSONAL"]["dni"].astype(str).isin(dnis_a_borrar)]
                 
-                # Eliminamos de la hoja PERSONAL
-                dfs["PERSONAL"] = dfs["PERSONAL"][~dfs["PERSONAL"]["dni"].isin(dnis_a_borrar)]
-                
-                # OPCIONAL: Eliminar también sus contratos y otros datos para no dejar basura
-                for hoja in dfs:
-                    if "dni" in dfs[hoja].columns:
-                        dfs[hoja] = dfs[hoja][~dfs[hoja]["dni"].isin(dnis_a_borrar)]
-                
-                save_data(dfs) # GUARDA EN EL EXCEL
-                st.success("Trabajador eliminado correctamente del sistema y del Excel.")
+                # Sincronizamos con el Excel
+                save_data(dfs)
+                st.success(f"Se han eliminado {len(dnis_a_borrar)} registro(s) correctamente.")
                 st.rerun()
 
 
