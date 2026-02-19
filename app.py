@@ -463,13 +463,10 @@ else:
                     st.success("Registrado correctamente")
 
     elif m == "📊 Nómina General":
-    df_nom = dfs["PERSONAL"].copy()
-    
-    # Pasamos cabeceras a Mayúsculas
-    df_nom.columns = [col.upper() for col in df_nom.columns]
-    
-    # Mostramos con st.table para aplicar el fondo blanco y cabecera amarilla
-    st.table(df_nom)
+        df_nom = dfs["PERSONAL"].copy()
+        df_nom.columns = [col.upper() for col in df_nom.columns]
+        st.table(df_nom)
+
 
 
 
