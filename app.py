@@ -130,10 +130,6 @@ def gen_word(nom, dni, df_c):
     return buf
 
 
-# --- 3. DISEÑO Y LOGIN ---
-st.set_page_config(page_title="GTH Roosevelt", layout="wide")
-
-st.markdown("""
 <style>
     /* 1. CONFIGURACIÓN DE APP Y FONDO */
     .stApp {
@@ -145,133 +141,52 @@ st.markdown("""
         font-size: 16px !important;
     }
 
-    .login-welcome {
-        color: #FFD700 !important;
-        text-align: center;
-        font-size: 19px !important;
-        font-weight: bold !important;
-        display: block;
-        margin-top: 15px;
-    }
-
     /* 2. SIDEBAR (BARRA LATERAL) */
     [data-testid="stSidebar"] {
-        background: linear-gradient(
-            to bottom,
-            #FFD700 0%,
-            #FFD700 25%,
-            #4a0000 25%,
-            #4a0000 100%
-        ) !important;
+        background: linear-gradient(to bottom, #FFD700 0%, #FFD700 25%, #4a0000 25%, #4a0000 100%) !important;
     }
 
-    [data-testid="stSidebar"] [data-testid="stImage"] {
-        margin-top: -80px !important;
-        width: 70% !important;
-        margin-left: auto;
-        margin-right: auto;
+    /* 3. FORZAR FONDO BLANCO EN TABLAS Y EDITORES (Solución al fondo oscuro) */
+    [data-testid="stDataEditor"], 
+    [data-testid="stDataEditor"] > div, 
+    [data-testid="stDataEditor"] canvas,
+    .stTable, table {
+        background-color: white !important;
+        color: black !important;
     }
 
-    [data-testid="stSidebar"] h3,
-    [data-testid="stSidebar"] label,
-    [data-testid="stSidebar"] p,
-    [data-testid="stSidebar"] span {
-        color: #FFD700 !important;
+    /* 4. CABECERAS AMARILLAS */
+    .stTable thead tr th, table thead tr th {
+        background-color: #FDFD96 !important;
+        color: #4a0000 !important;
         font-weight: bold !important;
+        text-transform: uppercase !important;
+        border: 1px solid #dee2e6 !important;
     }
 
-    [data-testid="stSidebar"] hr {
-        border-color: #FFD700 !important;
-    }
-
-    /* 3. BOTONES GENERALES (DENTRO DE LA APP) */
-    div.stButton > button {
+    /* 5. BOTONES DORADOS (Generales) */
+    div.stButton > button, .stDownloadButton > button {
         background-color: #FFD700 !important;
         color: #4a0000 !important;
         font-weight: bold !important;
         border-radius: 10px !important;
-        width: 100% !important;
-        border: none !important;
-        height: 3em !important;
-    }
-
-    /* 4. PESTAÑAS (TABS) */
-    .stTabs [data-baseweb="tab"] p {
-        color: white !important;
-    }
-    
-    .stTabs [data-baseweb="tab"][aria-selected="true"] p {
-        color: #FFD700 !important; /* Dorado para la pestaña activa */
-    }
-
-    /* 5. ARREGLO ESPECÍFICO PARA EL BOTÓN DE CERRAR SESIÓN (SIDEBAR) */
-    [data-testid="stSidebar"] button {
-        background-color: #FFD700 !important; 
-        border: 2px solid #FFD700 !important;
-        border-radius: 10px !important;
+        border: 2px solid #4a0000 !important;
         width: 100% !important;
     }
 
-    [data-testid="stSidebar"] button p {
-        color: #4a0000 !important; 
-        font-weight: bold !important;
-    }
-
-    [data-testid="stSidebar"] button:hover {
-        background-color: #800000 !important; 
-        border: 2px solid #FFD700 !important;
-    }
-
-    [data-testid="stSidebar"] button:hover p {
-        color: #FFD700 !important; 
-    }
-   # ... (esto va después de los estilos del botón de cerrar sesión que ya tienes)
-
-    /* 1. TABLAS ESTÁTICAS (st.table) */
-    .stTable { 
-        background-color: white !important; 
-        border-radius: 10px !important; 
-    }
-    .stTable thead tr th { 
-        background-color: #FDFD96 !important; 
-        color: #4a0000 !important; 
-        text-transform: uppercase !important; 
-        font-weight: bold !important;
-        border: 1px solid #dee2e6 !important;
-    }
-    .stTable tbody tr td { 
-        color: black !important; 
-        background-color: white !important; 
-        border: 1px solid #dee2e6 !important;
-    }
-
-    /* 2. TABLAS EDITABLES (st.data_editor) */
-    [data-testid="stDataEditor"] { 
-        background-color: white !important; 
-        border-radius: 10px; 
-        padding: 5px; 
-    }
-
-    /* 3. BOTONES DE ACCIÓN (Dorado Roosevelt) */
-    div.stButton > button, .stDownloadButton > button {
-        background-color: #FFD700 !important; 
-        color: #4a0000 !important; 
-        font-weight: bold !important;
-        border-radius: 10px !important;
-        border: 2px solid #4a0000 !important; /* Borde Guindo */
-        width: 100% !important;
-    }
-
-    /* BOTÓN ELIMINAR O ALERTAS (Rojo Institucional) */
-    /* Este busca botones que tengan el emoji de sirena o la palabra Eliminar */
-    div.stButton > button:contains("Eliminar"), 
-    div.stButton > button:contains("🚨") {
-        background-color: #900C3F !important; /* Rojo Guindo Oscuro */
+    /* 6. BOTÓN ELIMINAR ROJO (Fuerza el color por tipo 'secondary') */
+    button[kind="secondary"] {
+        background-color: #900C3F !important; /* Rojo Guindo */
         color: white !important;
         border: 2px solid #FFD700 !important;
+        font-weight: bold !important;
+        width: 100% !important;
     }
+
+    /* 7. PESTAÑAS (TABS) */
+    .stTabs [data-baseweb="tab"] p { color: white !important; }
+    .stTabs [data-baseweb="tab"][aria-selected="true"] p { color: #FFD700 !important; }
 </style>
-""", unsafe_allow_html=True)
 
 if "rol" not in st.session_state:
     st.session_state.rol = None
@@ -504,7 +419,7 @@ else:
     elif m == "📊 Nómina General":
         st.markdown("<h2 style='color: #FFD700;'>👥 Trabajadores registrados en el sistema</h2>", unsafe_allow_html=True)
         
-        # Búsqueda
+        # 1. Barra de búsqueda
         busqueda = st.text_input("🔍 Buscar por nombre o DNI:").strip().lower()
         df_nom = dfs["PERSONAL"].copy()
         
@@ -514,34 +429,36 @@ else:
                 df_nom['dni'].astype(str).str.contains(busqueda, na=False)
             ]
 
-        # Tabla
+        # 2. Preparación de la tabla
         df_ver = df_nom.copy()
         df_ver.columns = [col.upper() for col in df_ver.columns]
-        df_ver.insert(0, "SEL", False)
+        df_ver.insert(0, "SEL", False) # Columna para seleccionar
         
-        # Mostramos editor
+        # 3. El Editor (AQUÍ ES DONDE SE MUESTRA LA TABLA)
         ed_nom = st.data_editor(
             df_ver,
             hide_index=True, 
             use_container_width=True,
-            key="n_final_v2" # Cambiamos la key para forzar refresco de Streamlit
+            key="nomina_v3_blanco" 
         )
 
-        # EL BOTÓN (Solo sale si hay alguien seleccionado)
+        # 4. AQUÍ PEGAS EL CÓDIGO DEL BOTÓN ELIMINAR ↓
         filas_sel = ed_nom[ed_nom["SEL"] == True]
         
         if not filas_sel.empty:
             st.markdown("---")
-            # Forzamos el tipo 'secondary' para que el CSS de arriba lo pinte de rojo
-            if st.button("🚨 ELIMINAR REGISTROS SELECCIONADOS", type="secondary", use_container_width=True):
+            # El botón aparecerá abajo solo cuando marques un check en la tabla
+            if st.button(f"🚨 ELIMINAR {len(filas_sel)} REGISTRO(S)", type="secondary", use_container_width=True):
                 dnis = filas_sel["DNI"].astype(str).tolist()
+                
                 for h in dfs:
                     if 'dni' in dfs[h].columns:
                         dfs[h] = dfs[h][~dfs[h]['dni'].astype(str).isin(dnis)]
                 
-                save_data(dfs)
-                st.success("Sincronizado con el Excel con éxito.")
+                save_data(dfs) # Guarda los cambios en tu Excel subido
+                st.success("Registros eliminados correctamente del sistema y del Excel.")
                 st.rerun()
+
 
 
 
