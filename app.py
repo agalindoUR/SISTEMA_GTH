@@ -252,14 +252,23 @@ st.markdown("""
         padding: 5px; 
     }
 
-    /* 3. BOTONES DE ACCIÓN */
+    /* 3. BOTONES DE ACCIÓN (Dorado Roosevelt) */
     div.stButton > button, .stDownloadButton > button {
         background-color: #FFD700 !important; 
         color: #4a0000 !important; 
         font-weight: bold !important;
         border-radius: 10px !important;
-        border: 2px solid #FDFD96 !important; 
+        border: 2px solid #4a0000 !important; /* Borde Guindo */
         width: 100% !important;
+    }
+
+    /* BOTÓN ELIMINAR O ALERTAS (Rojo Institucional) */
+    /* Este busca botones que tengan el emoji de sirena o la palabra Eliminar */
+    div.stButton > button:contains("Eliminar"), 
+    div.stButton > button:contains("🚨") {
+        background-color: #900C3F !important; /* Rojo Guindo Oscuro */
+        color: white !important;
+        border: 2px solid #FFD700 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -496,6 +505,7 @@ else:
         df_nom = dfs["PERSONAL"].copy()
         df_nom.columns = [col.upper() for col in df_nom.columns]
         st.table(df_nom)
+
 
 
 
