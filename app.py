@@ -129,95 +129,67 @@ def gen_word(nom, dni, df_c):
 
     return buf
 
-# --- ESTE ES EL BLOQUE QUE DEBES TENER ---
 st.markdown("""
 <style>
-    /* 1. CONFIGURACIÓN DE APP Y FONDO */
-    .stApp {
-        background-color: #4a0000 !important;
-    }
+    /* 1. FONDO GENERAL */
+    .stApp { background-color: #4a0000 !important; }
 
-    [data-testid="stWidgetLabel"] p {
-        color: #FFFFFF !important;
-        font-size: 16px !important;
-    }
-
-    /* 2. SIDEBAR (BARRA LATERAL) - Logo en Cuadrado Amarillo Centrado */
+    /* 2. SIDEBAR - Fondo Guindo */
     [data-testid="stSidebar"] {
         background-color: #4a0000 !important;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
     }
 
-    /* Contenedor del Logo (Simula el cuadrado amarillo) */
+    /* 3. EL CUADRADO AMARILLO CENTRADO */
+    /* Creamos un contenedor blanco/transparente que centra el cuadrado */
     [data-testid="stSidebar"] [data-testid="stVerticalBlock"] > div:first-child {
-        background-color: #FFD700 !important;
-        width: 160px !important;      /* Ancho del cuadrado */
-        height: 160px !important;     /* Alto del cuadrado */
-        margin-left: auto !important; /* Centrado horizontal */
-        margin-right: auto !important;
-        margin-top: 10px !important;
-        border-radius: 10px !important; /* Bordes ligeramente redondeados */
+        background-color: #FFD700 !important; /* Fondo Amarillo */
+        width: 140px !important;              /* Ancho igual al alto para que sea cuadrado */
+        height: 140px !important;
+        margin: 20px auto !important;         /* Centrado horizontal y margen superior */
+        border-radius: 15px !important;       /* Bordes redondeados estéticos */
         display: flex !important;
-        justify-content: center !important;
-        align-items: center !important;
+        justify-content: center !important;   /* Centra el logo horizontal */
+        align-items: center !important;       /* Centra el logo vertical */
+        padding: 10px !important;
     }
 
-    /* Logo guindo dentro del cuadrado */
+    /* Ajuste del logo dentro del cuadrado */
     [data-testid="stSidebar"] img {
-        max-width: 85% !important;
-        max-height: 85% !important;
-        width: auto !important;
-        height: auto !important;
+        max-width: 100% !important;
+        max-height: 100% !important;
+        object-fit: contain !important;
     }
 
-    /* 3. TÍTULOS Y MENÚS */
-    [data-testid="stSidebar"] h3, [data-testid="stSidebar"] p {
-        color: #FFD700 !important; /* Dorado para que resalte en el guindo */
+    /* 4. TEXTOS DEL MENÚ - Visibilidad total */
+    [data-testid="stSidebar"] h3, 
+    [data-testid="stSidebar"] label, 
+    [data-testid="stSidebar"] p {
+        color: #FFD700 !important; /* Dorado para que resalte */
         font-weight: bold !important;
+        text-align: left !important;
     }
 
-    /* 8. BOTÓN CERRAR SESIÓN (Específico para Sidebar) */
+    /* 5. BOTÓN CERRAR SESIÓN - Reparación Total */
     [data-testid="stSidebar"] div.stButton > button {
-        background-color: #FFD700 !important;
-        color: #4a0000 !important;
+        background-color: #FFD700 !important; /* Fondo amarillo */
+        color: #4a0000 !important;           /* Texto guindo */
+        border-radius: 10px !important;
         border: 2px solid #FFFFFF !important;
-        width: 100% !important;
         font-weight: bold !important;
-        margin-top: 20px !important;
+        height: auto !important;
+        padding: 10px 20px !important;
+        width: 100% !important;
+        display: block !important;
+        opacity: 1 !important;
     }
 
-    /* 3. FORZAR FONDO BLANCO EN TABLAS Y EDITORES */
-    [data-testid="stDataEditor"], 
-    [data-testid="stDataEditor"] > div, 
-    [data-testid="stDataEditor"] canvas,
-    .stTable, table {
+    /* 6. TABLAS Y EDITORES (Fondo Blanco) */
+    [data-testid="stDataEditor"], [data-testid="stDataEditor"] canvas, .stTable {
         background-color: white !important;
         color: black !important;
-    }
-
-    /* 4. CABECERAS AMARILLAS */
-    .stTable thead tr th, table thead tr th {
-        background-color: #FDFD96 !important;
-        color: #4a0000 !important;
-        font-weight: bold !important;
-        text-transform: uppercase !important;
-        border: 1px solid #dee2e6 !important;
-    }
-
-    /* 5. BOTONES DORADOS */
-    div.stButton > button, .stDownloadButton > button {
-        background-color: #FFD700 !important;
-        color: #4a0000 !important;
-        font-weight: bold !important;
-        border-radius: 10px !important;
-        border: 2px solid #4a0000 !important;
-    }
-
-    /* 6. BOTÓN ELIMINAR ROJO */
-    button[kind="secondary"] {
-        background-color: #900C3F !important;
-        color: white !important;
-        border: 2px solid #FFD700 !important;
-        font-weight: bold !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -492,6 +464,7 @@ else:
                 save_data(dfs) # Guarda los cambios en tu Excel subido
                 st.success("Registros eliminados correctamente del sistema y del Excel.")
                 st.rerun()
+
 
 
 
