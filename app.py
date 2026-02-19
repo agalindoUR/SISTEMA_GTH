@@ -129,7 +129,8 @@ def gen_word(nom, dni, df_c):
 
     return buf
 
-
+# --- ESTE ES EL BLOQUE QUE DEBES TENER ---
+st.markdown("""
 <style>
     /* 1. CONFIGURACIÓN DE APP Y FONDO */
     .stApp {
@@ -146,7 +147,7 @@ def gen_word(nom, dni, df_c):
         background: linear-gradient(to bottom, #FFD700 0%, #FFD700 25%, #4a0000 25%, #4a0000 100%) !important;
     }
 
-    /* 3. FORZAR FONDO BLANCO EN TABLAS Y EDITORES (Solución al fondo oscuro) */
+    /* 3. FORZAR FONDO BLANCO EN TABLAS Y EDITORES */
     [data-testid="stDataEditor"], 
     [data-testid="stDataEditor"] > div, 
     [data-testid="stDataEditor"] canvas,
@@ -164,29 +165,24 @@ def gen_word(nom, dni, df_c):
         border: 1px solid #dee2e6 !important;
     }
 
-    /* 5. BOTONES DORADOS (Generales) */
+    /* 5. BOTONES DORADOS */
     div.stButton > button, .stDownloadButton > button {
         background-color: #FFD700 !important;
         color: #4a0000 !important;
         font-weight: bold !important;
         border-radius: 10px !important;
         border: 2px solid #4a0000 !important;
-        width: 100% !important;
     }
 
-    /* 6. BOTÓN ELIMINAR ROJO (Fuerza el color por tipo 'secondary') */
+    /* 6. BOTÓN ELIMINAR ROJO */
     button[kind="secondary"] {
-        background-color: #900C3F !important; /* Rojo Guindo */
+        background-color: #900C3F !important;
         color: white !important;
         border: 2px solid #FFD700 !important;
         font-weight: bold !important;
-        width: 100% !important;
     }
-
-    /* 7. PESTAÑAS (TABS) */
-    .stTabs [data-baseweb="tab"] p { color: white !important; }
-    .stTabs [data-baseweb="tab"][aria-selected="true"] p { color: #FFD700 !important; }
 </style>
+""", unsafe_allow_html=True)
 
 if "rol" not in st.session_state:
     st.session_state.rol = None
@@ -458,6 +454,7 @@ else:
                 save_data(dfs) # Guarda los cambios en tu Excel subido
                 st.success("Registros eliminados correctamente del sistema y del Excel.")
                 st.rerun()
+
 
 
 
