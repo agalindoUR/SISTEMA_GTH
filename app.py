@@ -394,7 +394,7 @@ else:
                                 key=f"ed_{h_name}"
                             )
 
-                            sel = ed[ed["Sel"] == True]
+                            sel = ed[ed["SEL"] == True]
 
                             if not es_lector:
                                 col_a, col_b = st.columns(2)
@@ -496,6 +496,7 @@ else:
         df_nom = dfs["PERSONAL"].copy()
         df_nom.columns = [col.upper() for col in df_nom.columns]
         st.table(df_nom)
+
 
 
 
