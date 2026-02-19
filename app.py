@@ -142,31 +142,38 @@ st.markdown("""
         font-size: 16px !important;
     }
 
-    /* 2. SIDEBAR (BARRA LATERAL) - Arreglo de Logo y Colores */
+    /* 2. SIDEBAR (BARRA LATERAL) - Logo Centrado y Fondo Cuadrado */
     [data-testid="stSidebar"] {
-        background: linear-gradient(to bottom, #FFD700 0%, #FFD700 150px, #4a0000 150px, #4a0000 100%) !important;
+        /* Degradado con corte exacto a 300px para crear el cuadrado amarillo */
+        background: linear-gradient(to bottom, #FFD700 0%, #FFD700 300px, #4a0000 300px, #4a0000 100%) !important;
     }
 
-    /* Forzar que el logo no se agrande y se mantenga arriba */
+    /* Contenedor del Logo: Centrado absoluto */
+    [data-testid="stSidebar"] [data-testid="stVerticalBlock"] > div:first-child {
+        display: flex !important;
+        justify-content: center !important; /* Centra horizontal */
+        align-items: center !important;     /* Centra vertical */
+        height: 300px !important;           /* Misma altura que el fondo amarillo */
+        margin-top: -60px !important;       /* Ajusta el margen superior de Streamlit */
+    }
+
+    /* Tamaño del logo guindo */
     [data-testid="stSidebar"] img {
-        max-height: 100px !important;
+        max-width: 80% !important;         /* Que no toque los bordes del cuadrado */
+        max-height: 200px !important;      /* Controla el alto para que no se deforme */
         width: auto !important;
-        margin-top: -30px !important; /* Sube el logo si se bajó */
+        height: auto !important;
     }
 
-    /* Ajuste de los textos del menú para que no choquen con el amarillo */
+    /* Estilo del Menú Principal (Empieza en la parte guindo) */
     [data-testid="stSidebar"] .stRadio {
         padding-top: 20px !important;
     }
 
-    [data-testid="stSidebar"] .stRadio label p {
+    [data-testid="stSidebar"] .stRadio label p, [data-testid="stSidebar"] h3 {
         color: #FFD700 !important;
         font-weight: bold !important;
-    }
-    
-    [data-testid="stSidebar"] h3 {
-        color: #FFD700 !important;
-        padding-top: 10px;
+        text-align: left;
     }
 
     /* 3. FORZAR FONDO BLANCO EN TABLAS Y EDITORES */
@@ -476,6 +483,7 @@ else:
                 save_data(dfs) # Guarda los cambios en tu Excel subido
                 st.success("Registros eliminados correctamente del sistema y del Excel.")
                 st.rerun()
+
 
 
 
