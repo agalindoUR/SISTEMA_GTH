@@ -172,18 +172,25 @@ st.markdown("""
         text-align: left !important;
     }
 
-    /* 5. BOTÓN CERRAR SESIÓN - Reparación Total */
+/* 8. BOTÓN CERRAR SESIÓN - Texto visible y claro */
     [data-testid="stSidebar"] div.stButton > button {
-        background-color: #FFD700 !important; /* Fondo amarillo */
-        color: #4a0000 !important;           /* Texto guindo */
+        background-color: #FFD700 !important; /* Fondo Amarillo */
+        color: #4a0000 !important;           /* TEXTO GUINDO (para que se lea) */
         border-radius: 10px !important;
         border: 2px solid #FFFFFF !important;
         font-weight: bold !important;
-        height: auto !important;
-        padding: 10px 20px !important;
+        font-size: 16px !important;          /* Tamaño de letra legible */
         width: 100% !important;
-        display: block !important;
-        opacity: 1 !important;
+        height: 45px !important;             /* Altura fija para que no se deforme */
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+    }
+
+    /* Asegurar que el texto dentro del botón sea guindo siempre */
+    [data-testid="stSidebar"] div.stButton > button p {
+        color: #4a0000 !important;
+        margin: 0 !important;
     }
 
     /* 6. TABLAS Y EDITORES (Fondo Blanco) */
@@ -464,6 +471,7 @@ else:
                 save_data(dfs) # Guarda los cambios en tu Excel subido
                 st.success("Registros eliminados correctamente del sistema y del Excel.")
                 st.rerun()
+
 
 
 
