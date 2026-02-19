@@ -504,9 +504,7 @@ else:
     elif m == "📊 Nómina General":
         st.markdown("<h2 style='color: #FFD700;'>👥 Trabajadores registrados en el sistema</h2>", unsafe_allow_html=True)
         
-        # 1. BARRA DE BÚSQUEDA
-        busqueda = st.text_input("🔍 Buscar por nombre o DNI en la nómina:").strip().lower()
-        
+        busqueda = st.text_input("🔍 Buscar por nombre o DNI:").strip().lower()
         df_nom = dfs["PERSONAL"].copy()
         
         if busqueda:
@@ -515,31 +513,40 @@ else:
                 df_nom['dni'].astype(str).str.contains(busqueda, na=False)
             ]
 
-        # 2. TABLA SIN ÍNDICE (Para evitar la columna de más)
+        # Configuración de la tabla
         df_ver = df_nom.copy()
         df_ver.columns = [col.upper() for col in df_ver.columns]
         df_ver.insert(0, "SEL", False)
         
+        # El Editor con fondo blanco forzado por CSS
         ed_nom = st.data_editor(
             df_ver,
-            hide_index=True, # ELIMINA LA COLUMNA 0, 1, 2...
+            hide_index=True,
             use_container_width=True,
-            key="editor_nomina_general"
+            key="editor_nomina_final"
         )
 
-        # 3. ELIMINAR REGISTROS (Botón Rojo)
+        # Lógica del Botón Eliminar
         filas_sel = ed_nom[ed_nom["SEL"] == True]
         
         if not filas_sel.empty:
-            if st.button("🚨 Eliminar Trabajador(es) Seleccionado(s)"):
-                # Filtramos para quedarnos con los que NO fueron seleccionados
-                dnis_a_borrar = filas_sel["DNI"].astype(str).tolist()
-                dfs["PERSONAL"] = dfs["PERSONAL"][~dfs["PERSONAL"]["dni"].astype(str).isin(dnis_a_borrar)]
-                
-                # Sincronizamos con el Excel
-                save_data(dfs)
-                st.success(f"Se han eliminado {len(dnis_a_borrar)} registro(s) correctamente.")
-                st.rerun()
+            st.markdown("---")
+            st.warning(f"⚠️ Seleccionado: {len(filas_sel)} trabajador(es)")
+            # Usamos un contenedor para el botón rojo
+            col_del, col_spacer = st.columns([1, 3])
+            with col_del:
+                if st.button("🚨 Eliminar Registro", use_container_width=True, type="secondary"):
+                    dnis_a_borrar = filas_sel["DNI"].astype(str).tolist()
+                    
+                    # Borrar de todas las hojas para mantener limpieza
+                    for hoja in dfs:
+                        if 'dni' in dfs[hoja].columns:
+                            dfs[hoja] = dfs[hoja][~dfs[hoja]['dni'].astype(str).isin(dnis_a_borrar)]
+                    
+                    save_data(dfs)
+                    st.success("Registros eliminados con éxito.")
+                    st.rerun()
+
 
 
 
