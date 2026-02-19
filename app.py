@@ -142,42 +142,47 @@ st.markdown("""
         font-size: 16px !important;
     }
 
-    /* 2. SIDEBAR (BARRA LATERAL) - Cuadrado Amarillo Pequeño y Títulos Visibles */
+    /* 2. SIDEBAR (BARRA LATERAL) - Logo en Cuadrado Amarillo Centrado */
     [data-testid="stSidebar"] {
-        background-color: #4a0000 !important; /* Fondo guindo base */
+        background-color: #4a0000 !important;
     }
 
-    /* Creamos el cuadrado amarillo centrado usando un gradiente con bordes */
-    [data-testid="stSidebarNav"] {
-        background-image: linear-gradient(to bottom, #FFD700 0%, #FFD700 150px, transparent 150px) !important;
-        background-size: 150px 150px !important; /* Aquí defines el tamaño del cuadrado */
-        background-repeat: no-repeat !important;
-        background-position: center 20px !important; /* Lo centra horizontalmente */
-        margin-bottom: 20px !important;
-    }
-
-    /* Centramos el logo dentro de ese cuadrado */
-    [data-testid="stSidebar"] img {
-        display: block !important;
-        margin-left: auto !important;
+    /* Contenedor del Logo (Simula el cuadrado amarillo) */
+    [data-testid="stSidebar"] [data-testid="stVerticalBlock"] > div:first-child {
+        background-color: #FFD700 !important;
+        width: 160px !important;      /* Ancho del cuadrado */
+        height: 160px !important;     /* Alto del cuadrado */
+        margin-left: auto !important; /* Centrado horizontal */
         margin-right: auto !important;
-        max-height: 100px !important;
+        margin-top: 10px !important;
+        border-radius: 10px !important; /* Bordes ligeramente redondeados */
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+    }
+
+    /* Logo guindo dentro del cuadrado */
+    [data-testid="stSidebar"] img {
+        max-width: 85% !important;
+        max-height: 85% !important;
         width: auto !important;
-        padding-top: 35px !important; /* Ajuste para centrar verticalmente en el cuadrado */
+        height: auto !important;
     }
 
-    /* CORRECCIÓN DE COLORES: Menú Principal y Reportes */
-    [data-testid="stSidebar"] h3, 
-    [data-testid="stSidebar"] .stMarkdown h3,
-    [data-testid="stSidebar"] p {
-        color: #FFD700 !important; /* Color Dorado */
+    /* 3. TÍTULOS Y MENÚS */
+    [data-testid="stSidebar"] h3, [data-testid="stSidebar"] p {
+        color: #FFD700 !important; /* Dorado para que resalte en el guindo */
         font-weight: bold !important;
-        opacity: 1 !important;
     }
 
-    /* Arreglo para los íconos y radio buttons */
-    [data-testid="stSidebar"] .stRadio label p {
-        color: #FFFFFF !important; /* Blanco para las opciones del menú */
+    /* 8. BOTÓN CERRAR SESIÓN (Específico para Sidebar) */
+    [data-testid="stSidebar"] div.stButton > button {
+        background-color: #FFD700 !important;
+        color: #4a0000 !important;
+        border: 2px solid #FFFFFF !important;
+        width: 100% !important;
+        font-weight: bold !important;
+        margin-top: 20px !important;
     }
 
     /* 3. FORZAR FONDO BLANCO EN TABLAS Y EDITORES */
@@ -487,6 +492,7 @@ else:
                 save_data(dfs) # Guarda los cambios en tu Excel subido
                 st.success("Registros eliminados correctamente del sistema y del Excel.")
                 st.rerun()
+
 
 
 
