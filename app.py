@@ -195,11 +195,16 @@ st.markdown("""
         height: 3em !important;
     }
 
+    /* 4. PESTAÑAS (TABS) */
     .stTabs [data-baseweb="tab"] p {
         color: white !important;
     }
+    
+    .stTabs [data-baseweb="tab"][aria-selected="true"] p {
+        color: #FFD700 !important; /* Dorado para la pestaña activa */
+    }
 
-    /* 4. ARREGLO ESPECÍFICO PARA EL BOTÓN DE CERRAR SESIÓN (SIDEBAR) */
+    /* 5. ARREGLO ESPECÍFICO PARA EL BOTÓN DE CERRAR SESIÓN (SIDEBAR) */
     [data-testid="stSidebar"] button {
         background-color: #FFD700 !important; 
         border: 2px solid #FFD700 !important;
@@ -207,13 +212,11 @@ st.markdown("""
         width: 100% !important;
     }
 
-    /* Asegura que el texto sea visible: Guindo sobre Amarillo */
     [data-testid="stSidebar"] button p {
         color: #4a0000 !important; 
         font-weight: bold !important;
     }
 
-    /* Efecto al pasar el mouse (Hover) */
     [data-testid="stSidebar"] button:hover {
         background-color: #800000 !important; 
         border: 2px solid #FFD700 !important;
@@ -503,6 +506,7 @@ else:
         df_nom = dfs["PERSONAL"].copy()
         df_nom.columns = [col.upper() for col in df_nom.columns]
         st.table(df_nom)
+
 
 
 
