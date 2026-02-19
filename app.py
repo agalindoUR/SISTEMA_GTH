@@ -504,6 +504,7 @@ else:
     elif m == "📊 Nómina General":
         st.markdown("<h2 style='color: #FFD700;'>👥 Trabajadores registrados en el sistema</h2>", unsafe_allow_html=True)
         
+        # Búsqueda
         busqueda = st.text_input("🔍 Buscar por nombre o DNI:").strip().lower()
         df_nom = dfs["PERSONAL"].copy()
         
@@ -513,39 +514,34 @@ else:
                 df_nom['dni'].astype(str).str.contains(busqueda, na=False)
             ]
 
-        # Configuración de la tabla
+        # Tabla
         df_ver = df_nom.copy()
         df_ver.columns = [col.upper() for col in df_ver.columns]
         df_ver.insert(0, "SEL", False)
         
-        # El Editor con fondo blanco forzado por CSS
+        # Mostramos editor
         ed_nom = st.data_editor(
             df_ver,
-            hide_index=True,
+            hide_index=True, 
             use_container_width=True,
-            key="editor_nomina_final"
+            key="n_final_v2" # Cambiamos la key para forzar refresco de Streamlit
         )
 
-        # Lógica del Botón Eliminar
+        # EL BOTÓN (Solo sale si hay alguien seleccionado)
         filas_sel = ed_nom[ed_nom["SEL"] == True]
         
         if not filas_sel.empty:
             st.markdown("---")
-            st.warning(f"⚠️ Seleccionado: {len(filas_sel)} trabajador(es)")
-            # Usamos un contenedor para el botón rojo
-            col_del, col_spacer = st.columns([1, 3])
-            with col_del:
-                if st.button("🚨 Eliminar Registro", use_container_width=True, type="secondary"):
-                    dnis_a_borrar = filas_sel["DNI"].astype(str).tolist()
-                    
-                    # Borrar de todas las hojas para mantener limpieza
-                    for hoja in dfs:
-                        if 'dni' in dfs[hoja].columns:
-                            dfs[hoja] = dfs[hoja][~dfs[hoja]['dni'].astype(str).isin(dnis_a_borrar)]
-                    
-                    save_data(dfs)
-                    st.success("Registros eliminados con éxito.")
-                    st.rerun()
+            # Forzamos el tipo 'secondary' para que el CSS de arriba lo pinte de rojo
+            if st.button("🚨 ELIMINAR REGISTROS SELECCIONADOS", type="secondary", use_container_width=True):
+                dnis = filas_sel["DNI"].astype(str).tolist()
+                for h in dfs:
+                    if 'dni' in dfs[h].columns:
+                        dfs[h] = dfs[h][~dfs[h]['dni'].astype(str).isin(dnis)]
+                
+                save_data(dfs)
+                st.success("Sincronizado con el Excel con éxito.")
+                st.rerun()
 
 
 
