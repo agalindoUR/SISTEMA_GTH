@@ -222,6 +222,16 @@ st.markdown("""
         color: #4a0000 !important;
         border: 2px solid #FFD700 !important;
     }
+    /* Estilo para la frase motivadora */
+    .frase-talento {
+        text-align: center !important;
+        color: #FFD700 !important; /* Dorado */
+        font-style: italic !important; /* Cursiva */
+        font-size: 1.2rem !important;
+        margin-top: 20px !important;
+        margin-bottom: 20px !important;
+        display: block !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -495,6 +505,7 @@ else:
                 save_data(dfs) # Guarda los cambios en tu Excel subido
                 st.success("Registros eliminados correctamente del sistema y del Excel.")
                 st.rerun()
+
 
 
 
