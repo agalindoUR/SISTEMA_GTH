@@ -414,7 +414,11 @@ else:
                         else:
                             # Vista para las demás pestañas
                             c_df_v = c_df.copy()
+    
+                            # ESTA LÍNEA ES LA QUE CAMBIA LA CABECERA A MAYÚSCULAS:
                             c_df_v.columns = [col.upper() for col in c_df_v.columns]
+    
+                            # USAMOS st.table PARA QUE EL CSS DEL PASO 1 FUNCIONE
                             st.table(c_df_v)
 
                             if not es_lector:
@@ -463,6 +467,7 @@ else:
         df_nom = dfs["PERSONAL"].copy()
         df_nom.columns = [col.upper() for col in df_nom.columns]
         st.table(df_nom)
+
 
 
 
