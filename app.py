@@ -142,38 +142,36 @@ st.markdown("""
         font-size: 16px !important;
     }
 
-    /* 2. SIDEBAR (BARRA LATERAL) - Logo Centrado y Fondo Cuadrado */
+    /* 2. SIDEBAR (BARRA LATERAL) - Cuadro Amarillo Pequeño y Logo Centrado */
     [data-testid="stSidebar"] {
-        /* Degradado con corte exacto a 300px para crear el cuadrado amarillo */
-        background: linear-gradient(to bottom, #FFD700 0%, #FFD700 300px, #4a0000 300px, #4a0000 100%) !important;
+        /* Reducimos el cuadro amarillo a solo 140px de alto */
+        background: linear-gradient(to bottom, #FFD700 0%, #FFD700 140px, #4a0000 140px, #4a0000 100%) !important;
     }
 
-    /* Contenedor del Logo: Centrado absoluto */
+    /* Contenedor del Logo: Centrado en el espacio de 140px */
     [data-testid="stSidebar"] [data-testid="stVerticalBlock"] > div:first-child {
         display: flex !important;
-        justify-content: center !important; /* Centra horizontal */
-        align-items: center !important;     /* Centra vertical */
-        height: 300px !important;           /* Misma altura que el fondo amarillo */
-        margin-top: -60px !important;       /* Ajusta el margen superior de Streamlit */
+        justify-content: center !important; /* Centro horizontal */
+        align-items: center !important;     /* Centro vertical */
+        height: 140px !important;           /* Ajustado al nuevo tamaño del cuadro */
+        margin-top: -40px !important;       /* Elimina el espacio sobrante de Streamlit */
     }
 
-    /* Tamaño del logo guindo */
+    /* Ajuste del Logo para que quepa en el cuadro chico */
     [data-testid="stSidebar"] img {
-        max-width: 80% !important;         /* Que no toque los bordes del cuadrado */
-        max-height: 200px !important;      /* Controla el alto para que no se deforme */
+        max-height: 90px !important;        /* Logo más compacto */
         width: auto !important;
         height: auto !important;
     }
 
-    /* Estilo del Menú Principal (Empieza en la parte guindo) */
+    /* El menú comienza inmediatamente después en el fondo guindo */
     [data-testid="stSidebar"] .stRadio {
-        padding-top: 20px !important;
+        padding-top: 10px !important;
     }
 
-    [data-testid="stSidebar"] .stRadio label p, [data-testid="stSidebar"] h3 {
+    [data-testid="stSidebar"] .stRadio label p {
         color: #FFD700 !important;
         font-weight: bold !important;
-        text-align: left;
     }
 
     /* 3. FORZAR FONDO BLANCO EN TABLAS Y EDITORES */
@@ -483,6 +481,7 @@ else:
                 save_data(dfs) # Guarda los cambios en tu Excel subido
                 st.success("Registros eliminados correctamente del sistema y del Excel.")
                 st.rerun()
+
 
 
 
