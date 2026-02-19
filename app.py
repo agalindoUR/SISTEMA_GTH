@@ -198,6 +198,30 @@ st.markdown("""
         background-color: white !important;
         color: black !important;
     }
+/* 9. COLORES DEL LOGIN (Texto y Etiquetas) */
+    /* Título de bienvenida */
+    .stApp h1, .stApp h2, .stApp h3 {
+        color: #FFD700 !important; /* Dorado */
+    }
+
+    /* Etiquetas de los campos (Usuario/Contraseña) */
+    .stApp label p {
+        color: #FFFFFF !important; /* Blanco */
+        font-weight: bold !important;
+    }
+
+    /* Texto de instrucciones o "Welcome" */
+    .stApp .stMarkdown p {
+        color: #FFFFFF !important;
+        font-size: 1.1rem;
+    }
+
+    /* Input boxes (donde escribes) para que resalten */
+    .stApp input {
+        background-color: #ffffff !important;
+        color: #4a0000 !important;
+        border: 2px solid #FFD700 !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -471,6 +495,7 @@ else:
                 save_data(dfs) # Guarda los cambios en tu Excel subido
                 st.success("Registros eliminados correctamente del sistema y del Excel.")
                 st.rerun()
+
 
 
 
