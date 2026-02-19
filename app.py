@@ -222,15 +222,17 @@ st.markdown("""
         color: #4a0000 !important;
         border: 2px solid #FFD700 !important;
     }
-    /* Estilo para la frase motivadora */
+    /* Estilo para la frase motivadora - Centrado Forzado */
     .frase-talento {
+        width: 100% !important;
         text-align: center !important;
         color: #FFD700 !important; /* Dorado */
         font-style: italic !important; /* Cursiva */
-        font-size: 1.2rem !important;
-        margin-top: 20px !important;
-        margin-bottom: 20px !important;
+        font-size: 1.3rem !important; /* Un poco más grande para que luzca */
+        margin-top: 25px !important;
+        margin-bottom: 10px !important;
         display: block !important;
+        clear: both !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -505,6 +507,7 @@ else:
                 save_data(dfs) # Guarda los cambios en tu Excel subido
                 st.success("Registros eliminados correctamente del sistema y del Excel.")
                 st.rerun()
+
 
 
 
