@@ -299,31 +299,25 @@ else:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # --- CONTENIDO POR SECCIÓN ---
+# --- CONTENIDO POR SECCIÓN ---
 
     if m == "🔍 Consulta":
-
-        st.markdown(
-            "<h2 style='color: #FFD700;'>Búsqueda de Colaborador</h2>",
-            unsafe_allow_html=True
-        )
-
+        st.markdown("<h2 style='color: #FFD700;'>Búsqueda de Colaborador</h2>", unsafe_allow_html=True)
+        
         dni_b = st.text_input("Ingrese DNI para consultar:").strip()
 
         if dni_b:
-
             pers = dfs["PERSONAL"][dfs["PERSONAL"]["dni"] == dni_b]
 
             if not pers.empty:
-
                 nom_c = pers.iloc[0]["apellidos y nombres"]
 
-                st.markdown(
-                    f"<h1 style='color: white; border-bottom: 2px solid #FFD700;'>👤 {nom_c}</h1>",
-                    unsafe_allow_html=True
-                )
-
-                st.header(f"👤 {nom_c}")
+                # SOLUCIÓN AL DUPLICADO: Usamos solo un título estilizado
+                st.markdown(f"""
+                    <div style='border-bottom: 2px solid #FFD700; padding-bottom: 10px; margin-bottom: 20px;'>
+                        <h1 style='color: white; margin: 0;'>👤 {nom_c}</h1>
+                    </div>
+                """, unsafe_allow_html=True)
 
                 t_noms = [
                     "Datos Generales", "Exp. Laboral", "Form. Académica",
@@ -342,23 +336,22 @@ else:
                 tabs = st.tabs(t_noms)
 
                 for i, tab in enumerate(tabs):
-
                     h_name = h_keys[i]
-
                     with tab:
-
+                        # Filtrado de datos por DNI
                         if "dni" in dfs[h_name].columns:
                             c_df = dfs[h_name][dfs[h_name]["dni"] == dni_b]
                         else:
                             c_df = pd.DataFrame(columns=COLUMNAS[h_name])
 
                         if h_name == "CONTRATOS":
-
                             if not c_df.empty:
+                                # Botón de descarga con estilo
                                 st.download_button(
-                                    "📄 Certificado Word",
+                                    "📄 Generar Certificado de Trabajo",
                                     gen_word(nom_c, dni_b, c_df),
-                                    f"Cert_{dni_b}.docx"
+                                    f"Cert_{dni_b}.docx",
+                                    use_container_width=True
                                 )
 
                             vst = c_df.copy()
@@ -374,107 +367,71 @@ else:
                             sel = ed[ed["Sel"] == True]
 
                             if not es_lector:
-
                                 col_a, col_b = st.columns(2)
-
                                 with col_a:
                                     with st.expander("➕ Nuevo Contrato"):
                                         with st.form("f_add"):
-
                                             car = st.text_input("Cargo")
                                             sue = st.number_input("Sueldo", 0.0)
                                             ini = st.date_input("Inicio")
                                             fin = st.date_input("Fin")
-
                                             est_a = "ACTIVO" if fin >= date.today() else "CESADO"
                                             mot_a = st.selectbox("Motivo Cese", ["Vigente"] + MOTIVOS_CESE) if est_a == "CESADO" else "Vigente"
 
-                                            if st.form_submit_button("Guardar"):
-
+                                            if st.form_submit_button("Guardar Contrato"):
                                                 nid = dfs[h_name]["id"].max() + 1 if not dfs[h_name].empty else 1
-
-                                                new = {
-                                                    "id": nid,
-                                                    "dni": dni_b,
-                                                    "cargo": car,
-                                                    "sueldo": sue,
-                                                    "f_inicio": ini,
-                                                    "f_fin": fin,
-                                                    "estado": est_a,
-                                                    "motivo cese": mot_a
-                                                }
-
-                                                dfs[h_name] = pd.concat(
-                                                    [dfs[h_name], pd.DataFrame([new])],
-                                                    ignore_index=True
-                                                )
-
+                                                new = {"id": nid, "dni": dni_b, "cargo": car, "sueldo": sue, 
+                                                       "f_inicio": ini, "f_fin": fin, "estado": est_a, "motivo cese": mot_a}
+                                                dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new])], ignore_index=True)
                                                 save_data(dfs)
                                                 st.rerun()
 
                                 with col_b:
-                                    with st.expander("📝 Editar/Eliminar Seleccionado"):
-
+                                    with st.expander("📝 Editar/Eliminar"):
                                         if not sel.empty:
-
                                             with st.form("f_edit"):
-
                                                 n_car = st.text_input("Cargo", value=sel.iloc[0]["cargo"])
                                                 n_fin = st.date_input("Fin", value=pd.to_datetime(sel.iloc[0]["f_fin"]))
-
                                                 est_e = "ACTIVO" if n_fin >= date.today() else "CESADO"
                                                 mot_e = st.selectbox("Motivo Cese", MOTIVOS_CESE) if est_e == "CESADO" else "Vigente"
 
                                                 if st.form_submit_button("Actualizar"):
-
                                                     idx = sel.index[0]
-
                                                     dfs[h_name].at[idx, "cargo"] = n_car
                                                     dfs[h_name].at[idx, "f_fin"] = n_fin
                                                     dfs[h_name].at[idx, "estado"] = est_e
                                                     dfs[h_name].at[idx, "motivo cese"] = mot_e
-
                                                     save_data(dfs)
                                                     st.rerun()
-
-                                            if st.button("🚨 Eliminar Fila"):
+                                            
+                                            if st.button("🚨 Eliminar Fila Seleccionada"):
                                                 dfs[h_name] = dfs[h_name].drop(sel.index)
                                                 save_data(dfs)
                                                 st.rerun()
-
                                         else:
-                                            st.info("Selecciona una fila arriba")
+                                            st.info("Selecciona una fila en la tabla para editar.")
 
                         else:
-
+                            # Vista para las demás pestañas
                             c_df_v = c_df.copy()
                             c_df_v.columns = [col.upper() for col in c_df_v.columns]
                             st.table(c_df_v)
 
                             if not es_lector:
-                                with st.expander(f"➕ Registrar en {h_name}"):
+                                with st.expander(f"➕ Registrar Nuevo Dato"):
                                     with st.form(f"f_{h_name}"):
-
                                         new_row = {"dni": dni_b}
-
-                                        cols_f = [
-                                            c for c in COLUMNAS[h_name]
-                                            if c not in ["dni", "apellidos y nombres", "edad", "id"]
-                                        ]
-
+                                        cols_f = [c for c in COLUMNAS[h_name] if c not in ["dni", "apellidos y nombres", "edad", "id"]]
+                                        
                                         for col in cols_f:
                                             new_row[col] = st.text_input(col.title())
 
-                                        if st.form_submit_button("Confirmar"):
-                                            dfs[h_name] = pd.concat(
-                                                [dfs[h_name], pd.DataFrame([new_row])],
-                                                ignore_index=True
-                                            )
+                                        if st.form_submit_button("Confirmar Registro"):
+                                            dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new_row])], ignore_index=True)
                                             save_data(dfs)
                                             st.rerun()
-
             else:
-                st.error("No encontrado")
+                st.error("DNI no encontrado en la base de datos.")
 
     elif m == "➕ Registro" and not es_lector:
 
@@ -506,6 +463,7 @@ else:
         df_nom = dfs["PERSONAL"].copy()
         df_nom.columns = [col.upper() for col in df_nom.columns]
         st.table(df_nom)
+
 
 
 
