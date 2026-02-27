@@ -175,16 +175,26 @@ st.markdown("""
     div[role="columnheader"], .react-grid-HeaderCell, [data-testid="stDataEditorColumnHeader"] { 
         background-color: #FFF9C4 !important; 
     }
-    div[role="columnheader"] *, .react-grid-HeaderCell *, [data-testid="stDataEditorColumnHeader"] * { 
+    div[role="columnheader"] *, .react-grid-HeaderCell *, /* Cabecera interactiva en SÚPER NEGRITA */
+    [data-testid="stDataEditor"] .react-grid-HeaderCell span { 
         color: #4a0000 !important; 
-        font-weight: bold !important; 
+        font-weight: 900 !important; /* Extra negrita */
+        font-size: 15px !important; /* Letra más grande */
         text-transform: uppercase !important; 
+    }
     }
     /* Tablas estáticas (st.table) */
     thead tr th { background-color: #FFF9C4 !important; color: #4a0000 !important; font-weight: bold !important; text-transform: uppercase !important; border: 1px solid #f0f0f0 !important; }
     
     /* 8. Formularios e Inputs */
-    .stApp label p { color: #FFD700 !important; font-weight: bold !important; } /* Nombres de los cajones a llenar */
+    /* Textos amarillos para el fondo guindo general */
+    .stApp label p { color: #FFD700 !important; font-weight: bold !important; } 
+    
+    /* 🔥 NUEVO: Textos guindos EXCLUSIVOS para dentro de las cajas cremas (Agregar/Editar) */
+    [data-testid="stExpander"] label p { color: #4a0000 !important; font-weight: bold !important; }
+    [data-testid="stExpander"] div[data-baseweb="input"] { background-color: #ffffff !important; border: 2px solid #4a0000 !important; }
+    
+    /* Inputs generales */
     .stApp div[data-baseweb="input"] { background-color: #ffffff !important; border: 2px solid #FFD700 !important; }
     .stApp input { color: #4a0000 !important; font-weight: bold !important; }
 </style>
@@ -197,7 +207,7 @@ if "rol" not in st.session_state:
 
 # --- LOGIN ---
 if st.session_state.rol is None:
-    st.markdown('<p class="frase-talento">¡Tu talento es importante! :)</p>', unsafe_allow_html=True)
+    st.markdown("<h4 style='text-align: center; color: #FFD700;'>¡Tu talento es importante! :)</h4>", unsafe_allow_html=True)
 
     col_logo1, col_logo2, col_logo3 = st.columns([1, 1.2, 1])
     with col_logo2:
@@ -293,12 +303,47 @@ else:
                         else:
                             c_df = pd.DataFrame(columns=COLUMNAS.get(h_name, []))
 
+                        # ==========================================
+                        # PANEL DE RESUMEN AUTOMÁTICO PARA VACACIONES
+                        # ==========================================
+                        if h_name == "VACACIONES":
+                            df_contratos = dfs["CONTRATOS"][dfs["CONTRATOS"]["dni"] == dni_b]
+                            # Filtrar solo tiempo completo
+                            if "tipo" in df_contratos.columns:
+                                df_tc = df_contratos[df_contratos["tipo"].astype(str).str.strip().str.title() == "Tiempo Completo"]
+                            else:
+                                df_tc = pd.DataFrame()
+
+                            dias_trabajados = 0
+                            for _, row in df_tc.iterrows():
+                                try:
+                                    f_i = pd.to_datetime(row["f_inicio"]).date()
+                                    f_f = pd.to_datetime(row["f_fin"]).date()
+                                    if pd.notnull(f_i) and pd.notnull(f_f):
+                                        # Calculamos solo hasta la fecha actual si el contrato sigue a futuro
+                                        f_f_calc = min(f_f, date.today())
+                                        if f_f_calc >= f_i:
+                                            dias_trabajados += (f_f_calc - f_i).days + 1
+                                except: pass
+
+                            # Cálculo: 2.5 días por cada 30 días trabajados
+                            dias_generados = round((dias_trabajados / 30) * 2.5, 2)
+                            dias_gozados = pd.to_numeric(c_df["días gozados"], errors='coerce').sum()
+                            saldo_v = round(dias_generados - dias_gozados, 2)
+
+                            st.markdown(f"""
+                            <div style='display: flex; justify-content: space-between; background-color: #FFF9C4; padding: 15px; border-radius: 10px; border: 2px solid #FFD700; margin-bottom: 15px;'>
+                                <div style='text-align: center; width: 33%;'><h2 style='color: #4a0000; margin:0;'>{dias_generados}</h2><p style='color: #4a0000; margin:0; font-weight: bold;'>Días Generados Totales</p></div>
+                                <div style='text-align: center; width: 33%; border-left: 2px solid #FFD700; border-right: 2px solid #FFD700;'><h2 style='color: #4a0000; margin:0;'>{dias_gozados}</h2><p style='color: #4a0000; margin:0; font-weight: bold;'>Días Gozados</p></div>
+                                <div style='text-align: center; width: 33%;'><h2 style='color: #4a0000; margin:0;'>{saldo_v}</h2><p style='color: #4a0000; margin:0; font-weight: bold;'>Saldo Disponible</p></div>
+                            </div>
+                            """, unsafe_allow_html=True)
+
                         # VISTA DE TABLA EDITABLE
                         vst = c_df.copy()
                         vst.columns = [str(col).upper() for col in vst.columns] 
                         vst.insert(0, "SEL", False)
 
-                        # Borde amarillo a la tabla interactiva
                         st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 10px !important; }</style>""", unsafe_allow_html=True)
                         
                         ed = st.data_editor(vst, hide_index=True, use_container_width=True, key=f"ed_{h_name}")
@@ -306,8 +351,6 @@ else:
 
                         if not es_lector:
                             col_a, col_b = st.columns(2)
-                            
-                            # Identificar las columnas reales de la base de datos (ignorando id y dni)
                             cols_reales = [c for c in dfs[h_name].columns if c.lower() not in ["id", "dni", "apellidos y nombres"]]
 
                             # ==========================================
@@ -316,26 +359,57 @@ else:
                             with col_a:
                                 with st.expander("➕ Nuevo Registro"):
                                     with st.form(f"f_add_{h_name}", clear_on_submit=True):
-                                        new_row = {"dni": dni_b}
                                         
-                                        for col in cols_reales:
-                                            # Detección de tipo de dato para el formulario
-                                            if "fecha" in col.lower() or "f_" in col.lower():
-                                                new_row[col] = st.date_input(col.title())
-                                            elif col.lower() in ["sueldo", "días generados", "días gozados", "saldo", "edad", "monto"]:
-                                                new_row[col] = st.number_input(col.title(), 0.0)
-                                            else:
-                                                new_row[col] = st.text_input(col.title())
+                                        if h_name == "CONTRATOS":
+                                            car = st.text_input("Cargo")
+                                            tipo_c = st.selectbox("Tipo de Contrato", ["Tiempo Completo", "Tiempo Parcial", "Recibo por Honorarios"])
+                                            sue = st.number_input("Sueldo", 0.0)
+                                            ini = st.date_input("Inicio")
+                                            fin = st.date_input("Fin")
+                                            est_a = "ACTIVO" if fin >= date.today() else "CESADO"
+                                            mot_a = st.selectbox("Motivo Cese", ["Vigente"] + MOTIVOS_CESE) if est_a == "CESADO" else "Vigente"
 
-                                        if st.form_submit_button("Guardar Registro"):
-                                            if not dfs[h_name].empty and "id" in dfs[h_name].columns:
-                                                new_row["id"] = dfs[h_name]["id"].max() + 1
-                                            elif "id" in dfs[h_name].columns:
-                                                new_row["id"] = 1
+                                            if st.form_submit_button("Guardar Contrato"):
+                                                nid = dfs[h_name]["id"].max() + 1 if not dfs[h_name].empty else 1
+                                                new = {"id": nid, "dni": dni_b, "cargo": car, "sueldo": sue, "f_inicio": ini, "f_fin": fin, "tipo": tipo_c, "estado": est_a, "motivo cese": mot_a}
+                                                dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new])], ignore_index=True)
+                                                save_data(dfs)
+                                                st.rerun()
                                                 
-                                            dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new_row])], ignore_index=True)
-                                            save_data(dfs)
-                                            st.rerun()
+                                        elif h_name == "VACACIONES":
+                                            per = st.text_input("Periodo (Ej. 2024-2025)")
+                                            ini_v = st.date_input("Fecha de Inicio")
+                                            fin_v = st.date_input("Fecha de Fin")
+                                            lnk = st.text_input("Link de sustento")
+                                            
+                                            if st.form_submit_button("Registrar Vacaciones"):
+                                                d_goz = (fin_v - ini_v).days + 1
+                                                if d_goz < 0: d_goz = 0
+                                                new_v = {"dni": dni_b, "periodo": per, "fecha de inicio": ini_v, "fecha de fin": fin_v, 
+                                                         "días generados": 0, "días gozados": d_goz, "saldo": saldo_v - d_goz, "link": lnk}
+                                                dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new_v])], ignore_index=True)
+                                                save_data(dfs)
+                                                st.rerun()
+                                                
+                                        else:
+                                            new_row = {"dni": dni_b}
+                                            for col in cols_reales:
+                                                if "fecha" in col.lower() or "f_" in col.lower():
+                                                    new_row[col] = st.date_input(col.title())
+                                                elif col.lower() in ["sueldo", "días generados", "días gozados", "saldo", "edad", "monto"]:
+                                                    new_row[col] = st.number_input(col.title(), 0.0)
+                                                else:
+                                                    new_row[col] = st.text_input(col.title())
+
+                                            if st.form_submit_button("Guardar Registro"):
+                                                if not dfs[h_name].empty and "id" in dfs[h_name].columns:
+                                                    new_row["id"] = dfs[h_name]["id"].max() + 1
+                                                elif "id" in dfs[h_name].columns:
+                                                    new_row["id"] = 1
+                                                    
+                                                dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new_row])], ignore_index=True)
+                                                save_data(dfs)
+                                                st.rerun()
 
                             # ==========================================
                             # 2. EDITAR / ELIMINAR DATO SELECCIONADO
@@ -345,26 +419,64 @@ else:
                                     if not sel.empty:
                                         idx = sel.index[0]
                                         with st.form(f"f_edit_{h_name}"):
-                                            edit_row = {}
-                                            
-                                            for col in cols_reales:
-                                                val = sel.iloc[0][col.upper()]
-                                                if "fecha" in col.lower() or "f_" in col.lower():
-                                                    try: parsed_date = pd.to_datetime(val).date()
-                                                    except: parsed_date = date.today()
-                                                    edit_row[col] = st.date_input(col.title(), value=parsed_date)
-                                                elif col.lower() in ["sueldo", "días generados", "días gozados", "saldo", "edad", "monto"]:
-                                                    try: num_val = float(val) if pd.notnull(val) else 0.0
-                                                    except: num_val = 0.0
-                                                    edit_row[col] = st.number_input(col.title(), value=num_val)
-                                                else:
-                                                    edit_row[col] = st.text_input(col.title(), value=str(val) if pd.notnull(val) else "")
+                                            if h_name == "CONTRATOS":
+                                                n_car = st.text_input("Cargo", value=str(sel.iloc[0]["CARGO"]))
+                                                try: fin_val = pd.to_datetime(sel.iloc[0]["F_FIN"]).date()
+                                                except: fin_val = date.today()
+                                                n_fin = st.date_input("Fin", value=fin_val)
+                                                est_e = "ACTIVO" if n_fin >= date.today() else "CESADO"
+                                                mot_e = st.selectbox("Motivo Cese", MOTIVOS_CESE) if est_e == "CESADO" else "Vigente"
+
+                                                if st.form_submit_button("Actualizar"):
+                                                    dfs[h_name].at[idx, "cargo"] = n_car
+                                                    dfs[h_name].at[idx, "f_fin"] = n_fin
+                                                    dfs[h_name].at[idx, "estado"] = est_e
+                                                    dfs[h_name].at[idx, "motivo cese"] = mot_e
+                                                    save_data(dfs)
+                                                    st.rerun()
                                                     
-                                            if st.form_submit_button("Actualizar Registro"):
+                                            elif h_name == "VACACIONES":
+                                                per_e = st.text_input("Periodo", value=str(sel.iloc[0]["PERIODO"]))
+                                                try: i_v = pd.to_datetime(sel.iloc[0]["FECHA DE INICIO"]).date()
+                                                except: i_v = date.today()
+                                                try: f_v = pd.to_datetime(sel.iloc[0]["FECHA DE FIN"]).date()
+                                                except: f_v = date.today()
+                                                
+                                                ini_v = st.date_input("Fecha de Inicio", value=i_v)
+                                                fin_v = st.date_input("Fecha de Fin", value=f_v)
+                                                lnk_e = st.text_input("Link de sustento", value=str(sel.iloc[0]["LINK"]))
+                                                
+                                                if st.form_submit_button("Actualizar Vacaciones"):
+                                                    d_goz = (fin_v - ini_v).days + 1
+                                                    if d_goz < 0: d_goz = 0
+                                                    
+                                                    dfs[h_name].at[idx, "periodo"] = per_e
+                                                    dfs[h_name].at[idx, "fecha de inicio"] = ini_v
+                                                    dfs[h_name].at[idx, "fecha de fin"] = fin_v
+                                                    dfs[h_name].at[idx, "días gozados"] = d_goz
+                                                    dfs[h_name].at[idx, "link"] = lnk_e
+                                                    save_data(dfs)
+                                                    st.rerun()
+                                            else:
+                                                edit_row = {}
                                                 for col in cols_reales:
-                                                    dfs[h_name].at[idx, col] = edit_row[col]
-                                                save_data(dfs)
-                                                st.rerun()
+                                                    val = sel.iloc[0][col.upper()]
+                                                    if "fecha" in col.lower() or "f_" in col.lower():
+                                                        try: parsed_date = pd.to_datetime(val).date()
+                                                        except: parsed_date = date.today()
+                                                        edit_row[col] = st.date_input(col.title(), value=parsed_date)
+                                                    elif col.lower() in ["sueldo", "días generados", "días gozados", "saldo", "edad", "monto"]:
+                                                        try: num_val = float(val) if pd.notnull(val) else 0.0
+                                                        except: num_val = 0.0
+                                                        edit_row[col] = st.number_input(col.title(), value=num_val)
+                                                    else:
+                                                        edit_row[col] = st.text_input(col.title(), value=str(val) if pd.notnull(val) else "")
+                                                        
+                                                if st.form_submit_button("Actualizar Registro"):
+                                                    for col in cols_reales:
+                                                        dfs[h_name].at[idx, col] = edit_row[col]
+                                                    save_data(dfs)
+                                                    st.rerun()
                                         
                                         if st.button("🚨 Eliminar Fila Seleccionada", key=f"del_{h_name}"):
                                             dfs[h_name] = dfs[h_name].drop(sel.index)
@@ -419,6 +531,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente del sistema y del Excel.")
                 st.rerun()
+
 
 
 
