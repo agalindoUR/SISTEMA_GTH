@@ -24,17 +24,11 @@ st.markdown("""
 if "rol" not in st.session_state:
     st.session_state.rol = None
 
-# 4. LÓGICA DE DATOS Y SESIÓN (El cerebro del sistema)
-if "rol" not in st.session_state:
-    st.session_state.rol = None
-
 # 5. FLUJO DE PANTALLAS (Login o Panel Principal)
 if st.session_state.rol is None:
-    # Código del Login centrado
-F_N = "MG. ARTURO JAVIER GALINDO MARTINEZ"
-F_C = "JEFE DE GESTIÓN DEL TALENTO HUMANO"
-
-TEXTO_CERT = "LA OFICINA DE GESTIÓN DE TALENTO HUMANO DE LA UNIVERSIDAD PRIVADA DE HUANCAYO “FRANKLIN ROOSEVELT”, CERTIFICA QUE:"
+    # AQUÍ DEBE HABER 4 ESPACIOS DE SANGRÍA
+    st.markdown('<p class="frase-talento">¡Tu talento es importante! :)</p>', unsafe_allow_html=True)
+    # No pongas F_N ni F_C aquí adentro, ya las pusiste arriba.
 
 MOTIVOS_CESE = [
     "Término de contrato",
@@ -520,6 +514,7 @@ else:
                 save_data(dfs) # Guarda los cambios en tu Excel subido
                 st.success("Registros eliminados correctamente del sistema y del Excel.")
                 st.rerun()
+
 
 
 
