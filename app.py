@@ -121,15 +121,37 @@ st.markdown("""
         color: #FFD700 !important; font-weight: bold !important;
     }
     
-    /* Botón Cerrar Sesión (Corregido) */
+    /* Botón Cerrar Sesión (Corregido para visibilidad) */
     [data-testid="stSidebar"] div.stButton > button {
-        background-color: #FFD700 !important; color: #4a0000 !important; 
-        border-radius: 10px !important; border: none !important; 
-        font-weight: bold !important; font-size: 16px !important; 
-        width: 100% !important; padding: 10px !important; margin-top: 30px !important;
+        background-color: #FFD700 !important;
+        color: #FFFFFF !important; /* Texto blanco para visibilidad */
+        border-radius: 10px !important;
+        border: 2px solid #FFFFFF !important; /* Borde blanco para resaltar */
+        font-weight: bold !important;
+        font-size: 16px !important;
+        width: 100% !important;
+        padding: 10px !important;
+        margin-top: 30px !important;
     }
     [data-testid="stSidebar"] div.stButton > button:hover {
-        background-color: #ffffff !important;
+        background-color: #ffffff !important; /* Un blanco para el hover */
+        color: #4a0000 !important; /* Texto guindo oscuro en el hover */
+    }
+
+    /* Contenedor del Logo con fondo y recuadro */
+    .logo-container {
+        background-color: #FFF9C4; /* Fondo amarillo pastel */
+        border: 5px solid #FFD700; /* Recuadro amarillo brillante para resaltar */
+        border-radius: 15px; /* Bordes redondeados */
+        padding: 15px; /* Espaciado interno */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2); /* Sombra para resaltar */
+    }
+    .logo-container img {
+        max-width: 100%; /* La imagen se ajusta al contenedor */
+        height: auto;
     }
 
     /* Tablas y Editores */
@@ -194,12 +216,13 @@ else:
     es_lector = st.session_state.rol == "Lector"
 
     with st.sidebar:
-        # 1. Logo superior centrado mediante columnas
+        # 1. Logo superior centrado mediante columnas con proporciones ajustadas
         st.markdown("<br>", unsafe_allow_html=True)
-        col_logo_1, col_logo_2, col_logo_3 = st.columns([1, 4, 1])
+        col_logo_1, col_logo_2, col_logo_3 = st.columns([2, 3, 2]) # Cambiado de [1, 4, 1] para reducir tamaño
         with col_logo_2:
             if os.path.exists("Logo_guindo.png"):
-                st.image("Logo_guindo.png", use_container_width=True)
+                # st.image("Logo_guindo.png", use_container_width=True) # Reemplazado por contenedor HTML
+                st.markdown('<div class="logo-container"><img src="Logo_guindo.png"></div>', unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
 
         # 2. Opciones de menú (ahora usan todo el ancho de la barra)
@@ -211,7 +234,7 @@ else:
         
         st.markdown("---")
 
-        # 3. Botón inferior
+        # 3. Botón inferior con visibilidad corregida
         if st.button("🚪 Cerrar Sesión", key="btn_logout"):
             st.session_state.rol = None
             st.rerun()
@@ -367,6 +390,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente del sistema y del Excel.")
                 st.rerun()
+
 
 
 
