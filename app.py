@@ -14,137 +14,105 @@ F_N = "MG. ARTURO JAVIER GALINDO MARTINEZ"  # Nombre del que firma
 F_C = "JEFE DE GESTIÓN DEL TALENTO HUMANO"  # Cargo del que firma
 TEXTO_CERT = "LA OFICINA DE GESTIÓN DE TALENTO HUMANO DE LA UNIVERSIDAD PRIVADA DE HUANCAYO “FRANKLIN ROOSEVELT”, CERTIFICA QUE:"
 
-st.markdown("""
-<style>
-    /* Tu CSS */
-</style>
-""", unsafe_allow_html=True)
-
-# RECIÉN AQUÍ EMPIEZA EL IF
-if "rol" not in st.session_state:
-    st.session_state.rol = None
-
-# 5. FLUJO DE PANTALLAS (Login o Panel Principal)
-if st.session_state.rol is None:
-    # AQUÍ DEBE HABER 4 ESPACIOS DE SANGRÍA
-    st.markdown('<p class="frase-talento">¡Tu talento es importante! :)</p>', unsafe_allow_html=True)
-    # No pongas F_N ni F_C aquí adentro, ya las pusiste arriba.
-
-MOTIVOS_CESE = [
-    "Término de contrato",
-    "Renuncia",
-    "Despido",
-    "Mutuo acuerdo",
-    "Fallecimiento",
-    "Otros"
-]
-
-COLUMNAS = {
-    "PERSONAL": ["dni", "apellidos y nombres", "link"],
-    "DATOS GENERALES": ["apellidos y nombres", "dni", "dirección", "link de dirección", "estado civil", "fecha de nacimiento", "edad"],
-    "DATOS FAMILIARES": ["parentesco", "apellidos y nombres", "dni", "fecha de nacimiento", "edad", "estudios", "telefono"],
-    "EXP. LABORAL": ["tipo de experiencia", "lugar", "puesto", "fecha inicio", "fecha de fin", "motivo cese"],
-    "FORM. ACADEMICA": ["grado, titulo o especialización", "descripcion", "universidad", "año"],
-    "INVESTIGACION": ["año publicación", "autor, coautor o asesor", "tipo de investigación publicada", "nivel de publicación", "lugar de publicación"],
-    "CONTRATOS": ["id", "dni", "cargo", "sueldo", "f_inicio", "f_fin", "tipo", "estado", "motivo cese"],
-    "VACACIONES": ["periodo", "fecha de inicio", "fecha de fin", "días generados", "días gozados", "saldo", "link"],
-    "OTROS BENEFICIOS": ["periodo", "tipo de beneficio", "link"],
-    "MERITOS Y DEMERITOS": ["periodo", "merito o demerito", "motivo", "link"],
-    "EVALUACION DEL DESEMPEÑO": ["periodo", "merito o demerito", "motivo", "link"],
-    "LIQUIDACIONES": ["periodo", "firmo", "link"]
-}
-
-
-# --- 2. FUNCIONES ---
-def load_data():
-    if not os.path.exists(DB):
-        with pd.ExcelWriter(DB) as w:
-            for h, cols in COLUMNAS.items():
-                pd.DataFrame(columns=cols).to_excel(w, sheet_name=h, index=False)
-
-    dfs = {}
-
-    with pd.ExcelFile(DB) as x:
-        for h in COLUMNAS.keys():
-            df = pd.read_excel(x, h) if h in x.sheet_names else pd.DataFrame(columns=COLUMNAS[h])
-            df.columns = [str(c).strip().lower() for c in df.columns]
-
-            if "dni" in df.columns:
-                df["dni"] = df["dni"].astype(str).str.strip().replace(r'\.0$', '', regex=True)
-
-            dfs[h] = df
-
-    return dfs
-
-
-def save_data(dfs):
-    with pd.ExcelWriter(DB) as w:
-        for h, df in dfs.items():
-            df_s = df.copy()
-            df_s.columns = [c.upper() for c in df_s.columns]
-            df_s.to_excel(w, sheet_name=h, index=False)
-
-
-def gen_word(nom, dni, df_c):
-    doc = Document()
-    section = doc.sections[0]
-
-    section.page_height, section.page_width = Inches(11.69), Inches(8.27)
-    section.top_margin, section.bottom_margin = Inches(1.6), Inches(1.2)
-
-    header = section.header
-    if os.path.exists("header.png"):
-        p_h = header.paragraphs[0]
-        p_h.paragraph_format.left_indent = Inches(-1.0)
-        p_h.add_run().add_picture("header.png", width=Inches(8.27))
-
-    footer = section.footer
-    if os.path.exists("footer.png"):
-        p_f = footer.paragraphs[0]
-        p_f.paragraph_format.left_indent = Inches(-1.0)
-        p_f.add_run().add_picture("footer.png", width=Inches(8.27))
-
-    p_tit = doc.add_paragraph()
-    p_tit.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r_tit = p_tit.add_run("CERTIFICADO DE TRABAJO")
-    r_tit.bold = True
-    r_tit.font.name = 'Arial'
-    r_tit.font.size = Pt(24)
-
-    doc.add_paragraph("\n" + TEXTO_CERT).alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-
-    p_inf = doc.add_paragraph()
-    p_inf.add_run("El TRABAJADOR ").bold = False
-    p_inf.add_run(nom).bold = True
-    p_inf.add_run(f", identificado con DNI N° {dni}, laboró bajo el siguiente detalle:")
-
-    t = doc.add_table(rows=1, cols=3)
-    t.style = 'Table Grid'
-
-    for i, h in enumerate(["CARGO", "FECHA INICIO", "FECHA FIN"]):
-        t.rows[0].cells[i].text = h
-
-    for _, fila in df_c.iterrows():
-        celdas = t.add_row().cells
-        celdas[0].text = str(fila.get('cargo', ''))
-        celdas[1].text = pd.to_datetime(fila.get('f_inicio')).strftime('%d/%m/%Y') if pd.notnull(fila.get('f_inicio')) else ""
-        celdas[2].text = pd.to_datetime(fila.get('f_fin')).strftime('%d/%m/%Y') if pd.notnull(fila.get('f_fin')) else ""
-
-    doc.add_paragraph("\n\nHuancayo, " + date.today().strftime("%d/%m/%Y")).alignment = WD_ALIGN_PARAGRAPH.RIGHT
-
-    f = doc.add_paragraph()
-    f.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    f.add_run("\n\n__________________________\n" + F_N + "\n" + F_C).bold = True
-
-    buf = BytesIO()
-    doc.save(buf)
-    buf.seek(0)
-
-    return buf
-
 # --- ESTILOS CSS CORREGIDOS ---
 st.markdown("""
 <style>
+    /* 1. FONDO GENERAL */
+    .stApp { background-color: #4a0000 !important; }
+
+    /* 2. SIDEBAR */
+    [data-testid="stSidebar"] { background-color: #4a0000 !important; }
+    [data-testid="stSidebar"] [data-testid="stVerticalBlock"] > div:first-child {
+        background-color: #FFD700 !important;
+        width: 140px !important; height: 140px !important;
+        margin: 20px auto !important; border-radius: 15px !important;
+        display: flex !important; justify-content: center !important; align-items: center !important;
+        padding: 10px !important;
+    }
+
+    /* 3. ENCABEZADOS DE TABLAS ESTÁTICAS (st.table) */
+    thead tr th {
+        background-color: #FFF9C4 !important;
+        color: #4a0000 !important;
+        font-weight: bold !important;
+        text-transform: uppercase !important;
+    }
+
+    /* 4. ENCABEZADOS DE CONTRATOS (st.data_editor) */
+    [data-testid="stDataEditor"] div[data-testid="styledHeaderCell"] {
+        background-color: #FFF9C4 !important;
+    }
+    [data-testid="stDataEditor"] [data-testid="styledHeaderCell"] span {
+        color: #4a0000 !important;
+        font-weight: bold !important;
+    }
+
+    /* 5. TEXTO DE BIENVENIDA EN LOGIN (Blanco para legibilidad) */
+    .login-welcome {
+        color: #FFFFFF !important;
+        text-align: center;
+        font-weight: bold;
+        margin-top: 15px;
+        display: block;
+    }
+
+    /* 6. FRASE MOTIVADORA (Dorada y centrada) */
+    .frase-talento {
+        text-align: center;
+        color: #FFD700 !important;
+        font-style: italic;
+        font-size: 1.5rem;
+        margin-top: 25px;
+        margin-bottom: 20px;
+        display: block;
+    }
+
+    /* 7. BOTONES DORADOS */
+    div.stButton > button {
+        background-color: #FFD700 !important;
+        color: #4a0000 !important;
+        border-radius: 10px !important;
+        font-weight: bold !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+# ==========================================
+# 4. LÓGICA DE DATOS Y SESIÓN
+# ==========================================
+if "rol" not in st.session_state:
+    st.session_state.rol = None
+
+# --- FLUJO DE PANTALLAS ---
+if st.session_state.rol is None:
+    # Mostramos la frase motivadora SOLO AQUÍ para que no se duplique
+    st.markdown('<p class="frase-talento">¡Tu talento es importante! :)</p>', unsafe_allow_html=True)
+    
+    col_l1, col_l2, col_l3 = st.columns([1, 1.2, 1])
+    with col_l2:
+        if os.path.exists("Logo_amarillo.png"):
+            st.image("Logo_amarillo.png")
+            
+        u = st.text_input("USUARIO").lower().strip()
+        p = st.text_input("CONTRASEÑA", type="password")
+        
+        # Bienvenida con clase CSS corregida
+        st.markdown('<p class="login-welcome">Bienvenido (a) al sistema de gestión de datos de los colaboradores</p>', unsafe_allow_html=True)
+        
+        if st.button("INGRESAR"):
+            if u == "admin": 
+                st.session_state.rol = "Admin"
+                st.rerun()
+            elif (u == "lector" or u == "supervisor") and p == "123":
+                st.session_state.rol = u.title()
+                st.rerun()
+            else:
+                st.error("Credenciales incorrectas")
+
+else:
+    # Aquí empieza todo el sistema principal (Carga de datos, Sidebar, Tabs)
+    dfs = load_data()
+    # ... resto de tu código de consulta ...
+
     /* 1. FONDO GENERAL DEL SISTEMA */
     .stApp { 
         background-color: #4a0000 !important; 
@@ -538,6 +506,7 @@ else:
                 save_data(dfs) # Guarda los cambios en tu Excel subido
                 st.success("Registros eliminados correctamente del sistema y del Excel.")
                 st.rerun()
+
 
 
 
