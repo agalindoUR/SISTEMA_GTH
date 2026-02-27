@@ -10,8 +10,9 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 # --- 1. CONFIGURACIÓN Y CONSTANTES ---
 DB = "DB_SISTEMA_GTH.xlsx"
-F_N = "MG. ARTURO JAVIER GALINDO MARTINEZ"  # <--- ESTO DEBE IR AQUÍ, PEGADO AL MARGEN
-F_C = "JEFE DE GESTIÓN DEL TALENTO HUMANO"
+F_N = "MG. ARTURO JAVIER GALINDO MARTINEZ"  # Nombre del que firma
+F_C = "JEFE DE GESTIÓN DEL TALENTO HUMANO"  # Cargo del que firma
+TEXTO_CERT = "LA OFICINA DE GESTIÓN DE TALENTO HUMANO DE LA UNIVERSIDAD PRIVADA DE HUANCAYO “FRANKLIN ROOSEVELT”, CERTIFICA QUE:"
 
 st.markdown("""
 <style>
@@ -519,6 +520,7 @@ else:
                 save_data(dfs) # Guarda los cambios en tu Excel subido
                 st.success("Registros eliminados correctamente del sistema y del Excel.")
                 st.rerun()
+
 
 
 
