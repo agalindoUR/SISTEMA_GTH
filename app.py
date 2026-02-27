@@ -308,9 +308,10 @@ else:
                         # ==========================================
                         if h_name == "VACACIONES":
                             df_contratos = dfs["CONTRATOS"][dfs["CONTRATOS"]["dni"] == dni_b]
-                            # Filtrar solo tiempo completo
-                            if "tipo" in df_contratos.columns:
-                                df_tc = df_contratos[df_contratos["tipo"].astype(str).str.strip().str.title() == "Tiempo Completo"]
+                            
+                            # CORRECCIÓN: Filtramos por 'tipo contrato' == 'planilla completo'
+                            if "tipo contrato" in df_contratos.columns:
+                                df_tc = df_contratos[df_contratos["tipo contrato"].astype(str).str.strip().str.lower() == "planilla completo"]
                             else:
                                 df_tc = pd.DataFrame()
 
@@ -320,13 +321,11 @@ else:
                                     f_i = pd.to_datetime(row["f_inicio"]).date()
                                     f_f = pd.to_datetime(row["f_fin"]).date()
                                     if pd.notnull(f_i) and pd.notnull(f_f):
-                                        # Calculamos solo hasta la fecha actual si el contrato sigue a futuro
                                         f_f_calc = min(f_f, date.today())
                                         if f_f_calc >= f_i:
                                             dias_trabajados += (f_f_calc - f_i).days + 1
                                 except: pass
 
-                            # Cálculo: 2.5 días por cada 30 días trabajados
                             dias_generados = round((dias_trabajados / 30) * 2.5, 2)
                             dias_gozados = pd.to_numeric(c_df["días gozados"], errors='coerce').sum()
                             saldo_v = round(dias_generados - dias_gozados, 2)
@@ -361,17 +360,26 @@ else:
                                     with st.form(f"f_add_{h_name}", clear_on_submit=True):
                                         
                                         if h_name == "CONTRATOS":
+                                            # CORRECCIÓN: Agregados TODOS los campos para un nuevo contrato
                                             car = st.text_input("Cargo")
-                                            tipo_c = st.selectbox("Tipo de Contrato", ["Tiempo Completo", "Tiempo Parcial", "Recibo por Honorarios"])
                                             sue = st.number_input("Sueldo", 0.0)
                                             ini = st.date_input("Inicio")
                                             fin = st.date_input("Fin")
+                                            tip = st.text_input("Tipo")
+                                            mod = st.text_input("Modalidad")
+                                            tem = st.text_input("Temporalidad")
+                                            lnk = st.text_input("Link")
+                                            tcolab = st.text_input("Tipo Colaborador")
+                                            tcont = st.selectbox("Tipo Contrato", ["Planilla completo", "Tiempo Parcial", "Recibo por Honorarios", "Otro"])
+                                            
                                             est_a = "ACTIVO" if fin >= date.today() else "CESADO"
                                             mot_a = st.selectbox("Motivo Cese", ["Vigente"] + MOTIVOS_CESE) if est_a == "CESADO" else "Vigente"
 
                                             if st.form_submit_button("Guardar Contrato"):
                                                 nid = dfs[h_name]["id"].max() + 1 if not dfs[h_name].empty else 1
-                                                new = {"id": nid, "dni": dni_b, "cargo": car, "sueldo": sue, "f_inicio": ini, "f_fin": fin, "tipo": tipo_c, "estado": est_a, "motivo cese": mot_a}
+                                                new = {"id": nid, "dni": dni_b, "cargo": car, "sueldo": sue, "f_inicio": ini, "f_fin": fin, 
+                                                       "tipo": tip, "modalidad": mod, "temporalidad": tem, "link": lnk, 
+                                                       "tipo colaborador": tcolab, "tipo contrato": tcont, "estado": est_a, "motivo cese": mot_a}
                                                 dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new])], ignore_index=True)
                                                 save_data(dfs)
                                                 st.rerun()
@@ -420,31 +428,65 @@ else:
                                         idx = sel.index[0]
                                         with st.form(f"f_edit_{h_name}"):
                                             if h_name == "CONTRATOS":
-                                                n_car = st.text_input("Cargo", value=str(sel.iloc[0]["CARGO"]))
-                                                try: fin_val = pd.to_datetime(sel.iloc[0]["F_FIN"]).date()
+                                                # CORRECCIÓN: Ahora jalamos TODOS los datos de la tabla para editarlos
+                                                n_car = st.text_input("Cargo", value=str(sel.iloc[0].get("CARGO", "")))
+                                                
+                                                try: val_sue = float(sel.iloc[0].get("SUELDO", 0.0))
+                                                except: val_sue = 0.0
+                                                n_sue = st.number_input("Sueldo", value=val_sue)
+                                                
+                                                try: ini_val = pd.to_datetime(sel.iloc[0].get("F_INICIO")).date()
+                                                except: ini_val = date.today()
+                                                n_ini = st.date_input("Inicio", value=ini_val)
+                                                
+                                                try: fin_val = pd.to_datetime(sel.iloc[0].get("F_FIN")).date()
                                                 except: fin_val = date.today()
                                                 n_fin = st.date_input("Fin", value=fin_val)
+                                                
+                                                n_tip = st.text_input("Tipo", value=str(sel.iloc[0].get("TIPO", "")))
+                                                n_mod = st.text_input("Modalidad", value=str(sel.iloc[0].get("MODALIDAD", "")))
+                                                n_tem = st.text_input("Temporalidad", value=str(sel.iloc[0].get("TEMPORALIDAD", "")))
+                                                n_lnk = st.text_input("Link", value=str(sel.iloc[0].get("LINK", "")))
+                                                n_tcolab = st.text_input("Tipo Colaborador", value=str(sel.iloc[0].get("TIPO COLABORADOR", "")))
+                                                
+                                                v_tcont = str(sel.iloc[0].get("TIPO CONTRATO", "Planilla completo"))
+                                                opts_tcon = ["Planilla completo", "Tiempo Parcial", "Recibo por Honorarios", "Otro"]
+                                                if v_tcont not in opts_tcon: opts_tcon.append(v_tcont)
+                                                n_tcont = st.selectbox("Tipo Contrato", opts_tcon, index=opts_tcon.index(v_tcont))
+
                                                 est_e = "ACTIVO" if n_fin >= date.today() else "CESADO"
-                                                mot_e = st.selectbox("Motivo Cese", MOTIVOS_CESE) if est_e == "CESADO" else "Vigente"
+                                                
+                                                v_mot = str(sel.iloc[0].get("MOTIVO CESE", "Vigente"))
+                                                opts_mot = ["Vigente"] + MOTIVOS_CESE
+                                                if v_mot not in opts_mot: opts_mot.append(v_mot)
+                                                mot_e = st.selectbox("Motivo Cese", opts_mot, index=opts_mot.index(v_mot)) if est_e == "CESADO" else "Vigente"
 
                                                 if st.form_submit_button("Actualizar"):
                                                     dfs[h_name].at[idx, "cargo"] = n_car
+                                                    dfs[h_name].at[idx, "sueldo"] = n_sue
+                                                    dfs[h_name].at[idx, "f_inicio"] = n_ini
                                                     dfs[h_name].at[idx, "f_fin"] = n_fin
+                                                    dfs[h_name].at[idx, "tipo"] = n_tip
+                                                    dfs[h_name].at[idx, "modalidad"] = n_mod
+                                                    dfs[h_name].at[idx, "temporalidad"] = n_tem
+                                                    dfs[h_name].at[idx, "link"] = n_lnk
+                                                    dfs[h_name].at[idx, "tipo colaborador"] = n_tcolab
+                                                    dfs[h_name].at[idx, "tipo contrato"] = n_tcont
                                                     dfs[h_name].at[idx, "estado"] = est_e
                                                     dfs[h_name].at[idx, "motivo cese"] = mot_e
                                                     save_data(dfs)
                                                     st.rerun()
                                                     
                                             elif h_name == "VACACIONES":
-                                                per_e = st.text_input("Periodo", value=str(sel.iloc[0]["PERIODO"]))
-                                                try: i_v = pd.to_datetime(sel.iloc[0]["FECHA DE INICIO"]).date()
+                                                per_e = st.text_input("Periodo", value=str(sel.iloc[0].get("PERIODO", "")))
+                                                try: i_v = pd.to_datetime(sel.iloc[0].get("FECHA DE INICIO")).date()
                                                 except: i_v = date.today()
-                                                try: f_v = pd.to_datetime(sel.iloc[0]["FECHA DE FIN"]).date()
+                                                try: f_v = pd.to_datetime(sel.iloc[0].get("FECHA DE FIN")).date()
                                                 except: f_v = date.today()
                                                 
                                                 ini_v = st.date_input("Fecha de Inicio", value=i_v)
                                                 fin_v = st.date_input("Fecha de Fin", value=f_v)
-                                                lnk_e = st.text_input("Link de sustento", value=str(sel.iloc[0]["LINK"]))
+                                                lnk_e = st.text_input("Link de sustento", value=str(sel.iloc[0].get("LINK", "")))
                                                 
                                                 if st.form_submit_button("Actualizar Vacaciones"):
                                                     d_goz = (fin_v - ini_v).days + 1
@@ -531,6 +573,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente del sistema y del Excel.")
                 st.rerun()
+
 
 
 
