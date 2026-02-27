@@ -8,6 +8,7 @@ from docx import Document
 from docx.shared import Pt, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
+st.set_page_config(page_title="Gestión Roosevelt", page_icon="🎓", layout="wide")
 # ==========================================
 # 1. CONFIGURACIÓN Y CONSTANTES
 # ==========================================
@@ -121,80 +122,52 @@ st.markdown("""
         color: #FFD700 !important; font-weight: bold !important;
     }
     
-    /* Logo con recuadro amarillo (Usando Streamlit nativo) */
+    /* Logo con recuadro amarillo */
     [data-testid="stSidebar"] [data-testid="stImage"] {
-        background-color: #FFF9C4 !important; /* Fondo amarillo pastel */
-        border: 4px solid #FFD700 !important; /* Borde amarillo brillante */
+        background-color: #FFF9C4 !important;
+        border: 4px solid #FFD700 !important;
         border-radius: 15px !important;
         padding: 10px !important;
         box-shadow: 0 4px 8px rgba(0,0,0,0.3) !important;
     }
     
-    /* Botón Cerrar Sesión (Letras oscuras forzadas) */
-    [data-testid="stSidebar"] div.stButton > button {
+    /* TODOS LOS BOTONES (Sidebar, Guardar, Actualizar) */
+    div.stButton > button, [data-testid="stFormSubmitButton"] > button {
         background-color: #FFD700 !important;
+        color: #4a0000 !important; /* TEXTO GUINDO OSCURO VISTOSO */
         border-radius: 10px !important;
         border: 2px solid #FFFFFF !important;
-        width: 100% !important;
-        padding: 10px !important;
-        margin-top: 30px !important;
-    }
-    [data-testid="stSidebar"] div.stButton > button p {
-        color: #4a0000 !important; /* Texto guindo oscuro VISTOSO */
         font-weight: bold !important;
         font-size: 16px !important;
     }
-    [data-testid="stSidebar"] div.stButton > button:hover {
+    div.stButton > button:hover, [data-testid="stFormSubmitButton"] > button:hover {
         background-color: #ffffff !important;
+        color: #4a0000 !important;
+        border-color: #FFD700 !important;
     }
 
     /* Pestañas (Tabs) visibles */
-    [data-testid="stTabs"] button {
-        color: #FFFFFF !important; /* Texto blanco por defecto */
-        font-weight: bold !important;
-        font-size: 16px !important;
-    }
-    [data-testid="stTabs"] button[aria-selected="true"] {
-        color: #FFD700 !important; /* Texto amarillo cuando está activa */
-        border-bottom-color: #FFD700 !important;
-    }
+    [data-testid="stTabs"] button { color: #FFFFFF !important; font-weight: bold !important; font-size: 16px !important; }
+    [data-testid="stTabs"] button[aria-selected="true"] { color: #FFD700 !important; border-bottom-color: #FFD700 !important; }
 
     /* Expanders (Opciones de Agregar, Editar, Eliminar) */
-    [data-testid="stExpander"] details {
-        background-color: #FFF9C4 !important; /* Fondo del formulario amarillo pastel */
-        border: 2px solid #FFD700 !important;
-        border-radius: 10px !important;
-        overflow: hidden !important;
-    }
-    [data-testid="stExpander"] summary {
-        background-color: #FFD700 !important; /* El botón principal en amarillo fuerte */
-        padding: 10px !important;
-    }
-    [data-testid="stExpander"] summary p {
-        color: #4a0000 !important; /* Texto del expander guindo oscuro */
-        font-weight: bold !important;
-        font-size: 16px !important;
-    }
-    [data-testid="stExpander"] details[open] summary {
-        border-bottom: 2px solid #4a0000 !important; /* Línea separadora al abrir */
-    }
+    [data-testid="stExpander"] details { background-color: #FFF9C4 !important; border: 2px solid #FFD700 !important; border-radius: 10px !important; overflow: hidden !important; }
+    [data-testid="stExpander"] summary { background-color: #FFD700 !important; padding: 10px !important; }
+    [data-testid="stExpander"] summary p { color: #4a0000 !important; font-weight: bold !important; font-size: 16px !important; }
 
-    /* Tablas y Editores */
+    /* TABLAS Y DATA EDITORS (Forzando las cabeceras a amarillo) */
     [data-testid="stDataEditor"], [data-testid="stTable"], .stTable { background-color: white !important; border-radius: 10px !important; overflow: hidden !important; }
+    /* Cabeceras de Data Editor (React Data Grid) */
+    [data-testid="stDataEditor"] .react-grid-HeaderCell { background-color: #FFF9C4 !important; }
+    [data-testid="stDataEditor"] .react-grid-HeaderCell span { color: #4a0000 !important; font-weight: bold !important; text-transform: uppercase !important; }
+    /* Cabeceras de Tablas normales */
     thead tr th { background-color: #FFF9C4 !important; color: #4a0000 !important; font-weight: bold !important; text-transform: uppercase !important; border: 1px solid #f0f0f0 !important; }
     
+    /* Textos generales */
     .stApp h1, .stApp h2, .stApp h3 { color: #FFD700 !important; }
-    .stApp label p { color: #FFFFFF !important; font-weight: bold !important; }
-    .stApp input { background-color: #ffffff !important; color: #4a0000 !important; border: 2px solid #FFD700 !important; }
-    
-    .login-welcome { color: #FFFFFF !important; text-align: center; font-weight: bold; margin-top: 15px; display: block; }
-    .frase-talento { width: 100% !important; text-align: center !important; color: #FFD700 !important; font-style: italic !important; font-size: 1.3rem !important; margin-top: 25px !important; display: block !important; }
-    
-    /* Editor de Contratos */
-    [data-testid="stDataEditor"] div[data-testid="styledHeaderCell"] { background-color: #FFF9C4 !important; border-bottom: 1px solid #f0f0f0 !important; }
-    [data-testid="stDataEditor"] [data-testid="styledHeaderCell"] span { color: #4a0000 !important; font-weight: bold !important; text-transform: uppercase !important; }
-    [data-testid="stCanvasDataFrame"] > div:first-child { background-color: #FFF9C4 !important; }
-    [data-testid="stDataEditor"] .react-grid-HeaderCell { background-color: #FFF9C4 !important; }
+    .stApp label p { color: #4a0000 !important; font-weight: bold !important; } /* Etiquetas de formulario en guindo */
+    .stApp div[data-baseweb="input"] { background-color: #ffffff !important; border: 2px solid #FFD700 !important; }
+    .stApp input { color: #4a0000 !important; font-weight: bold !important; }
 </style>
 """, unsafe_allow_html=True)
 # ==========================================
@@ -299,61 +272,51 @@ else:
                         if "dni" in dfs[h_name].columns:
                             c_df = dfs[h_name][dfs[h_name]["dni"] == dni_b]
                         else:
-                            c_df = pd.DataFrame(columns=COLUMNAS[h_name])
+                            c_df = pd.DataFrame(columns=COLUMNAS.get(h_name, []))
 
-                        # VISTA DE TABLA EDITABLE (Aplicado dinámicamente a TODAS las pestañas)
+                        # VISTA DE TABLA EDITABLE
                         vst = c_df.copy()
                         vst.columns = [str(col).upper() for col in vst.columns] 
                         vst.insert(0, "SEL", False)
 
-                        # Agregamos un borde amarillo por CSS directamente al contenedor del editor
+                        # Borde amarillo a la tabla interactiva
                         st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 10px !important; }</style>""", unsafe_allow_html=True)
                         
-                        # Editor de datos interactivo para todas las pestañas
                         ed = st.data_editor(vst, hide_index=True, use_container_width=True, key=f"ed_{h_name}")
                         sel = ed[ed["SEL"] == True]
 
                         if not es_lector:
                             col_a, col_b = st.columns(2)
                             
+                            # Identificar las columnas reales de la base de datos (ignorando id y dni)
+                            cols_reales = [c for c in dfs[h_name].columns if c.lower() not in ["id", "dni", "apellidos y nombres"]]
+
                             # ==========================================
                             # 1. AGREGAR NUEVO DATO
                             # ==========================================
                             with col_a:
                                 with st.expander("➕ Nuevo Registro"):
-                                    with st.form(f"f_add_{h_name}"):
-                                        if h_name == "CONTRATOS":
-                                            # Lógica especial solo para contratos
-                                            car = st.text_input("Cargo")
-                                            sue = st.number_input("Sueldo", 0.0)
-                                            ini = st.date_input("Inicio")
-                                            fin = st.date_input("Fin")
-                                            est_a = "ACTIVO" if fin >= date.today() else "CESADO"
-                                            mot_a = st.selectbox("Motivo Cese", ["Vigente"] + MOTIVOS_CESE) if est_a == "CESADO" else "Vigente"
+                                    with st.form(f"f_add_{h_name}", clear_on_submit=True):
+                                        new_row = {"dni": dni_b}
+                                        
+                                        for col in cols_reales:
+                                            # Detección de tipo de dato para el formulario
+                                            if "fecha" in col.lower() or "f_" in col.lower():
+                                                new_row[col] = st.date_input(col.title())
+                                            elif col.lower() in ["sueldo", "días generados", "días gozados", "saldo", "edad", "monto"]:
+                                                new_row[col] = st.number_input(col.title(), 0.0)
+                                            else:
+                                                new_row[col] = st.text_input(col.title())
 
-                                            if st.form_submit_button("Guardar Contrato"):
-                                                nid = dfs[h_name]["id"].max() + 1 if not dfs[h_name].empty else 1
-                                                new = {"id": nid, "dni": dni_b, "cargo": car, "sueldo": sue, "f_inicio": ini, "f_fin": fin, "estado": est_a, "motivo cese": mot_a}
-                                                dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new])], ignore_index=True)
-                                                save_data(dfs)
-                                                st.rerun()
-                                        else:
-                                            # Lógica dinámica para el resto de pestañas
-                                            new_row = {"dni": dni_b}
-                                            cols_f = [c for c in COLUMNAS[h_name] if c not in ["dni", "apellidos y nombres", "edad", "id"]]
-                                            
-                                            for col in cols_f:
-                                                if "fecha" in col.lower() or "f_" in col.lower():
-                                                    new_row[col] = st.date_input(col.title())
-                                                elif col.lower() in ["sueldo", "días generados", "días gozados", "saldo", "edad"]:
-                                                    new_row[col] = st.number_input(col.title(), 0.0)
-                                                else:
-                                                    new_row[col] = st.text_input(col.title())
-
-                                            if st.form_submit_button("Confirmar Registro"):
-                                                dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new_row])], ignore_index=True)
-                                                save_data(dfs)
-                                                st.rerun()
+                                        if st.form_submit_button("Guardar Registro"):
+                                            if not dfs[h_name].empty and "id" in dfs[h_name].columns:
+                                                new_row["id"] = dfs[h_name]["id"].max() + 1
+                                            elif "id" in dfs[h_name].columns:
+                                                new_row["id"] = 1
+                                                
+                                            dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new_row])], ignore_index=True)
+                                            save_data(dfs)
+                                            st.rerun()
 
                             # ==========================================
                             # 2. EDITAR / ELIMINAR DATO SELECCIONADO
@@ -363,49 +326,33 @@ else:
                                     if not sel.empty:
                                         idx = sel.index[0]
                                         with st.form(f"f_edit_{h_name}"):
-                                            if h_name == "CONTRATOS":
-                                                n_car = st.text_input("Cargo", value=str(sel.iloc[0]["CARGO"]))
-                                                try: fin_val = pd.to_datetime(sel.iloc[0]["F_FIN"]).date()
-                                                except: fin_val = date.today()
-                                                n_fin = st.date_input("Fin", value=fin_val)
-                                                est_e = "ACTIVO" if n_fin >= date.today() else "CESADO"
-                                                mot_e = st.selectbox("Motivo Cese", MOTIVOS_CESE) if est_e == "CESADO" else "Vigente"
-
-                                                if st.form_submit_button("Actualizar"):
-                                                    dfs[h_name].at[idx, "cargo"] = n_car
-                                                    dfs[h_name].at[idx, "f_fin"] = n_fin
-                                                    dfs[h_name].at[idx, "estado"] = est_e
-                                                    dfs[h_name].at[idx, "motivo cese"] = mot_e
-                                                    save_data(dfs)
-                                                    st.rerun()
-                                            else:
-                                                edit_row = {}
-                                                cols_f = [c for c in COLUMNAS[h_name] if c not in ["dni", "apellidos y nombres", "edad", "id"]]
-                                                for col in cols_f:
-                                                    val = sel.iloc[0][col.upper()]
-                                                    if "fecha" in col.lower() or "f_" in col.lower():
-                                                        try: parsed_date = pd.to_datetime(val).date()
-                                                        except: parsed_date = date.today()
-                                                        edit_row[col] = st.date_input(col.title(), value=parsed_date)
-                                                    elif col.lower() in ["sueldo", "días generados", "días gozados", "saldo", "edad"]:
-                                                        try: num_val = float(val) if pd.notnull(val) else 0.0
-                                                        except: num_val = 0.0
-                                                        edit_row[col] = st.number_input(col.title(), value=num_val)
-                                                    else:
-                                                        edit_row[col] = st.text_input(col.title(), value=str(val) if pd.notnull(val) else "")
-                                                        
-                                                if st.form_submit_button("Actualizar"):
-                                                    for col in cols_f:
-                                                        dfs[h_name].at[idx, col] = edit_row[col]
-                                                    save_data(dfs)
-                                                    st.rerun()
+                                            edit_row = {}
+                                            
+                                            for col in cols_reales:
+                                                val = sel.iloc[0][col.upper()]
+                                                if "fecha" in col.lower() or "f_" in col.lower():
+                                                    try: parsed_date = pd.to_datetime(val).date()
+                                                    except: parsed_date = date.today()
+                                                    edit_row[col] = st.date_input(col.title(), value=parsed_date)
+                                                elif col.lower() in ["sueldo", "días generados", "días gozados", "saldo", "edad", "monto"]:
+                                                    try: num_val = float(val) if pd.notnull(val) else 0.0
+                                                    except: num_val = 0.0
+                                                    edit_row[col] = st.number_input(col.title(), value=num_val)
+                                                else:
+                                                    edit_row[col] = st.text_input(col.title(), value=str(val) if pd.notnull(val) else "")
+                                                    
+                                            if st.form_submit_button("Actualizar Registro"):
+                                                for col in cols_reales:
+                                                    dfs[h_name].at[idx, col] = edit_row[col]
+                                                save_data(dfs)
+                                                st.rerun()
                                         
                                         if st.button("🚨 Eliminar Fila Seleccionada", key=f"del_{h_name}"):
                                             dfs[h_name] = dfs[h_name].drop(sel.index)
                                             save_data(dfs)
                                             st.rerun()
                                     else:
-                                        st.info("Activa la casilla (SEL) en la tabla superior para poder editar o eliminar.")
+                                        st.info("Activa la casilla en la tabla para editar o eliminar.")
             else:
                 st.error("DNI no encontrado en la base de datos.")
 
@@ -453,6 +400,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente del sistema y del Excel.")
                 st.rerun()
+
 
 
 
