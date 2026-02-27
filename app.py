@@ -113,14 +113,18 @@ def gen_word(nom, dni, df_c):
 # ==========================================
 st.markdown("""
 <style>
-    /* Fondo general */
+    /* 1. Fondo general y ocultar la franja blanca superior de Streamlit */
     .stApp { background-color: #4a0000 !important; }
+    [data-testid="stHeader"] { display: none !important; }
     
-    /* SIDEBAR */
+    /* 2. Recuperar textos (Tu talento, Bienvenido, etc.) */
+    /* Lo dejamos sin !important para que respete tus colores originales (amarillo/blanco) */
+    .stApp p, .stMarkdown p { color: #FFFFFF; } 
+    .stApp h1, .stApp h2, .stApp h3 { color: #FFD700 !important; }
+    
+    /* 3. SIDEBAR (Menú lateral y opciones) */
     [data-testid="stSidebar"] { background-color: #4a0000 !important; }
-    [data-testid="stSidebar"] h3, [data-testid="stSidebar"] label, [data-testid="stSidebar"] p {
-        color: #FFD700 !important; font-weight: bold !important;
-    }
+    [data-testid="stSidebar"] h3 { color: #FFD700 !important; font-weight: bold !important; }
     
     /* Logo con recuadro amarillo */
     [data-testid="stSidebar"] [data-testid="stImage"] {
@@ -128,44 +132,59 @@ st.markdown("""
         border: 4px solid #FFD700 !important;
         border-radius: 15px !important;
         padding: 10px !important;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.3) !important;
     }
     
-    /* TODOS LOS BOTONES (Sidebar, Guardar, Actualizar) */
+    /* Solución a las letras invisibles del menú lateral (Radio Buttons) */
+    div[role="radiogroup"] label { background-color: transparent !important; }
+    div[role="radiogroup"] label p { color: #FFFFFF !important; font-weight: bold !important; font-size: 16px !important; }
+    
+    /* 4. BOTONES (Soluciona el problema de letras invisibles) */
     div.stButton > button, [data-testid="stFormSubmitButton"] > button {
         background-color: #FFD700 !important;
-        color: #4a0000 !important; /* TEXTO GUINDO OSCURO VISTOSO */
-        border-radius: 10px !important;
         border: 2px solid #FFFFFF !important;
+        border-radius: 10px !important;
+    }
+    /* Letra guinda dentro de todos los botones */
+    div.stButton > button p, [data-testid="stFormSubmitButton"] > button p {
+        color: #4a0000 !important; 
         font-weight: bold !important;
         font-size: 16px !important;
     }
     div.stButton > button:hover, [data-testid="stFormSubmitButton"] > button:hover {
         background-color: #ffffff !important;
-        color: #4a0000 !important;
         border-color: #FFD700 !important;
     }
 
-    /* Pestañas (Tabs) visibles */
-    [data-testid="stTabs"] button { color: #FFFFFF !important; font-weight: bold !important; font-size: 16px !important; }
-    [data-testid="stTabs"] button[aria-selected="true"] { color: #FFD700 !important; border-bottom-color: #FFD700 !important; }
+    /* 5. Pestañas (Tabs) */
+    [data-testid="stTabs"] button p { color: #FFFFFF !important; font-weight: bold !important; font-size: 16px !important; }
+    [data-testid="stTabs"] button[aria-selected="true"] p { color: #FFD700 !important; }
+    [data-testid="stTabs"] button[aria-selected="true"] { border-bottom-color: #FFD700 !important; }
 
-    /* Expanders (Opciones de Agregar, Editar, Eliminar) */
+    /* 6. Expanders (Cajas de Agregar / Editar) */
     [data-testid="stExpander"] details { background-color: #FFF9C4 !important; border: 2px solid #FFD700 !important; border-radius: 10px !important; overflow: hidden !important; }
     [data-testid="stExpander"] summary { background-color: #FFD700 !important; padding: 10px !important; }
-    [data-testid="stExpander"] summary p { color: #4a0000 !important; font-weight: bold !important; font-size: 16px !important; }
+    [data-testid="stExpander"] summary p { color: #4a0000 !important; font-weight: bold !important; }
 
-    /* TABLAS Y DATA EDITORS (Forzando las cabeceras a amarillo) */
-    [data-testid="stDataEditor"], [data-testid="stTable"], .stTable { background-color: white !important; border-radius: 10px !important; overflow: hidden !important; }
-    /* Cabeceras de Data Editor (React Data Grid) */
-    [data-testid="stDataEditor"] .react-grid-HeaderCell { background-color: #FFF9C4 !important; }
-    [data-testid="stDataEditor"] .react-grid-HeaderCell span { color: #4a0000 !important; font-weight: bold !important; text-transform: uppercase !important; }
-    /* Cabeceras de Tablas normales */
+    /* 7. TABLAS (Solución definitiva para encabezado amarillo) */
+    [data-testid="stDataEditor"], [data-testid="stTable"], .stTable { 
+        background-color: white !important; 
+        border-radius: 10px !important; 
+        overflow: hidden !important; 
+    }
+    /* Selector agresivo para pintar la cabecera interactiva */
+    div[role="columnheader"], .react-grid-HeaderCell, [data-testid="stDataEditorColumnHeader"] { 
+        background-color: #FFF9C4 !important; 
+    }
+    div[role="columnheader"] *, .react-grid-HeaderCell *, [data-testid="stDataEditorColumnHeader"] * { 
+        color: #4a0000 !important; 
+        font-weight: bold !important; 
+        text-transform: uppercase !important; 
+    }
+    /* Tablas estáticas (st.table) */
     thead tr th { background-color: #FFF9C4 !important; color: #4a0000 !important; font-weight: bold !important; text-transform: uppercase !important; border: 1px solid #f0f0f0 !important; }
     
-    /* Textos generales */
-    .stApp h1, .stApp h2, .stApp h3 { color: #FFD700 !important; }
-    .stApp label p { color: #4a0000 !important; font-weight: bold !important; } /* Etiquetas de formulario en guindo */
+    /* 8. Formularios e Inputs */
+    .stApp label p { color: #FFD700 !important; font-weight: bold !important; } /* Nombres de los cajones a llenar */
     .stApp div[data-baseweb="input"] { background-color: #ffffff !important; border: 2px solid #FFD700 !important; }
     .stApp input { color: #4a0000 !important; font-weight: bold !important; }
 </style>
@@ -400,6 +419,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente del sistema y del Excel.")
                 st.rerun()
+
 
 
 
