@@ -272,6 +272,7 @@ else:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
+    # --- SECCIÓN CONSULTA ---
     if m == "🔍 Consulta":
         st.markdown("<h2 style='color: #FFD700;'>Búsqueda de Colaborador</h2>", unsafe_allow_html=True)
         dni_b = st.text_input("Ingrese DNI para consultar:").strip()
@@ -300,19 +301,29 @@ else:
                         else:
                             c_df = pd.DataFrame(columns=COLUMNAS[h_name])
 
-                        if h_name == "CONTRATOS":
-                            vst = c_df.copy()
-                            vst.columns = [col.upper() for col in vst.columns] 
-                            vst.insert(0, "SEL", False)
+                        # VISTA DE TABLA EDITABLE (Aplicado dinámicamente a TODAS las pestañas)
+                        vst = c_df.copy()
+                        vst.columns = [str(col).upper() for col in vst.columns] 
+                        vst.insert(0, "SEL", False)
 
-                            ed = st.data_editor(vst, hide_index=True, use_container_width=True, key=f"ed_{h_name}")
-                            sel = ed[ed["SEL"] == True]
+                        # Agregamos un borde amarillo por CSS directamente al contenedor del editor
+                        st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 10px !important; }</style>""", unsafe_allow_html=True)
+                        
+                        # Editor de datos interactivo para todas las pestañas
+                        ed = st.data_editor(vst, hide_index=True, use_container_width=True, key=f"ed_{h_name}")
+                        sel = ed[ed["SEL"] == True]
 
-                            if not es_lector:
-                                col_a, col_b = st.columns(2)
-                                with col_a:
-                                    with st.expander("➕ Nuevo Contrato"):
-                                        with st.form("f_add"):
+                        if not es_lector:
+                            col_a, col_b = st.columns(2)
+                            
+                            # ==========================================
+                            # 1. AGREGAR NUEVO DATO
+                            # ==========================================
+                            with col_a:
+                                with st.expander("➕ Nuevo Registro"):
+                                    with st.form(f"f_add_{h_name}"):
+                                        if h_name == "CONTRATOS":
+                                            # Lógica especial solo para contratos
                                             car = st.text_input("Cargo")
                                             sue = st.number_input("Sueldo", 0.0)
                                             ini = st.date_input("Inicio")
@@ -326,49 +337,75 @@ else:
                                                 dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new])], ignore_index=True)
                                                 save_data(dfs)
                                                 st.rerun()
+                                        else:
+                                            # Lógica dinámica para el resto de pestañas
+                                            new_row = {"dni": dni_b}
+                                            cols_f = [c for c in COLUMNAS[h_name] if c not in ["dni", "apellidos y nombres", "edad", "id"]]
+                                            
+                                            for col in cols_f:
+                                                if "fecha" in col.lower() or "f_" in col.lower():
+                                                    new_row[col] = st.date_input(col.title())
+                                                elif col.lower() in ["sueldo", "días generados", "días gozados", "saldo", "edad"]:
+                                                    new_row[col] = st.number_input(col.title(), 0.0)
+                                                else:
+                                                    new_row[col] = st.text_input(col.title())
 
-                                with col_b:
-                                    with st.expander("📝 Editar/Eliminar"):
-                                        if not sel.empty:
-                                            with st.form("f_edit"):
-                                                n_car = st.text_input("Cargo", value=sel.iloc[0]["cargo"])
-                                                n_fin = st.date_input("Fin", value=pd.to_datetime(sel.iloc[0]["f_fin"]))
+                                            if st.form_submit_button("Confirmar Registro"):
+                                                dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new_row])], ignore_index=True)
+                                                save_data(dfs)
+                                                st.rerun()
+
+                            # ==========================================
+                            # 2. EDITAR / ELIMINAR DATO SELECCIONADO
+                            # ==========================================
+                            with col_b:
+                                with st.expander("📝 Editar / Eliminar"):
+                                    if not sel.empty:
+                                        idx = sel.index[0]
+                                        with st.form(f"f_edit_{h_name}"):
+                                            if h_name == "CONTRATOS":
+                                                n_car = st.text_input("Cargo", value=str(sel.iloc[0]["CARGO"]))
+                                                try: fin_val = pd.to_datetime(sel.iloc[0]["F_FIN"]).date()
+                                                except: fin_val = date.today()
+                                                n_fin = st.date_input("Fin", value=fin_val)
                                                 est_e = "ACTIVO" if n_fin >= date.today() else "CESADO"
                                                 mot_e = st.selectbox("Motivo Cese", MOTIVOS_CESE) if est_e == "CESADO" else "Vigente"
 
                                                 if st.form_submit_button("Actualizar"):
-                                                    idx = sel.index[0]
                                                     dfs[h_name].at[idx, "cargo"] = n_car
                                                     dfs[h_name].at[idx, "f_fin"] = n_fin
                                                     dfs[h_name].at[idx, "estado"] = est_e
                                                     dfs[h_name].at[idx, "motivo cese"] = mot_e
                                                     save_data(dfs)
                                                     st.rerun()
-                                            
-                                            if st.button("🚨 Eliminar Fila Seleccionada"):
-                                                dfs[h_name] = dfs[h_name].drop(sel.index)
-                                                save_data(dfs)
-                                                st.rerun()
-                                        else:
-                                            st.info("Selecciona una fila en la tabla para editar.")
-                        else:
-                            c_df_v = c_df.copy()
-                            c_df_v.columns = [col.upper() for col in c_df_v.columns]
-                            st.table(c_df_v)
-
-                            if not es_lector:
-                                with st.expander(f"➕ Registrar Nuevo Dato"):
-                                    with st.form(f"f_{h_name}"):
-                                        new_row = {"dni": dni_b}
-                                        cols_f = [c for c in COLUMNAS[h_name] if c not in ["dni", "apellidos y nombres", "edad", "id"]]
+                                            else:
+                                                edit_row = {}
+                                                cols_f = [c for c in COLUMNAS[h_name] if c not in ["dni", "apellidos y nombres", "edad", "id"]]
+                                                for col in cols_f:
+                                                    val = sel.iloc[0][col.upper()]
+                                                    if "fecha" in col.lower() or "f_" in col.lower():
+                                                        try: parsed_date = pd.to_datetime(val).date()
+                                                        except: parsed_date = date.today()
+                                                        edit_row[col] = st.date_input(col.title(), value=parsed_date)
+                                                    elif col.lower() in ["sueldo", "días generados", "días gozados", "saldo", "edad"]:
+                                                        try: num_val = float(val) if pd.notnull(val) else 0.0
+                                                        except: num_val = 0.0
+                                                        edit_row[col] = st.number_input(col.title(), value=num_val)
+                                                    else:
+                                                        edit_row[col] = st.text_input(col.title(), value=str(val) if pd.notnull(val) else "")
+                                                        
+                                                if st.form_submit_button("Actualizar"):
+                                                    for col in cols_f:
+                                                        dfs[h_name].at[idx, col] = edit_row[col]
+                                                    save_data(dfs)
+                                                    st.rerun()
                                         
-                                        for col in cols_f:
-                                            new_row[col] = st.text_input(col.title())
-
-                                        if st.form_submit_button("Confirmar Registro"):
-                                            dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new_row])], ignore_index=True)
+                                        if st.button("🚨 Eliminar Fila Seleccionada", key=f"del_{h_name}"):
+                                            dfs[h_name] = dfs[h_name].drop(sel.index)
                                             save_data(dfs)
                                             st.rerun()
+                                    else:
+                                        st.info("Activa la casilla (SEL) en la tabla superior para poder editar o eliminar.")
             else:
                 st.error("DNI no encontrado en la base de datos.")
 
@@ -416,6 +453,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente del sistema y del Excel.")
                 st.rerun()
+
 
 
 
