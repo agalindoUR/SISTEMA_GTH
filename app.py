@@ -300,22 +300,7 @@ else:
             if os.path.exists("Logo_guindo.png"):
                 st.image("Logo_guindo.png", use_container_width=True)
 
-        # --- LÓGICA DEL CONTADOR ---
-        total_personal = len(dfs["PERSONAL"])
-        
-        st.markdown(f"""
-            <div style="
-                background-color: #FFD700; 
-                padding: 10px; 
-                border-radius: 12px; 
-                text-align: center; 
-                margin: 15px 0;
-                border: 2px solid #ffffff;">
-                <p style="color: #4a0000; font-size: 12px; font-weight: bold; margin: 0;">COLABORADORES</p>
-                <h2 style="color: #4a0000; margin: 0; font-size: 28px;">{total_personal}</h2>
-            </div>
-        """, unsafe_allow_html=True)
-        st.markdown("### 🛠️ MENÚ PRINCIPAL")
+               st.markdown("### 🛠️ MENÚ PRINCIPAL")
         m = st.radio("", ["🔍 Consulta", "➕ Registro", "📊 Nómina General"], key="menu_p_unico")
 
         st.markdown("### 📈 REPORTES")
@@ -533,6 +518,7 @@ else:
                 save_data(dfs) # Guarda los cambios en tu Excel subido
                 st.success("Registros eliminados correctamente del sistema y del Excel.")
                 st.rerun()
+
 
 
 
