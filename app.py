@@ -300,13 +300,13 @@ else:
             if os.path.exists("Logo_guindo.png"):
                 st.image("Logo_guindo.png", use_container_width=True)
 
-               st.markdown("### 🛠️ MENÚ PRINCIPAL")
-        m = st.radio("", ["🔍 Consulta", "➕ Registro", "📊 Nómina General"], key="menu_p_unico")
+                st.markdown("### 🛠️ MENÚ PRINCIPAL")
+                m = st.radio("", ["🔍 Consulta", "➕ Registro", "📊 Nómina General"], key="menu_p_unico")
 
-        st.markdown("### 📈 REPORTES")
-        r = st.radio("", ["Vencimientos", "Vacaciones", "Estadísticas"], key="menu_r_unico")
+                st.markdown("### 📈 REPORTES")
+                r = st.radio("", ["Vencimientos", "Vacaciones", "Estadísticas"], key="menu_r_unico")
 
-        st.markdown("---")
+                st.markdown("---")
 
         if st.button("🚪 Cerrar Sesión", key="btn_logout"):
             st.session_state.rol = None
@@ -518,6 +518,7 @@ else:
                 save_data(dfs) # Guarda los cambios en tu Excel subido
                 st.success("Registros eliminados correctamente del sistema y del Excel.")
                 st.rerun()
+
 
 
 
