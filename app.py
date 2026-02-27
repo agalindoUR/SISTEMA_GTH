@@ -8,26 +8,20 @@ from docx import Document
 from docx.shared import Pt, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
-# 2. CONFIGURACIÓN DE PÁGINA (Obligatorio que sea el primer comando de Streamlit)
-st.set_page_config(page_title="Sistema GTH - Roosevelt", layout="wide")
 # --- 1. CONFIGURACIÓN Y CONSTANTES ---
 DB = "DB_SISTEMA_GTH.xlsx"
+F_N = "MG. ARTURO JAVIER GALINDO MARTINEZ"  # <--- ESTO DEBE IR AQUÍ, PEGADO AL MARGEN
+F_C = "JEFE DE GESTIÓN DEL TALENTO HUMANO"
+
 st.markdown("""
 <style>
-    /* Todo el contenido de style que te pasé va aquí dentro */
-    .stApp { background-color: #4a0000 !important; }
-    
-    /* Encabezados Amarillo Pastel */
-    thead tr th {
-        background-color: #FFF9C4 !important;
-        color: #4a0000 !important;
-        font-weight: bold !important;
-    }
-
-    /* Sidebar y Botón Cerrar Sesión al final */
-    [data-testid="stSidebar"] { background-color: #4a0000 !important; }
+    /* Tu CSS */
 </style>
 """, unsafe_allow_html=True)
+
+# RECIÉN AQUÍ EMPIEZA EL IF
+if "rol" not in st.session_state:
+    st.session_state.rol = None
 
 # 4. LÓGICA DE DATOS Y SESIÓN (El cerebro del sistema)
 if "rol" not in st.session_state:
@@ -525,6 +519,7 @@ else:
                 save_data(dfs) # Guarda los cambios en tu Excel subido
                 st.success("Registros eliminados correctamente del sistema y del Excel.")
                 st.rerun()
+
 
 
 
