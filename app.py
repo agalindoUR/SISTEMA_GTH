@@ -112,26 +112,29 @@ def gen_word(nom, dni, df_c):
 # ==========================================
 st.markdown("""
 <style>
+    /* Fondo general */
     .stApp { background-color: #4a0000 !important; }
     
-    [data-testid="stSidebar"] { background-color: #4a0000 !important; display: flex; flex-direction: column; align-items: center; }
-    [data-testid="stSidebar"] [data-testid="stVerticalBlock"] > div:first-child {
-        background-color: #FFD700 !important; width: 140px !important; height: 140px !important;
-        margin: 20px auto !important; border-radius: 15px !important; display: flex !important;
-        justify-content: center !important; align-items: center !important; padding: 10px !important;
-    }
-    [data-testid="stSidebar"] img { max-width: 100% !important; max-height: 100% !important; object-fit: contain !important; }
+    /* SIDEBAR (Corregido: sin cuadros flotantes) */
+    [data-testid="stSidebar"] { background-color: #4a0000 !important; }
     [data-testid="stSidebar"] h3, [data-testid="stSidebar"] label, [data-testid="stSidebar"] p {
-        color: #FFD700 !important; font-weight: bold !important; text-align: left !important;
+        color: #FFD700 !important; font-weight: bold !important;
     }
     
+    /* Botón Cerrar Sesión (Corregido) */
+    [data-testid="stSidebar"] div.stButton > button {
+        background-color: #FFD700 !important; color: #4a0000 !important; 
+        border-radius: 10px !important; border: none !important; 
+        font-weight: bold !important; font-size: 16px !important; 
+        width: 100% !important; padding: 10px !important; margin-top: 30px !important;
+    }
+    [data-testid="stSidebar"] div.stButton > button:hover {
+        background-color: #ffffff !important;
+    }
+
+    /* Tablas y Editores */
     [data-testid="stDataEditor"], [data-testid="stTable"], .stTable { background-color: white !important; border-radius: 10px !important; overflow: hidden !important; }
     thead tr th { background-color: #FFF9C4 !important; color: #4a0000 !important; font-weight: bold !important; text-transform: uppercase !important; border: 1px solid #f0f0f0 !important; }
-    
-    [data-testid="stSidebar"] div.stButton > button {
-        background-color: #FFD700 !important; color: #4a0000 !important; border-radius: 10px !important;
-        border: 2px solid #FFFFFF !important; font-weight: bold !important; font-size: 16px !important; width: 100% !important; height: 45px !important;
-    }
     
     .stApp h1, .stApp h2, .stApp h3 { color: #FFD700 !important; }
     .stApp label p { color: #FFFFFF !important; font-weight: bold !important; }
@@ -147,7 +150,6 @@ st.markdown("""
     [data-testid="stDataEditor"] .react-grid-HeaderCell { background-color: #FFF9C4 !important; }
 </style>
 """, unsafe_allow_html=True)
-
 # ==========================================
 # 4. LÓGICA DE DATOS Y SESIÓN
 # ==========================================
@@ -192,18 +194,24 @@ else:
     es_lector = st.session_state.rol == "Lector"
 
     with st.sidebar:
-        col_s1, col_s2 = st.columns([1, 0.2])
-        with col_s1:
+        # 1. Logo superior centrado mediante columnas
+        st.markdown("<br>", unsafe_allow_html=True)
+        col_logo_1, col_logo_2, col_logo_3 = st.columns([1, 4, 1])
+        with col_logo_2:
             if os.path.exists("Logo_guindo.png"):
                 st.image("Logo_guindo.png", use_container_width=True)
+        st.markdown("<br>", unsafe_allow_html=True)
 
-            st.markdown("### 🛠️ MENÚ PRINCIPAL")
-            m = st.radio("", ["🔍 Consulta", "➕ Registro", "📊 Nómina General"], key="menu_p_unico")
+        # 2. Opciones de menú (ahora usan todo el ancho de la barra)
+        st.markdown("### 🛠️ MENÚ PRINCIPAL")
+        m = st.radio("", ["🔍 Consulta", "➕ Registro", "📊 Nómina General"], key="menu_p_unico")
 
-            st.markdown("### 📈 REPORTES")
-            r = st.radio("", ["Vencimientos", "Vacaciones", "Estadísticas"], key="menu_r_unico")
-            st.markdown("---")
+        st.markdown("### 📈 REPORTES")
+        r = st.radio("", ["Vencimientos", "Vacaciones", "Estadísticas"], key="menu_r_unico")
+        
+        st.markdown("---")
 
+        # 3. Botón inferior
         if st.button("🚪 Cerrar Sesión", key="btn_logout"):
             st.session_state.rol = None
             st.rerun()
@@ -359,6 +367,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente del sistema y del Excel.")
                 st.rerun()
+
 
 
 
