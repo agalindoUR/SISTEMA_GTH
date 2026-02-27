@@ -129,12 +129,15 @@ def gen_word(nom, dni, df_c):
 
     return buf
 
+# --- ESTILOS CSS CORREGIDOS ---
 st.markdown("""
 <style>
-    /* 1. FONDO GENERAL */
-    .stApp { background-color: #4a0000 !important; }
+    /* 1. FONDO GENERAL DEL SISTEMA */
+    .stApp { 
+        background-color: #4a0000 !important; 
+    }
 
-    /* 2. SIDEBAR - Fondo Guindo */
+    /* 2. SIDEBAR - Fondo Guindo y Alineación */
     [data-testid="stSidebar"] {
         background-color: #4a0000 !important;
         display: flex;
@@ -142,108 +145,88 @@ st.markdown("""
         align-items: center;
     }
 
-    /* 3. EL CUADRADO AMARILLO CENTRADO */
-    /* Creamos un contenedor blanco/transparente que centra el cuadrado */
+    /* 3. EL CUADRADO AMARILLO DEL LOGO (Centrado) */
     [data-testid="stSidebar"] [data-testid="stVerticalBlock"] > div:first-child {
-        background-color: #FFD700 !important; /* Fondo Amarillo */
-        width: 140px !important;              /* Ancho igual al alto para que sea cuadrado */
+        background-color: #FFD700 !important;
+        width: 140px !important;
         height: 140px !important;
-        margin: 20px auto !important;         /* Centrado horizontal y margen superior */
-        border-radius: 15px !important;       /* Bordes redondeados estéticos */
+        margin: 20px auto !important;
+        border-radius: 15px !important;
         display: flex !important;
-        justify-content: center !important;   /* Centra el logo horizontal */
-        align-items: center !important;       /* Centra el logo vertical */
+        justify-content: center !important;
+        align-items: center !important;
         padding: 10px !important;
     }
 
-    /* Ajuste del logo dentro del cuadrado */
+    /* Ajuste del logo para que no se deforme */
     [data-testid="stSidebar"] img {
         max-width: 100% !important;
         max-height: 100% !important;
         object-fit: contain !important;
     }
 
-    /* 4. TEXTOS DEL MENÚ - Visibilidad total */
+    /* 4. TEXTOS DEL MENÚ Y ETIQUETAS */
     [data-testid="stSidebar"] h3, 
     [data-testid="stSidebar"] label, 
     [data-testid="stSidebar"] p {
-        color: #FFD700 !important; /* Dorado para que resalte */
+        color: #FFD700 !important;
         font-weight: bold !important;
         text-align: left !important;
     }
 
-/* 8. BOTÓN CERRAR SESIÓN - Texto visible y claro */
-    [data-testid="stSidebar"] div.stButton > button {
-        background-color: #FFD700 !important; /* Fondo Amarillo */
-        color: #4a0000 !important;           /* TEXTO GUINDO (para que se lea) */
-        border-radius: 10px !important;
-        border: 2px solid #FFFFFF !important;
-        font-weight: bold !important;
-        font-size: 16px !important;          /* Tamaño de letra legible */
-        width: 100% !important;
-        height: 45px !important;             /* Altura fija para que no se deforme */
-        display: flex !important;
-        justify-content: center !important;
-        align-items: center !important;
-    }
-
-    /* Asegurar que el texto dentro del botón sea guindo siempre */
-    [data-testid="stSidebar"] div.stButton > button p {
-        color: #4a0000 !important;
-        margin: 0 !important;
-    }
-
-   /* 6. TABLAS Y EDITORES - Estilo Universitario */
+    /* 5. TABLAS Y EDITORES - Cuerpo Blanco */
     [data-testid="stDataEditor"], [data-testid="stTable"], .stTable {
         background-color: white !important;
         border-radius: 10px !important;
         overflow: hidden !important;
     }
 
-    /* Color Amarillo Pastel para el encabezado de las tablas */
+    /* 6. ENCABEZADO DE TABLAS - AMARILLO PASTEL SUAVE */
     thead tr th {
-        background-color: #FFF9C4 !important; /* Amarillo Pastel Suave */
-        color: #4a0000 !important; /* Texto Guindo para contraste */
+        background-color: #FFF9C4 !important; /* Tono pastel suave */
+        color: #4a0000 !important;           /* Texto guindo */
         font-weight: bold !important;
         text-transform: uppercase !important;
         border: 1px solid #f0f0f0 !important;
     }
-    }
-/* 9. COLORES DEL LOGIN (Texto y Etiquetas) */
-    /* Título de bienvenida */
-    .stApp h1, .stApp h2, .stApp h3 {
-        color: #FFD700 !important; /* Dorado */
+
+    /* 7. BOTÓN CERRAR SESIÓN */
+    [data-testid="stSidebar"] div.stButton > button {
+        background-color: #FFD700 !important;
+        color: #4a0000 !important;
+        border-radius: 10px !important;
+        border: 2px solid #FFFFFF !important;
+        font-weight: bold !important;
+        font-size: 16px !important;
+        width: 100% !important;
+        height: 45px !important;
     }
 
-    /* Etiquetas de los campos (Usuario/Contraseña) */
+    /* 8. COLORES DE LA PANTALLA DE LOGIN */
+    .stApp h1, .stApp h2, .stApp h3 {
+        color: #FFD700 !important;
+    }
+
     .stApp label p {
-        color: #FFFFFF !important; /* Blanco */
+        color: #FFFFFF !important;
         font-weight: bold !important;
     }
 
-    /* Texto de instrucciones o "Welcome" */
-    .stApp .stMarkdown p {
-        color: #FFFFFF !important;
-        font-size: 1.1rem;
-    }
-
-    /* Input boxes (donde escribes) para que resalten */
     .stApp input {
         background-color: #ffffff !important;
         color: #4a0000 !important;
         border: 2px solid #FFD700 !important;
     }
-    /* Estilo para la frase motivadora - Centrado Forzado */
+
+    /* Frase motivadora centrada */
     .frase-talento {
         width: 100% !important;
         text-align: center !important;
-        color: #FFD700 !important; /* Dorado */
-        font-style: italic !important; /* Cursiva */
-        font-size: 1.3rem !important; /* Un poco más grande para que luzca */
+        color: #FFD700 !important;
+        font-style: italic !important;
+        font-size: 1.3rem !important;
         margin-top: 25px !important;
-        margin-bottom: 10px !important;
         display: block !important;
-        clear: both !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -518,6 +501,7 @@ else:
                 save_data(dfs) # Guarda los cambios en tu Excel subido
                 st.success("Registros eliminados correctamente del sistema y del Excel.")
                 st.rerun()
+
 
 
 
