@@ -241,6 +241,30 @@ st.markdown("""
         margin-top: 25px !important;
         display: block !important;
     }
+    /* 9. SELECTORES PARA ST.DATA_EDITOR (CONTRATOS) */
+    
+    /* Fondo amarillo pastel para las celdas del encabezado */
+    [data-testid="stDataEditor"] div[data-testid="styledHeaderCell"] {
+        background-color: #FFF9C4 !important;
+        border-bottom: 1px solid #f0f0f0 !important;
+    }
+
+    /* Color de texto guindo y negrita para los títulos de las columnas */
+    [data-testid="stDataEditor"] [data-testid="styledHeaderCell"] span {
+        color: #4a0000 !important;
+        font-weight: bold !important;
+        text-transform: uppercase !important;
+    }
+
+    /* Colorea la esquina superior izquierda y el área de encabezado del editor */
+    [data-testid="stCanvasDataFrame"] > div:first-child {
+        background-color: #FFF9C4 !important;
+    }
+
+    /* Selector adicional para asegurar que las cabeceras se pinten en versiones nuevas */
+    [data-testid="stDataEditor"] .react-grid-HeaderCell {
+        background-color: #FFF9C4 !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -514,6 +538,7 @@ else:
                 save_data(dfs) # Guarda los cambios en tu Excel subido
                 st.success("Registros eliminados correctamente del sistema y del Excel.")
                 st.rerun()
+
 
 
 
