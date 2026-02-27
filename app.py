@@ -115,43 +115,68 @@ st.markdown("""
     /* Fondo general */
     .stApp { background-color: #4a0000 !important; }
     
-    /* SIDEBAR (Corregido: sin cuadros flotantes) */
+    /* SIDEBAR */
     [data-testid="stSidebar"] { background-color: #4a0000 !important; }
     [data-testid="stSidebar"] h3, [data-testid="stSidebar"] label, [data-testid="stSidebar"] p {
         color: #FFD700 !important; font-weight: bold !important;
     }
     
-    /* Botón Cerrar Sesión (Corregido para visibilidad) */
+    /* Logo con recuadro amarillo (Usando Streamlit nativo) */
+    [data-testid="stSidebar"] [data-testid="stImage"] {
+        background-color: #FFF9C4 !important; /* Fondo amarillo pastel */
+        border: 4px solid #FFD700 !important; /* Borde amarillo brillante */
+        border-radius: 15px !important;
+        padding: 10px !important;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3) !important;
+    }
+    
+    /* Botón Cerrar Sesión (Letras oscuras forzadas) */
     [data-testid="stSidebar"] div.stButton > button {
         background-color: #FFD700 !important;
-        color: #FFFFFF !important; /* Texto blanco para visibilidad */
         border-radius: 10px !important;
-        border: 2px solid #FFFFFF !important; /* Borde blanco para resaltar */
-        font-weight: bold !important;
-        font-size: 16px !important;
+        border: 2px solid #FFFFFF !important;
         width: 100% !important;
         padding: 10px !important;
         margin-top: 30px !important;
     }
+    [data-testid="stSidebar"] div.stButton > button p {
+        color: #4a0000 !important; /* Texto guindo oscuro VISTOSO */
+        font-weight: bold !important;
+        font-size: 16px !important;
+    }
     [data-testid="stSidebar"] div.stButton > button:hover {
-        background-color: #ffffff !important; /* Un blanco para el hover */
-        color: #4a0000 !important; /* Texto guindo oscuro en el hover */
+        background-color: #ffffff !important;
     }
 
-    /* Contenedor del Logo con fondo y recuadro */
-    .logo-container {
-        background-color: #FFF9C4; /* Fondo amarillo pastel */
-        border: 5px solid #FFD700; /* Recuadro amarillo brillante para resaltar */
-        border-radius: 15px; /* Bordes redondeados */
-        padding: 15px; /* Espaciado interno */
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2); /* Sombra para resaltar */
+    /* Pestañas (Tabs) visibles */
+    [data-testid="stTabs"] button {
+        color: #FFFFFF !important; /* Texto blanco por defecto */
+        font-weight: bold !important;
+        font-size: 16px !important;
     }
-    .logo-container img {
-        max-width: 100%; /* La imagen se ajusta al contenedor */
-        height: auto;
+    [data-testid="stTabs"] button[aria-selected="true"] {
+        color: #FFD700 !important; /* Texto amarillo cuando está activa */
+        border-bottom-color: #FFD700 !important;
+    }
+
+    /* Expanders (Opciones de Agregar, Editar, Eliminar) */
+    [data-testid="stExpander"] details {
+        background-color: #FFF9C4 !important; /* Fondo del formulario amarillo pastel */
+        border: 2px solid #FFD700 !important;
+        border-radius: 10px !important;
+        overflow: hidden !important;
+    }
+    [data-testid="stExpander"] summary {
+        background-color: #FFD700 !important; /* El botón principal en amarillo fuerte */
+        padding: 10px !important;
+    }
+    [data-testid="stExpander"] summary p {
+        color: #4a0000 !important; /* Texto del expander guindo oscuro */
+        font-weight: bold !important;
+        font-size: 16px !important;
+    }
+    [data-testid="stExpander"] details[open] summary {
+        border-bottom: 2px solid #4a0000 !important; /* Línea separadora al abrir */
     }
 
     /* Tablas y Editores */
@@ -216,16 +241,17 @@ else:
     es_lector = st.session_state.rol == "Lector"
 
     with st.sidebar:
-        # 1. Logo superior centrado mediante columnas con proporciones ajustadas
+        # 1. Logo superior con st.image nativo (más seguro) y tamaño reducido
         st.markdown("<br>", unsafe_allow_html=True)
-        col_logo_1, col_logo_2, col_logo_3 = st.columns([2, 3, 2]) # Cambiado de [1, 4, 1] para reducir tamaño
+        col_logo_1, col_logo_2, col_logo_3 = st.columns([1, 2, 1]) # Columnas ajustadas para hacerlo más pequeño
         with col_logo_2:
             if os.path.exists("Logo_guindo.png"):
-                # st.image("Logo_guindo.png", use_container_width=True) # Reemplazado por contenedor HTML
-                st.markdown('<div class="logo-container"><img src="Logo_guindo.png"></div>', unsafe_allow_html=True)
+                st.image("Logo_guindo.png", use_container_width=True)
+            else:
+                st.warning("Sin Logo")
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # 2. Opciones de menú (ahora usan todo el ancho de la barra)
+        # 2. Opciones de menú
         st.markdown("### 🛠️ MENÚ PRINCIPAL")
         m = st.radio("", ["🔍 Consulta", "➕ Registro", "📊 Nómina General"], key="menu_p_unico")
 
@@ -234,7 +260,7 @@ else:
         
         st.markdown("---")
 
-        # 3. Botón inferior con visibilidad corregida
+        # 3. Botón inferior
         if st.button("🚪 Cerrar Sesión", key="btn_logout"):
             st.session_state.rol = None
             st.rerun()
@@ -390,6 +416,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente del sistema y del Excel.")
                 st.rerun()
+
 
 
 
