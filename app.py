@@ -74,6 +74,7 @@ def save_data(dfs):
 
 def get_consolidated_contracts(df_c):
     # Función inteligente para fusionar contratos consecutivos
+    if df_c.empty: return df_c
     df_c = df_c.copy()
     df_c['f_inicio'] = pd.to_datetime(df_c['f_inicio'], errors='coerce')
     df_c['f_fin'] = pd.to_datetime(df_c['f_fin'], errors='coerce')
@@ -85,9 +86,12 @@ def get_consolidated_contracts(df_c):
             merged.append(row.to_dict())
         else:
             last = merged[-1]
-            # Si el cargo es el mismo y la fecha de inicio es inmediatamente después del fin anterior (<= 1 día de dif)
-            if last['cargo'] == row['cargo'] and pd.notnull(last['f_fin']) and row['f_inicio'] <= last['f_fin'] + pd.Timedelta(days=1):
+            # Si la fecha de inicio del nuevo contrato es justo un día después del fin del anterior (o antes)
+            if pd.notnull(last['f_fin']) and row['f_inicio'] <= last['f_fin'] + pd.Timedelta(days=1):
+                # Ampliamos la fecha final
                 last['f_fin'] = max(last['f_fin'], row['f_fin']) if pd.notnull(row['f_fin']) else row['f_fin']
+                # Actualizamos al cargo más reciente
+                last['cargo'] = row['cargo'] 
             else:
                 merged.append(row.to_dict())
     return pd.DataFrame(merged)
@@ -289,42 +293,51 @@ else:
 
                             if not df_tc.empty:
                                 df_tc_calc = df_tc.copy()
-                                df_tc_calc['f_inicio'] = pd.to_datetime(df_tc_calc['f_inicio'], errors='coerce')
-                                df_tc_calc['f_fin'] = pd.to_datetime(df_tc_calc['f_fin'], errors='coerce')
                                 
-                                start_global = df_tc_calc['f_inicio'].min()
+                                start_global = pd.to_datetime(df_tc_calc['f_inicio'].min()).date()
                                 
                                 if pd.notnull(start_global):
-                                    start_global = start_global.date()
                                     curr_start = start_global
                                     
                                     while curr_start <= date.today():
-                                        curr_end = curr_start.replace(year=curr_start.year + 1) - pd.Timedelta(days=1)
+                                        # Calcular fin del periodo (1 año exacto menos 1 día) de forma segura
+                                        curr_end = (pd.to_datetime(curr_start) + pd.DateOffset(years=1) - pd.Timedelta(days=1)).date()
                                         days_in_p = 0
                                         
                                         for _, r in df_tc_calc.iterrows():
-                                            c_start = r['f_inicio'].date() if pd.notnull(r['f_inicio']) else None
-                                            c_end = r['f_fin'].date() if pd.notnull(r['f_fin']) else None
+                                            c_start = pd.to_datetime(r['f_inicio']).date() if pd.notnull(r['f_inicio']) else None
+                                            c_end = pd.to_datetime(r['f_fin']).date() if pd.notnull(r['f_fin']) else None
                                             if c_start and c_end:
                                                 o_start = max(curr_start, c_start)
                                                 o_end = min(curr_end, c_end, date.today())
-                                                if o_start <= o_end: days_in_p += (o_end - o_start).days + 1
+                                                if o_start <= o_end: 
+                                                    days_in_p += (o_end - o_start).days + 1
                                                 
                                         gen_p = round((days_in_p / 30) * 2.5, 2)
                                         p_name = f"{curr_start.year}-{curr_start.year+1}"
                                         
-                                        # Días gozados en este periodo (buscando coincidencia en nombre)
+                                        # Días gozados en este periodo
                                         goz_df = c_df[c_df["periodo"].astype(str).str.strip() == p_name]
                                         goz_p = pd.to_numeric(goz_df["días gozados"], errors='coerce').sum()
                                         
-                                        detalles.append({"Periodo": p_name, "Del": curr_start.strftime("%d/%m/%Y"), "Al": curr_end.strftime("%d/%m/%Y"), "Días Generados": gen_p, "Días Gozados": goz_p, "Saldo": round(gen_p - goz_p, 2)})
+                                        # Agregamos a la tabla si hay días generados o gozados en este año
+                                        if gen_p > 0 or goz_p > 0:
+                                            detalles.append({
+                                                "Periodo": p_name, 
+                                                "Del": curr_start.strftime("%d/%m/%Y"), 
+                                                "Al": curr_end.strftime("%d/%m/%Y"), 
+                                                "Días Generados": gen_p, 
+                                                "Días Gozados": goz_p, 
+                                                "Saldo": round(gen_p - goz_p, 2)
+                                            })
                                         
                                         dias_generados_totales += gen_p
-                                        curr_start = curr_start.replace(year=curr_start.year + 1)
+                                        # Avanzar al siguiente año
+                                        curr_start = (pd.to_datetime(curr_start) + pd.DateOffset(years=1)).date()
 
                             saldo_v = round(dias_generados_totales - dias_gozados_totales, 2)
 
-                            # PANEL SUPERIOR: Letras oscuras (#4a0000)
+                            # PANEL SUPERIOR
                             st.markdown(f"""
                             <div style='display: flex; justify-content: space-between; background-color: #FFF9C4; padding: 15px; border-radius: 10px; border: 2px solid #FFD700; margin-bottom: 15px;'>
                                 <div style='text-align: center; width: 33%;'><h2 style='color: #4a0000; margin:0;'>{round(dias_generados_totales,2)}</h2><p style='color: #4a0000; margin:0; font-weight: bold;'>Días Generados Totales</p></div>
@@ -336,8 +349,9 @@ else:
                             # TABLA DETALLADA
                             if detalles:
                                 st.markdown("<h4 style='color: #FFD700;'>Desglose por Periodos</h4>", unsafe_allow_html=True)
-                                st.table(pd.DataFrame(detalles))
-                                st.markdown("---")
+                                # Aplicamos formato visual a la tabla
+                                st.table(pd.DataFrame(detalles).style.format({"Días Generados": "{:.2f}", "Días Gozados": "{:.2f}", "Saldo": "{:.2f}"}))
+                                st.markdown("<br>", unsafe_allow_html=True)
 
                         # ==========================================
                         # VISTA DE TABLA EDITABLE (Formato Fecha sin Horas)
@@ -544,6 +558,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente.")
                 st.rerun()
+
 
 
 
