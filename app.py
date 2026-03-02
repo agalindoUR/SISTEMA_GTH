@@ -353,28 +353,30 @@ else:
                             if detalles:
                                 st.markdown("<h4 style='color: #FFD700;'>Desglose por Periodos</h4>", unsafe_allow_html=True)
                                 
-                                div_table = """
-                                <div style="display: flex; flex-direction: column; width: 100%; border: 2px solid #FFD700; border-radius: 8px; overflow: hidden; margin-bottom: 20px;">
-                                    <div style="display: flex; background-color: #4A0000; color: #FFD700; font-weight: bold;">
-                                        <div style="flex: 1; padding: 12px; text-align: center; border-right: 1px solid #FFD700;">PERIODO</div>
-                                        <div style="flex: 1; padding: 12px; text-align: center; border-right: 1px solid #FFD700;">DEL</div>
-                                        <div style="flex: 1; padding: 12px; text-align: center; border-right: 1px solid #FFD700;">AL</div>
-                                        <div style="flex: 1; padding: 12px; text-align: center; border-right: 1px solid #FFD700;">DÍAS GENERADOS</div>
-                                        <div style="flex: 1; padding: 12px; text-align: center; border-right: 1px solid #FFD700;">DÍAS GOZADOS</div>
-                                        <div style="flex: 1; padding: 12px; text-align: center;">SALDO</div>
-                                    </div>
-                                """
+                                div_table = (
+                                    "<div style='display: flex; flex-direction: column; width: 100%; border: 2px solid #FFD700; border-radius: 8px; overflow: hidden; margin-bottom: 20px;'>"
+                                    "<div style='display: flex; background-color: #4A0000; color: #FFD700; font-weight: bold;'>"
+                                    "<div style='flex: 1; padding: 12px; text-align: center; border-right: 1px solid #FFD700;'>PERIODO</div>"
+                                    "<div style='flex: 1; padding: 12px; text-align: center; border-right: 1px solid #FFD700;'>DEL</div>"
+                                    "<div style='flex: 1; padding: 12px; text-align: center; border-right: 1px solid #FFD700;'>AL</div>"
+                                    "<div style='flex: 1; padding: 12px; text-align: center; border-right: 1px solid #FFD700;'>DÍAS GENERADOS</div>"
+                                    "<div style='flex: 1; padding: 12px; text-align: center; border-right: 1px solid #FFD700;'>DÍAS GOZADOS</div>"
+                                    "<div style='flex: 1; padding: 12px; text-align: center;'>SALDO</div>"
+                                    "</div>"
+                                )
+                                
                                 for d in detalles:
-                                    div_table += f"""
-                                    <div style="display: flex; background-color: #FFF9C4; color: #4A0000; font-weight: bold; border-top: 1px solid #FFD700;">
-                                        <div style="flex: 1; padding: 10px; text-align: center; border-right: 1px solid #FFD700;">{d['Periodo']}</div>
-                                        <div style="flex: 1; padding: 10px; text-align: center; border-right: 1px solid #FFD700;">{d['Del']}</div>
-                                        <div style="flex: 1; padding: 10px; text-align: center; border-right: 1px solid #FFD700;">{d['Al']}</div>
-                                        <div style="flex: 1; padding: 10px; text-align: center; border-right: 1px solid #FFD700;">{d['Días Generados']:.2f}</div>
-                                        <div style="flex: 1; padding: 10px; text-align: center; border-right: 1px solid #FFD700;">{d['Días Gozados']:.2f}</div>
-                                        <div style="flex: 1; padding: 10px; text-align: center;">{d['Saldo']:.2f}</div>
-                                    </div>
-                                    """
+                                    div_table += (
+                                        f"<div style='display: flex; background-color: #FFF9C4; color: #4A0000; font-weight: bold; border-top: 1px solid #FFD700;'>"
+                                        f"<div style='flex: 1; padding: 10px; text-align: center; border-right: 1px solid #FFD700;'>{d['Periodo']}</div>"
+                                        f"<div style='flex: 1; padding: 10px; text-align: center; border-right: 1px solid #FFD700;'>{d['Del']}</div>"
+                                        f"<div style='flex: 1; padding: 10px; text-align: center; border-right: 1px solid #FFD700;'>{d['Al']}</div>"
+                                        f"<div style='flex: 1; padding: 10px; text-align: center; border-right: 1px solid #FFD700;'>{d['Días Generados']:.2f}</div>"
+                                        f"<div style='flex: 1; padding: 10px; text-align: center; border-right: 1px solid #FFD700;'>{d['Días Gozados']:.2f}</div>"
+                                        f"<div style='flex: 1; padding: 10px; text-align: center;'>{d['Saldo']:.2f}</div>"
+                                        f"</div>"
+                                    )
+                                    
                                 div_table += "</div>"
                                 st.markdown(div_table, unsafe_allow_html=True)
 
@@ -616,6 +618,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente.")
                 st.rerun()
+
 
 
 
