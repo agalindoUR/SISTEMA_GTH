@@ -332,41 +332,42 @@ else:
                            saldo_v = round(dias_generados_totales - dias_gozados_totales, 2)
 
                             # ==========================================
-                            # 1. TARJETAS DE RESUMEN (Estilos en línea forzados)
+                            # 1. TARJETAS DE RESUMEN (Forzado extremo con !important)
                             # ==========================================
-                            st.markdown(f"""
-                            <div style="background-color: #51030d; padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; text-align: center; border: 2px solid #FFD700; margin-bottom: 25px;">
-                                <div style="flex: 1;">
-                                    <h2 style="color: #ffffff; font-size: 2.2em; margin: 0;">{round(dias_generados_totales,2)}</h2>
-                                    <p style="color: #FFD700; font-weight: bold; margin: 0; font-size: 1.1em;">Días Generados Totales</p>
+                            html_tarjetas = f"""
+                            <div style="background: #51030d !important; background-color: #51030d !important; padding: 15px !important; border-radius: 8px !important; display: flex !important; justify-content: space-between !important; text-align: center !important; border: 2px solid #FFD700 !important; margin-bottom: 25px !important;">
+                                <div style="flex: 1 !important; background: transparent !important;">
+                                    <h2 style="color: #ffffff !important; font-size: 2.2em !important; margin: 0 !important;">{round(dias_generados_totales,2)}</h2>
+                                    <p style="color: #FFD700 !important; font-weight: bold !important; margin: 0 !important; font-size: 1.1em !important;">Días Generados Totales</p>
                                 </div>
-                                <div style="flex: 1; border-left: 2px solid #FFD700; border-right: 2px solid #FFD700;">
-                                    <h2 style="color: #ffffff; font-size: 2.2em; margin: 0;">{round(dias_gozados_totales,2)}</h2>
-                                    <p style="color: #FFD700; font-weight: bold; margin: 0; font-size: 1.1em;">Días Gozados</p>
+                                <div style="flex: 1 !important; border-left: 2px solid #FFD700 !important; border-right: 2px solid #FFD700 !important; background: transparent !important;">
+                                    <h2 style="color: #ffffff !important; font-size: 2.2em !important; margin: 0 !important;">{round(dias_gozados_totales,2)}</h2>
+                                    <p style="color: #FFD700 !important; font-weight: bold !important; margin: 0 !important; font-size: 1.1em !important;">Días Gozados</p>
                                 </div>
-                                <div style="flex: 1;">
-                                    <h2 style="color: #ffffff; font-size: 2.2em; margin: 0;">{saldo_v}</h2>
-                                    <p style="color: #FFD700; font-weight: bold; margin: 0; font-size: 1.1em;">Saldo Disponible</p>
+                                <div style="flex: 1 !important; background: transparent !important;">
+                                    <h2 style="color: #ffffff !important; font-size: 2.2em !important; margin: 0 !important;">{saldo_v}</h2>
+                                    <p style="color: #FFD700 !important; font-weight: bold !important; margin: 0 !important; font-size: 1.1em !important;">Saldo Disponible</p>
                                 </div>
                             </div>
-                            """, unsafe_allow_html=True)
+                            """
+                            st.markdown(html_tarjetas, unsafe_allow_html=True)
                             
                             # ==========================================
-                            # 2. TABLA HTML CON ESTILOS EN CADA CELDA
+                            # 2. TABLA HTML (Forzado extremo con !important)
                             # ==========================================
                             if detalles:
-                                st.markdown("<h4 style='color: #FFD700; margin-bottom: 10px;'>Desglose por Periodos</h4>", unsafe_allow_html=True)
+                                st.markdown("<h4 style='color: #FFD700 !important; margin-bottom: 10px !important;'>Desglose por Periodos</h4>", unsafe_allow_html=True)
 
                                 table_html = """
-                                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-family: sans-serif;">
+                                <table style="width: 100% !important; border-collapse: collapse !important; margin-bottom: 20px !important; font-family: sans-serif !important;">
                                     <thead>
                                         <tr>
-                                            <th style="background-color: #51030d; color: #FFD700; padding: 12px; text-align: center; border: 1px solid #FFD700;">PERIODO</th>
-                                            <th style="background-color: #51030d; color: #FFD700; padding: 12px; text-align: center; border: 1px solid #FFD700;">DEL</th>
-                                            <th style="background-color: #51030d; color: #FFD700; padding: 12px; text-align: center; border: 1px solid #FFD700;">AL</th>
-                                            <th style="background-color: #51030d; color: #FFD700; padding: 12px; text-align: center; border: 1px solid #FFD700;">DÍAS GENERADOS</th>
-                                            <th style="background-color: #51030d; color: #FFD700; padding: 12px; text-align: center; border: 1px solid #FFD700;">DÍAS GOZADOS</th>
-                                            <th style="background-color: #51030d; color: #FFD700; padding: 12px; text-align: center; border: 1px solid #FFD700;">SALDO</th>
+                                            <th style="background: #51030d !important; background-color: #51030d !important; color: #FFD700 !important; padding: 12px !important; text-align: center !important; border: 1px solid #FFD700 !important;">PERIODO</th>
+                                            <th style="background: #51030d !important; background-color: #51030d !important; color: #FFD700 !important; padding: 12px !important; text-align: center !important; border: 1px solid #FFD700 !important;">DEL</th>
+                                            <th style="background: #51030d !important; background-color: #51030d !important; color: #FFD700 !important; padding: 12px !important; text-align: center !important; border: 1px solid #FFD700 !important;">AL</th>
+                                            <th style="background: #51030d !important; background-color: #51030d !important; color: #FFD700 !important; padding: 12px !important; text-align: center !important; border: 1px solid #FFD700 !important;">DÍAS GENERADOS</th>
+                                            <th style="background: #51030d !important; background-color: #51030d !important; color: #FFD700 !important; padding: 12px !important; text-align: center !important; border: 1px solid #FFD700 !important;">DÍAS GOZADOS</th>
+                                            <th style="background: #51030d !important; background-color: #51030d !important; color: #FFD700 !important; padding: 12px !important; text-align: center !important; border: 1px solid #FFD700 !important;">SALDO</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -374,12 +375,12 @@ else:
                                 for d in detalles:
                                     table_html += f"""
                                         <tr>
-                                            <td style="background-color: #FFF9C4; color: #51030d; padding: 10px; text-align: center; border: 1px solid #FFD700; font-weight: bold;">{d['Periodo']}</td>
-                                            <td style="background-color: #FFF9C4; color: #51030d; padding: 10px; text-align: center; border: 1px solid #FFD700; font-weight: bold;">{d['Del']}</td>
-                                            <td style="background-color: #FFF9C4; color: #51030d; padding: 10px; text-align: center; border: 1px solid #FFD700; font-weight: bold;">{d['Al']}</td>
-                                            <td style="background-color: #FFF9C4; color: #51030d; padding: 10px; text-align: center; border: 1px solid #FFD700; font-weight: bold;">{d['Días Generados']:.2f}</td>
-                                            <td style="background-color: #FFF9C4; color: #51030d; padding: 10px; text-align: center; border: 1px solid #FFD700; font-weight: bold;">{d['Días Gozados']:.2f}</td>
-                                            <td style="background-color: #FFF9C4; color: #51030d; padding: 10px; text-align: center; border: 1px solid #FFD700; font-weight: bold;">{d['Saldo']:.2f}</td>
+                                            <td style="background: #FFF9C4 !important; background-color: #FFF9C4 !important; color: #51030d !important; padding: 10px !important; text-align: center !important; border: 1px solid #FFD700 !important; font-weight: bold !important;">{d['Periodo']}</td>
+                                            <td style="background: #FFF9C4 !important; background-color: #FFF9C4 !important; color: #51030d !important; padding: 10px !important; text-align: center !important; border: 1px solid #FFD700 !important; font-weight: bold !important;">{d['Del']}</td>
+                                            <td style="background: #FFF9C4 !important; background-color: #FFF9C4 !important; color: #51030d !important; padding: 10px !important; text-align: center !important; border: 1px solid #FFD700 !important; font-weight: bold !important;">{d['Al']}</td>
+                                            <td style="background: #FFF9C4 !important; background-color: #FFF9C4 !important; color: #51030d !important; padding: 10px !important; text-align: center !important; border: 1px solid #FFD700 !important; font-weight: bold !important;">{d['Días Generados']:.2f}</td>
+                                            <td style="background: #FFF9C4 !important; background-color: #FFF9C4 !important; color: #51030d !important; padding: 10px !important; text-align: center !important; border: 1px solid #FFD700 !important; font-weight: bold !important;">{d['Días Gozados']:.2f}</td>
+                                            <td style="background: #FFF9C4 !important; background-color: #FFF9C4 !important; color: #51030d !important; padding: 10px !important; text-align: center !important; border: 1px solid #FFD700 !important; font-weight: bold !important;">{d['Saldo']:.2f}</td>
                                         </tr>
                                     """
                                 
@@ -626,6 +627,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente.")
                 st.rerun()
+
 
 
 
