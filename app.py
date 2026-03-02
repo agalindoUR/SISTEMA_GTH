@@ -254,19 +254,12 @@ else:
             if not pers.empty:
                 nom_c = pers.iloc[0]["apellidos y nombres"]
                 
-                # --- CABECERA Y BOTÓN DE CERTIFICADO ---
-                col_n1, col_n2 = st.columns([2, 1])
-                with col_n1:
-                    st.markdown(f"""
-                        <div style='border-bottom: 2px solid #FFD700; padding-bottom: 10px; margin-bottom: 20px;'>
-                            <h1 style='color: white; margin: 0;'>👤 {nom_c}</h1>
-                        </div>
-                    """, unsafe_allow_html=True)
-                with col_n2:
-                    df_contratos = dfs["CONTRATOS"][dfs["CONTRATOS"]["dni"] == dni_b]
-                    if not df_contratos.empty:
-                        word_file = gen_word(nom_c, dni_b, df_contratos)
-                        st.download_button("📄 Generar Certificado de Trabajo", data=word_file, file_name=f"Certificado_{dni_b}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+               # --- CABECERA ---
+                st.markdown(f"""
+                    <div style='border-bottom: 2px solid #FFD700; padding-bottom: 10px; margin-bottom: 20px;'>
+                        <h1 style='color: white; margin: 0;'>👤 {nom_c}</h1>
+                    </div>
+                """, unsafe_allow_html=True)
 
                 t_noms = ["Datos Generales", "Exp. Laboral", "Form. Académica", "Investigación", "Datos Familiares", "Contratos", "Vacaciones", "Otros Beneficios", "Méritos/Demer.", "Evaluación", "Liquidaciones"]
                 h_keys = ["DATOS GENERALES", "EXP. LABORAL", "FORM. ACADEMICA", "INVESTIGACION", "DATOS FAMILIARES", "CONTRATOS", "VACACIONES", "OTROS BENEFICIOS", "MERITOS Y DEMERITOS", "EVALUACION DEL DESEMPEÑO", "LIQUIDACIONES"]
@@ -618,6 +611,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente.")
                 st.rerun()
+
 
 
 
