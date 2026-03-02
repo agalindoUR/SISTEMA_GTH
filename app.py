@@ -329,67 +329,92 @@ else:
                                         dias_generados_totales += gen_p
                                         curr_start = (pd.to_datetime(curr_start) + pd.DateOffset(years=1)).date()
 
-                            saldo_v = round(dias_generados_totales - dias_gozados_totales, 2)
+                           saldo_v = round(dias_generados_totales - dias_gozados_totales, 2)
 
-                            # TARJETAS DE RESUMEN CON COLORES CORREGIDOS (Guinda oscuro sobre crema)
+                            # ==========================================
+                            # 1. TARJETAS DE RESUMEN (Fondo Guinda, Letras Amarillas/Blancas)
+                            # ==========================================
                             st.markdown(f"""
-                            <div style='display: flex; justify-content: space-between; background-color: #FFF9C4; padding: 15px; border-radius: 10px; border: 2px solid #FFD700; margin-bottom: 15px;'>
-                                <div style='text-align: center; width: 33%;'><h2 style='color: #4A0000; margin:0; font-size: 2.2em;'>{round(dias_generados_totales,2)}</h2><p style='color: #4A0000; margin:0; font-weight: bold;'>Días Generados Totales</p></div>
-                                <div style='text-align: center; width: 33%; border-left: 2px solid #FFD700; border-right: 2px solid #FFD700;'><h2 style='color: #4A0000; margin:0; font-size: 2.2em;'>{round(dias_gozados_totales,2)}</h2><p style='color: #4A0000; margin:0; font-weight: bold;'>Días Gozados</p></div>
-                                <div style='text-align: center; width: 33%;'><h2 style='color: #4A0000; margin:0; font-size: 2.2em;'>{saldo_v}</h2><p style='color: #4A0000; margin:0; font-weight: bold;'>Saldo Disponible</p></div>
+                            <div style='display: flex; justify-content: space-between; background-color: #4A0000 !important; padding: 20px; border-radius: 10px; border: 2px solid #FFD700 !important; margin-bottom: 20px; box-shadow: 2px 2px 10px rgba(0,0,0,0.3);'>
+                                <div style='text-align: center; width: 33%;'>
+                                    <h2 style='color: #FFD700 !important; margin:0; font-size: 2.5em;'>{round(dias_generados_totales,2)}</h2>
+                                    <p style='color: #FFFFFF !important; margin:0; font-weight: bold; font-size: 1.1em;'>Días Generados Totales</p>
+                                </div>
+                                <div style='text-align: center; width: 33%; border-left: 2px solid #FFD700 !important; border-right: 2px solid #FFD700 !important;'>
+                                    <h2 style='color: #FFD700 !important; margin:0; font-size: 2.5em;'>{round(dias_gozados_totales,2)}</h2>
+                                    <p style='color: #FFFFFF !important; margin:0; font-weight: bold; font-size: 1.1em;'>Días Gozados</p>
+                                </div>
+                                <div style='text-align: center; width: 33%;'>
+                                    <h2 style='color: #FFD700 !important; margin:0; font-size: 2.5em;'>{saldo_v}</h2>
+                                    <p style='color: #FFFFFF !important; margin:0; font-weight: bold; font-size: 1.1em;'>Saldo Disponible</p>
+                                </div>
                             </div>
                             """, unsafe_allow_html=True)
                             
-                            # DESGLOSE POR PERIODOS CON TABLA HTML PERSONALIZADA
+                            # ==========================================
+                            # 2. TABLA HTML CON ESTILOS VÍA CSS FORZADO
+                            # ==========================================
                             if detalles:
-                                st.markdown("<h4 style='color: #FFD700;'>Desglose por Periodos</h4>", unsafe_allow_html=True)
+                                st.markdown("<h4 style='color: #FFD700 !important; margin-bottom: 10px;'>Desglose por Periodos</h4>", unsafe_allow_html=True)
                                 
+                                # Inyectamos CSS global para esta tabla específica
+                                st.markdown("""
+                                <style>
+                                .tabla-vacaciones {
+                                    width: 100%;
+                                    border-collapse: collapse;
+                                    font-family: sans-serif;
+                                    margin-bottom: 20px;
+                                    border: 2px solid #FFD700;
+                                }
+                                .tabla-vacaciones th {
+                                    background-color: #4A0000 !important;
+                                    color: #FFD700 !important;
+                                    padding: 12px;
+                                    text-align: center;
+                                    border: 1px solid #FFD700 !important;
+                                    font-weight: bold;
+                                }
+                                .tabla-vacaciones td {
+                                    background-color: #FFF9C4 !important;
+                                    color: #4A0000 !important;
+                                    padding: 10px;
+                                    text-align: center;
+                                    border: 1px solid #FFD700 !important;
+                                    font-weight: bold;
+                                }
+                                </style>
+                                """, unsafe_allow_html=True)
+
                                 table_html = """
                                 <table class='tabla-vacaciones'>
                                     <thead>
                                         <tr>
-                                            <th>Periodo</th>
-                                            <th>Del</th>
-                                            <th>Al</th>
-                                            <th>Días Generados</th>
-                                            <th>Días Gozados</th>
-                                            <th>Saldo</th>
+                                            <th>PERIODO</th>
+                                            <th>DEL</th>
+                                            <th>AL</th>
+                                            <th>DÍAS GENERADOS</th>
+                                            <th>DÍAS GOZADOS</th>
+                                            <th>SALDO</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                 """
                                 for d in detalles:
-                                    table_html += f"<tr><td>{d['Periodo']}</td><td>{d['Del']}</td><td>{d['Al']}</td><td>{d['Días Generados']:.2f}</td><td>{d['Días Gozados']:.2f}</td><td>{d['Saldo']:.2f}</td></tr>"
+                                    table_html += f"""
+                                        <tr>
+                                            <td>{d['Periodo']}</td>
+                                            <td>{d['Del']}</td>
+                                            <td>{d['Al']}</td>
+                                            <td>{d['Días Generados']:.2f}</td>
+                                            <td>{d['Días Gozados']:.2f}</td>
+                                            <td>{d['Saldo']:.2f}</td>
+                                        </tr>
+                                    """
                                 
                                 table_html += "</tbody></table>"
                                 
-                                st.markdown(f"""
-                                <style>
-                                .tabla-vacaciones {{
-                                    width: 100%;
-                                    border-collapse: collapse;
-                                    margin-bottom: 20px;
-                                    font-family: sans-serif;
-                                }}
-                                .tabla-vacaciones th {{
-                                    background-color: #4A0000;
-                                    color: #FFD700;
-                                    padding: 10px;
-                                    text-align: center;
-                                    border: 1px solid #FFD700;
-                                    font-weight: bold;
-                                }}
-                                .tabla-vacaciones td {{
-                                    background-color: #FFF9C4;
-                                    color: #4A0000 !important;
-                                    padding: 8px;
-                                    text-align: center;
-                                    border: 1px solid #FFD700;
-                                    font-weight: bold;
-                                }}
-                                </style>
-                                {table_html}
-                                """, unsafe_allow_html=True)
+                                st.markdown(table_html, unsafe_allow_html=True)
                                 st.markdown("---")
 
                         # ==========================================
@@ -630,6 +655,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente.")
                 st.rerun()
+
 
 
 
