@@ -332,70 +332,41 @@ else:
                            saldo_v = round(dias_generados_totales - dias_gozados_totales, 2)
 
                             # ==========================================
-                            # 1. TARJETAS DE RESUMEN (Fondo Guinda, Letras Amarillas/Blancas)
+                            # 1. TARJETAS DE RESUMEN (Estilos en línea forzados)
                             # ==========================================
                             st.markdown(f"""
-                            <div style='display: flex; justify-content: space-between; background-color: #4A0000 !important; padding: 20px; border-radius: 10px; border: 2px solid #FFD700 !important; margin-bottom: 20px; box-shadow: 2px 2px 10px rgba(0,0,0,0.3);'>
-                                <div style='text-align: center; width: 33%;'>
-                                    <h2 style='color: #FFD700 !important; margin:0; font-size: 2.5em;'>{round(dias_generados_totales,2)}</h2>
-                                    <p style='color: #FFFFFF !important; margin:0; font-weight: bold; font-size: 1.1em;'>Días Generados Totales</p>
+                            <div style="background-color: #51030d; padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; text-align: center; border: 2px solid #FFD700; margin-bottom: 25px;">
+                                <div style="flex: 1;">
+                                    <h2 style="color: #ffffff; font-size: 2.2em; margin: 0;">{round(dias_generados_totales,2)}</h2>
+                                    <p style="color: #FFD700; font-weight: bold; margin: 0; font-size: 1.1em;">Días Generados Totales</p>
                                 </div>
-                                <div style='text-align: center; width: 33%; border-left: 2px solid #FFD700 !important; border-right: 2px solid #FFD700 !important;'>
-                                    <h2 style='color: #FFD700 !important; margin:0; font-size: 2.5em;'>{round(dias_gozados_totales,2)}</h2>
-                                    <p style='color: #FFFFFF !important; margin:0; font-weight: bold; font-size: 1.1em;'>Días Gozados</p>
+                                <div style="flex: 1; border-left: 2px solid #FFD700; border-right: 2px solid #FFD700;">
+                                    <h2 style="color: #ffffff; font-size: 2.2em; margin: 0;">{round(dias_gozados_totales,2)}</h2>
+                                    <p style="color: #FFD700; font-weight: bold; margin: 0; font-size: 1.1em;">Días Gozados</p>
                                 </div>
-                                <div style='text-align: center; width: 33%;'>
-                                    <h2 style='color: #FFD700 !important; margin:0; font-size: 2.5em;'>{saldo_v}</h2>
-                                    <p style='color: #FFFFFF !important; margin:0; font-weight: bold; font-size: 1.1em;'>Saldo Disponible</p>
+                                <div style="flex: 1;">
+                                    <h2 style="color: #ffffff; font-size: 2.2em; margin: 0;">{saldo_v}</h2>
+                                    <p style="color: #FFD700; font-weight: bold; margin: 0; font-size: 1.1em;">Saldo Disponible</p>
                                 </div>
                             </div>
                             """, unsafe_allow_html=True)
                             
                             # ==========================================
-                            # 2. TABLA HTML CON ESTILOS VÍA CSS FORZADO
+                            # 2. TABLA HTML CON ESTILOS EN CADA CELDA
                             # ==========================================
                             if detalles:
-                                st.markdown("<h4 style='color: #FFD700 !important; margin-bottom: 10px;'>Desglose por Periodos</h4>", unsafe_allow_html=True)
-                                
-                                # Inyectamos CSS global para esta tabla específica
-                                st.markdown("""
-                                <style>
-                                .tabla-vacaciones {
-                                    width: 100%;
-                                    border-collapse: collapse;
-                                    font-family: sans-serif;
-                                    margin-bottom: 20px;
-                                    border: 2px solid #FFD700;
-                                }
-                                .tabla-vacaciones th {
-                                    background-color: #4A0000 !important;
-                                    color: #FFD700 !important;
-                                    padding: 12px;
-                                    text-align: center;
-                                    border: 1px solid #FFD700 !important;
-                                    font-weight: bold;
-                                }
-                                .tabla-vacaciones td {
-                                    background-color: #FFF9C4 !important;
-                                    color: #4A0000 !important;
-                                    padding: 10px;
-                                    text-align: center;
-                                    border: 1px solid #FFD700 !important;
-                                    font-weight: bold;
-                                }
-                                </style>
-                                """, unsafe_allow_html=True)
+                                st.markdown("<h4 style='color: #FFD700; margin-bottom: 10px;'>Desglose por Periodos</h4>", unsafe_allow_html=True)
 
                                 table_html = """
-                                <table class='tabla-vacaciones'>
+                                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-family: sans-serif;">
                                     <thead>
                                         <tr>
-                                            <th>PERIODO</th>
-                                            <th>DEL</th>
-                                            <th>AL</th>
-                                            <th>DÍAS GENERADOS</th>
-                                            <th>DÍAS GOZADOS</th>
-                                            <th>SALDO</th>
+                                            <th style="background-color: #51030d; color: #FFD700; padding: 12px; text-align: center; border: 1px solid #FFD700;">PERIODO</th>
+                                            <th style="background-color: #51030d; color: #FFD700; padding: 12px; text-align: center; border: 1px solid #FFD700;">DEL</th>
+                                            <th style="background-color: #51030d; color: #FFD700; padding: 12px; text-align: center; border: 1px solid #FFD700;">AL</th>
+                                            <th style="background-color: #51030d; color: #FFD700; padding: 12px; text-align: center; border: 1px solid #FFD700;">DÍAS GENERADOS</th>
+                                            <th style="background-color: #51030d; color: #FFD700; padding: 12px; text-align: center; border: 1px solid #FFD700;">DÍAS GOZADOS</th>
+                                            <th style="background-color: #51030d; color: #FFD700; padding: 12px; text-align: center; border: 1px solid #FFD700;">SALDO</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -403,12 +374,12 @@ else:
                                 for d in detalles:
                                     table_html += f"""
                                         <tr>
-                                            <td>{d['Periodo']}</td>
-                                            <td>{d['Del']}</td>
-                                            <td>{d['Al']}</td>
-                                            <td>{d['Días Generados']:.2f}</td>
-                                            <td>{d['Días Gozados']:.2f}</td>
-                                            <td>{d['Saldo']:.2f}</td>
+                                            <td style="background-color: #FFF9C4; color: #51030d; padding: 10px; text-align: center; border: 1px solid #FFD700; font-weight: bold;">{d['Periodo']}</td>
+                                            <td style="background-color: #FFF9C4; color: #51030d; padding: 10px; text-align: center; border: 1px solid #FFD700; font-weight: bold;">{d['Del']}</td>
+                                            <td style="background-color: #FFF9C4; color: #51030d; padding: 10px; text-align: center; border: 1px solid #FFD700; font-weight: bold;">{d['Al']}</td>
+                                            <td style="background-color: #FFF9C4; color: #51030d; padding: 10px; text-align: center; border: 1px solid #FFD700; font-weight: bold;">{d['Días Generados']:.2f}</td>
+                                            <td style="background-color: #FFF9C4; color: #51030d; padding: 10px; text-align: center; border: 1px solid #FFD700; font-weight: bold;">{d['Días Gozados']:.2f}</td>
+                                            <td style="background-color: #FFF9C4; color: #51030d; padding: 10px; text-align: center; border: 1px solid #FFD700; font-weight: bold;">{d['Saldo']:.2f}</td>
                                         </tr>
                                     """
                                 
@@ -655,6 +626,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente.")
                 st.rerun()
+
 
 
 
