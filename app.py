@@ -273,7 +273,34 @@ else:
                             c_df = dfs[h_name][dfs[h_name]["dni"] == dni_b]
                         else:
                             c_df = pd.DataFrame(columns=COLUMNAS.get(h_name, []))
-
+                        # ==========================================
+                        # BOTÓN DE CERTIFICADO (SOLO EN CONTRATOS)
+                        # ==========================================
+                        if h_name == "CONTRATOS":
+                            df_contratos = dfs["CONTRATOS"][dfs["CONTRATOS"]["dni"] == dni_b]
+                            if not df_contratos.empty:
+                                # Forzamos los colores del botón para que no se vea blanco
+                                st.markdown("""
+                                    <style>
+                                    [data-testid="stDownloadButton"] button {
+                                        background-color: #FFD700 !important;
+                                        border: 2px solid #4A0000 !important;
+                                    }
+                                    [data-testid="stDownloadButton"] button p {
+                                        color: #4A0000 !important;
+                                        font-weight: bold !important;
+                                        font-size: 16px !important;
+                                    }
+                                    [data-testid="stDownloadButton"] button:hover {
+                                        background-color: #ffffff !important;
+                                        border: 2px solid #FFD700 !important;
+                                    }
+                                    </style>
+                                """, unsafe_allow_html=True)
+                                
+                                word_file = gen_word(nom_c, dni_b, df_contratos)
+                                st.download_button("📄 Generar Certificado de Trabajo", data=word_file, file_name=f"Certificado_{dni_b}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                                st.markdown("<br>", unsafe_allow_html=True)
                         # ==========================================
                         # PANEL DE RESUMEN AUTOMÁTICO PARA VACACIONES
                         # ==========================================
@@ -611,6 +638,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente.")
                 st.rerun()
+
 
 
 
