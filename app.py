@@ -204,8 +204,19 @@ st.markdown("""
     div[role="radiogroup"] label { background-color: transparent !important; }
     div[role="radiogroup"] label p { color: #FFFFFF !important; font-weight: bold !important; font-size: 16px !important; }
     
-    div.stButton > button, [data-testid="stFormSubmitButton"] > button { background-color: #FFD700 !important; border: 2px solid #FFFFFF !important; border-radius: 10px !important; }
-    div.stButton > button p, [data-testid="stFormSubmitButton"] > button p { color: #4a0000 !important; font-weight: bold !important; font-size: 16px !important; }
+    /* BOTONES CON MEJOR CONTRASTE */
+    div.stButton > button, [data-testid="stFormSubmitButton"] > button { 
+    background-color: #FFD700 !important; /* Amarillo Roosevelt */
+    border: 2px solid #4a0000 !important; 
+    border-radius: 10px !important; 
+}
+
+/* Color de la letra del botón: GUINDA OSCURO */
+    div.stButton > button p, [data-testid="stFormSubmitButton"] > button p { 
+    color: #4a0000 !important; 
+    font-weight: bold !important; 
+    font-size: 16px !important; 
+}
     div.stButton > button:hover, [data-testid="stFormSubmitButton"] > button:hover { background-color: #ffffff !important; border-color: #FFD700 !important; }
 
     [data-testid="stTabs"] button p { color: #FFFFFF !important; font-weight: bold !important; font-size: 16px !important; }
@@ -679,6 +690,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente.")
                 st.rerun()
+
 
 
 
