@@ -206,18 +206,21 @@ st.markdown("""
     
     /* BOTONES CON MEJOR CONTRASTE */
     div.stButton > button, [data-testid="stFormSubmitButton"] > button { 
-    background-color: #FFD700 !important; /* Amarillo Roosevelt */
-    border: 2px solid #4a0000 !important; 
-    border-radius: 10px !important; 
-}
+        background-color: #FFD700 !important; /* Amarillo Roosevelt */
+        border: 2px solid #4a0000 !important; 
+        border-radius: 10px !important; 
+    }
 
-/* Color de la letra del botón: GUINDA OSCURO */
-    div.stButton > button p, [data-testid="stFormSubmitButton"] > button p { 
-    color: #4a0000 !important; 
-    font-weight: bold !important; 
-    font-size: 16px !important; 
-}
-    div.stButton > button:hover, [data-testid="stFormSubmitButton"] > button:hover { background-color: #ffffff !important; border-color: #FFD700 !important; }
+    /* Color de la letra del botón: GUINDA OSCURO forzando todo el texto interno */
+    div.stButton > button *, [data-testid="stFormSubmitButton"] > button * { 
+        color: #4a0000 !important; 
+        font-weight: bold !important; 
+        font-size: 16px !important; 
+    }
+    div.stButton > button:hover, [data-testid="stFormSubmitButton"] > button:hover { 
+        background-color: #ffffff !important; 
+        border-color: #FFD700 !important; 
+    }
 
     [data-testid="stTabs"] button p { color: #FFFFFF !important; font-weight: bold !important; font-size: 16px !important; }
     [data-testid="stTabs"] button[aria-selected="true"] p { color: #FFD700 !important; }
@@ -538,16 +541,25 @@ else:
                                                 save_data(dfs)
                                                 st.rerun()
                                         else:
-                                            new_row = {"dni": dni_b}
+                                            # Guardamos el DNI y el NOMBRE automáticamente por debajo
+                                            new_row = {"dni": dni_b, "apellidos y nombres": nom_c} 
                                             for col in cols_reales:
                                                 if "fecha" in col.lower() or "f_" in col.lower():
-                                                    # FORMATO DE FECHA FORZADO A DD/MM/YYYY EN TODAS LAS PESTAÑAS
                                                     new_row[col] = st.date_input(col.title(), format="DD/MM/YYYY")
-                                                elif col.lower() in ["remuneración", "bonificación", "sueldo", "días generados", "días gozados", "saldo", "edad", "monto"]:
+                                                elif col.lower() == "edad":
+                                                    # --- CÁLCULO AUTOMÁTICO DE EDAD ---
+                                                    fnac = new_row.get("fecha de nacimiento")
+                                                    if fnac:
+                                                        hoy = date.today()
+                                                        edad_calc = hoy.year - fnac.year - ((hoy.month, hoy.day) < (fnac.month, fnac.day))
+                                                        new_row[col] = st.number_input("Edad (Calculada)", value=int(edad_calc), disabled=True)
+                                                    else:
+                                                        new_row[col] = st.number_input(col.title(), value=0, disabled=True)
+                                                elif col.lower() in ["remuneración", "bonificación", "sueldo", "días generados", "días gozados", "saldo", "monto"]:
                                                     new_row[col] = st.number_input(col.title(), 0.0)
                                                 else:
                                                     new_row[col] = st.text_input(col.title())
-
+                                            
                                             if st.form_submit_button("Guardar Registro"):
                                                 if not dfs[h_name].empty and "id" in dfs[h_name].columns: new_row["id"] = dfs[h_name]["id"].max() + 1
                                                 elif "id" in dfs[h_name].columns: new_row["id"] = 1
@@ -690,6 +702,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente.")
                 st.rerun()
+
 
 
 
