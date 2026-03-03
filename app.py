@@ -494,11 +494,9 @@ else:
                                             es_renovacion = st.checkbox("🔄 Es Renovación (Copiar datos del último contrato)")
                                         
                                         with st.form(f"f_add_{h_name}", clear_on_submit=True):
-                                            if h_name == "CONTRATOS":
-                                                # ... (aquí sigue tu código de valores por defecto igual) ...
-                                            # Valores por defecto
-                                            d_car = ""; d_rem = 0.0; d_bon = ""; d_cond = ""; d_ini = date.today(); d_fin = date.today()
-                                            d_ttrab = "Administrativo"; d_mod = "Presencial"; d_temp = "Plazo fijo"; d_tcont = "Planilla completo"
+                                            if h_name == "CONTRATOS":                                     
+                                                d_car = ""; d_rem = 0.0; d_bon = ""; d_cond = ""; d_ini = date.today(); d_fin = date.today()
+                                                d_ttrab = "Administrativo"; d_mod = "Presencial"; d_temp = "Plazo fijo"; d_tcont = "Planilla completo"
                                             
                                             # Si activa renovación, jalamos datos del último contrato
                                             if es_renovacion and not df_contratos.empty:
@@ -738,6 +736,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente.")
                 st.rerun()
+
 
 
 
