@@ -654,7 +654,7 @@ else:
 
                                                     val = sel.iloc[0][col.upper()]
                                                     if "fecha" in col.lower() or "f_" in col.lower():
-                                                        new_row[col] = st.date_input(
+                                                        edit_row[col] = st.date_input(
                                                             col.title(), 
                                                             min_value=date(1930, 1, 1), 
                                                             max_value=date(2100, 12, 31), 
@@ -734,6 +734,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente.")
                 st.rerun()
+
 
 
 
