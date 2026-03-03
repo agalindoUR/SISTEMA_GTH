@@ -482,14 +482,20 @@ else:
                             cols_reales = [c for c in dfs[h_name].columns if c.lower() not in ["id", "dni", "apellidos y nombres"]]
 
                             with col_a:
-                                with st.expander("➕ Nuevo Registro"):
-                                    # LOGICA DE RENOVACIÓN (Exclusivo para contratos)
-                                    es_renovacion = False
-                                    if h_name == "CONTRATOS" and not df_contratos.empty:
-                                        es_renovacion = st.checkbox("🔄 Es Renovación (Copiar datos del último contrato)")
+                                # --- VALIDACIÓN: SOLO 1 REGISTRO EN DATOS GENERALES ---
+                                if h_name == "DATOS GENERALES" and len(df_filtro) > 0:
+                                    st.info("📌 Los datos generales de este trabajador ya están registrados. Selecciona el registro en la tabla de arriba para editarlos.")
+                                else:
+                                    # TODO LO DE ABAJO DEBE TENER UN "TAB" (4 espacios) HACIA LA DERECHA
+                                    with st.expander("➕ Nuevo Registro"):
+                                        # LOGICA DE RENOVACIÓN (Exclusivo para contratos)
+                                        es_renovacion = False
+                                        if h_name == "CONTRATOS" and not df_contratos.empty:
+                                            es_renovacion = st.checkbox("🔄 Es Renovación (Copiar datos del último contrato)")
                                         
-                                    with st.form(f"f_add_{h_name}", clear_on_submit=True):
-                                        if h_name == "CONTRATOS":
+                                        with st.form(f"f_add_{h_name}", clear_on_submit=True):
+                                            if h_name == "CONTRATOS":
+                                                # ... (aquí sigue tu código de valores por defecto igual) ...
                                             # Valores por defecto
                                             d_car = ""; d_rem = 0.0; d_bon = ""; d_cond = ""; d_ini = date.today(); d_fin = date.today()
                                             d_ttrab = "Administrativo"; d_mod = "Presencial"; d_temp = "Plazo fijo"; d_tcont = "Planilla completo"
@@ -642,12 +648,25 @@ else:
                                                 # Aseguramos que el nombre no se pierda al editar
                                                 edit_row = {"apellidos y nombres": nom_c} 
                                                 for col in cols_reales:
+                                                    if col.lower() in ["apellidos y nombres", "dni"]: 
+                                                        continue
+
                                                     val = sel.iloc[0][col.upper()]
                                                     if "fecha" in col.lower() or "f_" in col.lower():
                                                         try: parsed_date = pd.to_datetime(val).date()
                                                         except: parsed_date = date.today()
-                                                        edit_row[col] = st.date_input(col.title(), value=parsed_date, format="DD/MM/YYYY")
+                                                        
+                                                        # Límite de fechas también al editar
+                                                        edit_row[col] = st.date_input(
+                                                            col.title(), 
+                                                            value=parsed_date,
+                                                            min_value=date(1930, 1, 1), 
+                                                            max_value=date.today(), 
+                                                            format="DD/MM/YYYY"
+                                                        )
                                                     elif col.lower() == "edad":
+                                                    # ... (resto del código igual)
+                                                # ... (resto de tu código de la edad igual)
                                                         # --- CÁLCULO AUTOMÁTICO DE EDAD EN EDICIÓN ---
                                                         fnac = edit_row.get("fecha de nacimiento")
                                                         if fnac:
@@ -719,6 +738,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente.")
                 st.rerun()
+
 
 
 
