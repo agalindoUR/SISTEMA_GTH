@@ -55,13 +55,21 @@ def obtener_credenciales():
     else:
         return ServiceAccountCredentials.from_json_keyfile_name("credenciales.json", SCOPE)
 
+@st.cache_data(ttl=600)  # <--- AGREGA ESTO AQUÍ
 def load_data():
     creds = obtener_credenciales()
     client = gspread.authorize(creds)
-    sheet = client.open(SHEET_NAME)
+    
+    # Intenta abrir el archivo una sola vez fuera del bucle
+    try:
+        sheet = client.open(SHEET_NAME)
+    except Exception as e:
+        st.error(f"No se pudo abrir el Google Sheet: {e}")
+        return {}
 
     dfs = {}
     for h, cols in COLUMNAS.items():
+        # ... (el resto de tu código igual) ...
         try:
             worksheet = sheet.worksheet(h)
             data = worksheet.get_all_records()
@@ -668,6 +676,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente.")
                 st.rerun()
+
 
 
 
