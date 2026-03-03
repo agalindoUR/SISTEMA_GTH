@@ -229,8 +229,13 @@ st.markdown("""
     [data-testid="stDataEditor"] .react-grid-HeaderCell span { color: #4a0000 !important; font-weight: 900 !important; font-size: 14px !important; text-transform: uppercase !important; }
     thead tr th { background-color: #FFF9C4 !important; color: #4a0000 !important; font-weight: bold !important; text-transform: uppercase !important; border: 1px solid #f0f0f0 !important; }
     
-    .stApp label p { color: #FFD700 !important; font-weight: bold !important; } 
-    .stApp input { color: #4a0000 !important; font-weight: bold !important; }
+    /* Ahora las letras serán Guinda Oscuro para que resalten sobre el fondo crema */
+    .stApp label p { color: #4a0000 !important; font-weight: bold !important; font-size: 16px !important; }
+    /* Esto asegura que lo que escribas en cualquier cuadro sea negro y legible */
+    .stApp input, .stApp select, .stApp textarea, [data-baseweb="select"] span { 
+    color: #000000 !important; 
+    font-weight: normal !important; 
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -674,6 +679,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente.")
                 st.rerun()
+
 
 
 
