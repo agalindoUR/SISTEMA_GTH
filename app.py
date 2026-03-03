@@ -55,27 +55,30 @@ def obtener_credenciales():
     else:
         return ServiceAccountCredentials.from_json_keyfile_name("credenciales.json", SCOPE)
 
-@st.cache_data(ttl=600)  # <-- PASO 1: Agrega esta línea justo arriba de def load_data
+@st.cache_data(ttl=600)
 def load_data():
     creds = obtener_credenciales()
     client = gspread.authorize(creds)
     sheet = client.open(SHEET_NAME)
 
+    # ⚡ SÚPER OPTIMIZACIÓN: Pedir todas las hojas en 1 sola petición
+    hojas_existentes = {ws.title: ws for ws in sheet.worksheets()}
+
     dfs = {}
-    # ... resto del código ...
     for h, cols in COLUMNAS.items():
-        # ... (el resto de tu código igual) ...
-        try:
-            worksheet = sheet.worksheet(h)
+        if h in hojas_existentes:
+            worksheet = hojas_existentes[h]
             data = worksheet.get_all_records()
             df = pd.DataFrame(data) if data else pd.DataFrame(columns=cols)
-        except gspread.exceptions.WorksheetNotFound:
+        else:
+            # Si la hoja no existe, la crea
             worksheet = sheet.add_worksheet(title=h, rows="100", cols="20")
             worksheet.append_row([c.upper() for c in cols])
             df = pd.DataFrame(columns=cols)
 
+        # ... (A partir de aquí, deja el resto de tu código igual: df.columns = ...)
         df.columns = [str(c).strip().lower() for c in df.columns]
-        
+                  
         if h == "CONTRATOS":
             if "sueldo" in df.columns: df.rename(columns={"sueldo": "remuneración básica"}, inplace=True)
             if "tipo colaborador" in df.columns: df.rename(columns={"tipo colaborador": "tipo de trabajador"}, inplace=True)
@@ -716,6 +719,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente.")
                 st.rerun()
+
 
 
 
