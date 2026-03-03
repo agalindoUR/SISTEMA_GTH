@@ -654,15 +654,10 @@ else:
 
                                                     val = sel.iloc[0][col.upper()]
                                                     if "fecha" in col.lower() or "f_" in col.lower():
-                                                        try: parsed_date = pd.to_datetime(val).date()
-                                                        except: parsed_date = date.today()
-                                                        
-                                                        # Límite de fechas también al editar
-                                                        edit_row[col] = st.date_input(
+                                                        new_row[col] = st.date_input(
                                                             col.title(), 
-                                                            value=parsed_date,
                                                             min_value=date(1930, 1, 1), 
-                                                            max_value=date.today(), 
+                                                            max_value=date(2100, 12, 31), 
                                                             format="DD/MM/YYYY"
                                                         )
                                                     elif col.lower() == "edad":
@@ -739,6 +734,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente.")
                 st.rerun()
+
 
 
 
