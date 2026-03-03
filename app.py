@@ -636,14 +636,26 @@ else:
                                                     save_data(dfs)
                                                     st.rerun()
                                             else:
-                                                edit_row = {}
+                                                # Aseguramos que el nombre no se pierda al editar
+                                                edit_row = {"apellidos y nombres": nom_c} 
                                                 for col in cols_reales:
                                                     val = sel.iloc[0][col.upper()]
                                                     if "fecha" in col.lower() or "f_" in col.lower():
                                                         try: parsed_date = pd.to_datetime(val).date()
                                                         except: parsed_date = date.today()
                                                         edit_row[col] = st.date_input(col.title(), value=parsed_date, format="DD/MM/YYYY")
-                                                    elif col.lower() in ["remuneración", "bonificación", "sueldo", "días generados", "días gozados", "saldo", "edad", "monto"]:
+                                                    elif col.lower() == "edad":
+                                                        # --- CÁLCULO AUTOMÁTICO DE EDAD EN EDICIÓN ---
+                                                        fnac = edit_row.get("fecha de nacimiento")
+                                                        if fnac:
+                                                            hoy = date.today()
+                                                            edad_calc = hoy.year - fnac.year - ((hoy.month, hoy.day) < (fnac.month, fnac.day))
+                                                            edit_row[col] = st.number_input("Edad (Calculada)", value=int(edad_calc), disabled=True)
+                                                        else:
+                                                            try: num_val = int(val) if pd.notnull(val) else 0
+                                                            except: num_val = 0
+                                                            edit_row[col] = st.number_input(col.title(), value=num_val, disabled=True)
+                                                    elif col.lower() in ["remuneración", "bonificación", "sueldo", "días generados", "días gozados", "saldo", "monto"]:
                                                         try: num_val = float(val) if pd.notnull(val) else 0.0
                                                         except: num_val = 0.0
                                                         edit_row[col] = st.number_input(col.title(), value=num_val)
@@ -653,6 +665,8 @@ else:
                                                 if st.form_submit_button("Actualizar Registro"):
                                                     for col in cols_reales:
                                                         dfs[h_name].at[idx, col] = edit_row[col]
+                                                    # Inyectamos el nombre por si estaba en blanco en la base de datos
+                                                    dfs[h_name].at[idx, "apellidos y nombres"] = nom_c
                                                     save_data(dfs)
                                                     st.rerun()
                                         
@@ -702,6 +716,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente.")
                 st.rerun()
+
 
 
 
