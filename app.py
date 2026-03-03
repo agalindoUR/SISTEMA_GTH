@@ -244,16 +244,22 @@ st.markdown("""
 
     /* TABLAS INTERACTIVAS */
     [data-testid="stDataEditor"], [data-testid="stTable"], .stTable { background-color: white !important; border-radius: 10px !important; overflow: hidden !important; }
-    [data-testid="stDataEditor"] .react-grid-HeaderCell span { color: #4a0000 !important; font-weight: 900 !important; font-size: 14px !important; text-transform: uppercase !important; }
-    thead tr th { background-color: #FFF9C4 !important; color: #4a0000 !important; font-weight: bold !important; text-transform: uppercase !important; border: 1px solid #f0f0f0 !important; }
     
-    /* Ahora las letras serán Guinda Oscuro para que resalten sobre el fondo crema */
-    .stApp label p { color: #4a0000 !important; font-weight: bold !important; font-size: 16px !important; }
-    /* Esto asegura que lo que escribas en cualquier cuadro sea negro y legible */
-    .stApp input, .stApp select, .stApp textarea, [data-baseweb="select"] span { 
-    color: #000000 !important; 
-    font-weight: normal !important; 
-}
+    /* AQUÍ ESTÁ EL CAMBIO: Títulos de tabla Negros (#000000), en Negrita (900) y un poco más grandes */
+    [data-testid="stDataEditor"] .react-grid-HeaderCell span { 
+        color: #000000 !important; 
+        font-weight: 900 !important; 
+        font-size: 15px !important; 
+        text-transform: uppercase !important; 
+    }
+    
+    thead tr th { 
+        background-color: #FFF9C4 !important; 
+        color: #000000 !important; 
+        font-weight: bold !important; 
+        text-transform: uppercase !important; 
+        border: 1px solid #f0f0f0 !important; 
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -735,6 +741,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente.")
                 st.rerun()
+
 
 
 
