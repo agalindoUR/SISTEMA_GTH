@@ -104,6 +104,9 @@ def save_data(dfs):
         
         worksheet.clear()
         worksheet.update([df_s.columns.values.tolist()] + df_s.values.tolist())
+    
+    # <--- AGREGA ESTA LÍNEA AQUÍ (Fuera del for, al final de la función)
+    st.cache_data.clear()
 
 def get_consolidated_contracts(df_c):
     # Función inteligente para fusionar contratos consecutivos
@@ -671,6 +674,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente.")
                 st.rerun()
+
 
 
 
