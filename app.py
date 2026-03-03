@@ -9,6 +9,11 @@ from docx import Document
 from docx.shared import Pt, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
+# --- NUEVOS IMPORTS PARA GOOGLE SHEETS ---
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+import numpy as np
+
 st.set_page_config(page_title="Gestión Roosevelt", page_icon="🎓", layout="wide")
 
 # ==========================================
@@ -639,6 +644,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente.")
                 st.rerun()
+
 
 
 
