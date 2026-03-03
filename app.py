@@ -42,41 +42,69 @@ COLUMNAS = {
 }
 
 # ==========================================
-# 2. FUNCIONES DE DATOS Y WORD
+# 2. FUNCIONES DE DATOS Y WORD (VERSIÓN GOOGLE SHEETS)
 # ==========================================
-def load_data():
-    if not os.path.exists(DB):
-        with pd.ExcelWriter(DB) as w:
-            for h, cols in COLUMNAS.items():
-                pd.DataFrame(columns=cols).to_excel(w, sheet_name=h, index=False)
-    dfs = {}
-    with pd.ExcelFile(DB) as x:
-        for h in COLUMNAS.keys():
-            df = pd.read_excel(x, h) if h in x.sheet_names else pd.DataFrame(columns=COLUMNAS[h])
-            df.columns = [str(c).strip().lower() for c in df.columns]
-            
-            # Migración de columnas antiguas a las nuevas si existen
-            if h == "CONTRATOS":
-                if "sueldo" in df.columns: df.rename(columns={"sueldo": "remuneración básica"}, inplace=True)
-                if "tipo colaborador" in df.columns: df.rename(columns={"tipo colaborador": "tipo de trabajador"}, inplace=True)
-                if "tipo" in df.columns and "tipo de trabajador" not in df.columns: df.rename(columns={"tipo": "tipo de trabajador"}, inplace=True)
 
-            if "dni" in df.columns:
-                df["dni"] = df["dni"].astype(str).str.strip().replace(r'\.0$', '', regex=True)
+SCOPE = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+SHEET_NAME = "DB_SISTEMA_GTH" # <- Asegúrate de que tu Google Sheet se llame exactamente así
+
+def obtener_credenciales():
+    if "google_json" in st.secrets:
+        creds_dict = json.loads(st.secrets["google_json"])
+        return ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, SCOPE)
+    else:
+        return ServiceAccountCredentials.from_json_keyfile_name("credenciales.json", SCOPE)
+
+def load_data():
+    creds = obtener_credenciales()
+    client = gspread.authorize(creds)
+    sheet = client.open(SHEET_NAME)
+
+    dfs = {}
+    for h, cols in COLUMNAS.items():
+        try:
+            worksheet = sheet.worksheet(h)
+            data = worksheet.get_all_records()
+            df = pd.DataFrame(data) if data else pd.DataFrame(columns=cols)
+        except gspread.exceptions.WorksheetNotFound:
+            worksheet = sheet.add_worksheet(title=h, rows="100", cols="20")
+            worksheet.append_row([c.upper() for c in cols])
+            df = pd.DataFrame(columns=cols)
+
+        df.columns = [str(c).strip().lower() for c in df.columns]
+        
+        if h == "CONTRATOS":
+            if "sueldo" in df.columns: df.rename(columns={"sueldo": "remuneración básica"}, inplace=True)
+            if "tipo colaborador" in df.columns: df.rename(columns={"tipo colaborador": "tipo de trabajador"}, inplace=True)
+            if "tipo" in df.columns and "tipo de trabajador" not in df.columns: df.rename(columns={"tipo": "tipo de trabajador"}, inplace=True)
+
+        if "dni" in df.columns:
+            df["dni"] = df["dni"].astype(str).str.strip().replace(r'\.0$', '', regex=True)
+        
+        for req_col in cols:
+            if req_col not in df.columns: df[req_col] = None
             
-            # Asegurar todas las columnas necesarias
-            for req_col in COLUMNAS[h]:
-                if req_col not in df.columns: df[req_col] = None
-                
-            dfs[h] = df
+        dfs[h] = df
     return dfs
 
 def save_data(dfs):
-    with pd.ExcelWriter(DB) as w:
-        for h, df in dfs.items():
-            df_s = df.copy()
-            df_s.columns = [c.upper() for c in df_s.columns]
-            df_s.to_excel(w, sheet_name=h, index=False)
+    creds = obtener_credenciales()
+    client = gspread.authorize(creds)
+    sheet = client.open(SHEET_NAME)
+
+    for h, df in dfs.items():
+        worksheet = sheet.worksheet(h)
+        df_s = df.copy()
+        df_s = df_s.fillna("")
+        df_s = df_s.astype(str).replace("nan", "")
+        df_s.columns = [c.upper() for c in df_s.columns]
+        
+        worksheet.clear()
+        worksheet.update([df_s.columns.values.tolist()] + df_s.values.tolist())
+
+# 👇 A PARTIR DE AQUÍ SIGUE TU CÓDIGO INTACTO 👇
+def get_consolidated_contracts(df_c):
+# ... resto de tu código ...
 
 def get_consolidated_contracts(df_c):
     # Función inteligente para fusionar contratos consecutivos
@@ -644,6 +672,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente.")
                 st.rerun()
+
 
 
 
