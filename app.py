@@ -214,12 +214,13 @@ st.markdown("""
         border-radius: 10px !important; 
     }
 
-    /* Color de la letra del botón: GUINDA OSCURO forzando todo el texto interno */
+    /* ¡EL FIX!: El asterisco (*) obliga a que CUALQUIER texto dentro del botón sea Guinda */
     div.stButton > button *, [data-testid="stFormSubmitButton"] > button * { 
         color: #4a0000 !important; 
         font-weight: bold !important; 
         font-size: 16px !important; 
     }
+
     div.stButton > button:hover, [data-testid="stFormSubmitButton"] > button:hover { 
         background-color: #ffffff !important; 
         border-color: #FFD700 !important; 
@@ -734,6 +735,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente.")
                 st.rerun()
+
 
 
 
