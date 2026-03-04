@@ -212,10 +212,9 @@ st.markdown("""
         background-color: #FFD700 !important; /* Amarillo Roosevelt */
         border: 2px solid #4a0000 !important; 
         border-radius: 10px !important; 
-        color: #4a0000 !important; /* Forzamos el color directamente en el botón */
     }
 
-    /* El asterisco (*) obliga a que CUALQUIER elemento dentro del botón herede el color */
+    /* El asterisco (*) fuerza el color Guinda en TODO el texto de CUALQUIER botón */
     div.stButton > button *, [data-testid="stFormSubmitButton"] > button * { 
         color: #4a0000 !important; 
         font-weight: bold !important; 
@@ -225,22 +224,13 @@ st.markdown("""
     div.stButton > button:hover, [data-testid="stFormSubmitButton"] > button:hover { 
         background-color: #ffffff !important; 
         border-color: #FFD700 !important; 
-        color: #4a0000 !important;
     }
 
-    [data-testid="stTabs"] button p { color: #FFFFFF !important; font-weight: bold !important; font-size: 16px !important; }
-    [data-testid="stTabs"] button[aria-selected="true"] p { color: #FFD700 !important; }
-    [data-testid="stTabs"] button[aria-selected="true"] { border-bottom-color: #FFD700 !important; }
-
-    [data-testid="stExpander"] details { background-color: #FFF9C4 !important; border: 2px solid #FFD700 !important; border-radius: 10px !important; overflow: hidden !important; }
-    [data-testid="stExpander"] summary { background-color: #FFD700 !important; padding: 10px !important; }
-    [data-testid="stExpander"] summary p { color: #4a0000 !important; font-weight: bold !important; }
-    
     /* Textos oscuros dentro de los formularios crema */
     [data-testid="stExpander"] label p { color: #4a0000 !important; font-weight: bold !important; }
     [data-testid="stExpander"] div[data-baseweb="input"], [data-testid="stExpander"] div[data-baseweb="select"] { border: 1px solid #4a0000 !important; }
 
-   /* Fix para los mensajes de advertencia (Ej: Activa la casilla) */
+    /* Fix para los mensajes de advertencia (Ej: Activa la casilla) - AHORA SÍ FUNCIONARÁ */
     [data-testid="stAlert"] { 
         background-color: #FFF9C4 !important; 
         border: 2px solid #FFD700 !important; 
@@ -255,7 +245,6 @@ st.markdown("""
     /* TABLAS INTERACTIVAS */
     [data-testid="stDataEditor"], [data-testid="stTable"], .stTable { background-color: white !important; border-radius: 10px !important; overflow: hidden !important; }
     
-    /* AQUÍ ESTÁ EL CAMBIO: Títulos de tabla Negros (#000000), en Negrita (900) y un poco más grandes */
     [data-testid="stDataEditor"] .react-grid-HeaderCell span { 
         color: #000000 !important; 
         font-weight: 900 !important; 
@@ -263,12 +252,12 @@ st.markdown("""
         text-transform: uppercase !important; 
     }
     
-    thead tr th { 
-        background-color: #FFF9C4 !important; 
+    thead tr th { background-color: #FFF9C4 !important; color: #000000 !important; font-weight: bold !important; text-transform: uppercase !important; border: 1px solid #f0f0f0 !important; }
+    
+    .stApp label p { color: #4a0000 !important; font-weight: bold !important; font-size: 16px !important; }
+    .stApp input, .stApp select, .stApp textarea, [data-baseweb="select"] span { 
         color: #000000 !important; 
-        font-weight: bold !important; 
-        text-transform: uppercase !important; 
-        border: 1px solid #f0f0f0 !important; 
+        font-weight: normal !important; 
     }
 </style>
 """, unsafe_allow_html=True)
@@ -751,6 +740,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente.")
                 st.rerun()
+
 
 
 
