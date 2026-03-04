@@ -226,9 +226,31 @@ st.markdown("""
         border-color: #FFD700 !important; 
     }
 
-    /* Textos oscuros dentro de los formularios crema */
-    [data-testid="stExpander"] label p { color: #4a0000 !important; font-weight: bold !important; }
-    [data-testid="stExpander"] div[data-baseweb="input"], [data-testid="stExpander"] div[data-baseweb="select"] { border: 1px solid #4a0000 !important; }
+   /* --- RECUPERAMOS EL FONDO CREMA Y BORDES DE LOS DESPLEGABLES --- */
+    [data-testid="stExpander"] { 
+        background-color: #FFF9C4 !important; 
+        border: 2px solid #FFD700 !important; 
+        border-radius: 10px !important; 
+    }
+    
+    [data-testid="stExpander"] details { background-color: transparent !important; }
+    [data-testid="stExpander"] summary { background-color: #FFD700 !important; padding: 10px !important; border-radius: 8px 8px 0 0 !important; }
+    [data-testid="stExpander"] summary p { color: #4a0000 !important; font-weight: bold !important; font-size: 16px !important; }
+
+    /* --- CAJAS DE TEXTO (INPUTS) CON LÍNEAS VISIBLES --- */
+    .stApp label p { color: #4a0000 !important; font-weight: bold !important; font-size: 16px !important; }
+    
+    /* Damos fondo blanco y borde a las cajas donde se escribe para que resalten sobre el crema */
+    [data-baseweb="input"], [data-baseweb="select"], [data-baseweb="textarea"] { 
+        background-color: #FFFFFF !important; 
+        border: 1px solid #4a0000 !important; 
+        border-radius: 5px !important; 
+    }
+    
+    .stApp input, .stApp select, .stApp textarea, [data-baseweb="select"] span { 
+        color: #000000 !important; 
+        font-weight: normal !important; 
+    }
 
     /* Fix para los mensajes de advertencia (Ej: Activa la casilla) - AHORA SÍ FUNCIONARÁ */
     [data-testid="stAlert"] { 
@@ -740,6 +762,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente.")
                 st.rerun()
+
 
 
 
