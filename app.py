@@ -212,9 +212,10 @@ st.markdown("""
         background-color: #FFD700 !important; /* Amarillo Roosevelt */
         border: 2px solid #4a0000 !important; 
         border-radius: 10px !important; 
+        color: #4a0000 !important; /* Forzamos el color directamente en el botón */
     }
 
-    /* ¡EL FIX!: El asterisco (*) obliga a que CUALQUIER texto dentro del botón sea Guinda */
+    /* El asterisco (*) obliga a que CUALQUIER elemento dentro del botón herede el color */
     div.stButton > button *, [data-testid="stFormSubmitButton"] > button * { 
         color: #4a0000 !important; 
         font-weight: bold !important; 
@@ -224,6 +225,7 @@ st.markdown("""
     div.stButton > button:hover, [data-testid="stFormSubmitButton"] > button:hover { 
         background-color: #ffffff !important; 
         border-color: #FFD700 !important; 
+        color: #4a0000 !important;
     }
 
     [data-testid="stTabs"] button p { color: #FFFFFF !important; font-weight: bold !important; font-size: 16px !important; }
@@ -749,6 +751,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente.")
                 st.rerun()
+
 
 
 
