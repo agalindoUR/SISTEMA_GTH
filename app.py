@@ -238,9 +238,17 @@ st.markdown("""
     [data-testid="stExpander"] label p { color: #4a0000 !important; font-weight: bold !important; }
     [data-testid="stExpander"] div[data-baseweb="input"], [data-testid="stExpander"] div[data-baseweb="select"] { border: 1px solid #4a0000 !important; }
 
-    /* Fix para los mensajes de advertencia (Ej: Activa la casilla) */
-    [data-testid="stNotification"] { background-color: #FFD700 !important; border: 1px solid #4a0000; }
-    [data-testid="stNotification"] p { color: #4a0000 !important; font-weight: bold !important; font-size: 15px !important; }
+   /* Fix para los mensajes de advertencia (Ej: Activa la casilla) */
+    [data-testid="stAlert"] { 
+        background-color: #FFF9C4 !important; 
+        border: 2px solid #FFD700 !important; 
+        border-radius: 10px !important;
+    }
+    [data-testid="stAlert"] p, [data-testid="stAlert"] span, [data-testid="stAlert"] svg { 
+        color: #4a0000 !important; 
+        font-weight: bold !important; 
+        font-size: 16px !important; 
+    }
 
     /* TABLAS INTERACTIVAS */
     [data-testid="stDataEditor"], [data-testid="stTable"], .stTable { background-color: white !important; border-radius: 10px !important; overflow: hidden !important; }
@@ -741,6 +749,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente.")
                 st.rerun()
+
 
 
 
