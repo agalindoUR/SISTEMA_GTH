@@ -276,7 +276,18 @@ st.markdown("""
     
     thead tr th { background-color: #FFF9C4 !important; color: #000000 !important; font-weight: bold !important; text-transform: uppercase !important; border: 1px solid #f0f0f0 !important; }
     
-    .stApp label p { color: #4a0000 !important; font-weight: bold !important; font-size: 16px !important; }
+    /* 1. Subtítulos generales (Login, Buscar, Registro) en color DORADO para que resalten en el fondo Guinda */
+    .stApp label p { 
+        color: #FFD700 !important; 
+        font-weight: bold !important; 
+        font-size: 16px !important; 
+    }
+    
+    /* 2. Subtítulos DENTRO de los recuadros de edición (fondo crema) en color GUINDA */
+    [data-testid="stExpander"] label p, [data-testid="stForm"] label p { 
+        color: #4a0000 !important; 
+        font-weight: bold !important; 
+    }
     .stApp input, .stApp select, .stApp textarea, [data-baseweb="select"] span { 
         color: #000000 !important; 
         font-weight: normal !important; 
@@ -762,6 +773,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente.")
                 st.rerun()
+
 
 
 
