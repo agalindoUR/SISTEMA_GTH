@@ -526,7 +526,7 @@ else:
                             col_a, col_b = st.columns(2)
                             cols_reales = [c for c in dfs[h_name].columns if c.lower() not in ["id", "dni", "apellidos y nombres"]]
 
-                            with col_a:
+        with col_a:
             df_filtro = dfs[h_name][dfs[h_name]["dni"] == dni_b] if not dfs[h_name].empty else pd.DataFrame()
             
             # --- VALIDACIÓN: SOLO 1 REGISTRO EN DATOS GENERALES ---
