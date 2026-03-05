@@ -791,8 +791,8 @@ else:
                                             st.info("Activa la casilla (SEL) en la tabla superior para editar o eliminar el registro.")
             
             # Este 'else' es el que cierra la búsqueda inicial del DNI (if not pers.empty:)
-            else:
-                st.error("DNI no encontrado en la base de datos.")
+        else:
+            st.error("DNI no encontrado en la base de datos.")
 
     # --- SECCIÓN REGISTRO Y NÓMINA ---
     elif m == "➕ Registro" and not es_lector:
@@ -857,6 +857,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente.")
                 st.rerun()
+
 
 
 
