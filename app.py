@@ -690,7 +690,7 @@ else:
                                                     dfs[h_name].at[idx, "motivo cese"] = mot_e
                                                     save_data(dfs)
                                                     st.rerun()
-                                            else:
+                                           else:
                                                 # Aseguramos que el nombre no se pierda al editar
                                                 edit_row = {"apellidos y nombres": nom_c} 
                                                 for col in cols_reales:
@@ -698,6 +698,7 @@ else:
                                                         continue
 
                                                     val = sel.iloc[0][col.upper()]
+                                                    
                                                     if "fecha" in col.lower() or "f_" in col.lower():
                                                         edit_row[col] = st.date_input(
                                                             col.title(), 
@@ -706,8 +707,6 @@ else:
                                                             format="DD/MM/YYYY"
                                                         )
                                                     elif col.lower() == "edad":
-                                                    # ... (resto del código igual)
-                                                # ... (resto de tu código de la edad igual)
                                                         # --- CÁLCULO AUTOMÁTICO DE EDAD EN EDICIÓN ---
                                                         fnac = edit_row.get("fecha de nacimiento")
                                                         if fnac:
@@ -718,53 +717,108 @@ else:
                                                             try: num_val = int(val) if pd.notnull(val) else 0
                                                             except: num_val = 0
                                                             edit_row[col] = st.number_input(col.title(), value=num_val, disabled=True)
+                                                            
                                                     elif col.lower() in ["remuneración", "bonificación", "sueldo", "días generados", "días gozados", "saldo", "monto"]:
                                                         try: num_val = float(val) if pd.notnull(val) else 0.0
                                                         except: num_val = 0.0
                                                         edit_row[col] = st.number_input(col.title(), value=num_val)
+                                                        
+                                                    # ==========================================
+                                                    # AQUÍ ENTRAN TUS CAMBIOS DEL PASO 3 (SELECTBOXES)
+                                                    # ==========================================
+                                                    elif col.lower() == "sexo":
+                                                        lista_sexo = ["Masculino", "Femenino"]
+                                                        v_sexo = str(val).capitalize() if pd.notnull(val) else "Masculino"
+                                                        idx_sexo = lista_sexo.index(v_sexo) if v_sexo in lista_sexo else 0
+                                                        edit_row[col] = st.selectbox(col.title(), lista_sexo, index=idx_sexo)
+                                                        
+                                                    elif col.lower() == "estado civil":
+                                                        lista_civil = ["Soltero(a)", "Casado(a)", "Conviviente", "Divorciado(a)", "Viudo(a)"]
+                                                        v_civil = str(val) if pd.notnull(val) else "Soltero(a)"
+                                                        idx_civil = lista_civil.index(v_civil) if v_civil in lista_civil else 0
+                                                        edit_row[col] = st.selectbox(col.title(), lista_civil, index=idx_civil)
+                                                        
+                                                    elif col.lower() in ["sede de trabajo", "sede"]:
+                                                        lista_sedes = ["Local Giráldez", "Local San Carlos", "Local Abancay", "Local Lince", "Local Pueblo Libre"]
+                                                        v_sede = str(val) if pd.notnull(val) else "Local Giráldez"
+                                                        idx_sede = lista_sedes.index(v_sede) if v_sede in lista_sedes else 0
+                                                        edit_row[col] = st.selectbox(col.title(), lista_sedes, index=idx_sede)
+                                                    
+                                                    # ==========================================
+                                                    # FIN DE LOS CAMBIOS DEL PASO 3
+                                                    # ==========================================
+                                                    
                                                     else:
                                                         edit_row[col] = st.text_input(col.title(), value=str(val) if pd.notnull(val) else "")
-                                                        
-                                                if st.form_submit_button("Actualizar Registro"):
-                                                    for col in cols_reales:
-                                                        dfs[h_name].at[idx, col] = edit_row[col]
-                                                    # Inyectamos el nombre por si estaba en blanco en la base de datos
-                                                    dfs[h_name].at[idx, "apellidos y nombres"] = nom_c
-                                                    save_data(dfs)
-                                                    st.rerun()
-                                        
-                                        if st.button("🚨 Eliminar Fila Seleccionada", key=f"del_{h_name}"):
-                                            dfs[h_name] = dfs[h_name].drop(sel.index)
-                                            save_data(dfs)
-                                            st.rerun()
+
+                                                # --- BOTONES DE ACTUALIZAR Y ELIMINAR ---
+                                                # (Asegúrate de tener esta parte para que el formulario se pueda enviar)
+                                                col_btn1, col_btn2 = st.columns(2)
+                                                with col_btn1:
+                                                    if st.form_submit_button("Actualizar Registro"):
+                                                        for k, v in edit_row.items():
+                                                            dfs[h_name].at[idx, k] = v
+                                                        save_data(dfs)
+                                                        st.rerun()
+                                                with col_btn2:
+                                                    if st.form_submit_button("🗑️ Eliminar Registro", type="primary"):
+                                                        dfs[h_name] = dfs[h_name].drop(idx)
+                                                        save_data(dfs)
+                                                        st.rerun()
                                     else:
                                         st.info("Activa la casilla (SEL) en la tabla superior para editar o eliminar el registro.")
             else:
                 st.error("DNI no encontrado en la base de datos.")
 
-    # --- SECCIÓN REGISTRO Y NÓMINA (Sin cambios) ---
+   # --- SECCIÓN REGISTRO Y NÓMINA ---
     elif m == "➕ Registro" and not es_lector:
         with st.form("reg_p"):
             st.write("### Alta de Nuevo Trabajador")
-            d = st.text_input("DNI")
-            n = st.text_input("Nombres").upper()
-            l = st.text_input("Link File")
+            
+            d = st.text_input("DNI").strip()
+            
+            # 1. Separamos Apellidos y Nombres
+            ape = st.text_input("Apellidos").upper().strip()
+            nom = st.text_input("Nombres").upper().strip()
+            
+            # 2. Agregamos las listas desglosables
+            sexo = st.selectbox("Sexo", ["Masculino", "Femenino"])
+            estado_civil = st.selectbox("Estado Civil", ["Soltero(a)", "Casado(a)", "Divorciado(a)", "Conviviente", "Viudo(a)", "Otro"])
+            sede = st.selectbox("Sede de Trabajo", ["Local Giraldez", "Local San Carlos", "Local Abancay", "Local Lince", "Local Pueblo Libre"])
+            
+            l = st.text_input("Link File").strip()
 
             if st.form_submit_button("Registrar"):
-                if d and n:
-                    dfs["PERSONAL"] = pd.concat([dfs["PERSONAL"], pd.DataFrame([{"dni": d, "apellidos y nombres": n, "link": l}])], ignore_index=True)
+                if d and ape and nom: # Ahora validamos que tenga DNI, Apellidos y Nombres
+                    nuevo_trabajador = {
+                        "dni": d, 
+                        "apellidos": ape, 
+                        "nombres": nom,
+                        "sexo": sexo,
+                        "estado_civil": estado_civil,
+                        "sede": sede,
+                        "link": l
+                    }
+                    dfs["PERSONAL"] = pd.concat([dfs["PERSONAL"], pd.DataFrame([nuevo_trabajador])], ignore_index=True)
                     save_data(dfs)
-                    st.success("Registrado correctamente")
+                    st.success("Trabajador registrado correctamente")
+                else:
+                    st.error("⚠️ Por favor, complete al menos el DNI, Apellidos y Nombres.")
 
     elif m == "📊 Nómina General":
         st.markdown("<h2 style='color: #FFD700;'>👥 Trabajadores registrados en el sistema</h2>", unsafe_allow_html=True)
-        busqueda = st.text_input("🔍 Buscar por nombre o DNI:").strip().lower()
+        busqueda = st.text_input("🔍 Buscar por apellidos, nombres o DNI:").strip().lower()
         df_nom = dfs["PERSONAL"].copy()
         
-        if busqueda: df_nom = df_nom[df_nom['apellidos y nombres'].str.lower().str.contains(busqueda, na=False) | df_nom['dni'].astype(str).str.contains(busqueda, na=False)]
+        # 3. Actualizamos el buscador para que filtre por la columna 'apellidos' o 'nombres'
+        if busqueda: 
+            mask_ape = df_nom['apellidos'].fillna("").str.lower().str.contains(busqueda, na=False)
+            mask_nom = df_nom['nombres'].fillna("").str.lower().str.contains(busqueda, na=False)
+            mask_dni = df_nom['dni'].astype(str).str.contains(busqueda, na=False)
+            df_nom = df_nom[mask_ape | mask_nom | mask_dni]
 
         df_ver = df_nom.copy()
-        df_ver.columns = [col.upper() for col in df_ver.columns]
+        df_ver.columns = [col.upper() for col in df_ver.columns] # Mayúsculas para los títulos de la tabla
         df_ver.insert(0, "SEL", False)
         
         ed_nom = st.data_editor(df_ver, hide_index=True, use_container_width=True, key="nomina_v3_blanco")
@@ -779,6 +833,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente.")
                 st.rerun()
+
 
 
 
