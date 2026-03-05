@@ -794,8 +794,8 @@ else:
     else:
         st.error("DNI no encontrado en la base de datos.")
 
-    # --- SECCIÓN REGISTRO Y NÓMINA ---
-    elif m == "➕ Registro" and not es_lector:
+# --- SECCIÓN REGISTRO Y NÓMINA ---
+elif m == "➕ Registro" and not es_lector:
         with st.form("reg_p"):
             st.write("### Alta de Nuevo Trabajador")
             
@@ -857,6 +857,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente.")
                 st.rerun()
+
 
 
 
