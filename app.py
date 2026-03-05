@@ -207,15 +207,18 @@ st.markdown("""
     div[role="radiogroup"] label { background-color: transparent !important; }
     div[role="radiogroup"] label p { color: #FFFFFF !important; font-weight: bold !important; font-size: 16px !important; }
     
-    /* BOTONES CON MEJOR CONTRASTE */
+    /* ========================================= */
+    /* BOTONES CON MEJOR CONTRASTE               */
+    /* ========================================= */
     div.stButton > button, [data-testid="stFormSubmitButton"] > button { 
         background-color: #FFD700 !important; /* Amarillo Roosevelt */
         border: 2px solid #4a0000 !important; 
         border-radius: 10px !important; 
     }
 
-    /* El asterisco (*) fuerza el color Guinda en TODO el texto de CUALQUIER botón */
-    div.stButton > button *, [data-testid="stFormSubmitButton"] > button * { 
+    /* Forzamos el color Guinda en TODO el texto de CUALQUIER botón */
+    div.stButton > button *, [data-testid="stFormSubmitButton"] > button *,
+    div.stButton > button p, [data-testid="stFormSubmitButton"] > button p { 
         color: #4a0000 !important; 
         font-weight: bold !important; 
         font-size: 16px !important; 
@@ -226,7 +229,9 @@ st.markdown("""
         border-color: #FFD700 !important; 
     }
 
-   /* --- RECUPERAMOS EL FONDO CREMA Y BORDES DE LOS DESPLEGABLES --- */
+   /* ========================================= */
+   /* FONDOS Y CAJAS DE TEXTO                   */
+   /* ========================================= */
     [data-testid="stExpander"] { 
         background-color: #FFF9C4 !important; 
         border: 2px solid #FFD700 !important; 
@@ -237,9 +242,6 @@ st.markdown("""
     [data-testid="stExpander"] summary { background-color: #FFD700 !important; padding: 10px !important; border-radius: 8px 8px 0 0 !important; }
     [data-testid="stExpander"] summary p { color: #4a0000 !important; font-weight: bold !important; font-size: 16px !important; }
 
-    /* --- CAJAS DE TEXTO (INPUTS) CON LÍNEAS VISIBLES --- */
-    .stApp label p { color: #4a0000 !important; font-weight: bold !important; font-size: 16px !important; }
-    
     /* Damos fondo blanco y borde a las cajas donde se escribe para que resalten sobre el crema */
     [data-baseweb="input"], [data-baseweb="select"], [data-baseweb="textarea"] { 
         background-color: #FFFFFF !important; 
@@ -247,12 +249,14 @@ st.markdown("""
         border-radius: 5px !important; 
     }
     
+    /* El texto que tú escribes será negro */
     .stApp input, .stApp select, .stApp textarea, [data-baseweb="select"] span { 
         color: #000000 !important; 
-        font-weight: normal !important; 
+        font-weight: bold !important; 
+        -webkit-text-fill-color: #000000 !important;
     }
 
-    /* Fix para los mensajes de advertencia (Ej: Activa la casilla) - AHORA SÍ FUNCIONARÁ */
+    /* Fix para los mensajes de advertencia (Ej: Activa la casilla) */
     [data-testid="stAlert"] { 
         background-color: #FFF9C4 !important; 
         border: 2px solid #FFD700 !important; 
@@ -264,7 +268,9 @@ st.markdown("""
         font-size: 16px !important; 
     }
 
-    /* TABLAS INTERACTIVAS */
+    /* ========================================= */
+    /* TABLAS INTERACTIVAS                       */
+    /* ========================================= */
     [data-testid="stDataEditor"], [data-testid="stTable"], .stTable { background-color: white !important; border-radius: 10px !important; overflow: hidden !important; }
     
     [data-testid="stDataEditor"] .react-grid-HeaderCell span { 
@@ -276,21 +282,21 @@ st.markdown("""
     
     thead tr th { background-color: #FFF9C4 !important; color: #000000 !important; font-weight: bold !important; text-transform: uppercase !important; border: 1px solid #f0f0f0 !important; }
     
-    /* 1. Subtítulos generales (Login, Buscar, Registro) en color DORADO para que resalten en el fondo Guinda */
-    .stApp label p { 
+    /* ========================================= */
+    /* SUBTÍTULOS (LABELS DE LOS FORMULARIOS)    */
+    /* ========================================= */
+    
+    /* 1. Subtítulos generales (Login, Buscar, Alta Trabajador) en color DORADO */
+    label p, label span, .stApp label p { 
         color: #FFD700 !important; 
         font-weight: bold !important; 
         font-size: 16px !important; 
     }
     
-    /* 2. Subtítulos DENTRO de los recuadros de edición (fondo crema) en color GUINDA */
-    [data-testid="stExpander"] label p, [data-testid="stForm"] label p { 
+    /* 2. Subtítulos SOLO dentro de los recuadros desplegables (fondo crema) en color GUINDA */
+    [data-testid="stExpander"] label p, [data-testid="stExpander"] label span { 
         color: #4a0000 !important; 
         font-weight: bold !important; 
-    }
-    .stApp input, .stApp select, .stApp textarea, [data-baseweb="select"] span { 
-        color: #000000 !important; 
-        font-weight: normal !important; 
     }
 </style>
 """, unsafe_allow_html=True)
@@ -773,6 +779,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente.")
                 st.rerun()
+
 
 
 
