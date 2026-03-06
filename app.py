@@ -243,7 +243,7 @@ def gen_papeleta_vac(apellidos, nombres, dni_b, position, f_ingreso, period, sta
                 for paragraph in cell.paragraphs:
                     replace_in_element(paragraph, replacements)
 
-    docx_stream = io.BytesIO()
+    docx_stream = BytesIO()
     doc.save(docx_stream)
     docx_stream.seek(0)
     return docx_stream
@@ -622,7 +622,7 @@ else:
                                         # NUEVO REGISTRO REACTIVO DE VACACIONES
                                         # ==========================================
                                         if h_name == "VACACIONES":
-                                            st.markdown("### ➕ Registrar Nuevas Vacaciones")
+                                            st.markdown("<h3 style='color: #1E1E1E;'>➕ Registrar Nuevas Vacaciones</h3>", unsafe_allow_html=True)
                                             
                                             if detalles:
                                                 opciones_periodo = [d["Periodo"] for d in detalles]
@@ -928,6 +928,7 @@ else:
                 for h in dfs:
                     if 'dni' in dfs[h].columns: dfs[h] = dfs[h][~dfs[h]['dni'].astype(str).isin(dnis)]
                 save_data(dfs); st.success("Registros eliminados correctamente."); st.rerun()
+
 
 
 
