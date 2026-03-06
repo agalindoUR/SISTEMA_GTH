@@ -3,7 +3,7 @@ import json
 import streamlit as st
 import pandas as pd
 import os
-from datetime import date
+from datetime import date, datetime
 from io import BytesIO
 from docx import Document
 from docx.shared import Pt, Inches
@@ -928,6 +928,7 @@ else:
                 for h in dfs:
                     if 'dni' in dfs[h].columns: dfs[h] = dfs[h][~dfs[h]['dni'].astype(str).isin(dnis)]
                 save_data(dfs); st.success("Registros eliminados correctamente."); st.rerun()
+
 
 
 
