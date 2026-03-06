@@ -622,7 +622,7 @@ else:
                                         # NUEVO REGISTRO REACTIVO DE VACACIONES
                                         # ==========================================
                                         if h_name == "VACACIONES":
-                                            st.markdown("<h3 style='color: #1E1E1E;'>➕ Registrar Nuevas Vacaciones</h3>", unsafe_allow_html=True)
+                                            st.markdown("<div style='font-size: 1.5em; font-weight: bold; color: white; background-color: #4A0000; padding: 10px; border-radius: 8px; margin-bottom: 15px;'>➕ Registrar Nuevas Vacaciones</div>", unsafe_allow_html=True)
                                             
                                             if detalles:
                                                 opciones_periodo = [d["Periodo"] for d in detalles]
@@ -649,11 +649,19 @@ else:
                                             saldo_previo = dict_saldo_actual.get(sel_periodo, 0)
                                             nuevo_saldo = saldo_previo - dias_gozar_calc
 
+                                            # Lógica de colores para el saldo
+                                            if nuevo_saldo < 0:
+                                                txt_saldo = f":red[{nuevo_saldo:.2f} (¡Saldo Negativo!)]"
+                                            elif nuevo_saldo == 0:
+                                                txt_saldo = f"{nuevo_saldo:.2f}"
+                                            else:
+                                                txt_saldo = f":green[{nuevo_saldo:.2f}]"
+
                                             st.info(f"""
                                             📊 **Resumen del Cálculo:**
                                             * **Días Generados (Periodo {sel_periodo}):** {gen_periodo:.2f}
                                             * **Días a Gozar (Calculado):** {dias_gozar_calc}
-                                            * **Saldo Restante:** {nuevo_saldo:.2f}
+                                            * **Saldo Restante:** {txt_saldo}
                                             """)
 
                                             if st.button("💾 Guardar Registro de Vacaciones", type="primary", use_container_width=True):
@@ -928,6 +936,7 @@ else:
                 for h in dfs:
                     if 'dni' in dfs[h].columns: dfs[h] = dfs[h][~dfs[h]['dni'].astype(str).isin(dnis)]
                 save_data(dfs); st.success("Registros eliminados correctamente."); st.rerun()
+
 
 
 
