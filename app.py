@@ -544,6 +544,10 @@ else:
 
                         vst.columns = [str(col).upper() for col in vst.columns] 
                         vst.insert(0, "SEL", False)
+                        
+                        # --- MAGIA: OCULTAR DNI ---
+                        if "DNI" in vst.columns:
+                            col_conf["DNI"] = None
 
                         st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 10px !important; }</style>""", unsafe_allow_html=True)
                         ed = st.data_editor(vst, hide_index=True, use_container_width=True, column_config=col_conf, key=f"ed_{h_name}")
@@ -608,23 +612,79 @@ else:
                                 if h_name == "DATOS GENERALES" and len(df_filtro) > 0:
                                     st.info("📌 Los datos generales ya están registrados. Selecciona el registro en la tabla de arriba para editarlos.")
                                 else:
-                                    with st.expander("➕ Nuevo Registro"):
-                                        es_renovacion = False
-                                        if h_name == "CONTRATOS" and not df_contratos.empty:
-                                            es_renovacion = st.checkbox("🔄 Es Renovación (Copiar datos del último contrato)")
+                                   with st.expander("➕ Nuevo Registro"):
+                                        
+                                        # ==========================================
+                                        # NUEVO REGISTRO REACTIVO DE VACACIONES
+                                        # ==========================================
+                                        if h_name == "VACACIONES":
+                                            st.markdown("### ➕ Registrar Nuevas Vacaciones")
                                             
-                                        with st.form(f"f_add_{h_name}", clear_on_submit=True):
-                                            if h_name == "CONTRATOS":
-                                                d_car = ""
-                                                d_rem = 0.0
-                                                d_bon = ""
-                                                d_cond = ""
-                                                d_ini = date.today()
-                                                d_fin = date.today()
-                                                d_ttrab = "Administrativo"
-                                                d_mod = "Presencial"
-                                                d_temp = "Plazo fijo"
-                                                d_tcont = "Planilla completo"
+                                            if detalles:
+                                                opciones_periodo = [d["Periodo"] for d in detalles]
+                                                dict_generados = {d["Periodo"]: d["Días Generados"] for d in detalles}
+                                                dict_saldo_actual = {d["Periodo"]: d["Saldo"] for d in detalles}
+                                            else:
+                                                opciones_periodo = ["Sin periodo calculado"]
+                                                dict_generados = {"Sin periodo calculado": 0}
+                                                dict_saldo_actual = {"Sin periodo calculado": 0}
+
+                                            sel_periodo = st.selectbox("Periodo Vacacional", options=opciones_periodo)
+                                            
+                                            col_f1, col_f2 = st.columns(2)
+                                            with col_f1:
+                                                f_ini_val = st.date_input("Fecha de Salida (Inicio)")
+                                            with col_f2:
+                                                f_fin_val = st.date_input("Fecha de Retorno (Último día)")
+
+                                            dias_gozar_calc = 0
+                                            if f_fin_val >= f_ini_val:
+                                                dias_gozar_calc = (f_fin_val - f_ini_val).days + 1
+                                            
+                                            gen_periodo = dict_generados.get(sel_periodo, 0)
+                                            saldo_previo = dict_saldo_actual.get(sel_periodo, 0)
+                                            nuevo_saldo = saldo_previo - dias_gozar_calc
+
+                                            st.info(f"""
+                                            📊 **Resumen del Cálculo:**
+                                            * **Días Generados (Periodo {sel_periodo}):** {gen_periodo:.2f}
+                                            * **Días a Gozar (Calculado):** {dias_gozar_calc}
+                                            * **Saldo Restante:** {nuevo_saldo:.2f}
+                                            """)
+
+                                            if st.button("💾 Guardar Registro de Vacaciones", type="primary", use_container_width=True):
+                                                if dias_gozar_calc <= 0:
+                                                    st.error("⚠️ La Fecha de Fin debe ser igual o posterior a la Fecha de Inicio.")
+                                                else:
+                                                    new_row = {"dni": dni_buscado, "periodo": sel_periodo, "f_inicio": f_ini_val, "f_fin": f_fin_val, "días gozados": dias_gozar_calc}
+                                                    if not dfs[h_name].empty and "id" in dfs[h_name].columns: new_row["id"] = dfs[h_name]["id"].max() + 1
+                                                    elif "id" in dfs[h_name].columns: new_row["id"] = 1
+                                                    dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new_row])], ignore_index=True)
+                                                    save_data(dfs)
+                                                    st.session_state['just_saved_vacation'] = new_row
+                                                    st.success("✅ Registro guardado correctamente.")
+                                                    st.rerun()
+
+                                        # ==========================================
+                                        # FORMULARIOS NORMALES PARA EL RESTO DE HOJAS
+                                        # ==========================================
+                                        else:
+                                            es_renovacion = False
+                                            if h_name == "CONTRATOS" and not df_contratos.empty:
+                                                es_renovacion = st.checkbox("🔄 Es Renovación (Copiar datos del último contrato)")
+                                                
+                                            with st.form(f"f_add_{h_name}", clear_on_submit=True):
+                                                if h_name == "CONTRATOS":
+                                                    d_car = ""
+                                                    d_rem = 0.0
+                                                    d_bon = ""
+                                                    d_cond = ""
+                                                    d_ini = date.today()
+                                                    d_fin = date.today()
+                                                    d_ttrab = "Administrativo"
+                                                    d_mod = "Presencial"
+                                                    d_temp = "Plazo fijo"
+                                                    d_tcont = "Planilla completo"
                                                 
                                                 if es_renovacion and not df_contratos.empty:
                                                     last_c = df_contratos.assign(f_fin_dt=pd.to_datetime(df_contratos['f_fin'], errors='coerce')).sort_values('f_fin_dt').iloc[-1]
@@ -677,7 +737,7 @@ else:
                                                     dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new])], ignore_index=True)
                                                     save_data(dfs)
                                                     st.rerun()
-                                            else:
+                                            else: h_name != "VACACIONES":
                                                 new_row = {"dni": dni_buscado, "apellidos y nombres": nom_c} 
                                                 for col in cols_reales:
                                                     if "fecha" in col.lower() or "f_" in col.lower(): 
@@ -864,6 +924,7 @@ else:
                 for h in dfs:
                     if 'dni' in dfs[h].columns: dfs[h] = dfs[h][~dfs[h]['dni'].astype(str).isin(dnis)]
                 save_data(dfs); st.success("Registros eliminados correctamente."); st.rerun()
+
 
 
 
