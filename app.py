@@ -436,7 +436,14 @@ else:
                                                 if o_start <= o_end: 
                                                     days_in_p += (o_end - o_start).days + 1
                                                 
-                                        gen_p = round((days_in_p / 30) * 2.5, 2)
+                                        # --- SOLUCIÓN: CÁLCULO PROPORCIONAL EXACTO ---
+                                        # Obtenemos los días totales reales que tiene ese periodo (365 o 366 si cruza un bisiesto)
+                                        total_dias_periodo = (curr_end - curr_start).days + 1
+                                        
+                                        # Nueva fórmula: garantizamos un máximo exacto de 30 días por año completo
+                                        gen_p = round((days_in_p / total_dias_periodo) * 30, 2)
+                                        # ---------------------------------------------
+                                        
                                         p_name = f"{curr_start.year}-{curr_start.year+1}"
                                         
                                         goz_df = c_df[c_df["periodo"].astype(str).str.strip() == p_name]
@@ -749,6 +756,7 @@ else:
                 for h in dfs:
                     if 'dni' in dfs[h].columns: dfs[h] = dfs[h][~dfs[h]['dni'].astype(str).isin(dnis)]
                 save_data(dfs); st.success("Registros eliminados correctamente."); st.rerun()
+
 
 
 
