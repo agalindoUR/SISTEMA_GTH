@@ -351,37 +351,26 @@ else:
     if m == "🔍 Consulta":
         st.markdown("<h2 style='color: #FFD700;'>Búsqueda de Colaborador</h2>", unsafe_allow_html=True)
 
-        # 1. SOLUCIÓN BÚSQUEDA: Crear nombre completo uniendo 'apellidos' y 'nombres' reales
         df_per_consulta = dfs["PERSONAL"].copy()
         
-        # Extraer DNI de forma segura
         df_per_consulta["dni_str"] = df_per_consulta.get("dni", pd.Series([""]*len(df_per_consulta))).astype(str).str.strip()
-        
-        # Extraer apellidos y nombres por separado (ya que la columna unida estaba vacía en la base)
         apellidos_col = df_per_consulta.get("apellidos", pd.Series([""]*len(df_per_consulta))).fillna("").astype(str).str.strip()
         nombres_col = df_per_consulta.get("nombres", pd.Series([""]*len(df_per_consulta))).fillna("").astype(str).str.strip()
         
-        # Unimos apellidos y nombres para el buscador y el título
         df_per_consulta["nom_str"] = (apellidos_col + " " + nombres_col).str.strip()
-        
-        # Combinar DNI y Nombre para visualización en el selectbox
         df_per_consulta["search_str"] = df_per_consulta["dni_str"] + " - " + df_per_consulta["nom_str"]
         
-        # Filtrar opciones vacías para que el buscador se vea limpio
         opciones_buscador = [""] + [x for x in df_per_consulta["search_str"].tolist() if x != " - "]
 
         selected_search = st.selectbox("🔍 Escriba el DNI o Apellidos y Nombres:", opciones_buscador)
 
         if selected_search:
-            # Extraer DNI de la selección
             dni_buscado = selected_search.split(" - ")[0].strip()
             
             fila_pers = df_per_consulta[df_per_consulta["dni_str"] == dni_buscado]
             if not fila_pers.empty:
-                # Capturamos el nombre completo construido
                 nom_c = fila_pers.iloc[0]["nom_str"]
 
-                # 2. SOLUCIÓN TÍTULO: Nombre en grande y AMARILLO al lado del ícono
                 st.markdown(f"""
                     <div style='border-bottom: 2px solid #FFD700; padding-bottom: 10px; margin-bottom: 20px; display: flex; align-items: center;'>
                         <h1 style='color: white; margin: 0; margin-right: 15px; font-size: 3em;'>👤</h1>
@@ -402,9 +391,6 @@ else:
                         else:
                             c_df = pd.DataFrame(columns=COLUMNAS.get(h_name, []))
 
-                        # ==========================================
-                        # BOTÓN DE CERTIFICADO (SOLO EN CONTRATOS)
-                        # ==========================================
                         if h_name == "CONTRATOS":
                             df_contratos = dfs["CONTRATOS"][dfs["CONTRATOS"]["dni"] == dni_buscado]
                             if not df_contratos.empty:
@@ -419,9 +405,6 @@ else:
                                 st.download_button("📄 Generar Certificado de Trabajo", data=word_file, file_name=f"Certificado_{dni_buscado}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
                                 st.markdown("<br>", unsafe_allow_html=True)
 
-                        # ==========================================
-                        # PANEL VACACIONES (SOLO EN VACACIONES)
-                        # ==========================================
                         if h_name == "VACACIONES":
                             df_tc = df_contratos[df_contratos["tipo contrato"].astype(str).str.lower().str.contains("planilla", na=False)] if "df_contratos" in locals() else pd.DataFrame()
                             
@@ -483,12 +466,8 @@ else:
                                 div_table += "</div>"
                                 st.markdown(div_table, unsafe_allow_html=True)
 
-                        # ==========================================
-                        # VISTA DE TABLA EDITABLE (data_editor)
-                        # ==========================================
                         vst = c_df.copy()
                         
-                        # 3. SOLUCIÓN TABLA: Ocultar columnas redundantes de nombres en la vista editable
                         cols_ocultar = [c for c in vst.columns if c.lower() in ["apellidos y nombres", "apellidos", "nombres"]]
                         vst = vst.drop(columns=cols_ocultar)
 
@@ -505,12 +484,8 @@ else:
                         ed = st.data_editor(vst, hide_index=True, use_container_width=True, column_config=col_conf, key=f"ed_{h_name}")
                         sel = ed[ed["SEL"] == True]
 
-                        # ==========================================
-                        # FORMULARIOS DE EDICIÓN Y NUEVO REGISTRO
-                        # ==========================================
                         if not es_lector:
                             col_a, col_b = st.columns(2)
-                            # Quitamos también "apellidos" y "nombres" sueltos de los formularios para evitar duplicidades
                             cols_reales = [c for c in dfs[h_name].columns if c.lower() not in ["id", "dni", "apellidos y nombres", "apellidos", "nombres"]]
 
                             with col_a:
@@ -525,22 +500,46 @@ else:
                                             
                                         with st.form(f"f_add_{h_name}", clear_on_submit=True):
                                             if h_name == "CONTRATOS":
-                                                d_car = ""; d_rem = 0.0; d_bon = ""; d_cond = ""; d_ini = date.today(); d_fin = date.today(); d_ttrab = "Administrativo"; d_mod = "Presencial"; d_temp = "Plazo fijo"; d_tcont = "Planilla completo"
+                                                d_car = ""
+                                                d_rem = 0.0
+                                                d_bon = ""
+                                                d_cond = ""
+                                                d_ini = date.today()
+                                                d_fin = date.today()
+                                                d_ttrab = "Administrativo"
+                                                d_mod = "Presencial"
+                                                d_temp = "Plazo fijo"
+                                                d_tcont = "Planilla completo"
                                                 
                                                 if es_renovacion and not df_contratos.empty:
                                                     last_c = df_contratos.assign(f_fin_dt=pd.to_datetime(df_contratos['f_fin'], errors='coerce')).sort_values('f_fin_dt').iloc[-1]
                                                     d_car = str(last_c.get("cargo", ""))
-                                                    try: d_rem = float(last_c.get("remuneración básica", 0.0))
-                                                    except: pass
+                                                    try: 
+                                                        d_rem = float(last_c.get("remuneración básica", 0.0))
+                                                    except: 
+                                                        pass
                                                     d_bon = str(last_c.get("bonificación", ""))
                                                     d_cond = str(last_c.get("condición de trabajo", ""))
-                                                    try: d_ini = pd.to_datetime(last_c["f_fin"]).date() + pd.Timedelta(days=1)
-                                                    except: pass
+                                                    try: 
+                                                        d_ini = pd.to_datetime(last_c["f_fin"]).date() + pd.Timedelta(days=1)
+                                                    except: 
+                                                        pass
                                                     
-                                                    v_tt = str(last_c.get("tipo de trabajador", "")); if v_tt in ["Administrativo", "Docente", "Externo"]: d_ttrab = v_tt
-                                                    v_m = str(last_c.get("modalidad", "")); if v_m in ["Presencial", "Semipresencial", "Virtual"]: d_mod = v_m
-                                                    v_te = str(last_c.get("temporalidad", "")); if v_te in ["Plazo fijo", "Plazo indeterminado", "Ordinarizado"]: d_temp = v_te
-                                                    v_tc = str(last_c.get("tipo contrato", "")); if v_tc in ["Planilla completo", "Tiempo Parcial", "Recibo por Honorarios", "Otro"]: d_tcont = v_tc
+                                                    v_tt = str(last_c.get("tipo de trabajador", ""))
+                                                    if v_tt in ["Administrativo", "Docente", "Externo"]: 
+                                                        d_ttrab = v_tt
+                                                        
+                                                    v_m = str(last_c.get("modalidad", ""))
+                                                    if v_m in ["Presencial", "Semipresencial", "Virtual"]: 
+                                                        d_mod = v_m
+                                                        
+                                                    v_te = str(last_c.get("temporalidad", ""))
+                                                    if v_te in ["Plazo fijo", "Plazo indeterminado", "Ordinarizado"]: 
+                                                        d_temp = v_te
+                                                        
+                                                    v_tc = str(last_c.get("tipo contrato", ""))
+                                                    if v_tc in ["Planilla completo", "Tiempo Parcial", "Recibo por Honorarios", "Otro"]: 
+                                                        d_tcont = v_tc
 
                                                 car = st.text_input("Cargo", value=d_car)
                                                 rem_b = st.number_input("Remuneración básica", value=d_rem)
@@ -559,7 +558,6 @@ else:
 
                                                 if st.form_submit_button("Guardar Contrato"):
                                                     nid = dfs[h_name]["id"].max() + 1 if not dfs[h_name].empty else 1
-                                                    # Pasamos el nom_c para mantener la consistencia
                                                     new = {"id": nid, "dni": dni_buscado, "apellidos y nombres": nom_c, "cargo": car, "remuneración básica": rem_b, "bonificación": bono, "condición de trabajo": cond, "f_inicio": ini, "f_fin": fin, "tipo de trabajador": t_trab, "modalidad": mod, "temporalidad": temp, "link": lnk, "tipo contrato": tcont, "estado": est_a, "motivo cese": mot_a}
                                                     dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new])], ignore_index=True)
                                                     save_data(dfs)
@@ -567,17 +565,24 @@ else:
                                             else:
                                                 new_row = {"dni": dni_buscado, "apellidos y nombres": nom_c} 
                                                 for col in cols_reales:
-                                                    if "fecha" in col.lower() or "f_" in col.lower(): new_row[col] = st.date_input(col.title(), min_value=date(1930, 1, 1), max_value=date.today(), format="DD/MM/YYYY")
+                                                    if "fecha" in col.lower() or "f_" in col.lower(): 
+                                                        new_row[col] = st.date_input(col.title(), min_value=date(1930, 1, 1), max_value=date.today(), format="DD/MM/YYYY")
                                                     elif col.lower() == "edad":
                                                         fnac = new_row.get("fecha de nacimiento")
-                                                        if fnac: new_row[col] = st.number_input("Edad (Calculada)", value=int(date.today().year - fnac.year - ((date.today().month, date.today().day) < (fnac.month, fnac.day))), disabled=True)
-                                                        else: new_row[col] = st.number_input(col.title(), value=0, disabled=True)
-                                                    elif col.lower() in ["remuneración", "bonificación", "sueldo", "días generados", "días gozados", "saldo", "monto"]: new_row[col] = st.number_input(col.title(), 0.0)
-                                                    else: new_row[col] = st.text_input(col.title())
+                                                        if fnac: 
+                                                            new_row[col] = st.number_input("Edad (Calculada)", value=int(date.today().year - fnac.year - ((date.today().month, date.today().day) < (fnac.month, fnac.day))), disabled=True)
+                                                        else: 
+                                                            new_row[col] = st.number_input(col.title(), value=0, disabled=True)
+                                                    elif col.lower() in ["remuneración", "bonificación", "sueldo", "días generados", "días gozados", "saldo", "monto"]: 
+                                                        new_row[col] = st.number_input(col.title(), 0.0)
+                                                    else: 
+                                                        new_row[col] = st.text_input(col.title())
 
                                                 if st.form_submit_button("Guardar Registro"):
-                                                    if not dfs[h_name].empty and "id" in dfs[h_name].columns: new_row["id"] = dfs[h_name]["id"].max() + 1
-                                                    elif "id" in dfs[h_name].columns: new_row["id"] = 1
+                                                    if not dfs[h_name].empty and "id" in dfs[h_name].columns: 
+                                                        new_row["id"] = dfs[h_name]["id"].max() + 1
+                                                    elif "id" in dfs[h_name].columns: 
+                                                        new_row["id"] = 1
                                                     dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new_row])], ignore_index=True)
                                                     save_data(dfs)
                                                     st.rerun()
@@ -589,55 +594,80 @@ else:
                                         with st.form(f"f_edit_{h_name}"):
                                             if h_name == "CONTRATOS":
                                                 n_car = st.text_input("Cargo", value=str(sel.iloc[0].get("CARGO", "")))
-                                                try: val_rem = float(sel.iloc[0].get("REMUNERACIÓN BÁSICA", 0.0))
-                                                except: val_rem = 0.0
+                                                try: 
+                                                    val_rem = float(sel.iloc[0].get("REMUNERACIÓN BÁSICA", 0.0))
+                                                except: 
+                                                    val_rem = 0.0
                                                 n_rem = st.number_input("Remuneración básica", value=val_rem)
                                                 n_bon = st.text_input("Bonificación", value=str(sel.iloc[0].get("BONIFICACIÓN", "")))
                                                 n_cond = st.text_input("Condición de trabajo", value=str(sel.iloc[0].get("CONDICIÓN DE TRABAJO", "")))
-                                                try: ini_val = pd.to_datetime(sel.iloc[0].get("F_INICIO")).date()
-                                                except: ini_val = date.today()
+                                                try: 
+                                                    ini_val = pd.to_datetime(sel.iloc[0].get("F_INICIO")).date()
+                                                except: 
+                                                    ini_val = date.today()
                                                 n_ini = st.date_input("Inicio", value=ini_val, format="DD/MM/YYYY")
-                                                try: fin_val = pd.to_datetime(sel.iloc[0].get("F_FIN")).date()
-                                                except: fin_val = date.today()
+                                                try: 
+                                                    fin_val = pd.to_datetime(sel.iloc[0].get("F_FIN")).date()
+                                                except: 
+                                                    fin_val = date.today()
                                                 n_fin = st.date_input("Fin", value=fin_val, format="DD/MM/YYYY")
                                                 
-                                                v_ttrab = str(sel.iloc[0].get("TIPO DE TRABAJADOR", "Administrativo")); opts_tt = ["Administrativo", "Docente", "Externo"]; if v_ttrab not in opts_tt: opts_tt.append(v_ttrab)
+                                                v_ttrab = str(sel.iloc[0].get("TIPO DE TRABAJADOR", "Administrativo"))
+                                                opts_tt = ["Administrativo", "Docente", "Externo"]
+                                                if v_ttrab not in opts_tt: 
+                                                    opts_tt.append(v_ttrab)
                                                 n_ttrab = st.selectbox("Tipo de trabajador", opts_tt, index=opts_tt.index(v_ttrab))
                                                 
-                                                v_mod = str(sel.iloc[0].get("MODALIDAD", "Presencial")); opts_mod = ["Presencial", "Semipresencial", "Virtual"]; if v_mod not in opts_mod: opts_mod.append(v_mod)
+                                                v_mod = str(sel.iloc[0].get("MODALIDAD", "Presencial"))
+                                                opts_mod = ["Presencial", "Semipresencial", "Virtual"]
+                                                if v_mod not in opts_mod: 
+                                                    opts_mod.append(v_mod)
                                                 n_mod = st.selectbox("Modalidad", opts_mod, index=opts_mod.index(v_mod))
                                                 
-                                                v_tem = str(sel.iloc[0].get("TEMPORALIDAD", "Plazo fijo")); opts_tem = ["Plazo fijo", "Plazo indeterminado", "Ordinarizado"]; if v_tem not in opts_tem: opts_tem.append(v_tem)
+                                                v_tem = str(sel.iloc[0].get("TEMPORALIDAD", "Plazo fijo"))
+                                                opts_tem = ["Plazo fijo", "Plazo indeterminado", "Ordinarizado"]
+                                                if v_tem not in opts_tem: 
+                                                    opts_tem.append(v_tem)
                                                 n_tem = st.selectbox("Temporalidad", opts_tem, index=opts_tem.index(v_tem))
                                                 
                                                 n_lnk = st.text_input("Link", value=str(sel.iloc[0].get("LINK", "")))
                                                 
-                                                v_tcont = str(sel.iloc[0].get("TIPO CONTRATO", "Planilla completo")); opts_tcon = ["Planilla completo", "Tiempo Parcial", "Recibo por Honorarios", "Otro"]; if v_tcont not in opts_tcon: opts_tcon.append(v_tcont)
+                                                v_tcont = str(sel.iloc[0].get("TIPO CONTRATO", "Planilla completo"))
+                                                opts_tcon = ["Planilla completo", "Tiempo Parcial", "Recibo por Honorarios", "Otro"]
+                                                if v_tcont not in opts_tcon: 
+                                                    opts_tcon.append(v_tcont)
                                                 n_tcont = st.selectbox("Tipo Contrato", opts_tcon, index=opts_tcon.index(v_tcont))
 
                                                 est_e = "ACTIVO" if n_fin >= date.today() else "CESADO"
-                                                v_mot = str(sel.iloc[0].get("MOTIVO CESE", "Vigente")); opts_mot = ["Vigente"] + MOTIVOS_CESE; if v_mot not in opts_mot: opts_mot.append(v_mot)
+                                                v_mot = str(sel.iloc[0].get("MOTIVO CESE", "Vigente"))
+                                                opts_mot = ["Vigente"] + MOTIVOS_CESE
+                                                if v_mot not in opts_mot: 
+                                                    opts_mot.append(v_mot)
                                                 mot_e = st.selectbox("Motivo Cese", opts_mot, index=opts_mot.index(v_mot)) if est_e == "CESADO" else "Vigente"
 
                                                 if st.form_submit_button("Actualizar"):
                                                     update_vals = {"cargo": n_car, "remuneración básica": n_rem, "bonificación": n_bon, "condición de trabajo": n_cond, "f_inicio": n_ini, "f_fin": n_fin, "tipo de trabajador": n_ttrab, "modalidad": n_mod, "temporalidad": n_tem, "link": n_lnk, "tipo contrato": n_tcont, "estado": est_e, "motivo cese": mot_e}
-                                                    for k, v in update_vals.items(): dfs[h_name].at[idx, k] = v
+                                                    for k, v in update_vals.items(): 
+                                                        dfs[h_name].at[idx, k] = v
                                                     save_data(dfs)
                                                     st.rerun()
                                             else:
                                                 edit_row = {}
                                                 for col in cols_reales:
-                                                    # Recuperar valor actual de 'sel' si existe (en mayúsculas) o vacío si no
                                                     val = sel.iloc[0].get(col.upper(), "")
                                                     if "fecha" in col.lower() or "f_" in col.lower():
                                                         edit_row[col] = st.date_input(col.title(), value=pd.to_datetime(val, errors='coerce').date() if pd.notnull(pd.to_datetime(val, errors='coerce')) else date.today(), min_value=date(1930, 1, 1), max_value=date(2100, 12, 31), format="DD/MM/YYYY")
                                                     elif col.lower() == "edad":
                                                         fnac = edit_row.get("fecha de nacimiento")
-                                                        if fnac: edit_row[col] = st.number_input("Edad (Calculada)", value=int(date.today().year - fnac.year - ((date.today().month, date.today().day) < (fnac.month, fnac.day))), disabled=True)
-                                                        else: edit_row[col] = st.number_input(col.title(), value=int(val) if pd.notnull(val) and str(val).isdigit() else 0, disabled=True)
+                                                        if fnac: 
+                                                            edit_row[col] = st.number_input("Edad (Calculada)", value=int(date.today().year - fnac.year - ((date.today().month, date.today().day) < (fnac.month, fnac.day))), disabled=True)
+                                                        else: 
+                                                            edit_row[col] = st.number_input(col.title(), value=int(val) if pd.notnull(val) and str(val).isdigit() else 0, disabled=True)
                                                     elif col.lower() in ["remuneración", "bonificación", "sueldo", "días generados", "días gozados", "saldo", "monto"]:
-                                                        try: num_val = float(val) if pd.notnull(val) else 0.0
-                                                        except: num_val = 0.0
+                                                        try: 
+                                                            num_val = float(val) if pd.notnull(val) else 0.0
+                                                        except: 
+                                                            num_val = 0.0
                                                         edit_row[col] = st.number_input(col.title(), value=num_val)
                                                     else:
                                                         edit_row[col] = st.text_input(col.title(), value=str(val) if pd.notnull(val) else "")
@@ -645,7 +675,8 @@ else:
                                                 col_btn1, col_btn2 = st.columns(2)
                                                 with col_btn1:
                                                     if st.form_submit_button("Actualizar Registro"):
-                                                        for k, v in edit_row.items(): dfs[h_name].at[idx, k] = v
+                                                        for k, v in edit_row.items(): 
+                                                            dfs[h_name].at[idx, k] = v
                                                         save_data(dfs)
                                                         st.rerun()
                                                 with col_btn2:
@@ -718,6 +749,7 @@ else:
                 for h in dfs:
                     if 'dni' in dfs[h].columns: dfs[h] = dfs[h][~dfs[h]['dni'].astype(str).isin(dnis)]
                 save_data(dfs); st.success("Registros eliminados correctamente."); st.rerun()
+
 
 
 
