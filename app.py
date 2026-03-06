@@ -738,7 +738,7 @@ else:
                                                     save_data(dfs)
                                                     st.rerun()
                                             elif h_name != "VACACIONES":
-                                                new_row = {"dni": dni_buscado, "apellidos y nombres": nom_c} 
+                                                new_row = {"dni": dni_buscado, "apellidos y nombres": nom_c}
                                                 for col in cols_reales:
                                                     if "fecha" in col.lower() or "f_" in col.lower(): 
                                                         new_row[col] = st.date_input(col.title(), min_value=date(1930, 1, 1), max_value=date.today(), format="DD/MM/YYYY")
@@ -924,6 +924,7 @@ else:
                 for h in dfs:
                     if 'dni' in dfs[h].columns: dfs[h] = dfs[h][~dfs[h]['dni'].astype(str).isin(dnis)]
                 save_data(dfs); st.success("Registros eliminados correctamente."); st.rerun()
+
 
 
 
