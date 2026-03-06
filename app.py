@@ -350,14 +350,30 @@ else:
     # --- SECCIÓN CONSULTA ---
     if m == "🔍 Consulta":
         st.markdown("<h2 style='color: #FFD700;'>Búsqueda de Colaborador</h2>", unsafe_allow_html=True)
-        dni_b = st.text_input("Ingrese DNI para consultar:").strip()
+        
+        # 1. Preparamos la lista para el buscador uniendo DNI y Nombres
+        df_per = dfs["PERSONAL"].copy()
+        
+        # Aseguramos que no haya valores nulos que rompan el texto
+        df_per["buscador"] = df_per["dni"].astype(str).str.strip() + " - " + df_per["apellidos y nombres"].fillna("").astype(str).str.strip()
+        
+        # Agregamos una opción vacía al inicio para que no cargue a la primera persona por defecto
+        opciones = [""] + df_per["buscador"].tolist()
+        
+        # 2. Mostramos el buscador interactivo
+        seleccion = st.selectbox("🔍 Escriba el DNI o Apellidos y Nombres:", opciones)
 
-        if dni_b:
+        # 3. Extraemos el DNI y validamos
+        if seleccion:
+            # Como unimos "DNI - Nombre", separamos por el guion y nos quedamos con la primera parte (el DNI)
+            dni_b = seleccion.split(" - ")[0].strip()
+            
             pers = dfs["PERSONAL"][dfs["PERSONAL"]["dni"] == dni_b]
             if not pers.empty:
                 nom_c = pers.iloc[0]["apellidos y nombres"]
                 
                 # --- CABECERA ---
+                # (A partir de aquí tu código sigue exactamente igual con la cabecera y las pestañas...)
                 st.markdown(f"""
                     <div style='border-bottom: 2px solid #FFD700; padding-bottom: 10px; margin-bottom: 20px;'>
                         <h1 style='color: white; margin: 0;'>👤 {nom_c}</h1>
@@ -776,6 +792,7 @@ else:
                 save_data(dfs)
                 st.success("Registros eliminados correctamente.")
                 st.rerun()
+
 
 
 
