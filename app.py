@@ -428,6 +428,10 @@ else:
             fila_pers = df_per_consulta[df_per_consulta["dni_str"] == dni_buscado]
             if not fila_pers.empty:
                 nom_c = fila_pers.iloc[0]["nom_str"]
+                # --- AQUÍ ESTÁ LA SOLUCIÓN ---
+                ape_c = str(fila_pers.iloc[0].get("apellidos", "")).strip()
+                nom_p_c = str(fila_pers.iloc[0].get("nombres", "")).strip()
+                # -----------------------------
 
                 st.markdown(f"""
                     <div style='border-bottom: 2px solid #FFD700; padding-bottom: 10px; margin-bottom: 20px; display: flex; align-items: center;'>
@@ -924,6 +928,7 @@ else:
                 for h in dfs:
                     if 'dni' in dfs[h].columns: dfs[h] = dfs[h][~dfs[h]['dni'].astype(str).isin(dnis)]
                 save_data(dfs); st.success("Registros eliminados correctamente."); st.rerun()
+
 
 
 
