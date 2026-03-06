@@ -737,7 +737,7 @@ else:
                                                     dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new])], ignore_index=True)
                                                     save_data(dfs)
                                                     st.rerun()
-                                            else: h_name != "VACACIONES":
+                                            elif h_name != "VACACIONES":
                                                 new_row = {"dni": dni_buscado, "apellidos y nombres": nom_c} 
                                                 for col in cols_reales:
                                                     if "fecha" in col.lower() or "f_" in col.lower(): 
@@ -924,6 +924,7 @@ else:
                 for h in dfs:
                     if 'dni' in dfs[h].columns: dfs[h] = dfs[h][~dfs[h]['dni'].astype(str).isin(dnis)]
                 save_data(dfs); st.success("Registros eliminados correctamente."); st.rerun()
+
 
 
 
