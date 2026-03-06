@@ -948,50 +948,40 @@ else:
 # ==========================================
 # MÓDULO DE REPORTES Y FILTROS AVANZADOS
 # ==========================================
-elif m == "Reportes": # (Ojo: cambia 'menu' por el nombre de tu variable de navegación si es distinto)
+elif m == "Reportes":
     st.markdown("<h2 style='color: #4A0000;'>📊 Reportes y Filtros Avanzados</h2>", unsafe_allow_html=True)
     
-    # 1. Traer copias de las tablas necesarias
     df_per = dfs.get("PERSONAL", pd.DataFrame())
     df_cont = dfs.get("CONTRATOS", pd.DataFrame())
     df_gen = dfs.get("DATOS GENERALES", pd.DataFrame())
     df_fam = dfs.get("DATOS FAMILIARES", pd.DataFrame())
     
     if not df_per.empty and not df_cont.empty:
-        # A. Obtener el estado y datos laborales del ÚLTIMO contrato
         df_cont_sorted = df_cont.assign(f_fin_dt=pd.to_datetime(df_cont['f_fin'], errors='coerce')).sort_values('f_fin_dt')
         df_ultimos_contratos = df_cont_sorted.groupby('dni').tail(1)
         
-        # B. Calcular matemáticamente si tienen hijos (Busca "hijo" o "hija" en parentesco)
         df_hijos = pd.DataFrame(columns=["dni", "tiene_hijos"])
         if not df_fam.empty and "parentesco" in df_fam.columns:
             hijos_mask = df_fam["parentesco"].fillna("").str.lower().str.contains("hijo|hija")
             dnis_con_hijos = df_fam[hijos_mask]["dni"].unique()
             df_hijos = pd.DataFrame({"dni": dnis_con_hijos, "tiene_hijos": "Sí"})
         
-        # C. Unir todas las tablas en una "Súper Tabla" maestra
         master_df = df_per[["dni", "apellidos y nombres"]].merge(
             df_ultimos_contratos[["dni", "estado", "tipo de trabajador", "modalidad", "temporalidad", "tipo contrato"]], 
             on="dni", how="left"
         )
         
         if not df_gen.empty:
-            # Seleccionamos solo las columnas que vamos a usar en los filtros
             cols_gen = ["dni", "sexo", "estado civil", "departamento residencia", "provincia residencia", "distrito residencia", "departamento nacimiento", "provincia nacimiento", "distrito nacimiento"]
             cols_existentes = [c for c in cols_gen if c in df_gen.columns]
             master_df = master_df.merge(df_gen[cols_existentes], on="dni", how="left")
             
-        # D. Unir la tabla de hijos y limpiar datos vacíos
         master_df = master_df.merge(df_hijos, on="dni", how="left")
         master_df["tiene_hijos"] = master_df["tiene_hijos"].fillna("No")
         master_df["estado"] = master_df["estado"].fillna("SIN CONTRATO")
 
-        # =====================================
-        # 2. INTERFAZ DE FILTROS VISUALES
-        # =====================================
         st.markdown("### 🔍 Filtros de Búsqueda")
         
-        # Estado (Destacado arriba)
         f_estado = st.multiselect("Estado del Trabajador", options=master_df["estado"].dropna().unique(), default=["ACTIVO"])
         
         col1, col2, col3, col4 = st.columns(4)
@@ -1014,9 +1004,6 @@ elif m == "Reportes": # (Ojo: cambia 'menu' por el nombre de tu variable de nave
         with col_u2:
             f_d_nac = st.multiselect("Distrito de Nacimiento", options=master_df.get("distrito nacimiento", pd.Series([])).dropna().unique())
 
-        # =====================================
-        # 3. MOTOR DE FILTRADO EN VIVO
-        # =====================================
         df_filtrado = master_df.copy()
         
         if f_estado: df_filtrado = df_filtrado[df_filtrado["estado"].isin(f_estado)]
@@ -1030,24 +1017,21 @@ elif m == "Reportes": # (Ojo: cambia 'menu' por el nombre de tu variable de nave
         if f_d_res and "distrito residencia" in df_filtrado.columns: df_filtrado = df_filtrado[df_filtrado["distrito residencia"].isin(f_d_res)]
         if f_d_nac and "distrito nacimiento" in df_filtrado.columns: df_filtrado = df_filtrado[df_filtrado["distrito nacimiento"].isin(f_d_nac)]
 
-        # =====================================
-        # 4. MOSTRAR RESULTADOS
-        # =====================================
         st.markdown("---")
         st.success(f"📋 **Resultados:** Se encontraron **{len(df_filtrado)}** trabajadores que cumplen los criterios.")
         
-        # Ocultar DNI y embellecer columnas en la vista
         st.dataframe(
             df_filtrado, 
             hide_index=True, 
             use_container_width=True,
             column_config={
-                "dni": None, # Ocultamos el DNI visualmente
+                "dni": None,
                 "apellidos y nombres": st.column_config.TextColumn("Trabajador", width="large")
             }
         )
     else:
         st.warning("⚠️ Necesitas tener datos registrados en Personal y Contratos para generar reportes.")
+
 
 
 
