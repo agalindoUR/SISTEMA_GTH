@@ -189,6 +189,64 @@ def gen_word(nom, dni, df_c):
     doc.save(buf)
     buf.seek(0)
     return buf
+# ==============================================================================
+# FUNCIÓN 2: GENERAR PAPELETA DE VACACIONES INDIVIDUAL (Word Duplicado A4)
+# ==============================================================================
+def gen_papeleta_vac(apellidos, nombres, dni_b, position, f_ingreso, period, start_d, end_d, days):
+    template_path = "Template_Papeleta.docx"
+    
+    if not os.path.exists(template_path):
+        st.error(f"⚠️ No se encontró la plantilla en: {template_path}. Por favor crea el archivo Word.")
+        return None
+
+    doc = Document(template_path)
+    
+    hoy = date.today()
+    meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+    txt_firma = f"Huancayo, {hoy.day} de {meses[hoy.month-1]} de {hoy.year}"
+
+    fin_dt = pd.to_datetime(end_d, errors='coerce')
+    if pd.notnull(fin_dt):
+        retorno_dt = fin_dt + pd.Timedelta(days=1)
+        if retorno_dt.weekday() == 6:  # Si cae Domingo (6), pasa a Lunes
+            retorno_dt += pd.Timedelta(days=1)
+        str_retorno = retorno_dt.strftime("%d/%m/%Y")
+    else:
+        str_retorno = ""
+
+    replacements = {
+        "{{APELLIDOS}}": str(apellidos).upper(),
+        "{{NOMBRES}}": str(nombres).upper(),
+        "{{DNI}}": str(dni_b),
+        "{{CARGO}}": str(position).upper(),
+        "{{F_INGRESO}}": f_ingreso.strftime("%d/%m/%Y") if isinstance(f_ingreso, (date, datetime)) else str(f_ingreso),
+        "{{PERIODO}}": str(period),
+        "{{F_INICIO}}": start_d.strftime("%d/%m/%Y") if isinstance(start_d, (date, datetime)) else str(start_d),
+        "{{F_FIN}}": end_d.strftime("%d/%m/%Y") if isinstance(end_d, (date, datetime)) else str(end_d),
+        "{{F_RETORNO}}": str_retorno,
+        "{{DIAS}}": str(days),
+        "{{FECHA_FIRMA}}": txt_firma
+    }
+
+    def replace_in_element(element, reps):
+        for run in element.runs:
+            for key, value in reps.items():
+                if key in run.text:
+                    run.text = run.text.replace(key, value)
+
+    for paragraph in doc.paragraphs:
+        replace_in_element(paragraph, replacements)
+
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                for paragraph in cell.paragraphs:
+                    replace_in_element(paragraph, replacements)
+
+    docx_stream = io.BytesIO()
+    doc.save(docx_stream)
+    docx_stream.seek(0)
+    return docx_stream
 
 # ==========================================
 # 3. ESTILOS CSS
@@ -756,6 +814,7 @@ else:
                 for h in dfs:
                     if 'dni' in dfs[h].columns: dfs[h] = dfs[h][~dfs[h]['dni'].astype(str).isin(dnis)]
                 save_data(dfs); st.success("Registros eliminados correctamente."); st.rerun()
+
 
 
 
