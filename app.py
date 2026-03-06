@@ -948,7 +948,7 @@ else:
 # ==========================================
 # MÓDULO DE REPORTES Y FILTROS AVANZADOS
 # ==========================================
-elif menu == "Reportes": # (Ojo: cambia 'menu' por el nombre de tu variable de navegación si es distinto)
+elif m == "Reportes": # (Ojo: cambia 'menu' por el nombre de tu variable de navegación si es distinto)
     st.markdown("<h2 style='color: #4A0000;'>📊 Reportes y Filtros Avanzados</h2>", unsafe_allow_html=True)
     
     # 1. Traer copias de las tablas necesarias
@@ -1048,6 +1048,7 @@ elif menu == "Reportes": # (Ojo: cambia 'menu' por el nombre de tu variable de n
         )
     else:
         st.warning("⚠️ Necesitas tener datos registrados en Personal y Contratos para generar reportes.")
+
 
 
 
