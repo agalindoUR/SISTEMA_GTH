@@ -1029,16 +1029,14 @@ else:
             st.markdown("---")
             st.success(f"📋 **Resultados:** Se encontraron **{len(df_filtrado)}** trabajadores.")
             
-            # Elegimos exactamente qué columnas mostrar y en qué orden
-            cols_mostrar = ["dni", "apellidos y nombres", "sede"]
-            if "cargo" in df_filtrado.columns: cols_mostrar.append("cargo")
-            if "f_inicio" in df_filtrado.columns: cols_mostrar.append("f_inicio")
-            if "f_fin" in df_filtrado.columns: cols_mostrar.append("f_fin")
-            cols_mostrar.append("estado")
+            # Elegimos las columnas ideales, pero filtramos SOLO las que existen realmente
+            cols_ideales = ["dni", "apellidos y nombres", "sede", "cargo", "f_inicio", "f_fin", "estado"]
+            cols_mostrar = [c for c in cols_ideales if c in df_filtrado.columns]
             
-            # Renombramos las columnas para que se vean elegantes en la tabla
             df_display = df_filtrado[cols_mostrar].copy()
-            df_display.rename(columns={
+            
+            # Diccionario de nombres bonitos
+            nombres_bonitos = {
                 "dni": "DNI",
                 "apellidos y nombres": "Trabajador",
                 "sede": "Sede",
@@ -1046,9 +1044,12 @@ else:
                 "f_inicio": "Inicio Contrato",
                 "f_fin": "Fin Contrato",
                 "estado": "Estado"
-            }, inplace=True)
+            }
             
-            # Mostramos la tabla sin ocultar el DNI y con los nombres limpios
+            # Renombramos automáticamente (pandas ignorará los nombres de las columnas que no existan)
+            df_display.rename(columns=nombres_bonitos, inplace=True)
+            
+            # Mostramos la tabla
             st.dataframe(
                 df_display, 
                 hide_index=True, 
@@ -1056,6 +1057,7 @@ else:
             )
         else:
             st.warning("⚠️ Necesitas tener datos registrados en Personal y Contratos para generar reportes.")
+
 
 
 
