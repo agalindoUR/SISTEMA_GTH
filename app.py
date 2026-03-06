@@ -549,6 +549,56 @@ else:
                         ed = st.data_editor(vst, hide_index=True, use_container_width=True, column_config=col_conf, key=f"ed_{h_name}")
                         sel = ed[ed["SEL"] == True]
 
+                        # ==========================================
+                        # BOTÓN DE IMPRESIÓN DE PAPELETA (SOLO EN VACACIONES)
+                        # ==========================================
+                        if h_name == "VACACIONES" and not sel.empty:
+                            st.markdown("---")
+                            # Necesitamos el cargo actual y fecha de ingreso del trabajador
+                            current_cargo = "TRABAJADOR" # Default
+                            f_ingreso_val = ""
+                            df_c_data = dfs["CONTRATOS"][dfs["CONTRATOS"]["dni"] == dni_buscado]
+                            
+                            if not df_c_data.empty:
+                                try:
+                                    # Obtener cargo (último contrato)
+                                    last_contract = df_c_data.assign(f_fin_dt=pd.to_datetime(df_c_data['f_fin'], errors='coerce')).sort_values('f_fin_dt').iloc[-1]
+                                    current_cargo = last_contract.get("cargo", "TRABAJADOR")
+                                    
+                                    # Obtener fecha de ingreso (primer contrato de planilla)
+                                    df_planilla = df_c_data[df_c_data["tipo contrato"].astype(str).str.lower().str.contains("planilla", na=False)]
+                                    if not df_planilla.empty:
+                                        f_min = pd.to_datetime(df_planilla['f_inicio'], errors='coerce').min()
+                                        if pd.notnull(f_min): f_ingreso_val = f_min.date()
+                                except: pass
+
+                            # Capturar datos de la fila seleccionada
+                            r_sel = sel.iloc[0]
+                            p_papeleta = str(r_sel.get("PERIODO", ""))
+                            fi_papeleta = r_sel.get("F_INICIO")
+                            ff_papeleta = r_sel.get("F_FIN")
+                            dg_papeleta = r_sel.get("DÍAS GOZADOS", 0)
+
+                            if hasattr(fi_papeleta, 'date'): fi_papeleta = fi_papeleta.date()
+                            if hasattr(ff_papeleta, 'date'): ff_papeleta = ff_papeleta.date()
+
+                            if st.button(f"📄 Generar Papeleta de Impresión (Periodo {p_papeleta})", key="btn_print_vaca_tab", use_container_width=True):
+                                if pd.isnull(fi_papeleta) or pd.isnull(ff_papeleta):
+                                    st.error("⚠️ La fila seleccionada no tiene fechas válidas de inicio o fin.")
+                                else:
+                                    # AQUÍ LLAMAMOS A LA FUNCIÓN CON TODOS LOS DATOS
+                                    papeleta_word = gen_papeleta_vac(ape_c, nom_p_c, dni_buscado, current_cargo, f_ingreso_val, p_papeleta, fi_papeleta, ff_papeleta, dg_papeleta)
+                                    if papeleta_word:
+                                        st.markdown("""<style>[data-testid="stDownloadButton"] button { background-color: #FFD700 !important; color: #4A0000 !important; font-weight: bold !important; border: 2px solid #4A0000 !important; width: 100% !important; }</style>""", unsafe_allow_html=True)
+                                        st.download_button(
+                                            label=f"⬇️ Descargar Papeleta Duplicada - {nom_c}.docx",
+                                            data=papeleta_word,
+                                            file_name=f"Papeleta_{dni_buscado}_{p_papeleta}.docx",
+                                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                                            key="dl_papeleta_tab"
+                                        )
+                            st.markdown("---")
+                        
                         if not es_lector:
                             col_a, col_b = st.columns(2)
                             cols_reales = [c for c in dfs[h_name].columns if c.lower() not in ["id", "dni", "apellidos y nombres", "apellidos", "nombres"]]
@@ -814,6 +864,7 @@ else:
                 for h in dfs:
                     if 'dni' in dfs[h].columns: dfs[h] = dfs[h][~dfs[h]['dni'].astype(str).isin(dnis)]
                 save_data(dfs); st.success("Registros eliminados correctamente."); st.rerun()
+
 
 
 
