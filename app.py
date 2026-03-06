@@ -549,9 +549,18 @@ else:
                         vst.columns = [str(col).upper() for col in vst.columns] 
                         vst.insert(0, "SEL", False)
                         
-                        # --- MAGIA: OCULTAR DNI ---
-                        if "DNI" in vst.columns:
-                            col_conf["DNI"] = None
+                        # --- MAGIA: OCULTAR Y ORDENAR COLUMNAS ---
+                        # 1. Lista de todo lo que queremos desaparecer de la vista
+                        columnas_basura = ["DNI", "FECHA DE INICIO", "FECHA DE FIN", "DÍAS GENERADOS", "DIAS GENERADOS", "SALDO"]
+                        for col in columnas_basura:
+                            if col in vst.columns:
+                                col_conf[col] = None
+                                
+                        # 2. Reordenar las columnas para que F_INICIO y F_FIN salgan primero
+                        cols_importantes = ["SEL", "PERIODO", "F_INICIO", "F_FIN", "DÍAS GOZADOS", "DIAS GOZADOS"]
+                        cols_finales = [c for c in cols_importantes if c in vst.columns] + [c for c in vst.columns if c not in cols_importantes]
+                        vst = vst[cols_finales]
+                        # ----------------------------------------
 
                         st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 10px !important; }</style>""", unsafe_allow_html=True)
                         ed = st.data_editor(vst, hide_index=True, use_container_width=True, column_config=col_conf, key=f"ed_{h_name}")
@@ -936,6 +945,7 @@ else:
                 for h in dfs:
                     if 'dni' in dfs[h].columns: dfs[h] = dfs[h][~dfs[h]['dni'].astype(str).isin(dnis)]
                 save_data(dfs); st.success("Registros eliminados correctamente."); st.rerun()
+
 
 
 
