@@ -969,7 +969,11 @@ else:
             cols_cont = ["dni", "estado", "tipo de trabajador", "modalidad", "temporalidad", "tipo contrato", "cargo", "f_inicio", "f_fin"]
             cols_cont_existentes = [c for c in cols_cont if c in df_ultimos_contratos.columns]
             
-            master_df = df_per[["dni", "apellidos y nombres", "sede"]].merge(
+            # Hacemos que la búsqueda de columnas en PERSONAL sea segura
+            cols_per = ["dni", "apellidos y nombres", "sede"]
+            cols_per_existentes = [c for c in cols_per if c in df_per.columns]
+            
+            master_df = df_per[cols_per_existentes].merge(
                 df_ultimos_contratos[cols_cont_existentes], 
                 on="dni", how="left"
             )
@@ -1052,6 +1056,7 @@ else:
             )
         else:
             st.warning("⚠️ Necesitas tener datos registrados en Personal y Contratos para generar reportes.")
+
 
 
 
