@@ -397,7 +397,7 @@ else:
         st.markdown("<br>", unsafe_allow_html=True)
 
         st.markdown("### 🛠️ MENÚ PRINCIPAL")
-        m = st.radio("", ["🔍 Consulta", "➕ Registro", "📊 Nómina General"], key="menu_p_unico")
+        m = st.radio("", ["🔍 Consulta", "➕ Registro", "📊 Nómina General", "Reportes"], key="menu_p_unico")
         st.markdown("### 📈 REPORTES")
         r = st.radio("", ["Vencimientos", "Vacaciones", "Estadísticas"], key="menu_r_unico")
         st.markdown("---")
@@ -1031,6 +1031,7 @@ else:
             )
         else:
             st.warning("⚠️ Necesitas tener datos registrados en Personal y Contratos para generar reportes.")
+
 
 
 
