@@ -396,15 +396,22 @@ else:
             if os.path.exists("Logo_guindo.png"): st.image("Logo_guindo.png", use_container_width=True)
         st.markdown("<br>", unsafe_allow_html=True)
 
+        # 1. Función que apaga el menú de reportes al hacer clic arriba
+        def reset_reportes():
+            st.session_state["menu_reportes"] = "(Selecciona un reporte)"
+
+        # 2. Menú Principal (con el truco on_change)
         st.markdown("### 🛠️ MENÚ PRINCIPAL")
-        m = st.radio("", ["🔍 Consulta", "➕ Registro", "📊 Nómina General"], key="menu_p_unico")
+        m = st.radio("", ["🔍 Consulta", "➕ Registro", "📊 Nómina General"], key="menu_p_unico", on_change=reset_reportes)
+        
+        # 3. Menú de Reportes
         st.markdown("<h3 style='color: #FFD700;'>📊 REPORTES</h3>", unsafe_allow_html=True)
-        # Agregamos tu nueva opción a la variable "m" para que el sistema sepa que cambiaste de pantalla
         m_reportes = st.radio("", ["(Selecciona un reporte)", "Reporte General"], key="menu_reportes")
         
-        # Pequeño truco: si eliges un reporte, anulamos el menú principal para mostrar la pantalla del reporte
+        # 4. Forzar el cambio de pantalla si se elige un reporte
         if m_reportes != "(Selecciona un reporte)":
             m = m_reportes
+
         st.markdown("---")
         if st.button("🚪 Cerrar Sesión", key="btn_logout"):
             st.session_state.rol = None
@@ -1057,6 +1064,7 @@ else:
             )
         else:
             st.warning("⚠️ Necesitas tener datos registrados en Personal y Contratos para generar reportes.")
+
 
 
 
