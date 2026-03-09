@@ -33,7 +33,7 @@ COLUMNAS = {
     "FORM. ACADEMICA": ["grado, titulo o especialización", "descripcion", "universidad", "año"],
     "INVESTIGACION": ["año publicación", "autor, coautor o asesor", "tipo de investigación publicada", "nivel de publicación", "lugar de publicación"],
     # NUEVAS COLUMNAS DE CONTRATOS APLICADAS:
-    "CONTRATOS": ["id", "dni", "cargo", "área",  "remuneración básica", "bonificación", "condición de trabajo", "f_inicio", "f_fin", "tipo de trabajador", "modalidad", "temporalidad", "link", "tipo contrato", "estado", "motivo cese"],
+    "CONTRATOS": ["dni", "estado", "tipo de trabajador", "modalidad", "temporalidad", "tipo contrato", "cargo", "área", "f_inicio", "f_fin", "sueldo base"],
     "VACACIONES": ["periodo", "fecha de inicio", "fecha de fin", "días generados", "días gozados", "saldo", "link"],
     "OTROS BENEFICIOS": ["periodo", "tipo de beneficio", "link"],
     "MERITOS Y DEMERITOS": ["periodo", "merito o demerito", "motivo", "link"],
@@ -1060,13 +1060,21 @@ else:
                 "estado": "Estado"
             }, inplace=True)
             
-            # DIBUJAMOS LA TABLA CON LETRA MÁS GRANDE (15px)
-            st.dataframe(df_display.style.set_properties(**{'font-size': '15px'}), hide_index=True, use_container_width=True)
+            # TABLA: Ajustada al contenido
+            st.dataframe(df_display, hide_index=True, use_container_width=False)
+            
             # BOTÓN DE EXPORTAR A EXCEL (REPORTE GENERAL)
             output_gen = BytesIO()
             with pd.ExcelWriter(output_gen, engine='openpyxl') as writer:
                 df_display.to_excel(writer, index=False, sheet_name='General')
-            st.download_button(label="📥 Exportar a Excel", data=output_gen.getvalue(), file_name="Reporte_General.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", key="btn_exp_gen")
+            st.download_button(
+                label="📥 Exportar a Excel", 
+                data=output_gen.getvalue(), 
+                file_name="Reporte_General.xlsx", 
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
+                key="btn_exp_gen",
+                type="primary"
+            )
         else:
             st.warning("⚠️ Necesitas tener datos registrados en Personal y Contratos para generar reportes.")
 
@@ -1232,23 +1240,32 @@ else:
             if f_sede and "Sede" in df_v.columns: df_v = df_v[df_v["Sede"].isin(f_sede)]
             if f_area and "Área" in df_v.columns: df_v = df_v[df_v["Área"].isin(f_area)]
             
-            # Seleccionamos qué mostrar
-            cols_mostrar = ["DNI", "Trabajador", "Área", "Sede", "Fecha de inicio", "Fecha de fin"]
-            if "Días Generados" in df_v.columns: cols_mostrar.append("Días Generados")
-            if "Días Gozados" in df_v.columns: cols_mostrar.append("Días Gozados")
-            if "Saldo" in df_v.columns: cols_mostrar.append("Saldo")
+            # Seleccionamos qué mostrar de forma segura (Previene el KeyError)
+            cols_ideales = ["DNI", "Trabajador", "Área", "Sede", "Fecha de inicio", "Fecha de fin"]
+            if "Días Generados" in df_v.columns: cols_ideales.append("Días Generados")
+            if "Días Gozados" in df_v.columns: cols_ideales.append("Días Gozados")
+            if "Saldo" in df_v.columns: cols_ideales.append("Saldo")
             
+            # Solo filtramos las columnas que realmente existen
+            cols_mostrar = [c for c in cols_ideales if c in df_v.columns]
             df_final = df_v[cols_mostrar].copy()
             
             st.markdown("---")
-            # TABLA
-            st.dataframe(df_final.style.set_properties(**{'font-size': '15px'}), hide_index=True, use_container_width=True)
+            # TABLA: use_container_width=False hace que se ajuste al contenido y no se estire
+            st.dataframe(df_final, hide_index=True, use_container_width=False)
             
-            # BOTÓN DE EXPORTAR A EXCEL
+            # BOTÓN DE EXPORTAR A EXCEL (Resaltado con type="primary")
             output = BytesIO()
             with pd.ExcelWriter(output, engine='openpyxl') as writer:
                 df_final.to_excel(writer, index=False, sheet_name='Vacaciones')
-            st.download_button(label="📥 Exportar a Excel", data=output.getvalue(), file_name="Reporte_Vacaciones.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            st.download_button(
+                label="📥 Exportar a Excel", 
+                data=output.getvalue(), 
+                file_name="Reporte_Vacaciones.xlsx", 
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                type="primary"
+            )
+
 
 
 
