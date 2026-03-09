@@ -1031,7 +1031,7 @@ else:
             df_filtrado = master_df.copy()
             
             if f_estado: df_filtrado = df_filtrado[df_filtrado["estado"].isin(f_estado)]
-            if f_sede: df_filtrado = df_filtrado[df_filtrado["sede"].isin(f_sede)]
+            if f_sede and "sede" in df_filtrado.columns: df_filtrado = df_filtrado[df_filtrado["sede"].isin(f_sede)]
             if f_ttrab and "tipo de trabajador" in df_filtrado.columns: df_filtrado = df_filtrado[df_filtrado["tipo de trabajador"].isin(f_ttrab)]
             if f_sexo and "sexo" in df_filtrado.columns: df_filtrado = df_filtrado[df_filtrado["sexo"].isin(f_sexo)]
             if f_mod and "modalidad" in df_filtrado.columns: df_filtrado = df_filtrado[df_filtrado["modalidad"].isin(f_mod)]
@@ -1182,6 +1182,7 @@ else:
             
             st.markdown("---")
             st.dataframe(df_v, hide_index=True, use_container_width=True)
+
 
 
 
