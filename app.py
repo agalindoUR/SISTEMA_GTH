@@ -33,7 +33,7 @@ COLUMNAS = {
     "FORM. ACADEMICA": ["grado, titulo o especialización", "descripcion", "universidad", "año"],
     "INVESTIGACION": ["año publicación", "autor, coautor o asesor", "tipo de investigación publicada", "nivel de publicación", "lugar de publicación"],
     # NUEVAS COLUMNAS DE CONTRATOS APLICADAS:
-    "CONTRATOS": ["dni", "estado", "tipo de trabajador", "modalidad", "temporalidad", "tipo contrato", "cargo", "área", "f_inicio", "f_fin", "sueldo base"],
+    "CONTRATOS": ["dni", "estado", "tipo de trabajador", "modalidad", "temporalidad", "tipo contrato", "cargo", "área", "f_inicio", "f_fin"],
     "VACACIONES": ["periodo", "fecha de inicio", "fecha de fin", "días generados", "días gozados", "saldo", "link"],
     "OTROS BENEFICIOS": ["periodo", "tipo de beneficio", "link"],
     "MERITOS Y DEMERITOS": ["periodo", "merito o demerito", "motivo", "link"],
@@ -1366,6 +1366,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
