@@ -1039,13 +1039,13 @@ else:
             if f_temp and "temporalidad" in df_filtrado.columns: df_filtrado = df_filtrado[df_filtrado["temporalidad"].isin(f_temp)]
             if f_tcont and "tipo contrato" in df_filtrado.columns: df_filtrado = df_filtrado[df_filtrado["tipo contrato"].isin(f_tcont)]
           
-            # =====================================
+           # =====================================
             # MOSTRAR TABLA LIMPIA Y ORDENADA
             # =====================================
             st.markdown("---")
             st.success(f"📋 **Resultados:** Se encontraron **{len(df_filtrado)}** trabajadores.")
             
-            # Buscamos la columna de nombres de forma inteligente por si tiene mayúsculas o espacios
+            # Buscamos la columna de nombres de forma inteligente
             col_nombres = next((c for c in df_filtrado.columns if "apellido" in c.lower() or "nombre" in c.lower()), None)
             
             cols_ideales = ["dni", col_nombres, "sede", "cargo", "f_inicio", "f_fin", "estado"]
@@ -1066,30 +1066,7 @@ else:
             
             df_display.rename(columns=nombres_bonitos, inplace=True)
             st.dataframe(df_display, hide_index=True, use_container_width=True)
-            cols_mostrar = [c for c in cols_ideales if c in df_filtrado.columns]
             
-            df_display = df_filtrado[cols_mostrar].copy()
-            
-            # Diccionario de nombres bonitos
-            nombres_bonitos = {
-                "dni": "DNI",
-                "apellidos y nombres": "Trabajador",
-                "sede": "Sede",
-                "cargo": "Puesto Laboral",
-                "f_inicio": "Inicio Contrato",
-                "f_fin": "Fin Contrato",
-                "estado": "Estado"
-            }
-            
-            # Renombramos automáticamente (pandas ignorará los nombres de las columnas que no existan)
-            df_display.rename(columns=nombres_bonitos, inplace=True)
-            
-            # Mostramos la tabla
-            st.dataframe(
-                df_display, 
-                hide_index=True, 
-                use_container_width=True
-            )
         else:
             st.warning("⚠️ Necesitas tener datos registrados en Personal y Contratos para generar reportes.")
 
@@ -1176,6 +1153,7 @@ else:
             
             st.markdown("---")
             st.dataframe(df_v, hide_index=True, use_container_width=True)
+
 
 
 
