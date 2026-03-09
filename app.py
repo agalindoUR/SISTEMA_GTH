@@ -979,26 +979,23 @@ else:
             df_cont_sorted = df_cont.assign(f_fin_dt=pd.to_datetime(df_cont['f_fin'], errors='coerce')).sort_values('f_fin_dt')
             df_ultimos_contratos = df_cont_sorted.groupby('dni').tail(1)
             
-            # 2. Unir PERSONAL (con Sede) + CONTRATOS (con Cargo y Fechas)
+            # 2. Armar la tabla maestra jalando la Sede de Datos Generales
+            df_gen = dfs.get("DATOS GENERALES", pd.DataFrame())
+            
+            # A. Sacamos DNI y Nombres de Personal
+            cols_per = [c for c in ["dni", "apellidos y nombres"] if c in df_per.columns]
+            master_df = df_per[cols_per].copy()
+            
+            # B. Jalamos la Sede de Datos Generales
+            if not df_gen.empty and "sede" in df_gen.columns:
+                master_df = master_df.merge(df_gen[["dni", "sede"]], on="dni", how="left")
+            else:
+                master_df["sede"] = "No registrada" # Evita que el programa se caiga si borran la columna
+                
+            # C. Unimos con los Contratos
             cols_cont = ["dni", "estado", "tipo de trabajador", "modalidad", "temporalidad", "tipo contrato", "cargo", "f_inicio", "f_fin"]
             cols_cont_existentes = [c for c in cols_cont if c in df_ultimos_contratos.columns]
-            
-            # Hacemos que la búsqueda de columnas en PERSONAL sea segura
-            cols_per = ["dni", "apellidos y nombres", "sede"]
-            cols_per_existentes = [c for c in cols_per if c in df_per.columns]
-            
-            master_df = df_per[cols_per_existentes].merge(
-                df_ultimos_contratos[cols_cont_existentes], 
-                on="dni", how="left"
-            )
-            
-            # 3. Unir DATOS GENERALES (Solo Sexo y Estado Civil)
-            if not df_gen.empty:
-                cols_gen = ["dni", "sexo", "estado civil"]
-                cols_existentes = [c for c in cols_gen if c in df_gen.columns]
-                master_df = master_df.merge(df_gen[cols_existentes], on="dni", how="left")
-                
-            master_df["estado"] = master_df["estado"].fillna("SIN CONTRATO")
+            master_df = master_df.merge(df_ultimos_contratos[cols_cont_existentes], on="dni", how="left")
 
             # =====================================
             # FILTROS DE BÚSQUEDA
@@ -1045,26 +1042,25 @@ else:
             st.markdown("---")
             st.success(f"📋 **Resultados:** Se encontraron **{len(df_filtrado)}** trabajadores.")
             
-            # Buscamos la columna de nombres de forma inteligente
-            col_nombres = next((c for c in df_filtrado.columns if "apellido" in c.lower() or "nombre" in c.lower()), None)
+            # Aseguramos ubicar la columna exacta de los nombres
+            col_nom = "apellidos y nombres" if "apellidos y nombres" in df_filtrado.columns else next((c for c in df_filtrado.columns if "apellido" in c.lower() or "nombre" in c.lower()), None)
             
-            cols_ideales = ["dni", col_nombres, "sede", "cargo", "f_inicio", "f_fin", "estado"]
+            cols_ideales = ["dni", col_nom, "sede", "cargo", "f_inicio", "f_fin", "estado"]
             cols_mostrar = [c for c in cols_ideales if c and c in df_filtrado.columns]
             
             df_display = df_filtrado[cols_mostrar].copy()
             
-            # Diccionario de nombres bonitos
-            nombres_bonitos = {
+            # Forzamos el nombre a "Trabajador"
+            df_display.rename(columns={
                 "dni": "DNI",
-                col_nombres: "Trabajador",
+                col_nom: "Trabajador",
                 "sede": "Sede",
                 "cargo": "Puesto Laboral",
                 "f_inicio": "Inicio Contrato",
                 "f_fin": "Fin Contrato",
                 "estado": "Estado"
-            }
+            }, inplace=True)
             
-            df_display.rename(columns=nombres_bonitos, inplace=True)
             st.dataframe(df_display, hide_index=True, use_container_width=True)
             
         else:
@@ -1085,7 +1081,18 @@ else:
             col_fnac = next((c for c in df_gen.columns if "nacimiento" in c.lower() and "fecha" in c.lower()), None)
             
             if col_nom_gen and col_fnac:
-                df_cumple = df_per[["dni", "sede"]].merge(df_gen[["dni", col_nom_gen, col_fnac]], on="dni", how="inner")
+                # Ya no buscamos Sede en Personal, solo DNI y Nombres
+                cols_per = [c for c in ["dni", "apellidos y nombres"] if c in df_per.columns]
+                df_cumple = df_per[cols_per].copy()
+                
+                # Preparamos las columnas a jalar de Datos Generales (incluyendo la Sede)
+                cols_gen_a_jalar = ["dni", col_fnac]
+                if "sede" in df_gen.columns: cols_gen_a_jalar.append("sede")
+                
+                # Unimos ambas tablas
+                df_cumple = df_cumple.merge(df_gen[cols_gen_a_jalar], on="dni", how="inner")
+                if "sede" not in df_cumple.columns: df_cumple["sede"] = "No registrada"
+                
                 df_cumple[col_fnac] = pd.to_datetime(df_cumple[col_fnac], errors="coerce")
                 df_cumple = df_cumple.dropna(subset=[col_fnac])
                 
@@ -1134,8 +1141,18 @@ else:
             # Aquí unimos los datos asumiendo que ya tienes la tabla
             col_nom_per = next((c for c in df_per.columns if "apellido" in c.lower() or "nombre" in c.lower()), None)
             
-            # Merge básico (se puede ajustar cuando me confirmes las columnas exactas de tu tabla de Vacaciones)
-            df_v = df_vac.merge(df_per[["dni", col_nom_per, "sede"]], on="dni", how="left")
+            # Primero unimos Vacaciones con Personal (Solo para DNI y Nombres)
+            cols_per = [c for c in ["dni", col_nom_per] if c and c in df_per.columns]
+            df_v = df_vac.merge(df_per[cols_per], on="dni", how="left")
+            
+            # Jalamos la Sede de Datos Generales
+            df_gen = dfs.get("DATOS GENERALES", pd.DataFrame())
+            if not df_gen.empty and "sede" in df_gen.columns:
+                df_v = df_v.merge(df_gen[["dni", "sede"]], on="dni", how="left")
+            else:
+                df_v["sede"] = "No registrada"
+                
+            # Jalamos el Área de Contratos
             if not df_cont.empty and "área" in df_cont.columns:
                 df_v = df_v.merge(df_cont[["dni", "área"]], on="dni", how="left")
             else:
@@ -1153,6 +1170,7 @@ else:
             
             st.markdown("---")
             st.dataframe(df_v, hide_index=True, use_container_width=True)
+
 
 
 
