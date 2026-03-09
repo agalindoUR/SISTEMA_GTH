@@ -396,21 +396,28 @@ else:
             if os.path.exists("Logo_guindo.png"): st.image("Logo_guindo.png", use_container_width=True)
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # 1. Función que apaga el menú de reportes al hacer clic arriba
-        def reset_reportes():
-            st.session_state["menu_reportes"] = "(Selecciona un reporte)"
+        # --- LÓGICA DE MENÚS INTELIGENTES ---
+        if "menu_p" not in st.session_state: st.session_state.menu_p = "🔍 Consulta"
+        if "menu_r" not in st.session_state: st.session_state.menu_r = None
+        if "menu_activo" not in st.session_state: st.session_state.menu_activo = "🔍 Consulta"
 
-        # 2. Menú Principal (con el truco on_change)
+        def click_menu_p():
+            st.session_state.menu_activo = st.session_state.menu_p
+            st.session_state.menu_r = None # Apaga los reportes
+
+        def click_menu_r():
+            if st.session_state.menu_r is not None:
+                st.session_state.menu_activo = st.session_state.menu_r
+                st.session_state.menu_p = None # Apaga el menú principal
+
         st.markdown("### 🛠️ MENÚ PRINCIPAL")
-        m = st.radio("", ["🔍 Consulta", "➕ Registro", "📊 Nómina General"], key="menu_p_unico", on_change=reset_reportes)
+        st.radio("Menú Principal", ["🔍 Consulta", "➕ Registro", "📊 Nómina General"], key="menu_p", on_change=click_menu_p, label_visibility="collapsed")
         
-        # 3. Menú de Reportes
         st.markdown("<h3 style='color: #FFD700;'>📊 REPORTES</h3>", unsafe_allow_html=True)
-        m_reportes = st.radio("", ["(Selecciona un reporte)", "Reporte General"], key="menu_reportes")
+        # Usamos index=None para que se pueda desmarcar sin textos extraños
+        st.radio("Reportes", ["Reporte General", "Cumpleañeros", "Vacaciones"], key="menu_r", on_change=click_menu_r, index=None, label_visibility="collapsed")
         
-        # 4. Forzar el cambio de pantalla si se elige un reporte
-        if m_reportes != "(Selecciona un reporte)":
-            m = m_reportes
+        m = st.session_state.menu_activo
 
         st.markdown("---")
         if st.button("🚪 Cerrar Sesión", key="btn_logout"):
@@ -1002,7 +1009,9 @@ else:
             with col_est:
                 f_estado = st.multiselect("Estado del Trabajador", options=master_df["estado"].dropna().unique(), default=["ACTIVO"])
             with col_sede:
-                f_sede = st.multiselect("Sede", options=master_df.get("sede", pd.Series([])).dropna().unique())
+                # Opciones fijas para que siempre aparezcan
+                sedes_opciones = ["Local Giraldez", "Local San Carlos", "Local Abancay", "Local Lince", "Local Pueblo Libre"]
+                f_sede = st.multiselect("Sede", options=sedes_opciones)
             
             col1, col2, col3, col4 = st.columns(4)
             with col1:
@@ -1036,8 +1045,33 @@ else:
             st.markdown("---")
             st.success(f"📋 **Resultados:** Se encontraron **{len(df_filtrado)}** trabajadores.")
             
-            # Elegimos las columnas ideales, pero filtramos SOLO las que existen realmente
-            cols_ideales = ["dni", "apellidos y nombres", "sede", "cargo", "f_inicio", "f_fin", "estado"]
+            # =====================================
+            # MOSTRAR TABLA LIMPIA Y ORDENADA
+            # =====================================
+            st.markdown("---")
+            st.success(f"📋 **Resultados:** Se encontraron **{len(df_filtrado)}** trabajadores.")
+            
+            # Buscamos la columna de nombres de forma inteligente por si tiene mayúsculas o espacios
+            col_nombres = next((c for c in df_filtrado.columns if "apellido" in c.lower() or "nombre" in c.lower()), None)
+            
+            cols_ideales = ["dni", col_nombres, "sede", "cargo", "f_inicio", "f_fin", "estado"]
+            cols_mostrar = [c for c in cols_ideales if c and c in df_filtrado.columns]
+            
+            df_display = df_filtrado[cols_mostrar].copy()
+            
+            # Diccionario de nombres bonitos
+            nombres_bonitos = {
+                "dni": "DNI",
+                col_nombres: "Trabajador",
+                "sede": "Sede",
+                "cargo": "Puesto Laboral",
+                "f_inicio": "Inicio Contrato",
+                "f_fin": "Fin Contrato",
+                "estado": "Estado"
+            }
+            
+            df_display.rename(columns=nombres_bonitos, inplace=True)
+            st.dataframe(df_display, hide_index=True, use_container_width=True)
             cols_mostrar = [c for c in cols_ideales if c in df_filtrado.columns]
             
             df_display = df_filtrado[cols_mostrar].copy()
@@ -1064,6 +1098,91 @@ else:
             )
         else:
             st.warning("⚠️ Necesitas tener datos registrados en Personal y Contratos para generar reportes.")
+
+# ==========================================
+    # MÓDULO: CUMPLEAÑEROS
+    # ==========================================
+    elif m == "Cumpleañeros":
+        st.markdown("<h2 style='color: #4A0000;'>🎂 Reporte de Cumpleañeros</h2>", unsafe_allow_html=True)
+        
+        df_per = dfs.get("PERSONAL", pd.DataFrame())
+        df_gen = dfs.get("DATOS GENERALES", pd.DataFrame())
+        
+        if not df_per.empty and not df_gen.empty:
+            # Buscar columnas sin importar mayúsculas
+            col_nom_gen = next((c for c in df_gen.columns if "apellido" in c.lower() or "nombre" in c.lower()), None)
+            col_fnac = next((c for c in df_gen.columns if "nacimiento" in c.lower() and "fecha" in c.lower()), None)
+            
+            if col_nom_gen and col_fnac:
+                df_cumple = df_per[["dni", "sede"]].merge(df_gen[["dni", col_nom_gen, col_fnac]], on="dni", how="inner")
+                df_cumple[col_fnac] = pd.to_datetime(df_cumple[col_fnac], errors="coerce")
+                df_cumple = df_cumple.dropna(subset=[col_fnac])
+                
+                # Cálculos de meses y años
+                meses = {1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril", 5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto", 9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"}
+                df_cumple["Mes_Num"] = df_cumple[col_fnac].dt.month
+                df_cumple["Mes"] = df_cumple["Mes_Num"].map(meses)
+                
+                año_actual = date.today().year
+                df_cumple["Años a cumplir"] = año_actual - df_cumple[col_fnac].dt.year
+                df_cumple["Fecha de cumpleaños"] = df_cumple[col_fnac].dt.strftime("%d de %B")
+                
+                # Filtros
+                col1, col2 = st.columns(2)
+                with col1:
+                    f_sede = st.multiselect("Sede", options=["Local Giraldez", "Local San Carlos", "Local Abancay", "Local Lince", "Local Pueblo Libre"])
+                with col2:
+                    f_mes = st.multiselect("Mes", options=list(meses.values()))
+                
+                if f_sede: df_cumple = df_cumple[df_cumple["sede"].isin(f_sede)]
+                if f_mes: df_cumple = df_cumple[df_cumple["Mes"].isin(f_mes)]
+                
+                df_cumple = df_cumple.sort_values("Mes_Num")
+                df_cumple.rename(columns={"dni": "DNI", col_nom_gen: "Trabajador", "sede": "Sede"}, inplace=True)
+                
+                st.markdown("---")
+                st.dataframe(df_cumple[["DNI", "Trabajador", "Sede", "Fecha de cumpleaños", "Años a cumplir"]], hide_index=True, use_container_width=True)
+            else:
+                st.warning("⚠️ No se encontró la columna de 'Fecha de nacimiento' en Datos Generales.")
+        else:
+            st.warning("⚠️ Faltan datos en Personal o Datos Generales.")
+
+    # ==========================================
+    # MÓDULO: VACACIONES
+    # ==========================================
+    elif m == "Vacaciones":
+        st.markdown("<h2 style='color: #4A0000;'>🌴 Reporte de Vacaciones Pendientes</h2>", unsafe_allow_html=True)
+        
+        df_per = dfs.get("PERSONAL", pd.DataFrame())
+        df_vac = dfs.get("VACACIONES", pd.DataFrame())
+        df_cont = dfs.get("CONTRATOS", pd.DataFrame())
+        
+        if df_vac.empty:
+            st.info("💡 Tu base de datos aún no tiene una hoja/tabla llamada **VACACIONES**. Debes crearla en tu Excel con las columnas: DNI, Periodo, Vacaciones Pendientes, Área.")
+        else:
+            # Aquí unimos los datos asumiendo que ya tienes la tabla
+            col_nom_per = next((c for c in df_per.columns if "apellido" in c.lower() or "nombre" in c.lower()), None)
+            
+            # Merge básico (se puede ajustar cuando me confirmes las columnas exactas de tu tabla de Vacaciones)
+            df_v = df_vac.merge(df_per[["dni", col_nom_per, "sede"]], on="dni", how="left")
+            if not df_cont.empty and "área" in df_cont.columns:
+                df_v = df_v.merge(df_cont[["dni", "área"]], on="dni", how="left")
+            else:
+                df_v["área"] = "No registrada"
+
+            # Filtros
+            col1, col2 = st.columns(2)
+            with col1:
+                f_sede = st.multiselect("Sede", options=["Local Giraldez", "Local San Carlos", "Local Abancay", "Local Lince", "Local Pueblo Libre"])
+            with col2:
+                f_area = st.multiselect("Área", options=df_v["área"].dropna().unique())
+            
+            if f_sede: df_v = df_v[df_v["sede"].isin(f_sede)]
+            if f_area: df_v = df_v[df_v["área"].isin(f_area)]
+            
+            st.markdown("---")
+            st.dataframe(df_v, hide_index=True, use_container_width=True)
+
 
 
 
