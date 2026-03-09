@@ -369,7 +369,7 @@ if st.session_state.rol is None:
 
     col_logo1, col_logo2, col_logo3 = st.columns([1, 1.2, 1])
     with col_logo2:
-        if os.path.exists("Logo_amarillo.png"): st.image("Logo_amarillo.png", use_container_width=True)
+        if os.path.exists("Logo_amarillo.png"): st.image("Logo_amarillo.png", use_container_width=False)
 
     col1, col2, col3 = st.columns([1, 1.5, 1])
     with col2:
@@ -393,7 +393,7 @@ else:
         st.markdown("<br>", unsafe_allow_html=True)
         col_logo_1, col_logo_2, col_logo_3 = st.columns([1, 2, 1]) 
         with col_logo_2:
-            if os.path.exists("Logo_guindo.png"): st.image("Logo_guindo.png", use_container_width=True)
+            if os.path.exists("Logo_guindo.png"): st.image("Logo_guindo.png", use_container_width=False)
         st.markdown("<br>", unsafe_allow_html=True)
 
         # --- LÓGICA DE MENÚS INTELIGENTES ---
@@ -415,7 +415,7 @@ else:
         
         st.markdown("<h3 style='color: #FFD700;'>📊 REPORTES</h3>", unsafe_allow_html=True)
         # Usamos index=None para que se pueda desmarcar sin textos extraños
-        st.radio("Reportes", ["Reporte General", "Cumpleañeros", "Vacaciones"], key="menu_r", on_change=click_menu_r, index=None, label_visibility="collapsed")
+        st.radio("Reportes", ["Reporte General", "Cumpleañeros", "Vacaciones", "Vencimientos"], key="menu_r", on_change=click_menu_r, index=None, label_visibility="collapsed")
         
         m = st.session_state.menu_activo
 
@@ -582,7 +582,7 @@ else:
                         # ----------------------------------------
 
                         st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 10px !important; }</style>""", unsafe_allow_html=True)
-                        ed = st.data_editor(vst, hide_index=True, use_container_width=True, column_config=col_conf, key=f"ed_{h_name}")
+                        ed = st.data_editor(vst, hide_index=True, use_container_width=False, column_config=col_conf, key=f"ed_{h_name}")
                         sel = ed[ed["SEL"] == True]
 
                         # ==========================================
@@ -618,7 +618,7 @@ else:
                             if hasattr(fi_papeleta, 'date'): fi_papeleta = fi_papeleta.date()
                             if hasattr(ff_papeleta, 'date'): ff_papeleta = ff_papeleta.date()
 
-                            if st.button(f"📄 Generar Papeleta de Impresión (Periodo {p_papeleta})", key="btn_print_vaca_tab", use_container_width=True):
+                            if st.button(f"📄 Generar Papeleta de Impresión (Periodo {p_papeleta})", key="btn_print_vaca_tab", use_container_width=False):
                                 if pd.isnull(fi_papeleta) or pd.isnull(ff_papeleta):
                                     st.error("⚠️ La fila seleccionada no tiene fechas válidas de inicio o fin.")
                                 else:
@@ -692,7 +692,7 @@ else:
                                             * **Saldo Restante:** {txt_saldo}
                                             """)
 
-                                            if st.button("💾 Guardar Registro de Vacaciones", type="primary", use_container_width=True):
+                                            if st.button("💾 Guardar Registro de Vacaciones", type="primary", use_container_width=False):
                                                 if dias_gozar_calc <= 0:
                                                     st.error("⚠️ La Fecha de Fin debe ser igual o posterior a la Fecha de Inicio.")
                                                 else:
@@ -955,11 +955,11 @@ else:
         
         df_ver.columns = [col.upper() for col in df_ver.columns]
         df_ver.insert(0, "SEL", False)
-        ed_nom = st.data_editor(df_ver, hide_index=True, use_container_width=True, key="nomina_v3_blanco")
+        ed_nom = st.data_editor(df_ver, hide_index=True, use_container_width=False, key="nomina_v3_blanco")
         filas_sel = ed_nom[ed_nom["SEL"] == True]
         if not filas_sel.empty:
             st.markdown("---")
-            if st.button(f"🚨 ELIMINAR {len(filas_sel)} REGISTRO(S)", type="secondary", use_container_width=True):
+            if st.button(f"🚨 ELIMINAR {len(filas_sel)} REGISTRO(S)", type="secondary", use_container_width=False):
                 dnis = filas_sel["DNI"].astype(str).tolist()
                 for h in dfs:
                     if 'dni' in dfs[h].columns: dfs[h] = dfs[h][~dfs[h]['dni'].astype(str).isin(dnis)]
@@ -1131,7 +1131,7 @@ else:
                 df_cumple.rename(columns={"dni": "DNI", col_nom_per: "Trabajador", "sede": "Sede"}, inplace=True)
                 
                 st.markdown("---")
-                st.dataframe(df_cumple[["DNI", "Trabajador", "Sede", "Fecha de cumpleaños", "Años a cumplir"]].style.set_properties(**{'font-size': '15px'}), hide_index=True, use_container_width=True)
+                st.dataframe(df_cumple[["DNI", "Trabajador", "Sede", "Fecha de cumpleaños", "Años a cumplir"]].style.set_properties(**{'font-size': '15px'}), hide_index=True, use_container_width=False)
                 # BOTÓN DE EXPORTAR A EXCEL (CUMPLEAÑEROS)
                 df_export_cump = df_cumple[["DNI", "Trabajador", "Sede", "Fecha de cumpleaños", "Años a cumplir"]].copy()
                 output_cump = BytesIO()
@@ -1265,6 +1265,108 @@ else:
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 type="primary"
             )
+
+# ==========================================
+    # MÓDULO: VENCIMIENTO DE CONTRATOS
+    # ==========================================
+    elif m == "Vencimientos":
+        st.markdown("<h2 style='color: #4A0000;'>⏳ Reporte de Vencimiento de Contratos</h2>", unsafe_allow_html=True)
+        
+        df_per = dfs.get("PERSONAL", pd.DataFrame())
+        df_cont = dfs.get("CONTRATOS", pd.DataFrame())
+        df_gen = dfs.get("DATOS GENERALES", pd.DataFrame())
+        
+        if not df_per.empty and not df_cont.empty:
+            # 1. Base: DNI y Nombres
+            col_nom_per = next((c for c in df_per.columns if "apellido" in c.lower() or "nombre" in c.lower()), None)
+            cols_per = ["dni"]
+            if col_nom_per: cols_per.append(col_nom_per)
+            df_venc = df_per[cols_per].copy()
+            
+            # 2. Sede (de Datos Generales)
+            if not df_gen.empty and "sede" in df_gen.columns:
+                df_venc = df_venc.merge(df_gen[["dni", "sede"]], on="dni", how="left")
+            else:
+                df_venc["sede"] = "No registrada"
+                
+            # 3. Datos del último contrato
+            df_cont_sorted = df_cont.assign(f_fin_dt=pd.to_datetime(df_cont['f_fin'], errors='coerce')).sort_values('f_fin_dt')
+            df_ultimos_contratos = df_cont_sorted.groupby('dni').tail(1)
+            
+            cols_cont_necesarias = ["dni", "cargo", "área", "f_fin", "tipo de trabajador", "tipo contrato"]
+            cols_existentes = [c for c in cols_cont_necesarias if c in df_ultimos_contratos.columns]
+            
+            # Unimos solo los que tienen contrato
+            df_venc = df_venc.merge(df_ultimos_contratos[cols_existentes], on="dni", how="inner") 
+            
+            # 4. Formatear la fecha y extraer el Mes
+            df_venc["f_fin_dt"] = pd.to_datetime(df_venc["f_fin"], errors="coerce")
+            meses_dict = {1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril", 5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto", 9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"}
+            df_venc["Mes de Vencimiento"] = df_venc["f_fin_dt"].dt.month.map(meses_dict)
+            
+            # Renombrar para que se vea bien
+            rename_dict = {
+                "dni": "DNI",
+                col_nom_per: "Trabajador",
+                "sede": "Sede",
+                "cargo": "Puesto",
+                "área": "Área",
+                "f_fin": "Fecha de Vencimiento",
+                "tipo de trabajador": "Tipo de Trabajador",
+                "tipo contrato": "Tipo de Contrato"
+            }
+            df_venc.rename(columns=rename_dict, inplace=True)
+            
+            # 5. Filtros de Búsqueda
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                sedes_opciones = ["Local Giraldez", "Local San Carlos", "Local Abancay", "Local Lince", "Local Pueblo Libre"]
+                f_sede = st.multiselect("Sede", options=sedes_opciones)
+                areas_disp = df_venc["Área"].dropna().unique() if "Área" in df_venc.columns else []
+                f_area = st.multiselect("Área", options=areas_disp)
+            with col2:
+                f_mes = st.multiselect("Mes de Vencimiento", options=list(meses_dict.values()))
+                tipos_trab = df_venc["Tipo de Trabajador"].dropna().unique() if "Tipo de Trabajador" in df_venc.columns else []
+                f_ttrab = st.multiselect("Tipo de Trabajador", options=tipos_trab)
+            with col3:
+                tipos_cont = df_venc["Tipo de Contrato"].dropna().unique() if "Tipo de Contrato" in df_venc.columns else []
+                f_tcont = st.multiselect("Tipo de Contrato", options=tipos_cont)
+                
+            # 6. Aplicar filtros
+            if f_sede and "Sede" in df_venc.columns: df_venc = df_venc[df_venc["Sede"].isin(f_sede)]
+            if f_area and "Área" in df_venc.columns: df_venc = df_venc[df_venc["Área"].isin(f_area)]
+            if f_mes and "Mes de Vencimiento" in df_venc.columns: df_venc = df_venc[df_venc["Mes de Vencimiento"].isin(f_mes)]
+            if f_ttrab and "Tipo de Trabajador" in df_venc.columns: df_venc = df_venc[df_venc["Tipo de Trabajador"].isin(f_ttrab)]
+            if f_tcont and "Tipo de Contrato" in df_venc.columns: df_venc = df_venc[df_venc["Tipo de Contrato"].isin(f_tcont)]
+            
+            # Ordenar por fecha más próxima a vencer
+            df_venc = df_venc.sort_values(by="f_fin_dt", na_position="last")
+            
+            # 7. Mostrar la Tabla
+            cols_finales = ["DNI", "Trabajador", "Puesto", "Sede", "Área", "Tipo de Trabajador", "Tipo de Contrato", "Fecha de Vencimiento", "Mes de Vencimiento"]
+            cols_mostrar = [c for c in cols_finales if c in df_venc.columns]
+            
+            df_final = df_venc[cols_mostrar].copy()
+            
+            st.markdown("---")
+            st.success(f"📋 **Resultados:** {len(df_final)} contratos encontrados.")
+            st.dataframe(df_final, hide_index=True, use_container_width=False)
+            
+            # 8. Botón Exportar a Excel
+            output_venc = BytesIO()
+            with pd.ExcelWriter(output_venc, engine='openpyxl') as writer:
+                df_final.to_excel(writer, index=False, sheet_name='Vencimientos')
+            st.download_button(
+                label="📥 Exportar a Excel", 
+                data=output_venc.getvalue(), 
+                file_name="Reporte_Vencimientos.xlsx", 
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                key="btn_exp_venc",
+                type="primary"
+            )
+        else:
+            st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
