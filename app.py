@@ -1038,13 +1038,7 @@ else:
             if f_ecivil and "estado civil" in df_filtrado.columns: df_filtrado = df_filtrado[df_filtrado["estado civil"].isin(f_ecivil)]
             if f_temp and "temporalidad" in df_filtrado.columns: df_filtrado = df_filtrado[df_filtrado["temporalidad"].isin(f_temp)]
             if f_tcont and "tipo contrato" in df_filtrado.columns: df_filtrado = df_filtrado[df_filtrado["tipo contrato"].isin(f_tcont)]
-
-            # =====================================
-            # MOSTRAR TABLA LIMPIA Y ORDENADA
-            # =====================================
-            st.markdown("---")
-            st.success(f"📋 **Resultados:** Se encontraron **{len(df_filtrado)}** trabajadores.")
-            
+          
             # =====================================
             # MOSTRAR TABLA LIMPIA Y ORDENADA
             # =====================================
@@ -1182,6 +1176,7 @@ else:
             
             st.markdown("---")
             st.dataframe(df_v, hide_index=True, use_container_width=True)
+
 
 
 
