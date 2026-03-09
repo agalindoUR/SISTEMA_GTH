@@ -33,7 +33,7 @@ COLUMNAS = {
     "FORM. ACADEMICA": ["grado, titulo o especialización", "descripcion", "universidad", "año"],
     "INVESTIGACION": ["año publicación", "autor, coautor o asesor", "tipo de investigación publicada", "nivel de publicación", "lugar de publicación"],
     # NUEVAS COLUMNAS DE CONTRATOS APLICADAS:
-    "CONTRATOS": ["id", "dni", "cargo", "remuneración básica", "bonificación", "condición de trabajo", "f_inicio", "f_fin", "tipo de trabajador", "modalidad", "temporalidad", "link", "tipo contrato", "estado", "motivo cese"],
+    "CONTRATOS": ["id", "dni", "cargo", "área",  "remuneración básica", "bonificación", "condición de trabajo", "f_inicio", "f_fin", "tipo de trabajador", "modalidad", "temporalidad", "link", "tipo contrato", "estado", "motivo cese"],
     "VACACIONES": ["periodo", "fecha de inicio", "fecha de fin", "días generados", "días gozados", "saldo", "link"],
     "OTROS BENEFICIOS": ["periodo", "tipo de beneficio", "link"],
     "MERITOS Y DEMERITOS": ["periodo", "merito o demerito", "motivo", "link"],
@@ -982,15 +982,17 @@ else:
             # 2. Armar la tabla maestra jalando la Sede de Datos Generales
             df_gen = dfs.get("DATOS GENERALES", pd.DataFrame())
             
-            # A. Sacamos DNI y Nombres de Personal
-            cols_per = [c for c in ["dni", "apellidos y nombres"] if c in df_per.columns]
+            # A. Sacamos DNI y Nombres de Personal (Búsqueda inteligente a prueba de balas)
+            col_nom_per = next((c for c in df_per.columns if "apellido" in c.lower() or "nombre" in c.lower()), None)
+            cols_per = ["dni"]
+            if col_nom_per: cols_per.append(col_nom_per)
             master_df = df_per[cols_per].copy()
             
             # B. Jalamos la Sede de Datos Generales
             if not df_gen.empty and "sede" in df_gen.columns:
                 master_df = master_df.merge(df_gen[["dni", "sede"]], on="dni", how="left")
             else:
-                master_df["sede"] = "No registrada" # Evita que el programa se caiga si borran la columna
+                master_df["sede"] = "No registrada" 
                 
             # C. Unimos con los Contratos
             cols_cont = ["dni", "estado", "tipo de trabajador", "modalidad", "temporalidad", "tipo contrato", "cargo", "f_inicio", "f_fin"]
@@ -1036,16 +1038,13 @@ else:
             if f_temp and "temporalidad" in df_filtrado.columns: df_filtrado = df_filtrado[df_filtrado["temporalidad"].isin(f_temp)]
             if f_tcont and "tipo contrato" in df_filtrado.columns: df_filtrado = df_filtrado[df_filtrado["tipo contrato"].isin(f_tcont)]
           
-           # =====================================
+          # =====================================
             # MOSTRAR TABLA LIMPIA Y ORDENADA
             # =====================================
             st.markdown("---")
             st.success(f"📋 **Resultados:** Se encontraron **{len(df_filtrado)}** trabajadores.")
             
-            # Aseguramos ubicar la columna exacta de los nombres
-            col_nom = "apellidos y nombres" if "apellidos y nombres" in df_filtrado.columns else next((c for c in df_filtrado.columns if "apellido" in c.lower() or "nombre" in c.lower()), None)
-            
-            cols_ideales = ["dni", col_nom, "sede", "cargo", "f_inicio", "f_fin", "estado"]
+            cols_ideales = ["dni", col_nom_per, "sede", "cargo", "f_inicio", "f_fin", "estado"]
             cols_mostrar = [c for c in cols_ideales if c and c in df_filtrado.columns]
             
             df_display = df_filtrado[cols_mostrar].copy()
@@ -1053,7 +1052,7 @@ else:
             # Forzamos el nombre a "Trabajador"
             df_display.rename(columns={
                 "dni": "DNI",
-                col_nom: "Trabajador",
+                col_nom_per: "Trabajador",
                 "sede": "Sede",
                 "cargo": "Puesto Laboral",
                 "f_inicio": "Inicio Contrato",
@@ -1061,7 +1060,8 @@ else:
                 "estado": "Estado"
             }, inplace=True)
             
-            st.dataframe(df_display, hide_index=True, use_container_width=True)
+            # DIBUJAMOS LA TABLA CON LETRA MÁS GRANDE (15px)
+            st.dataframe(df_display.style.set_properties(**{'font-size': '15px'}), hide_index=True, use_container_width=True)
             
         else:
             st.warning("⚠️ Necesitas tener datos registrados en Personal y Contratos para generar reportes.")
@@ -1076,50 +1076,50 @@ else:
         df_gen = dfs.get("DATOS GENERALES", pd.DataFrame())
         
         if not df_per.empty and not df_gen.empty:
-            # Buscar columnas sin importar mayúsculas
-            col_nom_gen = next((c for c in df_gen.columns if "apellido" in c.lower() or "nombre" in c.lower()), None)
             col_fnac = next((c for c in df_gen.columns if "nacimiento" in c.lower() and "fecha" in c.lower()), None)
             
-            if col_nom_gen and col_fnac:
-                # Ya no buscamos Sede en Personal, solo DNI y Nombres
-                cols_per = [c for c in ["dni", "apellidos y nombres"] if c in df_per.columns]
+            if col_fnac:
+                col_nom_per = next((c for c in df_per.columns if "apellido" in c.lower() or "nombre" in c.lower()), None)
+                cols_per = ["dni"]
+                if col_nom_per: cols_per.append(col_nom_per)
                 df_cumple = df_per[cols_per].copy()
                 
-                # Preparamos las columnas a jalar de Datos Generales (incluyendo la Sede)
                 cols_gen_a_jalar = ["dni", col_fnac]
                 if "sede" in df_gen.columns: cols_gen_a_jalar.append("sede")
                 
-                # Unimos ambas tablas
                 df_cumple = df_cumple.merge(df_gen[cols_gen_a_jalar], on="dni", how="inner")
                 if "sede" not in df_cumple.columns: df_cumple["sede"] = "No registrada"
                 
                 df_cumple[col_fnac] = pd.to_datetime(df_cumple[col_fnac], errors="coerce")
                 df_cumple = df_cumple.dropna(subset=[col_fnac])
                 
-                # Cálculos de meses y años
+                # Cálculos de meses en Español
                 meses = {1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril", 5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto", 9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"}
                 df_cumple["Mes_Num"] = df_cumple[col_fnac].dt.month
                 df_cumple["Mes"] = df_cumple["Mes_Num"].map(meses)
                 
                 año_actual = date.today().year
                 df_cumple["Años a cumplir"] = año_actual - df_cumple[col_fnac].dt.year
-                df_cumple["Fecha de cumpleaños"] = df_cumple[col_fnac].dt.strftime("%d de %B")
+                
+                # Formato en Español: "15 de Octubre"
+                df_cumple["Fecha de cumpleaños"] = df_cumple[col_fnac].dt.day.astype(str) + " de " + df_cumple["Mes"]
                 
                 # Filtros
                 col1, col2 = st.columns(2)
                 with col1:
-                    f_sede = st.multiselect("Sede", options=["Local Giraldez", "Local San Carlos", "Local Abancay", "Local Lince", "Local Pueblo Libre"])
+                    sedes_opciones = ["Local Giraldez", "Local San Carlos", "Local Abancay", "Local Lince", "Local Pueblo Libre"]
+                    f_sede = st.multiselect("Sede", options=sedes_opciones)
                 with col2:
                     f_mes = st.multiselect("Mes", options=list(meses.values()))
                 
-                if f_sede: df_cumple = df_cumple[df_cumple["sede"].isin(f_sede)]
+                if f_sede and "sede" in df_cumple.columns: df_cumple = df_cumple[df_cumple["sede"].isin(f_sede)]
                 if f_mes: df_cumple = df_cumple[df_cumple["Mes"].isin(f_mes)]
                 
                 df_cumple = df_cumple.sort_values("Mes_Num")
-                df_cumple.rename(columns={"dni": "DNI", col_nom_gen: "Trabajador", "sede": "Sede"}, inplace=True)
+                df_cumple.rename(columns={"dni": "DNI", col_nom_per: "Trabajador", "sede": "Sede"}, inplace=True)
                 
                 st.markdown("---")
-                st.dataframe(df_cumple[["DNI", "Trabajador", "Sede", "Fecha de cumpleaños", "Años a cumplir"]], hide_index=True, use_container_width=True)
+                st.dataframe(df_cumple[["DNI", "Trabajador", "Sede", "Fecha de cumpleaños", "Años a cumplir"]].style.set_properties(**{'font-size': '15px'}), hide_index=True, use_container_width=True)
             else:
                 st.warning("⚠️ No se encontró la columna de 'Fecha de nacimiento' en Datos Generales.")
         else:
@@ -1129,47 +1129,94 @@ else:
     # MÓDULO: VACACIONES
     # ==========================================
     elif m == "Vacaciones":
-        st.markdown("<h2 style='color: #4A0000;'>🌴 Reporte de Vacaciones Pendientes</h2>", unsafe_allow_html=True)
+        st.markdown("<h2 style='color: #4A0000;'>🌴 Reporte de Vacaciones</h2>", unsafe_allow_html=True)
         
         df_per = dfs.get("PERSONAL", pd.DataFrame())
         df_vac = dfs.get("VACACIONES", pd.DataFrame())
         df_cont = dfs.get("CONTRATOS", pd.DataFrame())
+        df_gen = dfs.get("DATOS GENERALES", pd.DataFrame())
         
         if df_vac.empty:
-            st.info("💡 Tu base de datos aún no tiene una hoja/tabla llamada **VACACIONES**. Debes crearla en tu Excel con las columnas: DNI, Periodo, Vacaciones Pendientes, Área.")
+            st.info("💡 Crea la tabla VACACIONES en tu Excel con: DNI, Días Generados, Días Gozados, Saldo.")
         else:
-            # Aquí unimos los datos asumiendo que ya tienes la tabla
+            # 1. Base: DNI y Nombres
             col_nom_per = next((c for c in df_per.columns if "apellido" in c.lower() or "nombre" in c.lower()), None)
+            cols_per = ["dni"]
+            if col_nom_per: cols_per.append(col_nom_per)
+            df_v = df_per[cols_per].copy()
             
-            # Primero unimos Vacaciones con Personal (Solo para DNI y Nombres)
-            cols_per = [c for c in ["dni", col_nom_per] if c and c in df_per.columns]
-            df_v = df_vac.merge(df_per[cols_per], on="dni", how="left")
-            
-            # Jalamos la Sede de Datos Generales
-            df_gen = dfs.get("DATOS GENERALES", pd.DataFrame())
+            # 2. Sede
             if not df_gen.empty and "sede" in df_gen.columns:
                 df_v = df_v.merge(df_gen[["dni", "sede"]], on="dni", how="left")
             else:
                 df_v["sede"] = "No registrada"
                 
-            # Jalamos el Área de Contratos
-            if not df_cont.empty and "área" in df_cont.columns:
-                df_v = df_v.merge(df_cont[["dni", "área"]], on="dni", how="left")
+            # 3. Área y Primera Fecha de Inicio
+            if not df_cont.empty:
+                col_area = next((c for c in df_cont.columns if "área" in c.lower() or "area" in c.lower()), None)
+                col_fi = next((c for c in df_cont.columns if "inicio" in c.lower()), None)
+                
+                if col_fi:
+                    df_cont[col_fi] = pd.to_datetime(df_cont[col_fi], errors="coerce")
+                    # Calculamos el primer contrato para la fecha de inicio
+                    df_primer = df_cont.groupby("dni")[col_fi].min().reset_index()
+                    df_primer.rename(columns={col_fi: "Fecha de inicio"}, inplace=True)
+                    df_v = df_v.merge(df_primer, on="dni", how="left")
+                else:
+                    df_v["Fecha de inicio"] = pd.NaT
+                
+                if col_area:
+                    # Jalamos el área del último contrato registrado
+                    df_ult_area = df_cont.sort_values(by=col_fi, ascending=False).drop_duplicates(subset=["dni"]) if col_fi else df_cont.drop_duplicates(subset=["dni"])
+                    df_v = df_v.merge(df_ult_area[["dni", col_area]], on="dni", how="left")
+                    df_v.rename(columns={col_area: "área"}, inplace=True)
+                else:
+                    df_v["área"] = "No registrada"
             else:
                 df_v["área"] = "No registrada"
-
+                df_v["Fecha de inicio"] = pd.NaT
+                
+            # 4. Unir con los datos exactos de la pestaña VACACIONES (Inner join)
+            df_v = df_v.merge(df_vac, on="dni", how="inner") 
+            
+            # Formateamos fechas
+            df_v["Fecha de inicio"] = df_v["Fecha de inicio"].dt.strftime("%d/%m/%Y").fillna("-")
+            df_v["Fecha de fin"] = date.today().strftime("%d/%m/%Y")
+            
+            # Detectamos las columnas calculadas que vienen de tu Excel
+            col_gen = next((c for c in df_v.columns if "generado" in c.lower()), None)
+            col_goz = next((c for c in df_v.columns if "gozado" in c.lower()), None)
+            col_sal = next((c for c in df_v.columns if "saldo" in c.lower()), None)
+            
+            # Renombramos para presentar
+            rename_dict = {"dni": "DNI", col_nom_per: "Trabajador", "sede": "Sede", "área": "Área"}
+            if col_gen: rename_dict[col_gen] = "Días Generados"
+            if col_goz: rename_dict[col_goz] = "Días Gozados"
+            if col_sal: rename_dict[col_sal] = "Saldo"
+            df_v.rename(columns=rename_dict, inplace=True)
+            
             # Filtros
             col1, col2 = st.columns(2)
             with col1:
-                f_sede = st.multiselect("Sede", options=["Local Giraldez", "Local San Carlos", "Local Abancay", "Local Lince", "Local Pueblo Libre"])
+                sedes_opciones = ["Local Giraldez", "Local San Carlos", "Local Abancay", "Local Lince", "Local Pueblo Libre"]
+                f_sede = st.multiselect("Sede", options=sedes_opciones)
             with col2:
-                f_area = st.multiselect("Área", options=df_v["área"].dropna().unique())
+                areas_disp = df_v["Área"].dropna().unique() if "Área" in df_v.columns else []
+                f_area = st.multiselect("Área", options=areas_disp)
             
-            if f_sede: df_v = df_v[df_v["sede"].isin(f_sede)]
-            if f_area: df_v = df_v[df_v["área"].isin(f_area)]
+            if f_sede and "Sede" in df_v.columns: df_v = df_v[df_v["Sede"].isin(f_sede)]
+            if f_area and "Área" in df_v.columns: df_v = df_v[df_v["Área"].isin(f_area)]
+            
+            # Elegimos qué mostrar exactamente en el orden que pediste
+            cols_mostrar = ["DNI", "Trabajador", "Área", "Sede", "Fecha de inicio", "Fecha de fin"]
+            if "Días Generados" in df_v.columns: cols_mostrar.append("Días Generados")
+            if "Días Gozados" in df_v.columns: cols_mostrar.append("Días Gozados")
+            if "Saldo" in df_v.columns: cols_mostrar.append("Saldo")
             
             st.markdown("---")
-            st.dataframe(df_v, hide_index=True, use_container_width=True)
+            # TABLA CON LETRA GRANDE (15px)
+            st.dataframe(df_v[cols_mostrar].style.set_properties(**{'font-size': '15px'}), hide_index=True, use_container_width=True)
+
 
 
 
