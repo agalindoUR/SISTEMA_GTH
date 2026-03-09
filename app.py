@@ -1062,7 +1062,11 @@ else:
             
             # DIBUJAMOS LA TABLA CON LETRA MÁS GRANDE (15px)
             st.dataframe(df_display.style.set_properties(**{'font-size': '15px'}), hide_index=True, use_container_width=True)
-            
+            # BOTÓN DE EXPORTAR A EXCEL (REPORTE GENERAL)
+            output_gen = BytesIO()
+            with pd.ExcelWriter(output_gen, engine='openpyxl') as writer:
+                df_display.to_excel(writer, index=False, sheet_name='General')
+            st.download_button(label="📥 Exportar a Excel", data=output_gen.getvalue(), file_name="Reporte_General.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", key="btn_exp_gen")
         else:
             st.warning("⚠️ Necesitas tener datos registrados en Personal y Contratos para generar reportes.")
 
@@ -1120,6 +1124,12 @@ else:
                 
                 st.markdown("---")
                 st.dataframe(df_cumple[["DNI", "Trabajador", "Sede", "Fecha de cumpleaños", "Años a cumplir"]].style.set_properties(**{'font-size': '15px'}), hide_index=True, use_container_width=True)
+                # BOTÓN DE EXPORTAR A EXCEL (CUMPLEAÑEROS)
+                df_export_cump = df_cumple[["DNI", "Trabajador", "Sede", "Fecha de cumpleaños", "Años a cumplir"]].copy()
+                output_cump = BytesIO()
+                with pd.ExcelWriter(output_cump, engine='openpyxl') as writer:
+                    df_export_cump.to_excel(writer, index=False, sheet_name='Cumpleañeros')
+                st.download_button(label="📥 Exportar a Excel", data=output_cump.getvalue(), file_name="Reporte_Cumpleañeros.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", key="btn_exp_cump")
             else:
                 st.warning("⚠️ No se encontró la columna de 'Fecha de nacimiento' en Datos Generales.")
         else:
@@ -1139,8 +1149,15 @@ else:
         if df_vac.empty:
             st.info("💡 Crea la tabla VACACIONES en tu Excel con: DNI, Días Generados, Días Gozados, Saldo.")
         else:
-            # 1. Base: DNI y Nombres
-            col_nom_per = next((c for c in df_per.columns if "apellido" in c.lower() or "nombre" in c.lower()), None)
+            # 1. Base: Nombres Completos (Juntamos Apellidos y Nombres si están separados)
+            if "apellidos y nombres" in df_per.columns:
+                col_nom_per = "apellidos y nombres"
+            elif "apellidos" in df_per.columns and "nombres" in df_per.columns:
+                df_per["apellidos y nombres"] = df_per["apellidos"] + " " + df_per["nombres"]
+                col_nom_per = "apellidos y nombres"
+            else:
+                col_nom_per = next((c for c in df_per.columns if "apellido" in c.lower() or "nombre" in c.lower()), None)
+                
             cols_per = ["dni"]
             if col_nom_per: cols_per.append(col_nom_per)
             df_v = df_per[cols_per].copy()
@@ -1151,22 +1168,30 @@ else:
             else:
                 df_v["sede"] = "No registrada"
                 
-            # 3. Área y Primera Fecha de Inicio
+            # 3. Área y Primera Fecha de Inicio (Solo Planilla y Tiempo Completo)
             if not df_cont.empty:
                 col_area = next((c for c in df_cont.columns if "área" in c.lower() or "area" in c.lower()), None)
                 col_fi = next((c for c in df_cont.columns if "inicio" in c.lower()), None)
                 
                 if col_fi:
                     df_cont[col_fi] = pd.to_datetime(df_cont[col_fi], errors="coerce")
-                    # Calculamos el primer contrato para la fecha de inicio
-                    df_primer = df_cont.groupby("dni")[col_fi].min().reset_index()
-                    df_primer.rename(columns={col_fi: "Fecha de inicio"}, inplace=True)
-                    df_v = df_v.merge(df_primer, on="dni", how="left")
+                    
+                    # FILTRO: Solo contratos "Planilla" y "Tiempo Completo"
+                    mask_vac = (df_cont["modalidad"].astype(str).str.contains("planilla", case=False, na=False)) & \
+                               (df_cont["temporalidad"].astype(str).str.contains("completo", case=False, na=False))
+                    df_cont_vac = df_cont[mask_vac]
+                    
+                    if not df_cont_vac.empty:
+                        df_primer = df_cont_vac.groupby("dni")[col_fi].min().reset_index()
+                        df_primer.rename(columns={col_fi: "Fecha de inicio"}, inplace=True)
+                        df_v = df_v.merge(df_primer, on="dni", how="left")
+                    else:
+                        df_v["Fecha de inicio"] = pd.NaT
                 else:
                     df_v["Fecha de inicio"] = pd.NaT
                 
+                # Jalamos el Área
                 if col_area:
-                    # Jalamos el área del último contrato registrado
                     df_ult_area = df_cont.sort_values(by=col_fi, ascending=False).drop_duplicates(subset=["dni"]) if col_fi else df_cont.drop_duplicates(subset=["dni"])
                     df_v = df_v.merge(df_ult_area[["dni", col_area]], on="dni", how="left")
                     df_v.rename(columns={col_area: "área"}, inplace=True)
@@ -1176,26 +1201,26 @@ else:
                 df_v["área"] = "No registrada"
                 df_v["Fecha de inicio"] = pd.NaT
                 
-            # 4. Unir con los datos exactos de la pestaña VACACIONES (Inner join)
+            # 4. Unir con los datos de la pestaña VACACIONES
             df_v = df_v.merge(df_vac, on="dni", how="inner") 
             
             # Formateamos fechas
-            df_v["Fecha de inicio"] = df_v["Fecha de inicio"].dt.strftime("%d/%m/%Y").fillna("-")
+            df_v["Fecha de inicio"] = df_v["Fecha de inicio"].dt.strftime("%d/%m/%Y").fillna("Sin contrato válido")
             df_v["Fecha de fin"] = date.today().strftime("%d/%m/%Y")
             
-            # Detectamos las columnas calculadas que vienen de tu Excel
+            # Detectamos columnas de la pestaña VACACIONES
             col_gen = next((c for c in df_v.columns if "generado" in c.lower()), None)
             col_goz = next((c for c in df_v.columns if "gozado" in c.lower()), None)
             col_sal = next((c for c in df_v.columns if "saldo" in c.lower()), None)
             
-            # Renombramos para presentar
+            # Renombramos
             rename_dict = {"dni": "DNI", col_nom_per: "Trabajador", "sede": "Sede", "área": "Área"}
             if col_gen: rename_dict[col_gen] = "Días Generados"
             if col_goz: rename_dict[col_goz] = "Días Gozados"
             if col_sal: rename_dict[col_sal] = "Saldo"
             df_v.rename(columns=rename_dict, inplace=True)
             
-            # Filtros
+            # Filtros en pantalla
             col1, col2 = st.columns(2)
             with col1:
                 sedes_opciones = ["Local Giraldez", "Local San Carlos", "Local Abancay", "Local Lince", "Local Pueblo Libre"]
@@ -1207,15 +1232,24 @@ else:
             if f_sede and "Sede" in df_v.columns: df_v = df_v[df_v["Sede"].isin(f_sede)]
             if f_area and "Área" in df_v.columns: df_v = df_v[df_v["Área"].isin(f_area)]
             
-            # Elegimos qué mostrar exactamente en el orden que pediste
+            # Seleccionamos qué mostrar
             cols_mostrar = ["DNI", "Trabajador", "Área", "Sede", "Fecha de inicio", "Fecha de fin"]
             if "Días Generados" in df_v.columns: cols_mostrar.append("Días Generados")
             if "Días Gozados" in df_v.columns: cols_mostrar.append("Días Gozados")
             if "Saldo" in df_v.columns: cols_mostrar.append("Saldo")
             
+            df_final = df_v[cols_mostrar].copy()
+            
             st.markdown("---")
-            # TABLA CON LETRA GRANDE (15px)
-            st.dataframe(df_v[cols_mostrar].style.set_properties(**{'font-size': '15px'}), hide_index=True, use_container_width=True)
+            # TABLA
+            st.dataframe(df_final.style.set_properties(**{'font-size': '15px'}), hide_index=True, use_container_width=True)
+            
+            # BOTÓN DE EXPORTAR A EXCEL
+            output = BytesIO()
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                df_final.to_excel(writer, index=False, sheet_name='Vacaciones')
+            st.download_button(label="📥 Exportar a Excel", data=output.getvalue(), file_name="Reporte_Vacaciones.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
 
 
 
