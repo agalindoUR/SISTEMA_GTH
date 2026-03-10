@@ -891,7 +891,7 @@ else:
                                                 mot_e = st.selectbox("Motivo Cese", opts_mot, index=opts_mot.index(v_mot)) if est_e == "CESADO" else "Vigente"
 
                                                 if st.form_submit_button("Actualizar"):
-                                                    update_vals = {"cargo": n_car, "remuneración básica": n_rem, "bonificación": n_bon, "condición de trabajo": n_cond, "f_inicio": n_ini, "f_fin": n_fin, "tipo de trabajador": n_ttrab, "modalidad": n_mod, "temporalidad": n_tem, "link": n_lnk, "tipo contrato": n_tcont, "estado": est_e, "motivo cese": mot_e}
+                                                    update_vals = {"CARGO": n_car, "REMUNERACION BASICA": n_rem, "BONIFICACION": n_bon, "CONDICION DE TRABAJO": n_cond, "F_INICIO": n_ini, "F_FIN": n_fin, "TIPO DE TRABAJADOR": n_ttrab, "MODALIDAD": n_mod, "TEMPORALIDAD": n_tem, "LINK": n_lnk, "TIPO CONTRATO": n_tcont, "ESTADO": est_e, "MOTIVO CESE": mot_e}
                                                     for k, v in update_vals.items(): 
                                                         dfs[h_name].at[idx, k] = v
                                                     save_data(dfs)
@@ -1455,6 +1455,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
