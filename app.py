@@ -1168,21 +1168,30 @@ else:
         if df_per.empty or df_vac.empty:
             st.warning("⚠️ Faltan datos en las pestañas 'PERSONAL' o 'VACACIONES'.")
         else:
-            # 1. Base del Reporte: DNI y Nombres
-            col_nom_per = next((c for c in df_per.columns if "apellido" in c.lower() or "nombre" in c.lower()), df_per.columns[1])
+            # LIMPIEZA DE COLUMNAS (Para evitar errores de mayúsculas/minúsculas o espacios)
+            df_per.columns = df_per.columns.str.strip().str.lower()
+            df_vac.columns = df_vac.columns.str.strip().str.lower()
+            if not df_cont.empty: df_cont.columns = df_cont.columns.str.strip().str.lower()
+            if not df_gen.empty: df_gen.columns = df_gen.columns.str.strip().str.lower()
+
+            # 1. Base del Reporte: Estandarizar DNI para que el cruce sea perfecto
+            df_per["dni"] = df_per["dni"].astype(str).str.strip().str.replace(".0", "", regex=False)
+            col_nom_per = next((c for c in df_per.columns if "apellido" in c or "nombre" in c), df_per.columns[1])
             df_reporte = df_per[["dni", col_nom_per]].copy()
             
             # 2. Obtener Sede
             if not df_gen.empty and "sede" in df_gen.columns:
+                df_gen["dni"] = df_gen["dni"].astype(str).str.strip().str.replace(".0", "", regex=False)
                 df_reporte = df_reporte.merge(df_gen[["dni", "sede"]].drop_duplicates(subset=["dni"]), on="dni", how="left")
             else:
                 df_reporte["sede"] = "No registrada"
 
             # 3. Obtener Área y Fecha de Ingreso (Contratos)
             if not df_cont.empty:
+                df_cont["dni"] = df_cont["dni"].astype(str).str.strip().str.replace(".0", "", regex=False)
                 df_c = df_cont.copy()
-                col_area = next((c for c in df_c.columns if "rea" in c.lower()), None)
-                col_fi = next((c for c in df_c.columns if "inicio" in c.lower()), None)
+                col_area = next((c for c in df_c.columns if "rea" in c), None)
+                col_fi = next((c for c in df_c.columns if "inicio" in c), None)
                 
                 if col_fi:
                     df_c[col_fi] = pd.to_datetime(df_c[col_fi], errors="coerce")
@@ -1193,35 +1202,31 @@ else:
                 else:
                     df_reporte["area"] = "No registrada"
                     df_reporte["fecha_ingreso"] = "Sin contrato"
+            else:
+                df_reporte["area"] = "No registrada"
+                df_reporte["fecha_ingreso"] = "Sin contrato"
             
-            # 4. Obtener Vacaciones (Generados, Gozados, Saldo, Observaciones)
+            # 4. Obtener Vacaciones (Generados, Gozados, Saldo) - CRUCE EXACTO
+            df_vac["dni"] = df_vac["dni"].astype(str).str.strip().str.replace(".0", "", regex=False)
             df_v_limpio = df_vac.loc[:, ~df_vac.columns.duplicated()].copy()
+            
+            # Borrar duplicados para que no choque al unir
             cols_duplicadas = [c for c in df_v_limpio.columns if c in df_reporte.columns and c != "dni"]
             df_v_limpio = df_v_limpio.drop(columns=cols_duplicadas)
+            
+            # Unir con la base de vacaciones
             df_reporte = df_reporte.merge(df_v_limpio, on="dni", how="inner")
 
-            # Renombrar columnas para la tabla final
-            col_gen = next((c for c in df_reporte.columns if "generado" in c.lower()), None)
-            col_goz = next((c for c in df_reporte.columns if "gozado" in c.lower()), None)
-            col_sal = next((c for c in df_reporte.columns if "saldo" in c.lower()), None)
-            col_obs = next((c for c in df_reporte.columns if "observaci" in c.lower()), None)
+            # Identificar las columnas de vacaciones
+            col_gen = next((c for c in df_reporte.columns if "generado" in c), None)
+            col_goz = next((c for c in df_reporte.columns if "gozado" in c), None)
+            col_sal = next((c for c in df_reporte.columns if "saldo" in c), None)
 
+            # Renombrar para que se vea bonito
             rename_dict = {"dni": "DNI", col_nom_per: "Apellidos y Nombres", "sede": "Sede", "area": "Área", "fecha_ingreso": "Fecha Ingreso"}
             if col_gen: rename_dict[col_gen] = "Días Generados"
             if col_goz: rename_dict[col_goz] = "Días Gozados"
-            if col_sal: rename_dict[col_sal] = "Saldo"
-            if col_obs: rename_dict[col_obs] = "OBSERVACIONES"
-            df_reporte.rename(columns=rename_dict, inplace=True)
-
-            # Rellenar nulos con 0 (y forzar conversión numérica para evitar errores por texto)
-            for col in ["Días Generados", "Días Gozados", "Saldo"]:
-                if col in df_reporte.columns:
-                    df_reporte[col] = pd.to_numeric(df_reporte[col], errors='coerce').fillna(0).astype(int)
-
-            # Mostrar Tabla Final
-            cols_mostrar = ["DNI", "Apellidos y Nombres", "Sede", "Área", "Fecha Ingreso", "Días Generados", "Días Gozados", "Saldo"]
-            df_final = df_reporte[[c for c in cols_mostrar if c in df_reporte.columns]].copy()
-            st.dataframe(df_final, hide_index=True)
+            if col_sal:
 # ==========================================
     # MÓDULO: VENCIMIENTO DE CONTRATOS
     # ==========================================
@@ -1322,6 +1327,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
