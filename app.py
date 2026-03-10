@@ -588,8 +588,7 @@ else:
                             if "fecha" in col.lower() or "f_" in col.lower():
                                 vst[col] = pd.to_datetime(vst[col], errors='coerce').dt.date
                                 col_conf[str(col).upper()] = st.column_config.DateColumn(format="DD/MM/YYYY")
-
-                        vst.columns = [str(col).upper() for col in vst.columns]
+                        
                         vst.columns = [str(col).upper() for col in vst.columns]
                         vst = vst.loc[:, ~vst.columns.duplicated()]
         
@@ -1621,6 +1620,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
