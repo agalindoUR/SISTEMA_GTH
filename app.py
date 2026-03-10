@@ -809,6 +809,7 @@ else:
                                         with st.form(f"f_edit_{h_name}"):
                                             if h_name == "CONTRATOS":
                                                 n_car = st.text_input("Cargo", value=str(sel.iloc[0].get("CARGO", "")))
+                                                área = st.text_input("Área")
                                                 try: 
                                                     val_rem = float(sel.iloc[0].get("REMUNERACIÓN BÁSICA", 0.0))
                                                 except: 
@@ -1155,9 +1156,9 @@ else:
         df_gen = dfs.get("DATOS GENERALES", pd.DataFrame())
         
         if df_vac.empty:
-            st.info("💡 Crea la tabla VACACIONES en tu Excel con: DNI, Días Generados, Días Gozados, Saldo.")
+            st.info("💡 Crea la tabla VACACIONES en tu Excel con: DNI, DIAS GENERADOS, DIAS GOZADOS, SALDO, OBSERVACION.")
         else:
-            # 1. Base: Nombres Completos (Juntamos Apellidos y Nombres si están separados)
+            # 1. Base: Nombres Completos
             if "apellidos y nombres" in df_per.columns:
                 col_nom_per = "apellidos y nombres"
             elif "apellidos" in df_per.columns and "nombres" in df_per.columns:
@@ -1176,15 +1177,13 @@ else:
             else:
                 df_v["sede"] = "No registrada"
                 
-            # 3. Área y Primera Fecha de Inicio (Solo Planilla y Tiempo Completo)
+            # 3. Área y Fecha de Inicio (De Contratos Planilla Tiempo Completo)
             if not df_cont.empty:
                 col_area = next((c for c in df_cont.columns if "área" in c.lower() or "area" in c.lower()), None)
                 col_fi = next((c for c in df_cont.columns if "inicio" in c.lower()), None)
                 
                 if col_fi:
                     df_cont[col_fi] = pd.to_datetime(df_cont[col_fi], errors="coerce")
-                    
-                    # FILTRO: Solo contratos "Planilla" y "Tiempo Completo"
                     mask_vac = (df_cont["modalidad"].astype(str).str.contains("planilla", case=False, na=False)) & \
                                (df_cont["temporalidad"].astype(str).str.contains("completo", case=False, na=False))
                     df_cont_vac = df_cont[mask_vac]
@@ -1198,7 +1197,6 @@ else:
                 else:
                     df_v["Fecha de inicio"] = pd.NaT
                 
-                # Jalamos el Área
                 if col_area:
                     df_ult_area = df_cont.sort_values(by=col_fi, ascending=False).drop_duplicates(subset=["dni"]) if col_fi else df_cont.drop_duplicates(subset=["dni"])
                     df_v = df_v.merge(df_ult_area[["dni", col_area]], on="dni", how="left")
@@ -1209,26 +1207,32 @@ else:
                 df_v["área"] = "No registrada"
                 df_v["Fecha de inicio"] = pd.NaT
                 
-            # 4. Unir con los datos de la pestaña VACACIONES
-            df_v = df_v.merge(df_vac, on="dni", how="inner") 
+            # 4. Unir con los datos REALES de la pestaña VACACIONES
+            df_vac_str = df_vac.copy()
+            df_vac_str.columns = df_vac_str.columns.str.lower().str.strip()
+            # Aseguramos que la columna dni se llame igual
+            if "dni" in df_vac_str.columns:
+                df_v = df_v.merge(df_vac_str, on="dni", how="inner") 
             
             # Formateamos fechas
             df_v["Fecha de inicio"] = df_v["Fecha de inicio"].dt.strftime("%d/%m/%Y").fillna("Sin contrato válido")
-            df_v["Fecha de fin"] = date.today().strftime("%d/%m/%Y")
             
-            # Detectamos columnas de la pestaña VACACIONES
+            # Detectamos columnas de la pestaña VACACIONES (Generados, Gozados, Saldo, Observacion)
             col_gen = next((c for c in df_v.columns if "generado" in c.lower()), None)
             col_goz = next((c for c in df_v.columns if "gozado" in c.lower()), None)
             col_sal = next((c for c in df_v.columns if "saldo" in c.lower()), None)
+            col_obs = next((c for c in df_v.columns if "observaci" in c.lower()), None)
             
-            # Renombramos
+            # Renombramos para presentar
             rename_dict = {"dni": "DNI", col_nom_per: "Trabajador", "sede": "Sede", "área": "Área"}
             if col_gen: rename_dict[col_gen] = "Días Generados"
             if col_goz: rename_dict[col_goz] = "Días Gozados"
             if col_sal: rename_dict[col_sal] = "Saldo"
+            if col_obs: rename_dict[col_obs] = "OBSERVACION" # Lo guardamos para el detalle
+            
             df_v.rename(columns=rename_dict, inplace=True)
             
-            # Filtros en pantalla
+            # 5. Filtros en pantalla
             col1, col2 = st.columns(2)
             with col1:
                 sedes_opciones = ["Local Giraldez", "Local San Carlos", "Local Abancay", "Local Lince", "Local Pueblo Libre"]
@@ -1240,21 +1244,16 @@ else:
             if f_sede and "Sede" in df_v.columns: df_v = df_v[df_v["Sede"].isin(f_sede)]
             if f_area and "Área" in df_v.columns: df_v = df_v[df_v["Área"].isin(f_area)]
             
-            # Seleccionamos qué mostrar de forma segura (Previene el KeyError)
-            cols_ideales = ["DNI", "Trabajador", "Área", "Sede", "Fecha de inicio", "Fecha de fin"]
-            if "Días Generados" in df_v.columns: cols_ideales.append("Días Generados")
-            if "Días Gozados" in df_v.columns: cols_ideales.append("Días Gozados")
-            if "Saldo" in df_v.columns: cols_ideales.append("Saldo")
-            
-            # Solo filtramos las columnas que realmente existen
+            # 6. Mostrar Tabla General
+            cols_ideales = ["DNI", "Trabajador", "Área", "Sede", "Fecha de inicio", "Días Generados", "Días Gozados", "Saldo"]
             cols_mostrar = [c for c in cols_ideales if c in df_v.columns]
+            
             df_final = df_v[cols_mostrar].copy()
             
             st.markdown("---")
-            # TABLA: use_container_width=False hace que se ajuste al contenido y no se estire
             st.dataframe(df_final, hide_index=True, use_container_width=False)
             
-            # BOTÓN DE EXPORTAR A EXCEL (Resaltado con type="primary")
+            # BOTÓN EXPORTAR
             output = BytesIO()
             with pd.ExcelWriter(output, engine='openpyxl') as writer:
                 df_final.to_excel(writer, index=False, sheet_name='Vacaciones')
@@ -1265,6 +1264,38 @@ else:
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 type="primary"
             )
+
+            # 7. SECCIÓN: VER DETALLE (DESGLOSE)
+            st.markdown("---")
+            st.markdown("<h3 style='color: #4A0000;'>🔍 Ver Detalle de Vacaciones</h3>", unsafe_allow_html=True)
+            
+            # Creamos una lista de opciones combinando DNI y Nombre
+            if not df_final.empty:
+                opciones_trabajadores = ["Seleccione un trabajador..."] + list(df_final["DNI"].astype(str) + " - " + df_final["Trabajador"])
+                trab_sel = st.selectbox("Buscar por DNI o Nombre:", options=opciones_trabajadores)
+                
+                if trab_sel != "Seleccione un trabajador...":
+                    dni_sel = trab_sel.split(" - ")[0]
+                    # Buscamos la fila de este trabajador
+                    detalle = df_v[df_v["DNI"].astype(str) == dni_sel]
+                    
+                    if not detalle.empty:
+                        st.info(f"👤 **Desglose de:** {trab_sel.split(' - ')[1]}")
+                        
+                        col_det1, col_det2, col_det3 = st.columns(3)
+                        val_gen = detalle["Días Generados"].values[0] if "Días Generados" in detalle.columns else "N/A"
+                        val_goz = detalle["Días Gozados"].values[0] if "Días Gozados" in detalle.columns else "N/A"
+                        val_sal = detalle["Saldo"].values[0] if "Saldo" in detalle.columns else "N/A"
+                        
+                        col_det1.metric("Días Generados", val_gen)
+                        col_det2.metric("Días Gozados", val_goz)
+                        col_det3.metric("Saldo Restante", val_sal)
+                        
+                        observacion = detalle["OBSERVACION"].values[0] if "OBSERVACION" in detalle.columns else "No hay desglose registrado."
+                        # Si es nan o nulo, ponerlo vacío
+                        if pd.isna(observacion): observacion = "No hay desglose registrado."
+                        
+                        st.text_area("Desglose / Observaciones (Extraído del Excel):", value=str(observacion), height=150, disabled=True)
 
 # ==========================================
     # MÓDULO: VENCIMIENTO DE CONTRATOS
@@ -1366,6 +1397,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
