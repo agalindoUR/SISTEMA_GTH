@@ -614,60 +614,69 @@ else:
                         # ... (aquí va tu st.data_editor)
                         ed = st.data_editor(vst, hide_index=True, use_container_width=False, column_config=col_conf, key=f"ed_{h_name}")
                         
-                        # 1. Detectar si el usuario seleccionó una fila
+                       # 1. Detectar selección
                         sel = ed[ed["SEL"] == True]
 
-                        # 2. Solo mostrar el formulario si hay una fila seleccionada y no es lector
                         if not sel.empty and not es_lector:
                             idx = sel.index[0]
                             st.markdown(f"### 📝 Editando Registro en {h_name}")
                             
                             with st.form(key=f"form_edit_{h_name}_{idx}"):
+                                # Obtenemos las columnas definidas para esta hoja
                                 cols_reales = COLUMNAS.get(h_name, [])
                                 edit_row = {}
 
-                                # Caso Especial: CONTRATOS
-                                if h_name == "CONTRATOS":
-                                    st.info("Editando datos de contrato...")
-                                    # Aquí podrías poner campos específicos para contratos si quisieras
-                                    # Por ahora, usamos la lógica general para no complicar:
-                                    pass 
-
-                                # Lógica General de Edición para todas las pestañas
-                                cols_no_editables = ["id", "dni"] 
+                                # Columnas que no queremos que el usuario cambie manualmente
+                                cols_bloqueadas = ["id", "dni"] 
                                 
+                                # CREACIÓN DINÁMICA DE CAMPOS CON DATOS PRECARGADOS
                                 for col in cols_reales:
-                                    col_busqueda = col.lower() 
-                                    if col_busqueda in cols_no_editables:
-                                        edit_row[col_busqueda] = sel.iloc[0].get(col_busqueda, "")
-                                        continue
-
-                                    val = sel.iloc[0].get(col_busqueda, "")
+                                    col_llave = col.lower().strip() # Buscamos en minúsculas para coincidir con la DB
                                     label_mostrar = col.upper()
                                     
-                                    if "fecha" in col_busqueda or "f_" in col_busqueda:
-                                        fecha_dt = pd.to_datetime(val, errors='coerce')
-                                        val_fecha = fecha_dt.date() if pd.notnull(fecha_dt) else date.today()
-                                        edit_row[col_busqueda] = st.date_input(label_mostrar, value=val_fecha, format="DD/MM/YYYY", key=f"inp_{h_name}_{col}_{idx}")
-                                    elif col_busqueda == "edad":
-                                        edit_row[col_busqueda] = st.number_input(label_mostrar, value=int(val) if str(val).isdigit() else 0, key=f"inp_{h_name}_{col}_{idx}")
-                                    else:
-                                        edit_row[col_busqueda] = st.text_input(label_mostrar, value=str(val) if pd.notnull(val) else "", key=f"inp_{h_name}_{col}_{idx}")
+                                    # Extraemos el valor actual de la fila seleccionada
+                                    # Si no existe, usamos un string vacío
+                                    valor_actual = sel.iloc[0].get(col_llave, "")
 
-                                # --- BOTONES DE ACCIÓN ---
+                                    if col_llave in cols_bloqueadas:
+                                        # Guardamos el valor pero no dejamos que lo edite (o lo mostramos como texto)
+                                        edit_row[col_llave] = valor_actual
+                                        st.text(f"**{label_mostrar}:** {valor_actual}")
+                                        continue
+
+                                    # Lógica para FECHAS
+                                    if "fecha" in col_llave or "f_" in col_llave:
+                                        fecha_dt = pd.to_datetime(valor_actual, errors='coerce')
+                                        val_fecha = fecha_dt.date() if pd.notnull(fecha_dt) else date.today()
+                                        edit_row[col_llave] = st.date_input(label_mostrar, value=val_fecha, format="DD/MM/YYYY", key=f"inp_{h_name}_{col_llave}_{idx}")
+                                    
+                                    # Lógica para EDAD
+                                    elif col_llave == "edad":
+                                        try:
+                                            v_num = int(float(valor_actual)) if valor_actual != "" else 0
+                                        except:
+                                            v_num = 0
+                                        edit_row[col_llave] = st.number_input(label_mostrar, value=v_num, key=f"inp_{h_name}_{col_llave}_{idx}")
+                                    
+                                    # Lógica para TODO LO DEMÁS (Incluye AREA)
+                                    else:
+                                        # Aquí está el truco: value=str(valor_actual) carga el dato automáticamente
+                                        edit_row[col_llave] = st.text_input(label_mostrar, value=str(valor_actual) if pd.notnull(valor_actual) else "", key=f"inp_{h_name}_{col_llave}_{idx}")
+
+                                # --- BOTONES DE GUARDADO ---
                                 col_btn1, col_btn2 = st.columns(2)
                                 with col_btn1:
                                     if st.form_submit_button("💾 Guardar Cambios", use_container_width=True):
                                         for k, v in edit_row.items(): 
                                             dfs[h_name].at[idx, k] = v
                                         save_data(dfs)
-                                        st.success("✅ Registro actualizado")
+                                        st.success("✅ Cambios guardados en la nube.")
                                         st.rerun()
                                 with col_btn2:
-                                    if st.form_submit_button("🗑️ Eliminar", type="primary", use_container_width=True):
+                                    if st.form_submit_button("🗑️ Eliminar Registro", type="primary", use_container_width=True):
                                         dfs[h_name] = dfs[h_name].drop(idx)
                                         save_data(dfs)
-                                        st.warning("🗑️ Registro eliminado")
+                                        st.warning("Registro eliminado.")
                                         st.rerun()
                         # ==========================================
                         # BOTÓN DE IMPRESIÓN DE PAPELETA (SOLO EN VACACIONES)
@@ -1518,6 +1527,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
