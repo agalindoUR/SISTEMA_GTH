@@ -534,7 +534,7 @@ else:
 
                             if not df_tc.empty:
                                 df_tc_calc = df_tc.copy()
-                                df_tc_calc['f_inicio_dt'] = pd.to_datetime(df_tc_calc['f_inicio'], errors='coerce')
+                                df_tc_calc['f_inicio_dt'] = pd.to_datetime(df_tc_calc['F_INICIO'], errors='coerce')
                                 df_tc_calc['f_fin_dt'] = pd.to_datetime(df_tc_calc['f_fin'], errors='coerce')
                                 
                                 start_global = df_tc_calc['f_inicio_dt'].min()
@@ -1493,6 +1493,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
