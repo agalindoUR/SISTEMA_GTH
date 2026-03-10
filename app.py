@@ -1242,13 +1242,11 @@ else:
                 df_v["dni_key"] = df_v[c_dni_v].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
                 if c_dia_v:
                 # --- SOLUCIÓN AL ERROR DE ATRIBUTO ---
-                # Validamos si Sheets trajo columnas duplicadas (DataFrame) o una sola (Series)
                 if isinstance(df_v[c_dia_v], pd.DataFrame):
-                    col_dias_segura = df_v[c_dia_v].iloc[:, 0] # Tomamos solo la primera coincidencia
+                    col_dias_segura = df_v[c_dia_v].iloc[:, 0] 
                 else:
                     col_dias_segura = df_v[c_dia_v]
                 
-                # Ahora sí aplicamos la limpieza de comas a puntos con seguridad
                 df_v["v_n"] = pd.to_numeric(col_dias_segura.astype(str).str.replace(",", "."), errors="coerce").fillna(0)
                 # --------------------------------------
                 df_v_sum = df_v.groupby("dni_key")["v_n"].sum().reset_index().rename(columns={"v_n": "Días Generados"})
@@ -1549,6 +1547,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
