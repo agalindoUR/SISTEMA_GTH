@@ -590,36 +590,40 @@ else:
                                 col_conf[str(col).upper()] = st.column_config.DateColumn(format="DD/MM/YYYY")
 
                         vst.columns = [str(col).upper() for col in vst.columns]
-                        # --- SOLUCIÓN AL ERROR ---
-                        # Si hay columnas duplicadas en Google Sheets, esto las elimina para que la app no colapse
+                        vst.columns = [str(col).upper() for col in vst.columns]
                         vst = vst.loc[:, ~vst.columns.duplicated()]
         
-                        if "SEL" not in vst.columns:
-                            vst.insert(0, "SEL", False)
-                        
-                        # --- MAGIA: OCULTAR Y ORDENAR COLUMNAS ---
-                        # 1. Lista de todo lo que queremos desaparecer de la vista
-                        columnas_basura = ["DNI", "FECHA DE INICIO", "FECHA DE FIN", "DÍAS GENERADOS", "DIAS GENERADOS", "SALDO"]
-                        for col in columnas_basura:
-                            if col in vst.columns:
-                                col_conf[col] = None
+                        # ==============================================================
+                        # MAGIA: LISTA DESPLEGABLE EN LUGAR DE LA TABLA GIGANTE
+                        # ==============================================================
+                        if not vst.empty:
+                            opciones = ["-- Seleccione un registro para editar/eliminar --"]
+                            
+                            for idx_row, row in vst.iterrows():
+                                # Mostramos un resumen elegante dependiendo de la pestaña
+                                if h_name == "CONTRATOS":
+                                    cargo = str(row.get("CARGO", "")).strip()
+                                    fecha = str(row.get("F_INICIO", "")).strip()
+                                    lbl = f"ID: {idx_row} | Cargo: {cargo} | Inicio: {fecha}"
+                                elif h_name == "VACACIONES":
+                                    periodo = str(row.get("PERIODO", "")).strip()
+                                    lbl = f"ID: {idx_row} | Periodo: {periodo}"
+                                else:
+                                    # Para las demás pestañas, mostramos los primeros 2 datos que no estén vacíos
+                                    valores = [str(v) for k, v in row.items() if pd.notna(v) and str(v).strip() != "" and str(v).lower() != "nan" and k not in ["DNI", "LINK"]][:2]
+                                    lbl = f"ID: {idx_row} | " + " - ".join(valores)
+                                    
+                                opciones.append(lbl)
                                 
-                        # 2. Reordenar las columnas para que F_INICIO y F_FIN salgan primero
-                        cols_importantes = ["SEL", "PERIODO", "F_INICIO", "F_FIN", "DÍAS GOZADOS", "DIAS GOZADOS"]
-                        cols_finales = [c for c in cols_importantes if c in vst.columns] + [c for c in vst.columns if c not in cols_importantes]
-                        vst = vst[cols_finales]
-                        # ----------------------------------------
-
-                        st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 10px !important; }</style>""", unsafe_allow_html=True)
-                        # ... (aquí va tu st.data_editor)
-                        ed = st.data_editor(vst, hide_index=True, use_container_width=False, column_config=col_conf, key=f"ed_{h_name}")
-                        
-                       # 1. Detectar si hay una fila seleccionada
-                        sel = ed[ed["SEL"] == True]
-
-                        if not sel.empty and not es_lector:
-                            idx = sel.index[0]
-                            fila = sel.iloc[0]
+                            seleccion = st.selectbox(f"📋 Seleccione el registro a modificar:", opciones, key=f"sel_edit_{h_name}_{dni_buscado}")
+                            
+                            if seleccion != "-- Seleccione un registro para editar/eliminar --" and not es_lector:
+                                # Extraemos el número de la fila original a partir de la opción que eligió el usuario
+                                idx = int(seleccion.split(" |")[0].replace("ID: ", ""))
+                                fila = vst.loc[idx]
+                                
+                                # A PARTIR DE AQUÍ COMIENZA TU FORMULARIO DE EDICIÓN COMO YA LO TENÍAS
+                                with st.form(key=f"f_ed_{h_name}_{idx}"):
                             
                             # ELIMINAMOS EL TÍTULO DUPLICADO QUE ESTABA AQUÍ
                             
@@ -1617,6 +1621,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
