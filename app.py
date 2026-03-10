@@ -68,13 +68,16 @@ def load_data():
     for h, cols in COLUMNAS.items():
         if h in hojas_existentes:
             worksheet = hojas_existentes[h]
-            data = worksheet.get_all_records()
-            df = pd.DataFrame(data) if data else pd.DataFrame(columns=cols)
-        else:
-            # Si la hoja no existe, la crea
-            worksheet = sheet.add_worksheet(title=h, rows="100", cols="20")
-            worksheet.append_row([c.upper() for c in cols])
-            df = pd.DataFrame(columns=cols)
+            # Al obtener los registros, forzamos limpieza:
+    try:
+        data = worksheet.get_all_records(head=1) # Asegura que use la fila 1
+        df = pd.DataFrame(data)
+        # LIMPIEZA INMEDIATA: Quitar espacios y pasar a mayúsculas
+        df.columns = [str(c).strip().upper() for c in df.columns]
+        return df
+    except Exception as e:
+        st.error(f"Error en cabeceras: {e}")
+        return pd.DataFrame()
 
         # ... (A partir de aquí, deja el resto de tu código igual: df.columns = ...)
         df.columns = [str(c).strip().lower() for c in df.columns]
@@ -1444,6 +1447,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
