@@ -526,7 +526,7 @@ else:
                                 st.markdown("<br>", unsafe_allow_html=True)
 
                         if h_name == "VACACIONES":
-                            df_tc = df_contratos[df_contratos["tipo contrato"].astype(str).str.lower().str.contains("planilla", na=False)] if "df_contratos" in locals() else pd.DataFrame()
+                            df_tc = df_contratos[df_contratos["TIPO CONTRATO"].astype(str).str.lower().str.contains("planilla", na=False)] if "df_contratos" in locals() else pd.DataFrame()
                             
                             detalles = []
                             dias_generados_totales = 0
@@ -1493,6 +1493,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
