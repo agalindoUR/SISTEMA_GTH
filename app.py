@@ -26,8 +26,8 @@ F_C = "JEFE DE GESTIÓN DEL TALENTO HUMANO"
 MOTIVOS_CESE = ["Término de contrato", "Renuncia", "Despido", "Mutuo acuerdo", "Fallecimiento", "Otros"]
 
 COLUMNAS = {
-    "PERSONAL": ["dni", "apellidos y nombres", "link"],
-    "DATOS GENERALES": ["dni", "sede", "sexo", "apellidos y nombres", "dirección", "estado civil", "fecha de nacimiento", "edad"], 
+    "PERSONAL": ["id", "dni", "apellidos", "nombres", "apellidos y nombres", "sexo", "estado_civil", "sede", "link", "area"],
+    "DATOS GENERALES": ["id", "dni", "apellidos y nombres", "dirección", "estado civil", "fecha de nacimiento", "edad", "telefono", "correo", "area"], 
     "DATOS FAMILIARES": ["parentesco", "apellidos y nombres", "dni", "fecha de nacimiento", "edad", "estudios", "telefono"],
     "EXP. LABORAL": ["tipo de experiencia", "lugar", "puesto", "fecha inicio", "fecha de fin", "motivo cese"],
     "FORM. ACADEMICA": ["grado, titulo o especialización", "descripcion", "universidad", "año"],
@@ -1005,38 +1005,35 @@ else:
             ape_form = st.text_input("Apellidos").upper().strip()
             nom_form = st.text_input("Nombres").upper().strip()
             nom_comp = f"{ape_form}, {nom_form}" if ape_form and nom_form else ""
-            
             sexo_form = st.selectbox("Sexo", ["Masculino", "Femenino"])
             estado_form = st.selectbox("Estado Civil", ["Soltero(a)", "Casado(a)", "Divorciado(a)", "Conviviente", "Viudo(a)", "Otro"])
             sede_form = st.selectbox("Sede de Trabajo", ["Local Giraldez", "Local San Carlos", "Local Abancay", "Local Lince", "Local Pueblo Libre"])
+            # ... (debajo de sede_form)
             link_form = st.text_input("Link File").strip()
-            
-            # --- AQUÍ AGREGAMOS EL ÁREA ---
-            area_form = st.text_input("Área de Trabajo").upper().strip() 
+            area_form = st.text_input("Área de Trabajo").upper().strip() # <-- AGREGADO
 
             if st.form_submit_button("Registrar"):
                 if d_dni and ape_form and nom_form:
-                    # ID para PERSONAL
-                    next_id_personal = dfs["PERSONAL"]["id"].max() + 1 if not dfs["PERSONAL"].empty else 1
+                    # Cálculo de IDs...
+                    next_id_p = dfs["PERSONAL"]["id"].max() + 1 if not dfs["PERSONAL"].empty else 1
                     
-                    # A. Guardamos en PERSONAL (Incluyendo área)
-                    nuevo_personal = {
-                        "id": next_id_personal, "dni": d_dni, "apellidos": ape_form, 
-                        "nombres": nom_form, "apellidos y nombres": nom_comp, 
-                        "sexo": sexo_form, "estado_civil": estado_form, 
+                    # A. Guardar en PERSONAL
+                    nuevo_p = {
+                        "id": next_id_p, "dni": d_dni, "apellidos": ape_form, "nombres": nom_form,
+                        "apellidos y nombres": nom_comp, "sexo": sexo_form, "estado_civil": estado_form,
                         "sede": sede_form, "link": link_form, "area": area_form
                     }
-                    dfs["PERSONAL"] = pd.concat([dfs["PERSONAL"], pd.DataFrame([nuevo_personal])], ignore_index=True)
-                    
-                    # B. Guardamos en DATOS GENERALES (Incluyendo área)
+                    dfs["PERSONAL"] = pd.concat([dfs["PERSONAL"], pd.DataFrame([nuevo_p])], ignore_index=True)
+
+                    # B. Guardar en DATOS GENERALES
                     nid_dg = dfs["DATOS GENERALES"]["id"].max() + 1 if not dfs["DATOS GENERALES"].empty else 1
-                    nuevo_dg_basico = {
+                    nuevo_dg = {
                         "id": nid_dg, "dni": d_dni, "apellidos y nombres": nom_comp, "area": area_form
                     }
-                    dfs["DATOS GENERALES"] = pd.concat([dfs["DATOS GENERALES"], pd.DataFrame([nuevo_dg_basico])], ignore_index=True)
+                    dfs["DATOS GENERALES"] = pd.concat([dfs["DATOS GENERALES"], pd.DataFrame([nuevo_dg])], ignore_index=True)
                     
                     save_data(dfs)
-                    st.success("Trabajador registrado correctamente")
+                    st.success("✅ Trabajador registrado con Área")
                     st.rerun()
                 else: 
                     st.error("⚠️ Por favor, complete al menos el DNI, Apellidos y Nombres.")
@@ -1527,6 +1524,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
