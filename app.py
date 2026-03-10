@@ -696,9 +696,9 @@ else:
                                     st.markdown("---")
                                     b1, b2 = st.columns(2)
                                     with b1:
-                                        if st.form_submit_button("💾 Actualizar Contrato", use_container_width=True):
+                                        # 💡 SOLUCIÓN: Agregamos un 'key' único al botón de actualizar
+                                        if st.form_submit_button("💾 Actualizar Contrato", use_container_width=True, key=f"btn_save_contrato_{idx}"):
                                             
-                                            # NOTA: Asegúrate que esta llave "area" (o "área") coincida exactamente con cómo se llama tu columna en Google Sheets (en minúsculas)
                                             nombre_col_area = "área" if "área" in dfs[h_name].columns else "area"
                                             
                                             update_vals = {
@@ -722,41 +722,10 @@ else:
                                             save_data(dfs)
                                             st.success("✅ Contrato actualizado")
                                             st.rerun()
+                                            
                                     with b2:
-                                        if st.form_submit_button("🗑️ Eliminar Contrato", type="primary", use_container_width=True):
-                                            dfs[h_name] = dfs[h_name].drop(idx)
-                                            save_data(dfs)
-                                            st.warning("🗑️ Contrato eliminado")
-                                            st.rerun()
-
-                                    st.markdown("---")
-                                    b1, b2 = st.columns(2)
-                                    with b1:
-                                        if st.form_submit_button("💾 Actualizar Contrato", use_container_width=True):
-                                            # CORRECCIÓN: El diccionario update_vals ya no tiene tildes en sus llaves
-                                            update_vals = {
-                                                "cargo": n_car, 
-                                                "area": n_area_cont, 
-                                                "remuneracion basica": n_rem, 
-                                                "bonificacion": n_bon,
-                                                "condicion de trabajo": n_cond, 
-                                                "f_inicio": n_ini,
-                                                "f_fin": n_fin, 
-                                                "tipo de trabajador": n_ttrab,
-                                                "modalidad": n_mod, 
-                                                "temporalidad": n_tem, 
-                                                "link": n_lnk, 
-                                                "tipo contrato": n_tcont,
-                                                "estado": est_e, 
-                                                "motivo cese": mot_e
-                                            }
-                                            for k, v in update_vals.items():
-                                                dfs[h_name].at[idx, k] = v
-                                            save_data(dfs)
-                                            st.success("✅ Contrato actualizado")
-                                            st.rerun()
-                                    with b2:
-                                        if st.form_submit_button("🗑️ Eliminar Contrato", type="primary", use_container_width=True):
+                                        # 💡 SOLUCIÓN: Agregamos un 'key' único al botón de eliminar
+                                        if st.form_submit_button("🗑️ Eliminar Contrato", type="primary", use_container_width=True, key=f"btn_del_contrato_{idx}"):
                                             dfs[h_name] = dfs[h_name].drop(idx)
                                             save_data(dfs)
                                             st.warning("🗑️ Contrato eliminado")
@@ -1648,6 +1617,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
