@@ -497,7 +497,16 @@ else:
                             c_df = pd.DataFrame(columns=COLUMNAS.get(h_name, []))
 
                         if h_name == "CONTRATOS":
-                            df_contratos = dfs["CONTRATOS"][dfs["CONTRATOS"]["DNI"] == dni_buscado]
+                            # 1. Forzamos a limpiar cualquier espacio invisible al inicio o final de las columnas
+                            dfs["CONTRATOS"].columns = [str(c).strip().upper() for c in dfs["CONTRATOS"].columns]
+                            
+                            # 2. Verificamos si realmente existe la columna
+                            if "DNI" not in dfs["CONTRATOS"].columns:
+                                st.error(f"🚨 ALERTA: No encuentro la columna 'DNI'. Esto es lo que Python está leyendo desde tu Excel: {list(dfs['CONTRATOS'].columns)}")
+                                st.stop()
+                                
+                            # 3. Si todo está bien, hacemos el filtro
+                            df_contratos = dfs["CONTRATOS"][dfs["CONTRATOS"]["DNI"] == str(dni_buscado).strip()]
                             if not df_contratos.empty:
                                 st.markdown("""
                                     <style>
@@ -1477,6 +1486,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
