@@ -1157,7 +1157,7 @@ else:
    # ==========================================
 # MÓDULO: VACACIONES
 # ==========================================
-elif m == "Vacaciones":
+    elif m == "Vacaciones":
     st.markdown("<h2 style='color: #4A0000;'>🌴 Reporte Integrado de Vacaciones</h2>", unsafe_allow_html=True)
     
     df_per = dfs.get("PERSONAL", pd.DataFrame())
@@ -1338,6 +1338,7 @@ elif m == "Vacaciones":
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
