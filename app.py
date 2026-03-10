@@ -1089,6 +1089,93 @@ else:
         else:
             st.warning("⚠️ Necesitas tener datos registrados en Personal y Contratos para generar reportes.")
 
+    # ==========================================
+    # MÓDULO: VACACIONES (VERSIÓN ULTRA-SEGURA)
+    # ==========================================
+    elif m == "Vacaciones":
+        st.markdown("<h2 style='color: #4A0000;'>🌴 Reporte Integrado de Vacaciones</h2>", unsafe_allow_html=True)
+        
+        df_per = dfs.get("PERSONAL", pd.DataFrame())
+        df_vac = dfs.get("VACACIONES", pd.DataFrame())
+        df_cont = dfs.get("CONTRATOS", pd.DataFrame())
+        df_gen = dfs.get("DATOS GENERALES", pd.DataFrame())
+
+        if df_per.empty or df_vac.empty:
+            st.warning("⚠️ No se encontraron las pestañas necesarias.")
+        else:
+            # 1. Preparar Personal
+            df_per.columns = df_per.columns.str.strip().str.lower()
+            df_per["dni_key"] = df_per["dni"].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
+            # Buscamos la columna de nombre (suele ser la segunda)
+            col_n_p = next((c for c in df_per.columns if "apellido" in c or "nombre" in c), df_per.columns[1])
+            
+            # 2. SEDE (Datos Generales)
+            df_gen.columns = df_gen.columns.str.strip().str.lower()
+            df_gen["dni_key"] = df_gen["dni"].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8) if "dni" in df_gen.columns else ""
+            col_s_g = next((c for c in df_gen.columns if "sede" in c), None)
+            df_s_f = df_gen[["dni_key", col_s_g]].drop_duplicates("dni_key") if col_s_g else pd.DataFrame(columns=["dni_key", "sede"])
+
+            # 3. AREA (Contratos)
+            df_cont.columns = df_cont.columns.str.strip().str.lower()
+            df_cont["dni_key"] = df_cont["dni"].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8) if "dni" in df_cont.columns else ""
+            col_a_c = next((c for c in df_cont.columns if "rea" in c), None)
+            df_a_f = df_cont.sort_index(ascending=False).drop_duplicates("dni_key")[["dni_key", col_a_c]] if col_a_c else pd.DataFrame(columns=["dni_key", "area"])
+
+            # 4. DIAS (Suma de columna 'días' para el 80.14)
+            df_v = df_vac.copy()
+            df_v.columns = df_v.columns.str.strip().str.lower()
+            c_dni_v = next((c for c in df_v.columns if "dni" in c), None)
+            c_dia_v = next((c for c in df_v.columns if "días" in c or "dias" in c), None)
+            
+            if c_dni_v and c_dia_v:
+                df_v["dni_key"] = df_v[c_dni_v].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
+                df_v["v_n"] = pd.to_numeric(df_v[c_dia_v].astype(str).str.replace(",", "."), errors="coerce").fillna(0)
+                df_v_sum = df_v.groupby("dni_key")["v_n"].sum().reset_index()
+            else:
+                df_v_sum = pd.DataFrame(columns=["dni_key", "v_n"])
+
+            # 5. UNIÓN Y RENOMBRADO POR POSICIÓN (Para evitar el AttributeError)
+            # Unimos todo en un solo DataFrame
+            df_res = df_per[["dni_key", col_n_p]].merge(df_s_f, on="dni_key", how="left")
+            df_res = df_res.merge(df_a_f, on="dni_key", how="left")
+            df_res = df_res.merge(df_v_sum, on="dni_key", how="left")
+
+            # FORZAMOS LOS NOMBRES AQUÍ (Sin importar qué nombres tenían antes)
+            # La tabla tendrá: 0:dni_key, 1:Trabajador, 2:Sede, 3:Area, 4:Dias
+            df_res.columns = ["DNI", "Trabajador", "Sede", "Area_Interna", "Dias_Generados"]
+            
+            # Rellenar vacíos
+            df_res["Sede"] = df_res["Sede"].fillna("No registrada")
+            df_res["Area_Interna"] = df_res["Area_Interna"].fillna("No registrada")
+            df_res["Dias_Generados"] = df_res["Dias_Generados"].fillna(0)
+
+            # 6. FILTROS (Usando los nuevos nombres seguros)
+            st.markdown("### 🔍 Filtros")
+            c1, c2 = st.columns(2)
+            with c1:
+                s_list = ["Todas"] + sorted([str(x) for x in df_res["Sede"].unique() if x])
+                sel_s = st.selectbox("Sede", s_list)
+            with c2:
+                # Usamos "Area_Interna" que no tiene tildes ni caracteres raros
+                a_list = ["Todas"] + sorted([str(x) for x in df_res["Area_Interna"].unique() if x])
+                sel_a = st.selectbox("Área", a_list)
+
+            # Aplicar Filtros
+            df_f = df_res.copy()
+            if sel_s != "Todas": df_f = df_f[df_f["Sede"] == sel_s]
+            if sel_a != "Todas": df_f = df_f[df_f["Area_Interna"] == sel_a]
+
+            # 7. TABLA FINAL
+            st.success(f"📋 Registros encontrados: {len(df_f)}")
+            
+            # Mostramos con nombres bonitos solo en la vista
+            df_mostrar = df_f.rename(columns={"Area_Interna": "Área", "Dias_Generados": "Días Generados"})
+            
+            st.dataframe(
+                df_mostrar[["DNI", "Trabajador", "Sede", "Área", "Días Generados"]].style.format({"Días Generados": "{:.2f}"}),
+                hide_index=True,
+                use_container_width=True
+            )
 # ==========================================
     # MÓDULO: CUMPLEAÑEROS
     # ==========================================
@@ -1300,6 +1387,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
