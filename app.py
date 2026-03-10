@@ -614,60 +614,83 @@ else:
                         # ... (aquí va tu st.data_editor)
                         ed = st.data_editor(vst, hide_index=True, use_container_width=False, column_config=col_conf, key=f"ed_{h_name}")
                         
-                       # 1. Detectar selección
-                        if not sel.empty and not es_lector:
-            idx = sel.index[0]
-            st.markdown(f"### 📝 Editar/Eliminar Registro en {h_name}")
-            
-            with st.form(key=f"form_edit_{h_name}_{idx}"):
-                # Obtenemos los valores actuales de la fila seleccionada
-                fila_actual = sel.iloc[0]
-                edit_row = {}
-                
-                # DISEÑO IGUAL AL DE REGISTRO
-                c1, c2 = st.columns(2)
-                
-                with c1:
-                    # DNI e ID usualmente no se editan para no romper vínculos
-                    st.info(f"ID: {fila_actual.get('id', 'N/A')} | DNI: {fila_actual.get('dni', 'N/A')}")
-                    edit_row["id"] = fila_actual.get("id", "")
-                    edit_row["dni"] = fila_actual.get("dni", "")
-                    
-                    # Campos dinámicos según la pestaña
-                    for col in [c for c in COLUMNAS.get(h_name, []) if c not in ["id", "dni"]]:
-                        col_lower = col.lower().strip()
-                        val = fila_actual.get(col_lower, "")
-                        
-                        # Si es Sexo, Estado Civil o Sede, usamos selectbox para que coincida con Registro
-                        if col_lower == "sexo":
-                            edit_row[col_lower] = st.selectbox("Sexo", ["Masculino", "Femenino"], index=0 if val=="Masculino" else 1)
-                        elif col_lower == "estado civil" or col_lower == "estado_civil":
-                            opciones = ["Soltero(a)", "Casado(a)", "Divorciado(a)", "Conviviente", "Viudo(a)", "Otro"]
-                            idx_op = opciones.index(val) if val in opciones else 0
-                            edit_row[col_lower] = st.selectbox("Estado Civil", opciones, index=idx_op)
-                        elif "fecha" in col_lower or "f_" in col_lower:
-                            f_val = pd.to_datetime(val, errors='coerce').date() if pd.notnull(val) else date.today()
-                            edit_row[col_lower] = st.date_input(col.upper(), value=f_val)
-                        else:
-                            # Aquí entra el ÁREA y otros campos de texto
-                            edit_row[col_lower] = st.text_input(col.upper(), value=str(val))
+                       # 1. Detectar si hay una fila seleccionada
+                        sel = ed[ed["SEL"] == True]
 
-                # Botones de Acción
-                st.markdown("---")
-                col_btn1, col_btn2 = st.columns(2)
-                with col_btn1:
-                    if st.form_submit_button("💾 Guardar Cambios", use_container_width=True):
-                        for k, v in edit_row.items():
-                            dfs[h_name].at[idx, k] = v
-                        save_data(dfs)
-                        st.success("✅ Actualizado correctamente")
-                        st.rerun()
-                with col_btn2:
-                    if st.form_submit_button("🗑️ Eliminar Registro", type="primary", use_container_width=True):
-                        dfs[h_name] = dfs[h_name].drop(idx)
-                        save_data(dfs)
-                        st.warning("⚠️ Registro eliminado")
-                        st.rerun()
+                        if not sel.empty and not es_lector:
+                            idx = sel.index[0]
+                            fila_actual = sel.iloc[0]
+                            
+                            st.markdown(f"### 📝 Editar / Eliminar Registro")
+                            
+                            # Iniciamos el formulario con una clave única
+                            with st.form(key=f"form_edit_{h_name}_{idx}"):
+                                # Diseño de 2 columnas EXACTO al de Nuevo Registro
+                                c1, c2 = st.columns(2)
+                                edit_row = {}
+                                
+                                # Obtenemos las columnas de esta pestaña
+                                columnas_tab = COLUMNAS.get(h_name, [])
+                                
+                                # Dividimos las columnas para repartirlas en c1 y c2
+                                mitad = (len(columnas_tab) + 1) // 2
+                                col_izq = columnas_tab[:mitad]
+                                col_der = columnas_tab[mitad:]
+
+                                # Llenamos Columna 1
+                                with c1:
+                                    for col in col_izq:
+                                        c_low = col.lower().strip()
+                                        val = fila_actual.get(c_low, "")
+                                        
+                                        if c_low in ["id", "dni"]:
+                                            st.text_input(col.upper(), value=str(val), disabled=True)
+                                            edit_row[c_low] = val
+                                        elif c_low == "sexo":
+                                            edit_row[c_low] = st.selectbox("SEXO", ["Masculino", "Femenino"], index=0 if val=="Masculino" else 1)
+                                        elif "fecha" in c_low or "f_" in c_low:
+                                            f_val = pd.to_datetime(val, errors='coerce').date() if pd.notnull(val) else date.today()
+                                            edit_row[c_low] = st.date_input(col.upper(), value=f_val)
+                                        else:
+                                            edit_row[c_low] = st.text_input(col.upper(), value=str(val))
+
+                                # Llenamos Columna 2
+                                with c2:
+                                    for col in col_der:
+                                        c_low = col.lower().strip()
+                                        val = fila_actual.get(c_low, "")
+                                        
+                                        if c_low in ["estado civil", "estado_civil"]:
+                                            ops = ["Soltero(a)", "Casado(a)", "Divorciado(a)", "Conviviente", "Viudo(a)", "Otro"]
+                                            idx_op = ops.index(val) if val in ops else 0
+                                            edit_row[c_low] = st.selectbox("ESTADO CIVIL", ops, index=idx_op)
+                                        elif c_low == "sede":
+                                            sedes = ["Local Giraldez", "Local San Carlos", "Local Abancay", "Local Lince", "Local Pueblo Libre"]
+                                            idx_s = sedes.index(val) if val in sedes else 0
+                                            edit_row[c_low] = st.selectbox("SEDE", sedes, index=idx_s)
+                                        elif "fecha" in c_low or "f_" in c_low:
+                                            f_val = pd.to_datetime(val, errors='coerce').date() if pd.notnull(val) else date.today()
+                                            edit_row[c_low] = st.date_input(col.upper(), value=f_val)
+                                        else:
+                                            # Aquí aparecerá el ÁREA automáticamente
+                                            edit_row[c_low] = st.text_input(col.upper(), value=str(val))
+
+                                # BOTONES AL FINAL DEL FORMULARIO
+                                st.markdown("---")
+                                b1, b2 = st.columns(2)
+                                with b1:
+                                    if st.form_submit_button("💾 Guardar Cambios", use_container_width=True):
+                                        for k, v in edit_row.items():
+                                            dfs[h_name].at[idx, k] = v
+                                        save_data(dfs)
+                                        st.success("✅ Cambios guardados")
+                                        st.rerun()
+                                with b2:
+                                    if st.form_submit_button("🗑️ Eliminar Registro", type="primary", use_container_width=True):
+                                        dfs[h_name] = dfs[h_name].drop(idx)
+                                        save_data(dfs)
+                                        st.warning("🗑️ Registro eliminado")
+                                        st.rerun()
                         # ==========================================
                         # BOTÓN DE IMPRESIÓN DE PAPELETA (SOLO EN VACACIONES)
                         # ==========================================
@@ -1508,6 +1531,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
