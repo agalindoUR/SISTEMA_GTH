@@ -497,7 +497,7 @@ else:
                             c_df = pd.DataFrame(columns=COLUMNAS.get(h_name, []))
 
                         if h_name == "CONTRATOS":
-                            df_contratos = dfs["CONTRATOS"][dfs["CONTRATOS"]["dni"] == dni_buscado]
+                            df_contratos = dfs["CONTRATOS"][dfs["CONTRATOS"]["DNI"] == dni_buscado]
                             if not df_contratos.empty:
                                 st.markdown("""
                                     <style>
@@ -1455,6 +1455,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
