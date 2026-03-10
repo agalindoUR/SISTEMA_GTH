@@ -33,7 +33,7 @@ COLUMNAS = {
     "FORM. ACADEMICA": ["grado, titulo o especialización", "descripcion", "universidad", "año"],
     "INVESTIGACION": ["año publicación", "autor, coautor o asesor", "tipo de investigación publicada", "nivel de publicación", "lugar de publicación"],
     # NUEVAS COLUMNAS DE CONTRATOS APLICADAS:
-    "CONTRATOS": ["dni", "cargo", "AREA", "f_inicio", "f_fin", "tipo de trabajador", "modalidad", "temporalidad", "tipo contrato", "estado", "LINK"],
+    "CONTRATOS": ["id", "dni", "apellidos y nombres", "cargo", "area", "remuneración básica", "bonificación", "condición de trabajo", "f_inicio", "f_fin", "tipo de trabajador", "modalidad", "temporalidad", "link", "tipo contrato", "estado", "motivo cese"],
     "VACACIONES": ["periodo", "fecha de inicio", "fecha de fin", "días generados", "días gozados", "saldo", "link"],
     "OTROS BENEFICIOS": ["periodo", "tipo de beneficio", "link"],
     "MERITOS Y DEMERITOS": ["periodo", "merito o demerito", "motivo", "link"],
@@ -624,59 +624,81 @@ else:
                             
                             # CLAVE: El formulario envuelve TODO, incluyendo los botones
                             with st.form(key=f"f_ed_{h_name}_{idx}"):
-                                c1, c2 = st.columns(2)
-                                edit_row = {}
-                                cols_tab = COLUMNAS.get(h_name, [])
-                                mitad = (len(cols_tab) + 1) // 2
-
-                                # Función interna para dibujar campos y evitar errores de fecha
-                                def dibujar_campo(col_name, container):
-                                    c_low = col_name.lower().strip()
-                                    val = fila.get(c_low, "")
-                                    label = col_name.upper()
+                                if h_name == "CONTRATOS":
+                                    st.markdown("### 📝 Editar / Eliminar Contrato")
+                                    c1, c2 = st.columns(2)
                                     
-                                    if c_low in ["id", "dni"]:
-                                        container.text_input(label, value=str(val), disabled=True)
-                                        return val
-                                    elif c_low in ["sexo"]:
-                                        return container.selectbox(label, ["Masculino", "Femenino"], index=0 if val=="Masculino" else 1)
-                                    elif c_low in ["estado civil", "estado_civil"]:
-                                        ops = ["Soltero(a)", "Casado(a)", "Divorciado(a)", "Conviviente", "Viudo(a)", "Otro"]
-                                        return container.selectbox(label, ops, index=ops.index(val) if val in ops else 0)
-                                    elif c_low == "sede":
-                                        sds = ["Local Giraldez", "Local San Carlos", "Local Abancay", "Local Lince", "Local Pueblo Libre"]
-                                        return container.selectbox(label, sds, index=sds.index(val) if val in sds else 0)
-                                    elif "fecha" in c_low or "f_" in c_low:
-                                        # Fix para el error de Traceback de fechas
-                                        try:
-                                            f_dt = pd.to_datetime(val)
-                                            f_val = f_dt.date() if pd.notnull(f_dt) else date.today()
-                                        except:
-                                            f_val = date.today()
-                                        return container.date_input(label, value=f_val)
-                                    else:
-                                        return container.text_input(label, value=str(val) if pd.notnull(val) else "")
+                                    with c1:
+                                        n_car = st.text_input("Cargo", value=str(fila.get("cargo", "")))
+                                        n_area_cont = st.text_input("Área", value=str(fila.get("area", ""))).upper()
+                                        
+                                        try: val_rem = float(fila.get("remuneración básica", 0.0))
+                                        except: val_rem = 0.0
+                                        n_rem = st.number_input("Remuneración básica", value=val_rem)
+                                        
+                                        n_bon = st.text_input("Bonificación", value=str(fila.get("bonificación", "")))
+                                        n_cond = st.text_input("Condición de trabajo", value=str(fila.get("condición de trabajo", "")))
+                                        
+                                        try: ini_val = pd.to_datetime(fila.get("f_inicio")).date()
+                                        except: ini_val = date.today()
+                                        n_ini = st.date_input("Inicio", value=ini_val, format="DD/MM/YYYY")
+                                        
+                                        try: fin_val = pd.to_datetime(fila.get("f_fin")).date()
+                                        except: fin_val = date.today()
+                                        n_fin = st.date_input("Fin", value=fin_val, format="DD/MM/YYYY")
 
-                                # Repartir en columnas
-                                for col in cols_tab[:mitad]:
-                                    edit_row[col.lower().strip()] = dibujar_campo(col, c1)
-                                for col in cols_tab[mitad:]:
-                                    edit_row[col.lower().strip()] = dibujar_campo(col, c2)
+                                    with c2:
+                                        v_ttrab = str(fila.get("tipo de trabajador", "Administrativo"))
+                                        opts_tt = ["Administrativo", "Docente", "Externo"]
+                                        if v_ttrab not in opts_tt and v_ttrab: opts_tt.append(v_ttrab)
+                                        n_ttrab = st.selectbox("Tipo de trabajador", opts_tt, index=opts_tt.index(v_ttrab) if v_ttrab in opts_tt else 0)
+                                        
+                                        v_mod = str(fila.get("modalidad", "Presencial"))
+                                        opts_mod = ["Presencial", "Semipresencial", "Virtual"]
+                                        if v_mod not in opts_mod and v_mod: opts_mod.append(v_mod)
+                                        n_mod = st.selectbox("Modalidad", opts_mod, index=opts_mod.index(v_mod) if v_mod in opts_mod else 0)
+                                        
+                                        v_tem = str(fila.get("temporalidad", "Plazo fijo"))
+                                        opts_tem = ["Plazo fijo", "Plazo indeterminado", "Ordinarizado"]
+                                        if v_tem not in opts_tem and v_tem: opts_tem.append(v_tem)
+                                        n_tem = st.selectbox("Temporalidad", opts_tem, index=opts_tem.index(v_tem) if v_tem in opts_tem else 0)
+                                        
+                                        n_lnk = st.text_input("Link", value=str(fila.get("link", "")))
+                                        
+                                        v_tcont = str(fila.get("tipo contrato", "Planilla completo"))
+                                        opts_tcon = ["Planilla completo", "Tiempo Parcial", "Recibo por Honorarios", "Otro"]
+                                        if v_tcont not in opts_tcon and v_tcont: opts_tcon.append(v_tcont)
+                                        n_tcont = st.selectbox("Tipo Contrato", opts_tcon, index=opts_tcon.index(v_tcont) if v_tcont in opts_tcon else 0)
 
-                                st.markdown("---")
-                                b1, b2 = st.columns(2)
-                                with b1:
-                                    if st.form_submit_button("💾 Guardar Cambios", use_container_width=True):
-                                        for k, v in edit_row.items():
-                                            dfs[h_name].at[idx, k] = v
-                                        save_data(dfs)
-                                        st.success("✅ Actualizado")
-                                        st.rerun()
-                                with b2:
-                                    if st.form_submit_button("🗑️ Eliminar Registro", type="primary", use_container_width=True):
-                                        dfs[h_name] = dfs[h_name].drop(idx)
-                                        save_data(dfs)
-                                        st.rerun()
+                                        est_e = "ACTIVO" if n_fin >= date.today() else "CESADO"
+                                        
+                                        v_mot = str(fila.get("motivo cese", "Vigente"))
+                                        opts_mot = ["Vigente"] + MOTIVOS_CESE
+                                        if v_mot not in opts_mot and v_mot: opts_mot.append(v_mot)
+                                        mot_e = st.selectbox("Motivo Cese", opts_mot, index=opts_mot.index(v_mot) if v_mot in opts_mot else 0) if est_e == "CESADO" else "Vigente"
+
+                                    st.markdown("---")
+                                    b1, b2 = st.columns(2)
+                                    with b1:
+                                        if st.form_submit_button("💾 Actualizar Contrato", use_container_width=True):
+                                            update_vals = {
+                                                "cargo": n_car, "area": n_area_cont, "remuneración básica": n_rem, "bonificación": n_bon,
+                                                "condición de trabajo": n_cond, "f_inicio": n_ini,
+                                                "f_fin": n_fin, "tipo de trabajador": n_ttrab,
+                                                "modalidad": n_mod, "temporalidad": n_tem, "link": n_lnk, "tipo contrato": n_tcont,
+                                                "estado": est_e, "motivo cese": mot_e
+                                            }
+                                            for k, v in update_vals.items():
+                                                dfs[h_name].at[idx, k] = v
+                                            save_data(dfs)
+                                            st.success("✅ Contrato actualizado")
+                                            st.rerun()
+                                    with b2:
+                                        if st.form_submit_button("🗑️ Eliminar Contrato", type="primary", use_container_width=True):
+                                            dfs[h_name] = dfs[h_name].drop(idx)
+                                            save_data(dfs)
+                                            st.warning("🗑️ Contrato eliminado")
+                                            st.rerun()
                         # ==========================================
                         # BOTÓN DE IMPRESIÓN DE PAPELETA (SOLO EN VACACIONES)
                         # ==========================================
@@ -1517,6 +1539,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
