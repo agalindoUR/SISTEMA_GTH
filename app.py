@@ -891,7 +891,7 @@ else:
                                                 mot_e = st.selectbox("Motivo Cese", opts_mot, index=opts_mot.index(v_mot)) if est_e == "CESADO" else "Vigente"
 
                                                 if st.form_submit_button("Actualizar"):
-                                                    update_vals = {"cargo": n_car, "remuneración básica": n_rem, "bonificación": n_bon, "condición de trabajo": n_cond, "f_inicio": n_ini, "f_fin": n_fin, "tipo de trabajador": n_ttrab, "modalidad": n_mod, "temporalidad": n_tem, "link": n_lnk, "tipo contrato": n_tcont, "estado": est_e, "motivo cese": mot_e}
+                                                    update_vals = {"cargo": n_car, "area": AREA,"remuneración básica": n_rem, "bonificación": n_bon, "condición de trabajo": n_cond, "f_inicio": n_ini, "f_fin": n_fin, "tipo de trabajador": n_ttrab, "modalidad": n_mod, "temporalidad": n_tem, "link": n_lnk, "tipo contrato": n_tcont, "estado": est_e, "motivo cese": mot_e}
                                                     for k, v in update_vals.items(): 
                                                         dfs[h_name].at[idx, k] = v
                                                     save_data(dfs)
@@ -948,6 +948,40 @@ else:
             estado_form = st.selectbox("Estado Civil", ["Soltero(a)", "Casado(a)", "Divorciado(a)", "Conviviente", "Viudo(a)", "Otro"])
             sede_form = st.selectbox("Sede de Trabajo", ["Local Giraldez", "Local San Carlos", "Local Abancay", "Local Lince", "Local Pueblo Libre"])
             link_form = st.text_input("Link File").strip()
+            # ... (debajo de link_form)
+            area_form = st.text_input("Área de Trabajo").upper().strip() # <-- AGREGAR ESTA LÍNEA
+
+            if st.form_submit_button("Registrar"):
+                if d_dni and ape_form and nom_form:
+                    # ... (ID personal)
+                    # A. Guardamos en PERSONAL
+                    nuevo_personal = {
+                        "id": next_id_personal, 
+                        "dni": d_dni, 
+                        "apellidos": ape_form, 
+                        "nombres": nom_form, 
+                        "apellidos y nombres": nom_comp, 
+                        "sexo": sexo_form, 
+                        "estado_civil": estado_form, 
+                        "sede": sede_form, 
+                        "link": link_form,
+                        "area": area_form  # <-- AGREGAR ESTA LÍNEA
+                    }
+                    dfs["PERSONAL"] = pd.concat([dfs["PERSONAL"], pd.DataFrame([nuevo_personal])], ignore_index=True)
+                    
+                    # B. Guardamos en DATOS GENERALES
+                    nid_dg = dfs["DATOS GENERALES"]["id"].max() + 1 if not dfs["DATOS GENERALES"].empty else 1
+                    nuevo_dg_basico = {
+                        "id": nid_dg, 
+                        "dni": d_dni, 
+                        "apellidos y nombres": nom_comp,
+                        "area": area_form # <-- AGREGAR ESTA LÍNEA
+                    }
+                    dfs["DATOS GENERALES"] = pd.concat([dfs["DATOS GENERALES"], pd.DataFrame([nuevo_dg_basico])], ignore_index=True)
+                    
+                    save_data(dfs)
+                    st.success("Trabajador registrado correctamente")
+                    st.rerun()
 
             if st.form_submit_button("Registrar"):
                 if d_dni and ape_form and nom_form:
@@ -1455,6 +1489,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
