@@ -1163,6 +1163,7 @@ else:
         df_per = dfs.get("PERSONAL", pd.DataFrame())
         df_vac = dfs.get("VACACIONES", pd.DataFrame())
         df_cont = dfs.get("CONTRATOS", pd.DataFrame())
+        df_gen = dfs.get("DATOS GENERALES", pd.DataFrame())
 
         if df_per.empty or df_vac.empty:
             st.warning("⚠️ Faltan datos en las pestañas 'PERSONAL' o 'VACACIONES'.")
@@ -1171,49 +1172,61 @@ else:
             df_per.columns = df_per.columns.str.strip().str.lower()
             df_vac.columns = df_vac.columns.str.strip().str.lower()
             if not df_cont.empty: df_cont.columns = df_cont.columns.str.strip().str.lower()
+            if not df_gen.empty: df_gen.columns = df_gen.columns.str.strip().str.lower()
 
-            # 1. Base del Reporte: DNI
+            # 1. Base del Reporte: DNI y Nombres (PERSONAL)
             df_per["dni"] = df_per["dni"].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
             col_nom_per = next((c for c in df_per.columns if "apellido" in c or "nombre" in c), df_per.columns[1])
             df_reporte = df_per[["dni", col_nom_per]].copy()
             
-            # 2. Obtener Sede, Área y Fecha de Ingreso (TODO DESDE CONTRATOS)
+            # 2. Obtener SEDE (Jalado de DATOS GENERALES)
+            if not df_gen.empty:
+                df_gen["dni"] = df_gen["dni"].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
+                col_sede = next((c for c in df_gen.columns if "sede" in c), None)
+                if col_sede:
+                    df_sede = df_gen[["dni", col_sede]].drop_duplicates(subset=["dni"]).rename(columns={col_sede: "sede"})
+                    df_reporte = df_reporte.merge(df_sede, on="dni", how="left")
+                else:
+                    df_reporte["sede"] = "No registrada"
+            else:
+                df_reporte["sede"] = "No registrada"
+
+            # 3. Obtener ÁREA y FECHA DE INGRESO (Jalado de CONTRATOS)
             if not df_cont.empty:
                 df_cont["dni"] = df_cont["dni"].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
                 df_c = df_cont.copy()
                 
-                col_sede = next((c for c in df_c.columns if "sede" in c), None)
                 col_area = next((c for c in df_c.columns if "rea" in c), None)
                 col_fi = next((c for c in df_c.columns if "inicio" in c), None)
                 
                 if col_fi:
                     df_c[col_fi] = pd.to_datetime(df_c[col_fi], errors="coerce")
+                    # Fecha de ingreso (el primer contrato)
                     df_ingreso = df_c.groupby("dni")[col_fi].min().reset_index().rename(columns={col_fi: "fecha_ingreso"})
+                    
+                    # Área (del contrato más reciente)
                     df_reciente = df_c.sort_values(by=col_fi, ascending=False).drop_duplicates(subset=["dni"])
                     
-                    cols_extraer = ["dni"]
-                    if col_sede: cols_extraer.append(col_sede)
-                    if col_area: cols_extraer.append(col_area)
-                    
-                    df_info = df_reciente[cols_extraer]
-                    if col_sede: df_info = df_info.rename(columns={col_sede: "sede"})
-                    if col_area: df_info = df_info.rename(columns={col_area: "area"})
-                    
-                    df_reporte = df_reporte.merge(df_info, on="dni", how="left").merge(df_ingreso, on="dni", how="left")
+                    if col_area:
+                        df_area = df_reciente[["dni", col_area]].rename(columns={col_area: "area"})
+                        df_reporte = df_reporte.merge(df_area, on="dni", how="left")
+                    else:
+                        df_reporte["area"] = "No registrada"
+                        
+                    df_reporte = df_reporte.merge(df_ingreso, on="dni", how="left")
                     df_reporte["fecha_ingreso"] = df_reporte["fecha_ingreso"].dt.strftime("%d/%m/%Y").fillna("Sin contrato")
                 else:
-                    df_reporte["sede"] = "No registrada"
                     df_reporte["area"] = "No registrada"
                     df_reporte["fecha_ingreso"] = "Sin contrato"
             else:
-                df_reporte["sede"] = "No registrada"
                 df_reporte["area"] = "No registrada"
                 df_reporte["fecha_ingreso"] = "Sin contrato"
             
-            # 3. Obtener Vacaciones (Generados, Gozados, Saldo)
+            # 4. Obtener Vacaciones (Jalado de VACACIONES respetando los decimales)
             df_vac["dni"] = df_vac["dni"].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
             df_v_limpio = df_vac.loc[:, ~df_vac.columns.duplicated()].copy()
             
+            # Limpiar columnas duplicadas antes de unir
             cols_duplicadas = [c for c in df_v_limpio.columns if c in df_reporte.columns and c != "dni"]
             df_v_limpio = df_v_limpio.drop(columns=cols_duplicadas)
             
@@ -1229,21 +1242,19 @@ else:
             if col_sal: rename_dict[col_sal] = "Saldo"
             df_reporte.rename(columns=rename_dict, inplace=True)
 
+            # Evitar problemas de columnas duplicadas
             df_reporte = df_reporte.loc[:, ~df_reporte.columns.duplicated()].copy()
 
-            # ======= LA CORRECCIÓN CLAVE =======
-            # Ahora forzamos a que sean valores decimales (float), no enteros.
+            # MANTENER DECIMALES EXACTOS (Ej. 80.14)
             for col in ["Días Generados", "Días Gozados", "Saldo"]:
                 if col in df_reporte.columns:
-                    # Cambiamos comas por puntos por si viene de Google Sheets con formato europeo/latino
+                    # Convierte a texto, cambia comas por puntos (por si acaso el formato viene europeo), y fuerza a número decimal flotante
                     df_reporte[col] = df_reporte[col].astype(str).str.replace(",", ".", regex=False)
-                    # Convertimos a número con decimales. Si hay error o celda vacía, pone 0.0
                     df_reporte[col] = pd.to_numeric(df_reporte[col], errors='coerce').fillna(0.0)
-            # ====================================
             
+            # Rellenar vacíos
             if "Sede" not in df_reporte.columns: df_reporte["Sede"] = "No registrada"
             if "Área" not in df_reporte.columns: df_reporte["Área"] = "No registrada"
-            
             df_reporte["Sede"] = df_reporte["Sede"].fillna("No registrada")
             df_reporte["Área"] = df_reporte["Área"].fillna("No registrada")
 
@@ -1253,18 +1264,21 @@ else:
             st.markdown("### 🔍 Filtros de Búsqueda")
             c1, c2 = st.columns(2)
             
-            sedes_unicas = ["Todas"] + sorted([str(x) for x in df_reporte["Sede"].unique() if str(x).strip() != "" and str(x) != "nan"])
-            areas_unicas = ["Todas"] + sorted([str(x) for x in df_reporte["Área"].unique() if str(x).strip() != "" and str(x) != "nan"])
+            # Crear listas limpias para los filtros
+            sedes_unicas = ["Todas"] + sorted([str(x) for x in df_reporte["Sede"].unique() if str(x).strip() not in ["", "nan", "None"]])
+            areas_unicas = ["Todas"] + sorted([str(x) for x in df_reporte["Área"].unique() if str(x).strip() not in ["", "nan", "None"]])
             
             with c1:
                 f_sede = st.selectbox("📌 Filtrar por Sede", sedes_unicas)
             with c2:
                 f_area = st.selectbox("📂 Filtrar por Área", areas_unicas)
 
+            # Aplicar los filtros
             df_final = df_reporte.copy()
             if f_sede != "Todas": df_final = df_final[df_final["Sede"] == f_sede]
             if f_area != "Todas": df_final = df_final[df_final["Área"] == f_area]
 
+            # Mostrar tabla final
             cols_mostrar = ["DNI", "Apellidos y Nombres", "Sede", "Área", "Fecha Ingreso", "Días Generados", "Días Gozados", "Saldo"]
             df_final = df_final[[c for c in cols_mostrar if c in df_final.columns]].copy()
             
@@ -1371,6 +1385,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
