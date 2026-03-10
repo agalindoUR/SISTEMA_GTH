@@ -1394,23 +1394,15 @@ elif m == "Vacaciones":
 
             if "sede" not in df_res.columns: df_res["sede"] = "No registrada"
 
-            # CÁLCULO DE DÍAS GENERADOS
-            df_vac["DNI_KEY"] = df_vac["dni"].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
-            df_v = df_vac.copy()
-            df_v = df_v.loc[:, ~df_v.columns.duplicated()]
-            c_dia_v = next((c for c in df_v.columns if "dia" in c.lower() and "gen" in c.lower()), None)
+            # CÁLCULO DE DÍAS GOZADOS (Vacaciones)
+            c_dia_g = next((c for c in df_v.columns if "dia" in c.lower() and "goz" in c.lower()), None)
             
-            if c_dia_v:
-                if isinstance(df_v[c_dia_v], pd.DataFrame):
-                    col_dias_segura = df_v[c_dia_v].iloc[:, 0]
-                else:
-                    col_dias_segura = df_v[c_dia_v]
-                
-                df_v["v_n"] = pd.to_numeric(col_dias_segura.astype(str).str.replace(",", ".", regex=False), errors="coerce").fillna(0.0)
-                df_sum_v = df_v.groupby("DNI_KEY")["v_n"].sum().reset_index().rename(columns={"v_n": "DÍAS GENERADOS"})
-                df_res = df_res.merge(df_sum_v, on="DNI_KEY", how="left")
+            if c_dia_g:
+                df_v["g_n"] = pd.to_numeric(df_v[c_dia_g].astype(str).str.replace(",", "."), errors="coerce").fillna(0)
+                df_sum_g = df_v.groupby("DNI_KEY")["g_n"].sum().reset_index().rename(columns={"g_n": "DÍAS GOZADOS"})
+                df_res = df_res.merge(df_sum_g, on="DNI_KEY", how="left")
             else:
-                df_res["DÍAS GENERADOS"] = 0.0
+                df_res["DÍAS GOZADOS"] = 0.0
 
             # CÁLCULO DE DÍAS GOZADOS
             c_dia_g = next((c for c in df_v.columns if "dia" in c.lower() and "goz" in c.lower()), None)
@@ -1580,6 +1572,7 @@ elif m == "Vacaciones":
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
