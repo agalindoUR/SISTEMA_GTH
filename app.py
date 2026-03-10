@@ -565,7 +565,12 @@ else:
                                 vst[col] = pd.to_datetime(vst[col], errors='coerce').dt.date
                                 col_conf[str(col).upper()] = st.column_config.DateColumn(format="DD/MM/YYYY")
 
-                        vst.columns = [str(col).upper() for col in vst.columns] 
+                        vst.columns = [str(col).upper() for col in vst.columns]
+                        # --- SOLUCIÓN AL ERROR ---
+                        # Si hay columnas duplicadas en Google Sheets, esto las elimina para que la app no colapse
+                        vst = vst.loc[:, ~vst.columns.duplicated()]
+        
+                        if "SEL" not in vst.columns:
                         vst.insert(0, "SEL", False)
                         
                         # --- MAGIA: OCULTAR Y ORDENAR COLUMNAS ---
@@ -1404,6 +1409,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
