@@ -591,7 +591,7 @@ else:
                         
                         vst.columns = [str(col).upper() for col in vst.columns]
                         vst = vst.loc[:, ~vst.columns.duplicated()]
-        
+
                         # ==============================================================
                         # MAGIA: LISTA DESPLEGABLE EN LUGAR DE LA TABLA GIGANTE
                         # ==============================================================
@@ -599,7 +599,6 @@ else:
                             opciones = ["-- Seleccione un registro para editar/eliminar --"]
                             
                             for idx_row, row in vst.iterrows():
-                                # Mostramos un resumen elegante dependiendo de la pestaña
                                 if h_name == "CONTRATOS":
                                     cargo = str(row.get("CARGO", "")).strip()
                                     fecha = str(row.get("F_INICIO", "")).strip()
@@ -608,7 +607,6 @@ else:
                                     periodo = str(row.get("PERIODO", "")).strip()
                                     lbl = f"ID: {idx_row} | Periodo: {periodo}"
                                 else:
-                                    # Para las demás pestañas, mostramos los primeros 2 datos que no estén vacíos
                                     valores = [str(v) for k, v in row.items() if pd.notna(v) and str(v).strip() != "" and str(v).lower() != "nan" and k not in ["DNI", "LINK"]][:2]
                                     lbl = f"ID: {idx_row} | " + " - ".join(valores)
                                     
@@ -617,84 +615,111 @@ else:
                             seleccion = st.selectbox(f"📋 Seleccione el registro a modificar:", opciones, key=f"sel_edit_{h_name}_{dni_buscado}")
                             
                             if seleccion != "-- Seleccione un registro para editar/eliminar --" and not es_lector:
-                                # Extraemos el número de la fila original a partir de la opción que eligió el usuario
                                 idx = int(seleccion.split(" |")[0].replace("ID: ", ""))
                                 fila = vst.loc[idx]
                                 
-                                # A PARTIR DE AQUÍ COMIENZA TU FORMULARIO DE EDICIÓN COMO YA LO TENÍAS
+                                # EL FORMULARIO Y TODO SU CONTENIDO AHORA ESTÁ BIEN ALINEADO
                                 with st.form(key=f"f_ed_{h_name}_{idx}"):
-                            
-                            # ELIMINAMOS EL TÍTULO DUPLICADO QUE ESTABA AQUÍ
-                            
-                            # CLAVE: El formulario envuelve TODO, incluyendo los botones
-                            with st.form(key=f"f_ed_{h_name}_{idx}"):
-                                if h_name == "CONTRATOS":
-                                    st.markdown("### 📝 Editar / Eliminar Contrato")
-                                    c1, c2 = st.columns(2)
-                                    
-                                    with c1:
-                                        v_car = "" if pd.isna(fila.get("CARGO")) else str(fila.get("CARGO"))
-                                        n_car = st.text_input("Cargo", value=v_car)
+                                    if h_name == "CONTRATOS":
+                                        st.markdown("### 📝 Editar / Eliminar Contrato")
+                                        c1, c2 = st.columns(2)
                                         
-                                        # 💡 SOLUCIÓN ÁREA: Buscamos con tilde y sin tilde por si acaso
-                                        v_area_raw = fila.get("ÁREA") if "ÁREA" in fila.index else fila.get("AREA")
-                                        v_area = "" if pd.isna(v_area_raw) else str(v_area_raw)
-                                        n_area_cont = st.text_input("Área", value=v_area).upper()
-                                        
-                                        try: val_rem = float(fila.get("REMUNERACION BASICA", 0.0))
-                                        except: val_rem = 0.0
-                                        if pd.isna(val_rem): val_rem = 0.0
-                                        n_rem = st.number_input("Remuneración básica", value=float(val_rem))
-                                        
-                                        v_bon = "" if pd.isna(fila.get("BONIFICACION")) else str(fila.get("BONIFICACION"))
-                                        n_bon = st.text_input("Bonificación", value=v_bon)
-                                        
-                                        v_cond = "" if pd.isna(fila.get("CONDICION DE TRABAJO")) else str(fila.get("CONDICION DE TRABAJO"))
-                                        n_cond = st.text_input("Condición de trabajo", value=v_cond)
-                                        
-                                        try: ini_val = pd.to_datetime(fila.get("F_INICIO")).date()
-                                        except: ini_val = date.today()
-                                        n_ini = st.date_input("Inicio", value=ini_val, format="DD/MM/YYYY")
-                                        
-                                        try: fin_val = pd.to_datetime(fila.get("F_FIN")).date()
-                                        except: fin_val = date.today()
-                                        n_fin = st.date_input("Fin", value=fin_val, format="DD/MM/YYYY")
+                                        with c1:
+                                            v_car = "" if pd.isna(fila.get("CARGO")) else str(fila.get("CARGO"))
+                                            n_car = st.text_input("Cargo", value=v_car)
+                                            
+                                            v_area_raw = fila.get("ÁREA") if "ÁREA" in fila.index else fila.get("AREA")
+                                            v_area = "" if pd.isna(v_area_raw) else str(v_area_raw)
+                                            n_area_cont = st.text_input("Área", value=v_area).upper()
+                                            
+                                            try: val_rem = float(fila.get("REMUNERACION BASICA", 0.0))
+                                            except: val_rem = 0.0
+                                            if pd.isna(val_rem): val_rem = 0.0
+                                            n_rem = st.number_input("Remuneración básica", value=float(val_rem))
+                                            
+                                            v_bon = "" if pd.isna(fila.get("BONIFICACION")) else str(fila.get("BONIFICACION"))
+                                            n_bon = st.text_input("Bonificación", value=v_bon)
+                                            
+                                            v_cond = "" if pd.isna(fila.get("CONDICION DE TRABAJO")) else str(fila.get("CONDICION DE TRABAJO"))
+                                            n_cond = st.text_input("Condición de trabajo", value=v_cond)
+                                            
+                                            try: ini_val = pd.to_datetime(fila.get("F_INICIO")).date()
+                                            except: ini_val = date.today()
+                                            n_ini = st.date_input("Inicio", value=ini_val, format="DD/MM/YYYY")
+                                            
+                                            try: fin_val = pd.to_datetime(fila.get("F_FIN")).date()
+                                            except: fin_val = date.today()
+                                            n_fin = st.date_input("Fin", value=fin_val, format="DD/MM/YYYY")
 
-                                    with c2:
-                                        v_ttrab = "" if pd.isna(fila.get("TIPO DE TRABAJADOR")) else str(fila.get("TIPO DE TRABAJADOR"))
-                                        if not v_ttrab or str(v_ttrab).lower() == "nan": v_ttrab = "Administrativo"
-                                        opts_tt = ["Administrativo", "Docente", "Externo"]
-                                        if v_ttrab not in opts_tt: opts_tt.append(v_ttrab)
-                                        n_ttrab = st.selectbox("Tipo de trabajador", opts_tt, index=opts_tt.index(v_ttrab))
-                                        
-                                        v_mod = "" if pd.isna(fila.get("MODALIDAD")) else str(fila.get("MODALIDAD"))
-                                        if not v_mod or str(v_mod).lower() == "nan": v_mod = "Presencial"
-                                        opts_mod = ["Presencial", "Semipresencial", "Virtual"]
-                                        if v_mod not in opts_mod: opts_mod.append(v_mod)
-                                        n_mod = st.selectbox("Modalidad", opts_mod, index=opts_mod.index(v_mod))
-                                        
-                                        v_tem = "" if pd.isna(fila.get("TEMPORALIDAD")) else str(fila.get("TEMPORALIDAD"))
-                                        if not v_tem or str(v_tem).lower() == "nan": v_tem = "Plazo fijo"
-                                        opts_tem = ["Plazo fijo", "Plazo indeterminado", "Ordinarizado"]
-                                        if v_tem not in opts_tem: opts_tem.append(v_tem)
-                                        n_tem = st.selectbox("Temporalidad", opts_tem, index=opts_tem.index(v_tem))
-                                        
-                                        v_lnk = "" if pd.isna(fila.get("LINK")) else str(fila.get("LINK"))
-                                        n_lnk = st.text_input("Link", value=v_lnk)
-                                        
-                                        v_tcont = "" if pd.isna(fila.get("TIPO CONTRATO")) else str(fila.get("TIPO CONTRATO"))
-                                        if not v_tcont or str(v_tcont).lower() == "nan": v_tcont = "Planilla completo"
-                                        opts_tcon = ["Planilla completo", "Tiempo Parcial", "Recibo por Honorarios", "Otro"]
-                                        if v_tcont not in opts_tcon: opts_tcon.append(v_tcont)
-                                        n_tcont = st.selectbox("Tipo Contrato", opts_tcon, index=opts_tcon.index(v_tcont))
+                                        with c2:
+                                            v_ttrab = "" if pd.isna(fila.get("TIPO DE TRABAJADOR")) else str(fila.get("TIPO DE TRABAJADOR"))
+                                            if not v_ttrab or str(v_ttrab).lower() == "nan": v_ttrab = "Administrativo"
+                                            opts_tt = ["Administrativo", "Docente", "Externo"]
+                                            if v_ttrab not in opts_tt: opts_tt.append(v_ttrab)
+                                            n_ttrab = st.selectbox("Tipo de trabajador", opts_tt, index=opts_tt.index(v_ttrab))
+                                            
+                                            v_mod = "" if pd.isna(fila.get("MODALIDAD")) else str(fila.get("MODALIDAD"))
+                                            if not v_mod or str(v_mod).lower() == "nan": v_mod = "Presencial"
+                                            opts_mod = ["Presencial", "Semipresencial", "Virtual"]
+                                            if v_mod not in opts_mod: opts_mod.append(v_mod)
+                                            n_mod = st.selectbox("Modalidad", opts_mod, index=opts_mod.index(v_mod))
+                                            
+                                            v_tem = "" if pd.isna(fila.get("TEMPORALIDAD")) else str(fila.get("TEMPORALIDAD"))
+                                            if not v_tem or str(v_tem).lower() == "nan": v_tem = "Plazo fijo"
+                                            opts_tem = ["Plazo fijo", "Plazo indeterminado", "Ordinarizado"]
+                                            if v_tem not in opts_tem: opts_tem.append(v_tem)
+                                            n_tem = st.selectbox("Temporalidad", opts_tem, index=opts_tem.index(v_tem))
+                                            
+                                            v_lnk = "" if pd.isna(fila.get("LINK")) else str(fila.get("LINK"))
+                                            n_lnk = st.text_input("Link", value=v_lnk)
+                                            
+                                            v_tcont = "" if pd.isna(fila.get("TIPO CONTRATO")) else str(fila.get("TIPO CONTRATO"))
+                                            if not v_tcont or str(v_tcont).lower() == "nan": v_tcont = "Planilla completo"
+                                            opts_tcon = ["Planilla completo", "Tiempo Parcial", "Recibo por Honorarios", "Otro"]
+                                            if v_tcont not in opts_tcon: opts_tcon.append(v_tcont)
+                                            n_tcont = st.selectbox("Tipo Contrato", opts_tcon, index=opts_tcon.index(v_tcont))
 
-                                        est_e = "ACTIVO" if n_fin >= date.today() else "CESADO"
-                                        
-                                        v_mot = "" if pd.isna(fila.get("MOTIVO CESE")) else str(fila.get("MOTIVO CESE"))
-                                        if not v_mot or str(v_mot).lower() == "nan": v_mot = "Vigente"
-                                        opts_mot = ["Vigente"] + MOTIVOS_CESE
-                                        if v_mot not in opts_mot: opts_mot.append(v_mot)
-                                        mot_e = st.selectbox("Motivo Cese", opts_mot, index=opts_mot.index(v_mot)) if est_e == "CESADO" else "Vigente"
+                                            est_e = "ACTIVO" if n_fin >= date.today() else "CESADO"
+                                            
+                                            v_mot = "" if pd.isna(fila.get("MOTIVO CESE")) else str(fila.get("MOTIVO CESE"))
+                                            if not v_mot or str(v_mot).lower() == "nan": v_mot = "Vigente"
+                                            opts_mot = ["Vigente"] + MOTIVOS_CESE
+                                            if v_mot not in opts_mot: opts_mot.append(v_mot)
+                                            mot_e = st.selectbox("Motivo Cese", opts_mot, index=opts_mot.index(v_mot)) if est_e == "CESADO" else "Vigente"
+
+                                        st.markdown("---")
+                                        b1, b2 = st.columns(2)
+                                        with b1:
+                                            if st.form_submit_button("💾 Actualizar Contrato", use_container_width=True, key=f"btn_save_contrato_{idx}"):
+                                                nombre_col_area = "área" if "área" in dfs[h_name].columns else "area"
+                                                update_vals = {
+                                                    "cargo": n_car, 
+                                                    nombre_col_area: n_area_cont, 
+                                                    "remuneracion basica": n_rem, 
+                                                    "bonificacion": n_bon,
+                                                    "condicion de trabajo": n_cond, 
+                                                    "f_inicio": n_ini,
+                                                    "f_fin": n_fin, 
+                                                    "tipo de trabajador": n_ttrab,
+                                                    "modalidad": n_mod, 
+                                                    "temporalidad": n_tem, 
+                                                    "link": n_lnk, 
+                                                    "tipo contrato": n_tcont,
+                                                    "estado": est_e, 
+                                                    "motivo cese": mot_e
+                                                }
+                                                for k, v in update_vals.items():
+                                                    dfs[h_name].at[idx, k] = v
+                                                save_data(dfs)
+                                                st.success("✅ Contrato actualizado")
+                                                st.rerun()
+                                                
+                                        with b2:
+                                            if st.form_submit_button("🗑️ Eliminar Contrato", type="primary", use_container_width=True, key=f"btn_del_contrato_{idx}"):
+                                                dfs[h_name] = dfs[h_name].drop(idx)
+                                                save_data(dfs)
+                                                st.warning("🗑️ Contrato eliminado")
+                                                st.rerun()
 
                                     st.markdown("---")
                                     b1, b2 = st.columns(2)
@@ -1620,6 +1645,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
