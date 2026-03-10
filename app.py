@@ -571,7 +571,7 @@ else:
                         vst = vst.loc[:, ~vst.columns.duplicated()]
         
                         if "SEL" not in vst.columns:
-                        vst.insert(0, "SEL", False)
+                            vst.insert(0, "SEL", False)
                         
                         # --- MAGIA: OCULTAR Y ORDENAR COLUMNAS ---
                         # 1. Lista de todo lo que queremos desaparecer de la vista
@@ -1409,6 +1409,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
