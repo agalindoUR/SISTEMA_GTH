@@ -1154,6 +1154,146 @@ else:
         else:
             st.warning("⚠️ Faltan datos en Personal o Datos Generales.")
 
+    # ==========================================
+    # MÓDULO: VACACIONES (VERSIÓN CORREGIDA)
+    # ==========================================
+    elif m == "Vacaciones":
+        st.markdown("<h2 style='color: #4A0000;'>🌴 Reporte Integrado de Vacaciones</h2>", unsafe_allow_html=True)
+        
+        df_per = dfs.get("PERSONAL", pd.DataFrame())
+        df_vac = dfs.get("VACACIONES", pd.DataFrame())
+        df_cont = dfs.get("CONTRATOS", pd.DataFrame())
+        df_gen = dfs.get("DATOS GENERALES", pd.DataFrame())
+
+        if df_per.empty or df_vac.empty:
+            st.warning("⚠️ No se encontró información en 'PERSONAL' o 'VACACIONES'.")
+        else:
+            # 1. Normalizar PERSONAL
+            df_per.columns = df_per.columns.str.strip().str.lower()
+            df_per["dni"] = df_per["dni"].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
+            col_nom = next((c for c in df_per.columns if "apellido" in c or "nombre" in c), "trabajador")
+            
+            # Crear base del reporte
+            df_reporte = df_per[["dni", col_nom]].copy()
+
+            # 2. SEDE desde DATOS GENERALES
+            if not df_gen.empty:
+                df_gen.columns = df_gen.columns.str.strip().str.lower()
+                df_gen["dni"] = df_gen["dni"].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
+                col_sd = next((c for c in df_gen.columns if "sede" in c), None)
+                if col_sd:
+                    df_s = df_gen[["dni", col_sd]].drop_duplicates("dni").rename(columns={col_sd: "sede_f"})
+                    df_reporte = df_reporte.merge(df_s, on="dni", how="left")
+
+            # 3. ÁREAS y FECHA desde CONTRATOS
+            if not df_cont.empty:
+                df_cont.columns = df_cont.columns.str.strip().str.lower()
+                df_cont["dni"] = df_cont["dni"].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
+                col_ar = next((c for c in df_cont.columns if "rea" in c), None)
+                col_f = next((c for c in df_cont.columns if "inicio" in c), None)
+                
+                if col_f:
+                    df_cont[col_f] = pd.to_datetime(df_cont[col_f], errors="coerce")
+                    df_fi = df_cont.groupby("dni")[col_f].min().reset_index().rename(columns={col_f: "ingreso_f"})
+                    df_reporte = df_reporte.merge(df_fi, on="dni", how="left")
+                
+                if col_ar:
+                    df_a = df_cont.sort_values(by=col_f if col_f else df_cont.columns[0], ascending=False).drop_duplicates("dni")
+                    df_a = df_a[["dni", col_ar]].rename(columns={col_ar: "area_f"})
+                    df_reporte = df_reporte.merge(df_a, on="dni", how="left")
+
+            # 4. TRABAJAR LA PESTAÑA VACACIONES (El punto crítico)
+            df_v = df_vac.copy()
+            df_v.columns = df_v.columns.str.strip().str.lower()
+            
+            # Buscar la columna DNI en vacaciones (puede llamarse 'dni ', 'DNI', etc)
+            col_dni_v = next((c for c in df_v.columns if "dni" in c), None)
+            
+            if col_dni_v:
+                df_v[col_dni_v] = df_v[col_dni_v].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
+                
+                # Identificar columnas de días
+                c_gen = next((c for c in df_v.columns if "generado" in c), None)
+                c_goz = next((c for c in df_v.columns if "gozado" in c), None)
+                c_sal = next((c for c in df_v.columns if "saldo" in c), None)
+
+                # Limpiar los números (quitar comas y convertir a decimal)
+                for c_num in [c_gen, c_goz, c_sal]:
+                    if c_num:
+                        df_v[c_num] = df_v[c_num].astype(str).str.replace(",", ".", regex=False)
+                        df_v[c_num] = pd.to_numeric(df_v[c_num], errors="coerce").fillna(0.0)
+
+                # Quedarnos con el último registro de cada DNI en vacaciones
+                df_v_final = df_v.drop_duplicates(subset=[col_dni_v], keep="last")
+                
+                # Seleccionar solo lo necesario para unir
+                cols_to_pull = [col_dni_v]
+                if c_gen: cols_to_pull.append(c_gen)
+                if c_goz: cols_to_pull.append(c_goz)
+                if c_sal: cols_to_pull.append(c_sal)
+                
+                df_v_mini = df_v_final[cols_to_pull].rename(columns={col_dni_v: "dni"})
+                
+                # UNIR AL REPORTE
+                df_reporte = df_reporte.merge(df_v_mini, on="dni", how="left")
+
+                # 5. RENOMBRAR PARA LA TABLA BLANCA
+                nombres_finales = {
+                    "dni": "DNI",
+                    col_nom: "Apellidos y Nombres",
+                    "sede_f": "Sede",
+                    "area_f": "Área",
+                    "ingreso_f": "Fecha Ingreso",
+                    c_gen: "Días Generados",
+                    c_goz: "Días Gozados",
+                    c_sal: "Saldo"
+                }
+                df_reporte.rename(columns=nombres_finales, inplace=True)
+                
+                # Limpiar duplicados de columnas por si acaso
+                df_reporte = df_reporte.loc[:, ~df_reporte.columns.duplicated()].copy()
+
+                # Formatear fecha
+                if "Fecha Ingreso" in df_reporte.columns:
+                    df_reporte["Fecha Ingreso"] = pd.to_datetime(df_reporte["Fecha Ingreso"]).dt.strftime('%d/%m/%Y').fillna("-")
+
+                # Rellenar vacíos
+                for c in ["Sede", "Área"]:
+                    if c in df_reporte.columns: df_reporte[c] = df_reporte[c].fillna("No registrado")
+
+                # --- FILTROS ---
+                st.markdown("### 🔍 Filtros")
+                f1, f2 = st.columns(2)
+                with f1:
+                    s_list = ["Todas"] + sorted(df_reporte["Sede"].unique().tolist())
+                    sel_sede = st.selectbox("Sede", s_list)
+                with f2:
+                    a_list = ["Todas"] + sorted(df_reporte["Área"].unique().tolist())
+                    sel_area = st.selectbox("Área", a_list)
+
+                # Aplicar filtros
+                df_f = df_reporte.copy()
+                if sel_sede != "Todas": df_f = df_f[df_f["Sede"] == sel_sede]
+                if sel_area != "Todas": df_f = df_f[df_f["Área"] == sel_area]
+
+                # MOSTRAR TABLA
+                st.success(f"Registros encontrados: {len(df_f)}")
+                
+                # Orden de columnas deseado
+                orden = ["DNI", "Apellidos y Nombres", "Sede", "Área", "Fecha Ingreso", "Días Generados", "Días Gozados", "Saldo"]
+                cols_finales = [c for c in orden if c in df_f.columns]
+                
+                st.dataframe(
+                    df_f[cols_finales].style.format({
+                        "Días Generados": "{:.2f}",
+                        "Días Gozados": "{:.2f}",
+                        "Saldo": "{:.2f}"
+                    }), 
+                    hide_index=True,
+                    use_container_width=True
+                )
+            else:
+                st.error("❌ No se encontró la columna 'DNI' en la pestaña VACACIONES.")
     
 # ==========================================
     # MÓDULO: VENCIMIENTO DE CONTRATOS
@@ -1255,6 +1395,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
