@@ -1213,9 +1213,10 @@ else:
             if col_obs: rename_dict[col_obs] = "OBSERVACIONES"
             df_reporte.rename(columns=rename_dict, inplace=True)
 
-            # Rellenar nulos con 0
-            for col in ["Días Generados", "Días Gozados", "Saldo"]:
-                if col in df_reporte.columns: df_reporte[col] = df_reporte[col].fillna(0).astype(int)
+            # Rellenar nulos con 0 (y forzar conversión numérica para evitar errores por texto)
+        for col in ["Días Generados", "Días Gozados", "Saldo"]:
+            if col in df_reporte.columns:
+                df_reporte[col] = pd.to_numeric(df_reporte[col], errors='coerce').fillna(0).astype(int)
 
             # Mostrar Tabla
             cols_mostrar = ["DNI", "Apellidos y Nombres", "Sede", "Área", "Fecha Ingreso", "Días Generados", "Días Gozados", "Saldo"]
@@ -1337,6 +1338,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
