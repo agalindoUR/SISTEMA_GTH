@@ -1154,7 +1154,7 @@ else:
         else:
             st.warning("⚠️ Faltan datos en Personal o Datos Generales.")
 
-   # ==========================================
+  # ==========================================
     # MÓDULO: VACACIONES
     # ==========================================
     elif m == "Vacaciones":
@@ -1214,30 +1214,14 @@ else:
             df_reporte.rename(columns=rename_dict, inplace=True)
 
             # Rellenar nulos con 0 (y forzar conversión numérica para evitar errores por texto)
-        for col in ["Días Generados", "Días Gozados", "Saldo"]:
-            if col in df_reporte.columns:
-                df_reporte[col] = pd.to_numeric(df_reporte[col], errors='coerce').fillna(0).astype(int)
+            for col in ["Días Generados", "Días Gozados", "Saldo"]:
+                if col in df_reporte.columns:
+                    df_reporte[col] = pd.to_numeric(df_reporte[col], errors='coerce').fillna(0).astype(int)
 
-            # Mostrar Tabla
+            # Mostrar Tabla Final
             cols_mostrar = ["DNI", "Apellidos y Nombres", "Sede", "Área", "Fecha Ingreso", "Días Generados", "Días Gozados", "Saldo"]
             df_final = df_reporte[[c for c in cols_mostrar if c in df_reporte.columns]].copy()
             st.dataframe(df_final, hide_index=True)
-
-            # Ver Detalle
-            st.markdown("### 🔍 Ver Historial y Observaciones")
-            if not df_final.empty:
-                ops = ["Seleccione un trabajador..."] + list(df_final["DNI"].astype(str) + " - " + df_final["Apellidos y Nombres"])
-                sel = st.selectbox("Buscar trabajador:", options=ops)
-                if sel != "Seleccione un trabajador...":
-                    dni_sel = sel.split(" - ")[0]
-                    detalle = df_reporte[df_reporte["DNI"].astype(str) == dni_sel]
-                    if not detalle.empty:
-                        c1, c2, c3 = st.columns(3)
-                        c1.metric("Generados", detalle["Días Generados"].values[0] if "Días Generados" in detalle else 0)
-                        c2.metric("Gozados", detalle["Días Gozados"].values[0] if "Días Gozados" in detalle else 0)
-                        c3.metric("Saldo", detalle["Saldo"].values[0] if "Saldo" in detalle else 0)
-                        obs = detalle["OBSERVACIONES"].values[0] if "OBSERVACIONES" in detalle.columns else ""
-                        st.text_area("Desglose / Historial de Fechas:", value=str(obs) if pd.notna(obs) else "Sin observaciones", disabled=True)
 # ==========================================
     # MÓDULO: VENCIMIENTO DE CONTRATOS
     # ==========================================
@@ -1338,6 +1322,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
