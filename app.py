@@ -684,7 +684,8 @@ else:
                             cols_reales = [c for c in dfs[h_name].columns if c.lower() not in ["id", "dni", "apellidos y nombres", "apellidos", "nombres"]]
 
                             with col_a:
-                                df_filtro = dfs[h_name][dfs[h_name]["DNI"] == dni_buscado] if not dfs[h_name].empty else pd.DataFrame()
+                                col_dni = next((c for c in dfs[h_name].columns if str(c).strip().upper() == "DNI"), "DNI")
+                                df_filtro = dfs[h_name][dfs[h_name][col_dni] == dni_buscado] if not dfs[h_name].empty else pd.DataFrame()
                                 if h_name == "DATOS GENERALES" and len(df_filtro) > 0:
                                     st.info("📌 Los datos generales ya están registrados. Selecciona el registro en la tabla de arriba para editarlos.")
                                 else:
@@ -1492,6 +1493,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
