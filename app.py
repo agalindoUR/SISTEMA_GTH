@@ -613,6 +613,50 @@ else:
                         st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 10px !important; }</style>""", unsafe_allow_html=True)
                         ed = st.data_editor(vst, hide_index=True, use_container_width=False, column_config=col_conf, key=f"ed_{h_name}")
                         sel = ed[ed["SEL"] == True]
+                        else:
+                    edit_row = {}
+                    # Definimos columnas que no queremos editar manualmente porque son IDs o DNI base
+                    cols_no_editables = ["id", "dni"] 
+                    
+                    for col in cols_reales:
+                        col_busqueda = col.lower() 
+                        # Evitamos duplicar el campo DNI si ya lo tenemos identificado
+                        if col_busqueda in cols_no_editables:
+                            edit_row[col_busqueda] = sel.iloc[0].get(col_busqueda, "")
+                            continue
+
+                        val = sel.iloc[0].get(col_busqueda, "")
+                        label_mostrar = col.upper()
+                        
+                        # Lógica para fechas
+                        if "fecha" in col_busqueda or "f_" in col_busqueda:
+                            fecha_dt = pd.to_datetime(val, errors='coerce')
+                            val_fecha = fecha_dt.date() if pd.notnull(fecha_dt) else date.today()
+                            edit_row[col_busqueda] = st.date_input(label_mostrar, value=val_fecha, format="DD/MM/YYYY", key=f"edit_{h_name}_{col}_{idx}")
+                        
+                        # Lógica para la Edad
+                        elif col_busqueda == "edad":
+                            edit_row[col_busqueda] = st.number_input(label_mostrar, value=int(val) if str(val).isdigit() else 0, key=f"edit_{h_name}_{col}_{idx}")
+                        
+                        # Resto de campos (incluye AREA)
+                        else:
+                            edit_row[col_busqueda] = st.text_input(label_mostrar, value=str(val) if pd.notnull(val) else "", key=f"edit_{h_name}_{col}_{idx}")
+
+                # --- BOTONES DE ACCIÓN (Fuera del if/else pero dentro del formulario) ---
+                col_btn1, col_btn2 = st.columns(2)
+                with col_btn1:
+                    if st.form_submit_button("💾 Guardar Cambios", use_container_width=True):
+                        for k, v in edit_row.items(): 
+                            dfs[h_name].at[idx, k] = v
+                        save_data(dfs)
+                        st.success("✅ Registro actualizado")
+                        st.rerun()
+                with col_btn2:
+                    if st.form_submit_button("🗑️ Eliminar", type="primary", use_container_width=True):
+                        dfs[h_name] = dfs[h_name].drop(idx)
+                        save_data(dfs)
+                        st.warning("🗑️ Registro eliminado")
+                        st.rerun()
 
                         # ==========================================
                         # BOTÓN DE IMPRESIÓN DE PAPELETA (SOLO EN VACACIONES)
@@ -938,70 +982,44 @@ else:
         with st.form("reg_p", clear_on_submit=True):
             st.write("### Alta de Nuevo Trabajador")
             d_dni = st.text_input("DNI").strip()
-            # 1. Separamos Apellidos y Nombres (Asegurando Mayúsculas)
             ape_form = st.text_input("Apellidos").upper().strip()
             nom_form = st.text_input("Nombres").upper().strip()
-            # Combinamos para "apellidos y nombres" (Apellido, Nombre)
             nom_comp = f"{ape_form}, {nom_form}" if ape_form and nom_form else ""
-            # 2. Listas desglosables
+            
             sexo_form = st.selectbox("Sexo", ["Masculino", "Femenino"])
             estado_form = st.selectbox("Estado Civil", ["Soltero(a)", "Casado(a)", "Divorciado(a)", "Conviviente", "Viudo(a)", "Otro"])
             sede_form = st.selectbox("Sede de Trabajo", ["Local Giraldez", "Local San Carlos", "Local Abancay", "Local Lince", "Local Pueblo Libre"])
             link_form = st.text_input("Link File").strip()
-            # ... (debajo de link_form)
-            area_form = st.text_input("Área de Trabajo").upper().strip() # <-- AGREGAR ESTA LÍNEA
+            
+            # --- AQUÍ AGREGAMOS EL ÁREA ---
+            area_form = st.text_input("Área de Trabajo").upper().strip() 
 
             if st.form_submit_button("Registrar"):
                 if d_dni and ape_form and nom_form:
-                    # ... (ID personal)
-                    # A. Guardamos en PERSONAL
+                    # ID para PERSONAL
+                    next_id_personal = dfs["PERSONAL"]["id"].max() + 1 if not dfs["PERSONAL"].empty else 1
+                    
+                    # A. Guardamos en PERSONAL (Incluyendo área)
                     nuevo_personal = {
-                        "id": next_id_personal, 
-                        "dni": d_dni, 
-                        "apellidos": ape_form, 
-                        "nombres": nom_form, 
-                        "apellidos y nombres": nom_comp, 
-                        "sexo": sexo_form, 
-                        "estado_civil": estado_form, 
-                        "sede": sede_form, 
-                        "link": link_form,
-                        "area": area_form  # <-- AGREGAR ESTA LÍNEA
+                        "id": next_id_personal, "dni": d_dni, "apellidos": ape_form, 
+                        "nombres": nom_form, "apellidos y nombres": nom_comp, 
+                        "sexo": sexo_form, "estado_civil": estado_form, 
+                        "sede": sede_form, "link": link_form, "area": area_form
                     }
                     dfs["PERSONAL"] = pd.concat([dfs["PERSONAL"], pd.DataFrame([nuevo_personal])], ignore_index=True)
                     
-                    # B. Guardamos en DATOS GENERALES
+                    # B. Guardamos en DATOS GENERALES (Incluyendo área)
                     nid_dg = dfs["DATOS GENERALES"]["id"].max() + 1 if not dfs["DATOS GENERALES"].empty else 1
                     nuevo_dg_basico = {
-                        "id": nid_dg, 
-                        "dni": d_dni, 
-                        "apellidos y nombres": nom_comp,
-                        "area": area_form # <-- AGREGAR ESTA LÍNEA
+                        "id": nid_dg, "dni": d_dni, "apellidos y nombres": nom_comp, "area": area_form
                     }
                     dfs["DATOS GENERALES"] = pd.concat([dfs["DATOS GENERALES"], pd.DataFrame([nuevo_dg_basico])], ignore_index=True)
                     
                     save_data(dfs)
                     st.success("Trabajador registrado correctamente")
                     st.rerun()
-
-            if st.form_submit_button("Registrar"):
-                if d_dni and ape_form and nom_form:
-                    # Cálculo robusto del ID para PERSONAL (ID único por persona)
-                    next_id_personal = dfs["PERSONAL"]["id"].max() + 1 if not dfs["PERSONAL"].empty else 1
-                    # A. Guardamos en PERSONAL (Lista Maestra)
-                    nuevo_personal = {"id": next_id_personal, "dni": d_dni, "apellidos": ape_form, "nombres": nom_form, "apellidos y nombres": nom_comp, "sexo": sexo_form, "estado_civil": estado_form, "sede": sede_form, "link": link_form}
-                    dfs["PERSONAL"] = pd.concat([dfs["PERSONAL"], pd.DataFrame([nuevo_personal])], ignore_index=True)
-                    
-                    # CORRECCIÓN VINCULACIÓN: Crear automáticamente entrada básica en DATOS GENERALES
-                    # El ID debe coincidir o ser único por sheet, optamos por ID único por sheet y vinculación por DNI
-                    nid_dg = dfs["DATOS GENERALES"]["id"].max() + 1 if not dfs["DATOS GENERALES"].empty else 1
-                    nuevo_dg_basico = {"id": nid_dg, "dni": d_dni, "apellidos y nombres": nom_comp}
-                    dfs["DATOS GENERALES"] = pd.concat([dfs["DATOS GENERALES"], pd.DataFrame([nuevo_dg_basico])], ignore_index=True)
-                    
-                    # Guardamos ambos cambios
-                    save_data(dfs)
-                    st.success("Trabajador registrado correctamente")
-                    st.rerun()
-                else: st.error("⚠️ Por favor, complete al menos el DNI, Apellidos y Nombres.")
+                else: 
+                    st.error("⚠️ Por favor, complete al menos el DNI, Apellidos y Nombres.")
 
     elif m == "📊 Nómina General":
         st.markdown("<h2 style='color: #FFD700;'>👥 Trabajadores registrados en el sistema</h2>", unsafe_allow_html=True)
@@ -1489,6 +1507,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
