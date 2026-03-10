@@ -1023,7 +1023,7 @@ else:
             with c2:
                 estado_form = st.selectbox("Estado Civil", ["Soltero(a)", "Casado(a)", "Divorciado(a)", "Conviviente", "Viudo(a)", "Otro"])
                 sede_form = st.selectbox("Sede de Trabajo", ["Local Giraldez", "Local San Carlos", "Local Abancay", "Local Lince", "Local Pueblo Libre"])
-                area_form = st.text_input("Área de Trabajo").upper().strip() # <-- CAMPO NUEVO
+                area_form = st.text_input("ÁREA").upper().strip()
                 link_form = st.text_input("Link File").strip()
 
             nom_comp = f"{ape_form}, {nom_form}" if ape_form and nom_form else ""
@@ -1041,7 +1041,7 @@ else:
                     dfs["DATOS GENERALES"] = pd.concat([dfs["DATOS GENERALES"], pd.DataFrame([nuevo_dg])], ignore_index=True)
                     
                     save_data(dfs)
-                    st.success("✅ Trabajador registrado correctamente")
+                    st.success("✅ Registrado con éxito")
                     st.rerun()
                 else: st.error("⚠️ Complete DNI, Apellidos y Nombres.")
 
@@ -1531,6 +1531,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
