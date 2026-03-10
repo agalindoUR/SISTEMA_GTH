@@ -1229,42 +1229,24 @@ else:
             if col_sal: rename_dict[col_sal] = "Saldo"
             df_reporte.rename(columns=rename_dict, inplace=True)
 
-            # Convertir a números enteros y rellenar vacíos con "No registrada"
+            # === EL ESCUDO ANTI-DUPLICADOS (La solución a tu error) ===
+            df_reporte = df_reporte.loc[:, ~df_reporte.columns.duplicated()].copy()
+
+            # Convertir a números enteros y rellenar vacíos
             for col in ["Días Generados", "Días Gozados", "Saldo"]:
                 if col in df_reporte.columns:
                     df_reporte[col] = pd.to_numeric(df_reporte[col], errors='coerce').fillna(0).astype(int)
             
-            df_reporte["Sede"] = df_reporte.get("Sede", "No registrada").fillna("No registrada")
-            df_reporte["Área"] = df_reporte.get("Área", "No registrada").fillna("No registrada")
+            if "Sede" not in df_reporte.columns: df_reporte["Sede"] = "No registrada"
+            if "Área" not in df_reporte.columns: df_reporte["Área"] = "No registrada"
+            
+            df_reporte["Sede"] = df_reporte["Sede"].fillna("No registrada")
+            df_reporte["Área"] = df_reporte["Área"].fillna("No registrada")
 
             # ==========================================
             # SECCIÓN DE FILTROS
             # ==========================================
             st.markdown("### 🔍 Filtros de Búsqueda")
-            c1, c2 = st.columns(2)
-            
-            # Obtener listas únicas (limpiando nulos)
-            sedes_unicas = ["Todas"] + sorted([str(x) for x in df_reporte["Sede"].unique() if str(x).strip() != ""])
-            areas_unicas = ["Todas"] + sorted([str(x) for x in df_reporte["Área"].unique() if str(x).strip() != ""])
-            
-            with c1:
-                f_sede = st.selectbox("📌 Filtrar por Sede", sedes_unicas)
-            with c2:
-                f_area = st.selectbox("📂 Filtrar por Área", areas_unicas)
-
-            # Aplicar filtros a la tabla final
-            df_final = df_reporte.copy()
-            if f_sede != "Todas":
-                df_final = df_final[df_final["Sede"] == f_sede]
-            if f_area != "Todas":
-                df_final = df_final[df_final["Área"] == f_area]
-
-            # Mostrar Tabla Final
-            cols_mostrar = ["DNI", "Apellidos y Nombres", "Sede", "Área", "Fecha Ingreso", "Días Generados", "Días Gozados", "Saldo"]
-            df_final = df_final[[c for c in cols_mostrar if c in df_final.columns]].copy()
-            
-            st.success(f"📋 **Total de registros:** {len(df_final)}")
-            st.dataframe(df_final, hide_index=True)
 # ==========================================
     # MÓDULO: VENCIMIENTO DE CONTRATOS
     # ==========================================
@@ -1365,6 +1347,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
