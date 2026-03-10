@@ -65,35 +65,51 @@ def load_data():
     hojas_existentes = {ws.title: ws for ws in sheet.worksheets()}
 
     dfs = {}
-    for h, cols in COLUMNAS.items():
+    for h, cols_requeridas in COLUMNAS.items():
         if h in hojas_existentes:
-            worksheet = hojas_existentes[h]
-            # Al obtener los registros, forzamos limpieza:
-    try:
-        data = worksheet.get_all_records(head=1) # Asegura que use la fila 1
-        df = pd.DataFrame(data)
-        # LIMPIEZA INMEDIATA: Quitar espacios y pasar a mayúsculas
-        df.columns = [str(c).strip().upper() for c in df.columns]
-        return df
-    except Exception as e:
-        st.error(f"Error en cabeceras: {e}")
-        return pd.DataFrame()
+            try:
+                worksheet = hojas_existentes[h]
+                # 1. Obtenemos los datos crudos
+                data = worksheet.get_all_records()
+                df = pd.DataFrame(data)
 
-        # ... (A partir de aquí, deja el resto de tu código igual: df.columns = ...)
-        df.columns = [str(c).strip().lower() for c in df.columns]
-                  
-        if h == "CONTRATOS":
-            if "sueldo" in df.columns: df.rename(columns={"sueldo": "remuneración básica"}, inplace=True)
-            if "tipo colaborador" in df.columns: df.rename(columns={"tipo colaborador": "tipo de trabajador"}, inplace=True)
-            if "tipo" in df.columns and "tipo de trabajador" not in df.columns: df.rename(columns={"tipo": "tipo de trabajador"}, inplace=True)
+                # 2. LIMPIEZA DE CABECERAS (Para evitar el error de duplicados y tildes)
+                # Pasamos todo a minúsculas y quitamos espacios para procesar internamente
+                df.columns = [str(c).strip().lower()
+                              .replace('á', 'a').replace('é', 'e')
+                              .replace('í', 'i').replace('ó', 'o')
+                              .replace('ú', 'u') for c in df.columns]
 
-        if "dni" in df.columns:
-            df["dni"] = df["dni"].astype(str).str.strip().replace(r'\.0$', '', regex=True)
-        
-        for req_col in cols:
-            if req_col not in df.columns: df[req_col] = None
+                # 3. RENOMBRADO ESTRATÉGICO (Estandarizar AREA y otros)
+                # Buscamos cualquier variante de "area" y la nombramos "area"
+                for col in df.columns:
+                    if "rea" in col: # detecta area, AREA, área, Área
+                        df.rename(columns={col: "area"}, inplace=True)
+                
+                # Otros renombres específicos de tu lógica
+                if h == "CONTRATOS":
+                    if "sueldo" in df.columns: df.rename(columns={"sueldo": "remuneración básica"}, inplace=True)
+                    if "tipo colaborador" in df.columns: df.rename(columns={"tipo colaborador": "tipo de trabajador"}, inplace=True)
+                    if "tipo" in df.columns and "tipo de trabajador" not in df.columns: df.rename(columns={"tipo": "tipo de trabajador"}, inplace=True)
+
+                # 4. LIMPIEZA DE DNI
+                if "dni" in df.columns:
+                    df["dni"] = df["dni"].astype(str).str.strip().str.replace(r'\.0$', '', regex=True).str.zfill(8)
+
+                # 5. ASEGURAR COLUMNAS REQUERIDAS (Evita que la App explote si falta una columna)
+                for req_col in cols_requeridas:
+                    req_col_clean = req_col.strip().lower()
+                    if req_col_clean not in df.columns:
+                        df[req_col_clean] = "" # Creamos la columna si no existe en el Excel
+
+                dfs[h] = df
+
+            except Exception as e:
+                st.error(f"⚠️ Error al procesar la pestaña '{h}': {e}")
+                dfs[h] = pd.DataFrame() # Entregar vacío para que no rompa el resto
+        else:
+            dfs[h] = pd.DataFrame()
             
-        dfs[h] = df
     return dfs
 
 def save_data(dfs):
@@ -1439,6 +1455,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
