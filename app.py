@@ -1210,6 +1210,13 @@ else:
             # 4. Unir con los datos REALES de la pestaña VACACIONES
             df_vac_str = df_vac.copy()
             df_vac_str.columns = df_vac_str.columns.str.lower().str.strip()
+            
+            # --- SOLUCIÓN AL ERROR ---
+            # Borramos columnas duplicadas (como los nombres) en la tabla vacaciones para que la unión no colapse
+            cols_duplicadas = [c for c in df_vac_str.columns if c in df_v.columns and c != "dni"]
+            if cols_duplicadas:
+                df_vac_str = df_vac_str.drop(columns=cols_duplicadas)
+
             # Aseguramos que la columna dni se llame igual
             if "dni" in df_vac_str.columns:
                 df_v = df_v.merge(df_vac_str, on="dni", how="inner") 
@@ -1217,7 +1224,7 @@ else:
             # Formateamos fechas
             df_v["Fecha de inicio"] = df_v["Fecha de inicio"].dt.strftime("%d/%m/%Y").fillna("Sin contrato válido")
             
-            # Detectamos columnas de la pestaña VACACIONES (Generados, Gozados, Saldo, Observacion)
+            # Detectamos columnas de la pestaña VACACIONES
             col_gen = next((c for c in df_v.columns if "generado" in c.lower()), None)
             col_goz = next((c for c in df_v.columns if "gozado" in c.lower()), None)
             col_sal = next((c for c in df_v.columns if "saldo" in c.lower()), None)
@@ -1228,7 +1235,7 @@ else:
             if col_gen: rename_dict[col_gen] = "Días Generados"
             if col_goz: rename_dict[col_goz] = "Días Gozados"
             if col_sal: rename_dict[col_sal] = "Saldo"
-            if col_obs: rename_dict[col_obs] = "OBSERVACION" # Lo guardamos para el detalle
+            if col_obs: rename_dict[col_obs] = "OBSERVACION" 
             
             df_v.rename(columns=rename_dict, inplace=True)
             
@@ -1269,14 +1276,15 @@ else:
             st.markdown("---")
             st.markdown("<h3 style='color: #4A0000;'>🔍 Ver Detalle de Vacaciones</h3>", unsafe_allow_html=True)
             
-            # Creamos una lista de opciones combinando DNI y Nombre
             if not df_final.empty:
-                opciones_trabajadores = ["Seleccione un trabajador..."] + list(df_final["DNI"].astype(str) + " - " + df_final["Trabajador"])
+                # --- SOLUCIÓN AL ERROR DEL SELECTBOX ---
+                # Evitamos que se caiga si por alguna razón no existe "Trabajador"
+                col_nombres = "Trabajador" if "Trabajador" in df_final.columns else df_final.columns[1]
+                opciones_trabajadores = ["Seleccione un trabajador..."] + list(df_final["DNI"].astype(str) + " - " + df_final[col_nombres].astype(str))
                 trab_sel = st.selectbox("Buscar por DNI o Nombre:", options=opciones_trabajadores)
                 
                 if trab_sel != "Seleccione un trabajador...":
                     dni_sel = trab_sel.split(" - ")[0]
-                    # Buscamos la fila de este trabajador
                     detalle = df_v[df_v["DNI"].astype(str) == dni_sel]
                     
                     if not detalle.empty:
@@ -1292,10 +1300,9 @@ else:
                         col_det3.metric("Saldo Restante", val_sal)
                         
                         observacion = detalle["OBSERVACION"].values[0] if "OBSERVACION" in detalle.columns else "No hay desglose registrado."
-                        # Si es nan o nulo, ponerlo vacío
                         if pd.isna(observacion): observacion = "No hay desglose registrado."
                         
-                        st.text_area("Desglose / Observaciones (Extraído del Excel):", value=str(observacion), height=150, disabled=True)
+                        st.text_area("Desglose / Observaciones:", value=str(observacion), height=150, disabled=True)
 
 # ==========================================
     # MÓDULO: VENCIMIENTO DE CONTRATOS
@@ -1397,6 +1404,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
