@@ -761,7 +761,7 @@ else:
                         # ==========================================
                         # BOTÓN DE IMPRESIÓN DE PAPELETA (SOLO EN VACACIONES)
                         # ==========================================
-                        if h_name == "VACACIONES" and not sel.empty:
+                        if h_name == "VACACIONES" and sel_val != "-- Seleccione un registro --":
                             st.markdown("---")
                             # Necesitamos el cargo actual y fecha de ingreso del trabajador
                             current_cargo = "TRABAJADOR" # Default
@@ -781,12 +781,11 @@ else:
                                         if pd.notnull(f_min): f_ingreso_val = f_min.date()
                                 except: pass
 
-                            # Capturar datos de la fila seleccionada
-                            r_sel = sel.iloc[0]
-                            p_papeleta = str(r_sel.get("PERIODO", ""))
-                            fi_papeleta = r_sel.get("F_INICIO")
-                            ff_papeleta = r_sel.get("F_FIN")
-                            dg_papeleta = r_sel.get("DÍAS GOZADOS", 0)
+                            # Capturar datos de la fila seleccionada desde el diccionario 'fila'
+                            p_papeleta = str(fila.get("PERIODO", ""))
+                            fi_papeleta = fila.get("F_INICIO")
+                            ff_papeleta = fila.get("F_FIN")
+                            dg_papeleta = fila.get("DÍAS GOZADOS", 0)
 
                             if hasattr(fi_papeleta, 'date'): fi_papeleta = fi_papeleta.date()
                             if hasattr(ff_papeleta, 'date'): ff_papeleta = ff_papeleta.date()
@@ -807,7 +806,36 @@ else:
                                             key="dl_papeleta_tab"
                                         )
                             st.markdown("---")
-                        
+                        # 1. Mostrar la tabla completa (solo lectura visual)
+                        st.dataframe(df_filtro, hide_index=True, use_container_width=True)
+
+                        # 2. Selector sutil para decirle al sistema qué registro queremos tocar
+                        opciones = ["-- Seleccione un registro --"] + df_filtro["id"].astype(str).tolist()
+                        sel_val = st.selectbox("🎯 ID del registro a editar/imprimir:", opciones)
+
+                        # 3. Preparar los datos ('fila') si seleccionó algo
+                        fila = {}
+                        if sel_val != "-- Seleccione un registro --":
+                            fila = df_filtro[df_filtro["id"] == int(sel_val)].iloc[0].to_dict()
+
+                        # ---> AQUÍ PEGAS EL BLOQUE DE VACACIONES DE ARRIBA <---
+
+                        # 4. Los botones desglosables (Expanders) en dos columnas
+                        if not es_lector:
+                            col_a, col_b = st.columns(2)
+                            
+                            with col_a:
+                                with st.expander("➕ Nuevo Registro"):
+                                    # Tu código actual para crear un nuevo registro...
+                                    st.write("Formulario de nuevo registro")
+                                    
+                            with col_b:
+                                with st.expander("✏️ Editar / Eliminar Registro"):
+                                    if sel_val == "-- Seleccione un registro --":
+                                        st.info("👆 Selecciona un ID en la lista de arriba para editarlo.")
+                                    else:
+                                        # Tu código actual para editar/eliminar usando la variable 'fila'
+                                        st.write(f"Editando el ID {sel_val}")
                         if not es_lector:
                             col_a, col_b = st.columns(2)
                             cols_reales = [c for c in dfs[h_name].columns if c.lower() not in ["id", "dni", "apellidos y nombres", "apellidos", "nombres"]]
@@ -1713,6 +1741,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
