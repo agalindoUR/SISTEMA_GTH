@@ -136,6 +136,12 @@ def save_data(dfs):
     st.cache_data.clear()
 
 def get_consolidated_contracts(df_c):
+    # --- TRUCO: Convertimos columnas a minúsculas solo para el Word ---
+    df_c = df_c.copy()
+    df_c.columns = [str(c).strip().lower() for c in df_c.columns]
+    
+    # ... aquí sigue el resto de tu código normal:
+    # df_c['f_inicio'] = pd.to_datetime(df_c['f_inicio'], errors='coerce')
     # Función inteligente para fusionar contratos consecutivos
     if df_c.empty: return df_c
     df_c = df_c.copy()
@@ -1486,6 +1492,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
