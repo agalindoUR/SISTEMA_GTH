@@ -1155,89 +1155,88 @@ else:
             st.warning("⚠️ Faltan datos en Personal o Datos Generales.")
 
    # ==========================================
-# MÓDULO: VACACIONES
-# ==========================================
+    # MÓDULO: VACACIONES
+    # ==========================================
     elif m == "Vacaciones":
-    st.markdown("<h2 style='color: #4A0000;'>🌴 Reporte Integrado de Vacaciones</h2>", unsafe_allow_html=True)
-    
-    df_per = dfs.get("PERSONAL", pd.DataFrame())
-    df_vac = dfs.get("VACACIONES", pd.DataFrame())
-    df_cont = dfs.get("CONTRATOS", pd.DataFrame())
-    df_gen = dfs.get("DATOS GENERALES", pd.DataFrame())
-
-    if df_per.empty or df_vac.empty:
-        st.warning("⚠️ Faltan datos en las pestañas 'PERSONAL' o 'VACACIONES'.")
-    else:
-        # 1. Base del Reporte: DNI y Nombres
-        col_nom_per = next((c for c in df_per.columns if "apellido" in c.lower() or "nombre" in c.lower()), df_per.columns[1])
-        df_reporte = df_per[["dni", col_nom_per]].copy()
+        st.markdown("<h2 style='color: #4A0000;'>🌴 Reporte Integrado de Vacaciones</h2>", unsafe_allow_html=True)
         
-        # 2. Obtener Sede
-        if not df_gen.empty and "sede" in df_gen.columns:
-            df_reporte = df_reporte.merge(df_gen[["dni", "sede"]].drop_duplicates(subset=["dni"]), on="dni", how="left")
+        df_per = dfs.get("PERSONAL", pd.DataFrame())
+        df_vac = dfs.get("VACACIONES", pd.DataFrame())
+        df_cont = dfs.get("CONTRATOS", pd.DataFrame())
+        df_gen = dfs.get("DATOS GENERALES", pd.DataFrame())
+
+        if df_per.empty or df_vac.empty:
+            st.warning("⚠️ Faltan datos en las pestañas 'PERSONAL' o 'VACACIONES'.")
         else:
-            df_reporte["sede"] = "No registrada"
-
-        # 3. Obtener Área y Fecha de Ingreso (Contratos)
-        if not df_cont.empty:
-            df_c = df_cont.copy()
-            col_area = next((c for c in df_c.columns if "rea" in c.lower()), None)
-            col_fi = next((c for c in df_c.columns if "inicio" in c.lower()), None)
+            # 1. Base del Reporte: DNI y Nombres
+            col_nom_per = next((c for c in df_per.columns if "apellido" in c.lower() or "nombre" in c.lower()), df_per.columns[1])
+            df_reporte = df_per[["dni", col_nom_per]].copy()
             
-            if col_fi:
-                df_c[col_fi] = pd.to_datetime(df_c[col_fi], errors="coerce")
-                df_ingreso = df_c.groupby("dni")[col_fi].min().reset_index().rename(columns={col_fi: "fecha_ingreso"})
-                df_area = df_c.sort_values(by=col_fi, ascending=False).drop_duplicates(subset=["dni"])[["dni", col_area]].rename(columns={col_area: "area"})
-                df_reporte = df_reporte.merge(df_area, on="dni", how="left").merge(df_ingreso, on="dni", how="left")
-                df_reporte["fecha_ingreso"] = df_reporte["fecha_ingreso"].dt.strftime("%d/%m/%Y").fillna("Sin contrato")
+            # 2. Obtener Sede
+            if not df_gen.empty and "sede" in df_gen.columns:
+                df_reporte = df_reporte.merge(df_gen[["dni", "sede"]].drop_duplicates(subset=["dni"]), on="dni", how="left")
             else:
-                df_reporte["area"] = "No registrada"
-                df_reporte["fecha_ingreso"] = "Sin contrato"
-        
-        # 4. Obtener Vacaciones (Generados, Gozados, Saldo, Observaciones)
-        df_v_limpio = df_vac.loc[:, ~df_vac.columns.duplicated()].copy()
-        cols_duplicadas = [c for c in df_v_limpio.columns if c in df_reporte.columns and c != "dni"]
-        df_v_limpio = df_v_limpio.drop(columns=cols_duplicadas)
-        df_reporte = df_reporte.merge(df_v_limpio, on="dni", how="inner")
+                df_reporte["sede"] = "No registrada"
 
-        # Renombrar columnas para la tabla final
-        col_gen = next((c for c in df_reporte.columns if "generado" in c.lower()), None)
-        col_goz = next((c for c in df_reporte.columns if "gozado" in c.lower()), None)
-        col_sal = next((c for c in df_reporte.columns if "saldo" in c.lower()), None)
-        col_obs = next((c for c in df_reporte.columns if "observaci" in c.lower()), None)
+            # 3. Obtener Área y Fecha de Ingreso (Contratos)
+            if not df_cont.empty:
+                df_c = df_cont.copy()
+                col_area = next((c for c in df_c.columns if "rea" in c.lower()), None)
+                col_fi = next((c for c in df_c.columns if "inicio" in c.lower()), None)
+                
+                if col_fi:
+                    df_c[col_fi] = pd.to_datetime(df_c[col_fi], errors="coerce")
+                    df_ingreso = df_c.groupby("dni")[col_fi].min().reset_index().rename(columns={col_fi: "fecha_ingreso"})
+                    df_area = df_c.sort_values(by=col_fi, ascending=False).drop_duplicates(subset=["dni"])[["dni", col_area]].rename(columns={col_area: "area"})
+                    df_reporte = df_reporte.merge(df_area, on="dni", how="left").merge(df_ingreso, on="dni", how="left")
+                    df_reporte["fecha_ingreso"] = df_reporte["fecha_ingreso"].dt.strftime("%d/%m/%Y").fillna("Sin contrato")
+                else:
+                    df_reporte["area"] = "No registrada"
+                    df_reporte["fecha_ingreso"] = "Sin contrato"
+            
+            # 4. Obtener Vacaciones (Generados, Gozados, Saldo, Observaciones)
+            df_v_limpio = df_vac.loc[:, ~df_vac.columns.duplicated()].copy()
+            cols_duplicadas = [c for c in df_v_limpio.columns if c in df_reporte.columns and c != "dni"]
+            df_v_limpio = df_v_limpio.drop(columns=cols_duplicadas)
+            df_reporte = df_reporte.merge(df_v_limpio, on="dni", how="inner")
 
-        rename_dict = {"dni": "DNI", col_nom_per: "Apellidos y Nombres", "sede": "Sede", "area": "Área", "fecha_ingreso": "Fecha Ingreso"}
-        if col_gen: rename_dict[col_gen] = "Días Generados"
-        if col_goz: rename_dict[col_goz] = "Días Gozados"
-        if col_sal: rename_dict[col_sal] = "Saldo"
-        if col_obs: rename_dict[col_obs] = "OBSERVACIONES"
-        df_reporte.rename(columns=rename_dict, inplace=True)
+            # Renombrar columnas para la tabla final
+            col_gen = next((c for c in df_reporte.columns if "generado" in c.lower()), None)
+            col_goz = next((c for c in df_reporte.columns if "gozado" in c.lower()), None)
+            col_sal = next((c for c in df_reporte.columns if "saldo" in c.lower()), None)
+            col_obs = next((c for c in df_reporte.columns if "observaci" in c.lower()), None)
 
-        # Rellenar nulos con 0
-        for col in ["Días Generados", "Días Gozados", "Saldo"]:
-            if col in df_reporte.columns: df_reporte[col] = df_reporte[col].fillna(0).astype(int)
+            rename_dict = {"dni": "DNI", col_nom_per: "Apellidos y Nombres", "sede": "Sede", "area": "Área", "fecha_ingreso": "Fecha Ingreso"}
+            if col_gen: rename_dict[col_gen] = "Días Generados"
+            if col_goz: rename_dict[col_goz] = "Días Gozados"
+            if col_sal: rename_dict[col_sal] = "Saldo"
+            if col_obs: rename_dict[col_obs] = "OBSERVACIONES"
+            df_reporte.rename(columns=rename_dict, inplace=True)
 
-        # Mostrar Tabla
-        cols_mostrar = ["DNI", "Apellidos y Nombres", "Sede", "Área", "Fecha Ingreso", "Días Generados", "Días Gozados", "Saldo"]
-        df_final = df_reporte[[c for c in cols_mostrar if c in df_reporte.columns]].copy()
-        st.dataframe(df_final, hide_index=True)
+            # Rellenar nulos con 0
+            for col in ["Días Generados", "Días Gozados", "Saldo"]:
+                if col in df_reporte.columns: df_reporte[col] = df_reporte[col].fillna(0).astype(int)
 
-        # Ver Detalle
-        st.markdown("### 🔍 Ver Historial y Observaciones")
-        if not df_final.empty:
-            ops = ["Seleccione un trabajador..."] + list(df_final["DNI"].astype(str) + " - " + df_final["Apellidos y Nombres"])
-            sel = st.selectbox("Buscar trabajador:", options=ops)
-            if sel != "Seleccione un trabajador...":
-                dni_sel = sel.split(" - ")[0]
-                detalle = df_reporte[df_reporte["DNI"].astype(str) == dni_sel]
-                if not detalle.empty:
-                    c1, c2, c3 = st.columns(3)
-                    c1.metric("Generados", detalle["Días Generados"].values[0] if "Días Generados" in detalle else 0)
-                    c2.metric("Gozados", detalle["Días Gozados"].values[0] if "Días Gozados" in detalle else 0)
-                    c3.metric("Saldo", detalle["Saldo"].values[0] if "Saldo" in detalle else 0)
-                    obs = detalle["OBSERVACIONES"].values[0] if "OBSERVACIONES" in detalle.columns else ""
-                    st.text_area("Desglose / Historial de Fechas:", value=str(obs) if pd.notna(obs) else "Sin observaciones", disabled=True)
+            # Mostrar Tabla
+            cols_mostrar = ["DNI", "Apellidos y Nombres", "Sede", "Área", "Fecha Ingreso", "Días Generados", "Días Gozados", "Saldo"]
+            df_final = df_reporte[[c for c in cols_mostrar if c in df_reporte.columns]].copy()
+            st.dataframe(df_final, hide_index=True)
 
+            # Ver Detalle
+            st.markdown("### 🔍 Ver Historial y Observaciones")
+            if not df_final.empty:
+                ops = ["Seleccione un trabajador..."] + list(df_final["DNI"].astype(str) + " - " + df_final["Apellidos y Nombres"])
+                sel = st.selectbox("Buscar trabajador:", options=ops)
+                if sel != "Seleccione un trabajador...":
+                    dni_sel = sel.split(" - ")[0]
+                    detalle = df_reporte[df_reporte["DNI"].astype(str) == dni_sel]
+                    if not detalle.empty:
+                        c1, c2, c3 = st.columns(3)
+                        c1.metric("Generados", detalle["Días Generados"].values[0] if "Días Generados" in detalle else 0)
+                        c2.metric("Gozados", detalle["Días Gozados"].values[0] if "Días Gozados" in detalle else 0)
+                        c3.metric("Saldo", detalle["Saldo"].values[0] if "Saldo" in detalle else 0)
+                        obs = detalle["OBSERVACIONES"].values[0] if "OBSERVACIONES" in detalle.columns else ""
+                        st.text_area("Desglose / Historial de Fechas:", value=str(obs) if pd.notna(obs) else "Sin observaciones", disabled=True)
 # ==========================================
     # MÓDULO: VENCIMIENTO DE CONTRATOS
     # ==========================================
@@ -1338,6 +1337,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
