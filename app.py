@@ -955,16 +955,35 @@ else:
                                                     else:
                                                         edit_row[col] = st.text_input(col.title(), value=str(val) if pd.notnull(val) else "")
 
+                                                c# --- BOTONES DE ACTUALIZAR Y ELIMINAR ---
                                                 col_btn1, col_btn2 = st.columns(2)
+                                                
                                                 with col_btn1:
-                                                    if st.form_submit_button("Actualizar Registro"):
-                                                        for k, v in edit_row.items(): 
-                                                            dfs[h_name].at[idx, k] = v
+                                                    if st.form_submit_button("Actualizar"):
+                                                        update_vals = {
+                                                            "CARGO": n_car, 
+                                                            "AREA": n_area, 
+                                                            "REMUNERACIÓN BÁSICA": n_rem, 
+                                                            "BONIFICACIÓN": n_bon, 
+                                                            "CONDICIÓN DE TRABAJO": n_cond, 
+                                                            "F_INICIO": n_ini, 
+                                                            "F_FIN": n_fin, 
+                                                            "TIPO DE TRABAJADOR": n_ttrab, 
+                                                            "MODALIDAD": n_mod, 
+                                                            "TEMPORALIDAD": n_tem, 
+                                                            "LINK": n_lnk, 
+                                                            "TIPO CONTRATO": n_tcont, 
+                                                            "ESTADO": est_e, 
+                                                            "MOTIVO CESE": mot_e
+                                                        }
+                                                        for k, v in update_vals.items(): 
+                                                            dfs["CONTRATOS"].at[idx, k] = v
                                                         save_data(dfs)
                                                         st.rerun()
+
                                                 with col_btn2:
-                                                    if st.form_submit_button("🗑️ Eliminar Registro", type="primary"):
-                                                        dfs[h_name] = dfs[h_name].drop(idx)
+                                                    if st.form_submit_button("🗑️ Eliminar Contrato", type="primary"):
+                                                        dfs["CONTRATOS"] = dfs["CONTRATOS"].drop(idx)
                                                         save_data(dfs)
                                                         st.rerun()
                                     else:
@@ -1493,6 +1512,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
