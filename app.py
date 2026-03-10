@@ -619,63 +619,50 @@ else:
 
                         if not sel.empty and not es_lector:
                             idx = sel.index[0]
-                            fila_actual = sel.iloc[0]
+                            fila = sel.iloc[0]
+                            st.markdown("### 📝 Editar / Eliminar Registro")
                             
-                            st.markdown(f"### 📝 Editar / Eliminar Registro")
-                            
-                            # Iniciamos el formulario con una clave única
-                            with st.form(key=f"form_edit_{h_name}_{idx}"):
-                                # Diseño de 2 columnas EXACTO al de Nuevo Registro
+                            # CLAVE: El formulario envuelve TODO, incluyendo los botones
+                            with st.form(key=f"f_ed_{h_name}_{idx}"):
                                 c1, c2 = st.columns(2)
                                 edit_row = {}
-                                
-                                # Obtenemos las columnas de esta pestaña
-                                columnas_tab = COLUMNAS.get(h_name, [])
-                                
-                                # Dividimos las columnas para repartirlas en c1 y c2
-                                mitad = (len(columnas_tab) + 1) // 2
-                                col_izq = columnas_tab[:mitad]
-                                col_der = columnas_tab[mitad:]
+                                cols_tab = COLUMNAS.get(h_name, [])
+                                mitad = (len(cols_tab) + 1) // 2
 
-                                # Llenamos Columna 1
-                                with c1:
-                                    for col in col_izq:
-                                        c_low = col.lower().strip()
-                                        val = fila_actual.get(c_low, "")
-                                        
-                                        if c_low in ["id", "dni"]:
-                                            st.text_input(col.upper(), value=str(val), disabled=True)
-                                            edit_row[c_low] = val
-                                        elif c_low == "sexo":
-                                            edit_row[c_low] = st.selectbox("SEXO", ["Masculino", "Femenino"], index=0 if val=="Masculino" else 1)
-                                        elif "fecha" in c_low or "f_" in c_low:
-                                            f_val = pd.to_datetime(val, errors='coerce').date() if pd.notnull(val) else date.today()
-                                            edit_row[c_low] = st.date_input(col.upper(), value=f_val)
-                                        else:
-                                            edit_row[c_low] = st.text_input(col.upper(), value=str(val))
+                                # Función interna para dibujar campos y evitar errores de fecha
+                                def dibujar_campo(col_name, container):
+                                    c_low = col_name.lower().strip()
+                                    val = fila.get(c_low, "")
+                                    label = col_name.upper()
+                                    
+                                    if c_low in ["id", "dni"]:
+                                        container.text_input(label, value=str(val), disabled=True)
+                                        return val
+                                    elif c_low in ["sexo"]:
+                                        return container.selectbox(label, ["Masculino", "Femenino"], index=0 if val=="Masculino" else 1)
+                                    elif c_low in ["estado civil", "estado_civil"]:
+                                        ops = ["Soltero(a)", "Casado(a)", "Divorciado(a)", "Conviviente", "Viudo(a)", "Otro"]
+                                        return container.selectbox(label, ops, index=ops.index(val) if val in ops else 0)
+                                    elif c_low == "sede":
+                                        sds = ["Local Giraldez", "Local San Carlos", "Local Abancay", "Local Lince", "Local Pueblo Libre"]
+                                        return container.selectbox(label, sds, index=sds.index(val) if val in sds else 0)
+                                    elif "fecha" in c_low or "f_" in c_low:
+                                        # Fix para el error de Traceback de fechas
+                                        try:
+                                            f_dt = pd.to_datetime(val)
+                                            f_val = f_dt.date() if pd.notnull(f_dt) else date.today()
+                                        except:
+                                            f_val = date.today()
+                                        return container.date_input(label, value=f_val)
+                                    else:
+                                        return container.text_input(label, value=str(val) if pd.notnull(val) else "")
 
-                                # Llenamos Columna 2
-                                with c2:
-                                    for col in col_der:
-                                        c_low = col.lower().strip()
-                                        val = fila_actual.get(c_low, "")
-                                        
-                                        if c_low in ["estado civil", "estado_civil"]:
-                                            ops = ["Soltero(a)", "Casado(a)", "Divorciado(a)", "Conviviente", "Viudo(a)", "Otro"]
-                                            idx_op = ops.index(val) if val in ops else 0
-                                            edit_row[c_low] = st.selectbox("ESTADO CIVIL", ops, index=idx_op)
-                                        elif c_low == "sede":
-                                            sedes = ["Local Giraldez", "Local San Carlos", "Local Abancay", "Local Lince", "Local Pueblo Libre"]
-                                            idx_s = sedes.index(val) if val in sedes else 0
-                                            edit_row[c_low] = st.selectbox("SEDE", sedes, index=idx_s)
-                                        elif "fecha" in c_low or "f_" in c_low:
-                                            f_val = pd.to_datetime(val, errors='coerce').date() if pd.notnull(val) else date.today()
-                                            edit_row[c_low] = st.date_input(col.upper(), value=f_val)
-                                        else:
-                                            # Aquí aparecerá el ÁREA automáticamente
-                                            edit_row[c_low] = st.text_input(col.upper(), value=str(val))
+                                # Repartir en columnas
+                                for col in cols_tab[:mitad]:
+                                    edit_row[col.lower().strip()] = dibujar_campo(col, c1)
+                                for col in cols_tab[mitad:]:
+                                    edit_row[col.lower().strip()] = dibujar_campo(col, c2)
 
-                                # BOTONES AL FINAL DEL FORMULARIO
                                 st.markdown("---")
                                 b1, b2 = st.columns(2)
                                 with b1:
@@ -683,13 +670,12 @@ else:
                                         for k, v in edit_row.items():
                                             dfs[h_name].at[idx, k] = v
                                         save_data(dfs)
-                                        st.success("✅ Cambios guardados")
+                                        st.success("✅ Actualizado")
                                         st.rerun()
                                 with b2:
                                     if st.form_submit_button("🗑️ Eliminar Registro", type="primary", use_container_width=True):
                                         dfs[h_name] = dfs[h_name].drop(idx)
                                         save_data(dfs)
-                                        st.warning("🗑️ Registro eliminado")
                                         st.rerun()
                         # ==========================================
                         # BOTÓN DE IMPRESIÓN DE PAPELETA (SOLO EN VACACIONES)
@@ -1531,6 +1517,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
