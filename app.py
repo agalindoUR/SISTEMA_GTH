@@ -33,7 +33,7 @@ COLUMNAS = {
     "FORM. ACADEMICA": ["grado, titulo o especialización", "descripcion", "universidad", "año"],
     "INVESTIGACION": ["año publicación", "autor, coautor o asesor", "tipo de investigación publicada", "nivel de publicación", "lugar de publicación"],
     # NUEVAS COLUMNAS DE CONTRATOS APLICADAS:
-    "CONTRATOS": ["dni", "estado", "tipo de trabajador", "modalidad", "temporalidad", "tipo contrato", "cargo", "area", "f_inicio", "f_fin"],
+    "CONTRATOS": ["dni", "estado", "tipo de trabajador", "modalidad", "temporalidad", "tipo contrato", "cargo", "AREA", "f_inicio", "f_fin"],
     "VACACIONES": ["periodo", "fecha de inicio", "fecha de fin", "días generados", "días gozados", "saldo", "link"],
     "OTROS BENEFICIOS": ["periodo", "tipo de beneficio", "link"],
     "MERITOS Y DEMERITOS": ["periodo", "merito o demerito", "motivo", "link"],
@@ -809,7 +809,7 @@ else:
                                         with st.form(f"f_edit_{h_name}"):
                                             if h_name == "CONTRATOS":
                                                 n_car = st.text_input("Cargo", value=str(sel.iloc[0].get("CARGO", "")))
-                                                área = st.text_input("area")
+                                                área = st.text_input("AREA")
                                                 try: 
                                                     val_rem = float(sel.iloc[0].get("REMUNERACIÓN BÁSICA", 0.0))
                                                 except: 
@@ -1179,7 +1179,7 @@ else:
                 
             # 3. Área y Fecha de Inicio (De Contratos Planilla Tiempo Completo)
             if not df_cont.empty:
-                col_area = next((c for c in df_cont.columns if "area" in c.lower() or "area" in c.lower()), None)
+                col_area = next((c for c in df_cont.columns if "AREA" in c.lower() or "AREA" in c.lower()), None)
                 col_fi = next((c for c in df_cont.columns if "inicio" in c.lower()), None)
                 
                 if col_fi:
@@ -1200,11 +1200,11 @@ else:
                 if col_area:
                     df_ult_area = df_cont.sort_values(by=col_fi, ascending=False).drop_duplicates(subset=["dni"]) if col_fi else df_cont.drop_duplicates(subset=["dni"])
                     df_v = df_v.merge(df_ult_area[["dni", col_area]], on="dni", how="left")
-                    df_v.rename(columns={col_area: "area"}, inplace=True)
+                    df_v.rename(columns={col_area: "AREA"}, inplace=True)
                 else:
-                    df_v["area"] = "No registrada"
+                    df_v["AREA"] = "No registrada"
             else:
-                df_v["area"] = "No registrada"
+                df_v["AREA"] = "No registrada"
                 df_v["Fecha de inicio"] = pd.NaT
                 
             # 4. Unir con los datos REALES de la pestaña VACACIONES
@@ -1231,7 +1231,7 @@ else:
             col_obs = next((c for c in df_v.columns if "observaci" in c.lower()), None)
             
             # Renombramos para presentar
-            rename_dict = {"dni": "DNI", col_nom_per: "Trabajador", "sede": "Sede", "area": "area"}
+            rename_dict = {"dni": "DNI", col_nom_per: "Trabajador", "sede": "Sede", "AREA": "AREA"}
             if col_gen: rename_dict[col_gen] = "Días Generados"
             if col_goz: rename_dict[col_goz] = "Días Gozados"
             if col_sal: rename_dict[col_sal] = "Saldo"
@@ -1245,14 +1245,14 @@ else:
                 sedes_opciones = ["Local Giraldez", "Local San Carlos", "Local Abancay", "Local Lince", "Local Pueblo Libre"]
                 f_sede = st.multiselect("Sede", options=sedes_opciones)
             with col2:
-                areas_disp = df_v["area"].dropna().unique() if "area" in df_v.columns else []
-                f_area = st.multiselect("area", options=areas_disp)
+                areas_disp = df_v["AREA"].dropna().unique() if "AREA" in df_v.columns else []
+                f_area = st.multiselect("AREA", options=areas_disp)
             
             if f_sede and "Sede" in df_v.columns: df_v = df_v[df_v["Sede"].isin(f_sede)]
-            if f_area and "area" in df_v.columns: df_v = df_v[df_v["area"].isin(f_area)]
+            if f_area and "AREA" in df_v.columns: df_v = df_v[df_v["AREA"].isin(f_AREA)]
             
             # 6. Mostrar Tabla General
-            cols_ideales = ["DNI", "Trabajador", "area", "Sede", "Fecha de inicio", "Días Generados", "Días Gozados", "Saldo"]
+            cols_ideales = ["DNI", "Trabajador", "AREA", "Sede", "Fecha de inicio", "Días Generados", "Días Gozados", "Saldo"]
             cols_mostrar = [c for c in cols_ideales if c in df_v.columns]
             
             df_final = df_v[cols_mostrar].copy()
@@ -1348,7 +1348,7 @@ else:
                 col_nom_per: "Trabajador",
                 "sede": "Sede",
                 "cargo": "Puesto",
-                "area": "area",
+                "AREA": "AREA",
                 "f_fin": "Fecha de Vencimiento",
                 "tipo de trabajador": "Tipo de Trabajador",
                 "tipo contrato": "Tipo de Contrato"
@@ -1360,8 +1360,8 @@ else:
             with col1:
                 sedes_opciones = ["Local Giraldez", "Local San Carlos", "Local Abancay", "Local Lince", "Local Pueblo Libre"]
                 f_sede = st.multiselect("Sede", options=sedes_opciones)
-                areas_disp = df_venc["area"].dropna().unique() if "area" in df_venc.columns else []
-                f_area = st.multiselect("area", options=areas_disp)
+                areas_disp = df_venc["AREA"].dropna().unique() if "AREA" in df_venc.columns else []
+                f_area = st.multiselect("AREA", options=areas_disp)
             with col2:
                 f_mes = st.multiselect("Mes de Vencimiento", options=list(meses_dict.values()))
                 tipos_trab = df_venc["Tipo de Trabajador"].dropna().unique() if "Tipo de Trabajador" in df_venc.columns else []
@@ -1372,7 +1372,7 @@ else:
                 
             # 6. Aplicar filtros
             if f_sede and "Sede" in df_venc.columns: df_venc = df_venc[df_venc["Sede"].isin(f_sede)]
-            if f_area and "area" in df_venc.columns: df_venc = df_venc[df_venc["area"].isin(f_area)]
+            if f_area and "area" in df_venc.columns: df_venc = df_venc[df_venc["AREA"].isin(f_area)]
             if f_mes and "Mes de Vencimiento" in df_venc.columns: df_venc = df_venc[df_venc["Mes de Vencimiento"].isin(f_mes)]
             if f_ttrab and "Tipo de Trabajador" in df_venc.columns: df_venc = df_venc[df_venc["Tipo de Trabajador"].isin(f_ttrab)]
             if f_tcont and "Tipo de Contrato" in df_venc.columns: df_venc = df_venc[df_venc["Tipo de Contrato"].isin(f_tcont)]
@@ -1381,7 +1381,7 @@ else:
             df_venc = df_venc.sort_values(by="f_fin_dt", na_position="last")
             
             # 7. Mostrar la Tabla
-            cols_finales = ["DNI", "Trabajador", "Puesto", "Sede", "area", "Tipo de Trabajador", "Tipo de Contrato", "Fecha de Vencimiento", "Mes de Vencimiento"]
+            cols_finales = ["DNI", "Trabajador", "Puesto", "Sede", "AREA", "Tipo de Trabajador", "Tipo de Contrato", "Fecha de Vencimiento", "Mes de Vencimiento"]
             cols_mostrar = [c for c in cols_finales if c in df_venc.columns]
             
             df_final = df_venc[cols_mostrar].copy()
@@ -1404,6 +1404,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
