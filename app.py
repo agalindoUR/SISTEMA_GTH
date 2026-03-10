@@ -1409,7 +1409,8 @@ else:
                 else:
                     col_dias_segura = df_v[c_dia_v]
                 
-                df_v["v_n"] = pd.to_numeric(col_dias_segura.astype(str).str.replace(",", "."), errors="coerce").fillna(0)
+                # Conversión segura a float
+                df_v["v_n"] = pd.to_numeric(col_dias_segura.astype(str).str.replace(",", ".", regex=False), errors="coerce").fillna(0.0)
                 df_sum_v = df_v.groupby("DNI_KEY")["v_n"].sum().reset_index().rename(columns={"v_n": "DÍAS GENERADOS"})
                 df_res = df_res.merge(df_sum_v, on="DNI_KEY", how="left")
             else:
@@ -1417,13 +1418,15 @@ else:
 
             # CÁLCULO DE DÍAS GOZADOS (Vacaciones)
             c_dia_g = next((c for c in df_v.columns if "dia" in c.lower() and "goz" in c.lower()), None)
+            
             if c_dia_g:
                 if isinstance(df_v[c_dia_g], pd.DataFrame):
                     col_goz_segura = df_v[c_dia_g].iloc[:, 0]
                 else:
                     col_goz_segura = df_v[c_dia_g]
                     
-                df_v["g_n"] = pd.to_numeric(col_goz_segura.astype(str).str.replace(",", "."), errors="coerce").fillna(0)
+                # Conversión segura a float
+                df_v["g_n"] = pd.to_numeric(col_goz_segura.astype(str).str.replace(",", ".", regex=False), errors="coerce").fillna(0.0)
                 df_sum_g = df_v.groupby("DNI_KEY")["g_n"].sum().reset_index().rename(columns={"g_n": "DÍAS GOZADOS"})
                 df_res = df_res.merge(df_sum_g, on="DNI_KEY", how="left")
             else:
@@ -1448,11 +1451,14 @@ else:
             # Filtros Interactivos
             st.markdown("### 🔍 Filtros")
             c1, c2 = st.columns(2)
+            
+            # Asegurar que las listas no tengan 'nan' antes de mostrarlas
+            sedes_unicas = ["TODAS"] + sorted([str(x) for x in df_res["SEDE"].dropna().unique() if str(x) != 'nan'])
+            areas_unicas = ["TODAS"] + sorted([str(x) for x in df_res["AREA"].dropna().unique() if str(x) != 'nan'])
+            
             with c1:
-                sedes_unicas = ["TODAS"] + sorted(df_res["SEDE"].dropna().unique().tolist())
                 f_s = st.selectbox("Sede", sedes_unicas)
             with c2:
-                areas_unicas = ["TODAS"] + sorted(df_res["AREA"].dropna().unique().tolist())
                 f_a = st.selectbox("Área", areas_unicas)
 
             # Aplicar Filtros
@@ -1581,6 +1587,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
