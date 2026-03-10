@@ -1397,6 +1397,7 @@ elif m == "Vacaciones":
             # CÁLCULO DE DÍAS GENERADOS
             df_vac["DNI_KEY"] = df_vac["dni"].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
             df_v = df_vac.copy()
+            df_v = df_v.loc[:, ~df_v.columns.duplicated()]
             c_dia_v = next((c for c in df_v.columns if "dia" in c.lower() and "gen" in c.lower()), None)
             
             if c_dia_v:
@@ -1579,6 +1580,7 @@ elif m == "Vacaciones":
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
