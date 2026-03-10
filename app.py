@@ -745,6 +745,7 @@ else:
                                             with st.form(f"f_add_{h_name}", clear_on_submit=True):
                                                 if h_name == "CONTRATOS":
                                                     d_car = ""
+                                                    d_area = ""  # Agregamos variable para AREA
                                                     d_rem = 0.0
                                                     d_bon = ""
                                                     d_cond = ""
@@ -758,34 +759,32 @@ else:
                                                     if es_renovacion and not df_contratos.empty:
                                                         last_c = df_contratos.assign(f_fin_dt=pd.to_datetime(df_contratos['f_fin'], errors='coerce')).sort_values('f_fin_dt').iloc[-1]
                                                         d_car = str(last_c.get("cargo", ""))
-                                                        try: 
-                                                            d_rem = float(last_c.get("remuneración básica", 0.0))
-                                                        except: 
-                                                            pass
+                                                        
+                                                        # Recuperamos el área del contrato anterior
+                                                        v_area_old = str(last_c.get("area", ""))
+                                                        d_area = "" if v_area_old.lower() == "nan" else v_area_old
+                                                        
+                                                        try: d_rem = float(last_c.get("remuneración básica", 0.0))
+                                                        except: pass
                                                         d_bon = str(last_c.get("bonificación", ""))
                                                         d_cond = str(last_c.get("condición de trabajo", ""))
-                                                        try: 
-                                                            d_ini = pd.to_datetime(last_c["f_fin"]).date() + pd.Timedelta(days=1)
-                                                        except: 
-                                                            pass
+                                                        try: d_ini = pd.to_datetime(last_c["f_fin"]).date() + pd.Timedelta(days=1)
+                                                        except: pass
                                                         
                                                         v_tt = str(last_c.get("tipo de trabajador", ""))
-                                                        if v_tt in ["Administrativo", "Docente", "Externo"]: 
-                                                            d_ttrab = v_tt
-                                                            
+                                                        if v_tt in ["Administrativo", "Docente", "Externo"]: d_ttrab = v_tt
                                                         v_m = str(last_c.get("modalidad", ""))
-                                                        if v_m in ["Presencial", "Semipresencial", "Virtual"]: 
-                                                            d_mod = v_m
-                                                            
+                                                        if v_m in ["Presencial", "Semipresencial", "Virtual"]: d_mod = v_m
                                                         v_te = str(last_c.get("temporalidad", ""))
-                                                        if v_te in ["Plazo fijo", "Plazo indeterminado", "Ordinarizado"]: 
-                                                            d_temp = v_te
-                                                            
+                                                        if v_te in ["Plazo fijo", "Plazo indeterminado", "Ordinarizado"]: d_temp = v_te
                                                         v_tc = str(last_c.get("tipo contrato", ""))
-                                                        if v_tc in ["Planilla completo", "Tiempo Parcial", "Recibo por Honorarios", "Otro"]: 
-                                                            d_tcont = v_tc
+                                                        if v_tc in ["Planilla completo", "Tiempo Parcial", "Recibo por Honorarios", "Otro"]: d_tcont = v_tc
 
                                                     car = st.text_input("Cargo", value=d_car)
+                                                    
+                                                    # Input de AREA forzado a MAYÚSCULAS
+                                                    area_input = st.text_input("AREA", value=d_area).upper() 
+                                                    
                                                     rem_b = st.number_input("Remuneración básica", value=d_rem)
                                                     bono = st.text_input("Bonificación", value=d_bon)
                                                     cond = st.text_input("Condición de trabajo", value=d_cond)
@@ -802,7 +801,8 @@ else:
 
                                                     if st.form_submit_button("Guardar Contrato"):
                                                         nid = dfs[h_name]["id"].max() + 1 if not dfs[h_name].empty else 1
-                                                        new = {"id": nid, "dni": dni_buscado, "apellidos y nombres": nom_c, "cargo": car, "remuneración básica": rem_b, "bonificación": bono, "condición de trabajo": cond, "f_inicio": ini, "f_fin": fin, "tipo de trabajador": t_trab, "modalidad": mod, "temporalidad": temp, "link": lnk, "tipo contrato": tcont, "estado": est_a, "motivo cese": mot_a}
+                                                        # Agregamos el AREA al diccionario a guardar
+                                                        new = {"id": nid, "dni": dni_buscado, "apellidos y nombres": nom_c, "cargo": car, "area": area_input, "remuneración básica": rem_b, "bonificación": bono, "condición de trabajo": cond, "f_inicio": ini, "f_fin": fin, "tipo de trabajador": t_trab, "modalidad": mod, "temporalidad": temp, "link": lnk, "tipo contrato": tcont, "estado": est_a, "motivo cese": mot_a}
                                                         dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new])], ignore_index=True)
                                                         save_data(dfs)
                                                         st.rerun()
@@ -1455,6 +1455,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
