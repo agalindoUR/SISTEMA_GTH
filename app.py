@@ -1204,10 +1204,11 @@ else:
         df_gen = dfs.get("DATOS GENERALES", pd.DataFrame())
 
         if df_per.empty or df_vac.empty:
-            st.warning("⚠️ No se encontraron las pestañas necesarias.")
+            st.warning("⚠️ No se encontraron las pestañas necesarias (Personal o Vacaciones).")
         else:
-            # 1. Normalizar Personal
+            # 1. Normalizar Personal (Limpiar columnas repetidas de raíz)
             df_per.columns = df_per.columns.str.strip().str.lower()
+            df_per = df_per.loc[:, ~df_per.columns.duplicated()]
             df_per["dni_key"] = df_per["dni"].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
             col_n_p = next((c for c in df_per.columns if "apellido" in c or "nombre" in c), "apellidos y nombres")
             
@@ -1217,7 +1218,8 @@ else:
             # 2. SEDE (Datos Generales)
             if not df_gen.empty:
                 df_gen.columns = df_gen.columns.str.strip().str.lower()
-                df_gen["dni_key"] = df_gen["dni"].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
+                df_gen = df_gen.loc[:, ~df_gen.columns.duplicated()]
+                df_gen["dni_key"] = df_gen.get("dni", pd.Series(dtype=str)).astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
                 col_s_g = next((c for c in df_gen.columns if "sede" in c), None)
                 if col_s_g:
                     df_s = df_gen[["dni_key", col_s_g]].drop_duplicates("dni_key").rename(columns={col_s_g: "Sede"})
@@ -1226,34 +1228,32 @@ else:
             # 3. AREA (Contratos)
             if not df_cont.empty:
                 df_cont.columns = df_cont.columns.str.strip().str.lower()
-                df_cont["dni_key"] = df_cont["dni"].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
+                df_cont = df_cont.loc[:, ~df_cont.columns.duplicated()]
+                df_cont["dni_key"] = df_cont.get("dni", pd.Series(dtype=str)).astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
                 col_a_c = next((c for c in df_cont.columns if "rea" in c), None)
                 if col_a_c:
-                    df_a = df_cont.sort_index(ascending=False).drop_duplicates("dni_key")[["dni_key", col_a_c]].rename(columns={col_a_c: "Area_Reporte"})
+                    df_a = df_cont.dropna(subset=[col_a_c]).drop_duplicates("dni_key", keep="last")[["dni_key", col_a_c]].rename(columns={col_a_c: "Area_Reporte"})
                     df_res = df_res.merge(df_a, on="dni_key", how="left")
 
-            # 4. DIAS (Suma de columna 'días' de VACACIONES para obtener el 80.14)
+            # 4. DIAS GENERADOS (Vacaciones)
             df_v = df_vac.copy()
             df_v.columns = df_v.columns.str.strip().str.lower()
+            
+            # --- LA MAGIA: Esto evita el AttributeError y no requiere IFs anidados ---
+            df_v = df_v.loc[:, ~df_v.columns.duplicated()] 
+            
             c_dni_v = next((c for c in df_v.columns if "dni" in c), None)
             c_dia_v = next((c for c in df_v.columns if "días" in c or "dias" in c), None)
             
             if c_dni_v and c_dia_v:
                 df_v["dni_key"] = df_v[c_dni_v].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
-                if c_dia_v:
-                # --- SOLUCIÓN AL ERROR DE ATRIBUTO ---
-                if isinstance(df_v[c_dia_v], pd.DataFrame):
-                    col_dias_segura = df_v[c_dia_v].iloc[:, 0] 
-                else:
-                    col_dias_segura = df_v[c_dia_v]
+                # Reemplazamos comas por puntos y convertimos a número de forma segura
+                df_v["v_n"] = pd.to_numeric(df_v[c_dia_v].astype(str).str.replace(",", ".", regex=False), errors="coerce").fillna(0.0)
                 
-                df_v["v_n"] = pd.to_numeric(col_dias_segura.astype(str).str.replace(",", "."), errors="coerce").fillna(0)
-                # --------------------------------------
                 df_v_sum = df_v.groupby("dni_key")["v_n"].sum().reset_index().rename(columns={"v_n": "Días Generados"})
                 df_res = df_res.merge(df_v_sum, on="dni_key", how="left")
 
             # 5. LIMPIEZA POST-MERGE
-            # Asegurar que las columnas existan aunque el merge falle
             if "Sede" not in df_res.columns: df_res["Sede"] = "No registrada"
             if "Area_Reporte" not in df_res.columns: df_res["Area_Reporte"] = "No registrada"
             if "Días Generados" not in df_res.columns: df_res["Días Generados"] = 0.0
@@ -1268,11 +1268,13 @@ else:
             # 6. FILTROS
             st.markdown("### 🔍 Filtros")
             c1, c2 = st.columns(2)
+            
+            # Quitamos los 'nan' de las listas para que se vea profesional
             with c1:
-                s_list = ["Todas"] + sorted(df_res["Sede"].unique().tolist())
+                s_list = ["Todas"] + sorted([str(x) for x in df_res["Sede"].unique() if str(x) != "nan"])
                 sel_s = st.selectbox("Sede", s_list)
             with c2:
-                a_list = ["Todas"] + sorted(df_res["Área"].unique().tolist())
+                a_list = ["Todas"] + sorted([str(x) for x in df_res["Área"].unique() if str(x) != "nan"])
                 sel_a = st.selectbox("Área", a_list)
 
             df_f = df_res.copy()
@@ -1280,14 +1282,26 @@ else:
             if sel_a != "Todas": df_f = df_f[df_f["Área"] == sel_a]
 
             # 7. TABLA FINAL
-            st.success(f"📋 Registros: {len(df_f)}")
+            st.success(f"📋 Registros encontrados: {len(df_f)}")
             
-            # Seleccionamos solo las que queremos mostrar
             cols_ver = ["DNI", "Trabajador", "Sede", "Área", "Días Generados"]
             st.dataframe(
                 df_f[cols_ver].style.format({"Días Generados": "{:.2f}"}),
                 hide_index=True,
                 use_container_width=True
+            )
+            
+            # 8. BOTÓN DE DESCARGA EXCEL
+            output = BytesIO()
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                df_f[cols_ver].to_excel(writer, index=False, sheet_name='Vacaciones')
+            st.download_button(
+                label="📥 Exportar a Excel", 
+                data=output.getvalue(), 
+                file_name="Reporte_Vacaciones_Antifallos.xlsx", 
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                key="btn_exp_vac_antifallos",
+                type="primary"
             )
 # ==========================================
     # MÓDULO: CUMPLEAÑEROS
@@ -1572,6 +1586,7 @@ elif m == "Vacaciones":
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
