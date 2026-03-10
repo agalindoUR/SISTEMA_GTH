@@ -1188,10 +1188,7 @@ else:
                 
                 if col_fi:
                     df_c[col_fi] = pd.to_datetime(df_c[col_fi], errors="coerce")
-                    # Fecha de ingreso (el primer contrato)
                     df_ingreso = df_c.groupby("dni")[col_fi].min().reset_index().rename(columns={col_fi: "fecha_ingreso"})
-                    
-                    # Sede y Área (del contrato más reciente)
                     df_reciente = df_c.sort_values(by=col_fi, ascending=False).drop_duplicates(subset=["dni"])
                     
                     cols_extraer = ["dni"]
@@ -1234,9 +1231,15 @@ else:
 
             df_reporte = df_reporte.loc[:, ~df_reporte.columns.duplicated()].copy()
 
+            # ======= LA CORRECCIÓN CLAVE =======
+            # Ahora forzamos a que sean valores decimales (float), no enteros.
             for col in ["Días Generados", "Días Gozados", "Saldo"]:
                 if col in df_reporte.columns:
-                    df_reporte[col] = pd.to_numeric(df_reporte[col], errors='coerce').fillna(0).astype(int)
+                    # Cambiamos comas por puntos por si viene de Google Sheets con formato europeo/latino
+                    df_reporte[col] = df_reporte[col].astype(str).str.replace(",", ".", regex=False)
+                    # Convertimos a número con decimales. Si hay error o celda vacía, pone 0.0
+                    df_reporte[col] = pd.to_numeric(df_reporte[col], errors='coerce').fillna(0.0)
+            # ====================================
             
             if "Sede" not in df_reporte.columns: df_reporte["Sede"] = "No registrada"
             if "Área" not in df_reporte.columns: df_reporte["Área"] = "No registrada"
@@ -1368,6 +1371,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
