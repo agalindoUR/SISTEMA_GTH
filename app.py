@@ -955,7 +955,8 @@ else:
                                                     else:
                                                         edit_row[col] = st.text_input(col.title(), value=str(val) if pd.notnull(val) else "")
 
-                                                c# --- BOTONES DE ACTUALIZAR Y ELIMINAR ---
+                                                st.markdown("---")
+                                                # --- BOTONES DE ACTUALIZAR Y ELIMINAR ---
                                                 col_btn1, col_btn2 = st.columns(2)
                                                 
                                                 with col_btn1:
@@ -1512,6 +1513,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
