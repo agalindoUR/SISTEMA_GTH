@@ -497,7 +497,8 @@ else:
                             c_df = pd.DataFrame(columns=COLUMNAS.get(h_name, []))
 
                         if h_name == "CONTRATOS":
-                            df_contratos = dfs["CONTRATOS"][dfs["CONTRATOS"]["dni"] == dni_buscado]
+                            col_dni_cont = next((c for c in dfs["CONTRATOS"].columns if str(c).strip().lower() == "dni"), "dni")
+                            df_contratos = dfs["CONTRATOS"][dfs["CONTRATOS"][col_dni_cont] == dni_buscado]
                             if not df_contratos.empty:
                                 st.markdown("""
                                     <style>
@@ -801,8 +802,30 @@ else:
 
                                                     if st.form_submit_button("Guardar Contrato"):
                                                         nid = dfs[h_name]["id"].max() + 1 if not dfs[h_name].empty else 1
-                                                        # Agregamos el AREA al diccionario a guardar
-                                                        new = {"ID": nid, "DNI": dni_buscado, "CARGO": car, "AREA": area_input, "REMUNERACION BASICA": rem_b, "BONIFICACION": bono, "CONDICION DE TRABAJO": cond, "F_INICIO": ini, "F_FIN": fin, "TIPO DE TRABAJADOR": t_trab, "MODALIDAD": mod, "TEMPORALIDAD": temp, "LINK": lnk, "TIPO CONTRATO": tcont, "ESTADO": est_a, "MOTIVO CESE": mot_a}
+                                                        
+                                                        # --- SOLUCIÓN COLUMNAS DUPLICADAS ---
+                                                        # Esto lee tus columnas reales de Google Sheets y las empareja automáticamente (ignora tildes y mayúsculas)
+                                                        real_cols = {str(c).lower().replace('á','a').replace('é','e').replace('í','i').replace('ó','o').replace('ú','u').strip(): c for c in dfs[h_name].columns}
+                                                        
+                                                        new = {
+                                                            real_cols.get("id", "id"): nid, 
+                                                            real_cols.get("dni", "dni"): dni_buscado, 
+                                                            real_cols.get("apellidos y nombres", "apellidos y nombres"): nom_c, 
+                                                            real_cols.get("cargo", "cargo"): car, 
+                                                            real_cols.get("area", "area"): area_input, 
+                                                            real_cols.get("remuneracion basica", "remuneración básica"): rem_b, 
+                                                            real_cols.get("bonificacion", "bonificación"): bono, 
+                                                            real_cols.get("condicion de trabajo", "condición de trabajo"): cond, 
+                                                            real_cols.get("f_inicio", "f_inicio"): ini, 
+                                                            real_cols.get("f_fin", "f_fin"): fin, 
+                                                            real_cols.get("tipo de trabajador", "tipo de trabajador"): t_trab, 
+                                                            real_cols.get("modalidad", "modalidad"): mod, 
+                                                            real_cols.get("temporalidad", "temporalidad"): temp, 
+                                                            real_cols.get("link", "link"): lnk, 
+                                                            real_cols.get("tipo contrato", "tipo contrato"): tcont, 
+                                                            real_cols.get("estado", "estado"): est_a, 
+                                                            real_cols.get("motivo cese", "motivo cese"): mot_a
+                                                        }
                                                         dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new])], ignore_index=True)
                                                         save_data(dfs)
                                                         st.rerun()
@@ -1455,6 +1478,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
