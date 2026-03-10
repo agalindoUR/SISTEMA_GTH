@@ -1168,7 +1168,7 @@ else:
         if df_per.empty or df_vac.empty:
             st.warning("⚠️ Faltan datos en las pestañas 'PERSONAL' o 'VACACIONES'.")
         else:
-            # LIMPIEZA DE COLUMNAS A MINÚSCULAS PARA EVITAR ERRORES
+            # LIMPIEZA DE COLUMNAS A MINÚSCULAS
             df_per.columns = df_per.columns.str.strip().str.lower()
             df_vac.columns = df_vac.columns.str.strip().str.lower()
             if not df_cont.empty: df_cont.columns = df_cont.columns.str.strip().str.lower()
@@ -1208,7 +1208,7 @@ else:
             # 4. Obtener Vacaciones (JALAR DIRECTO SIN CÁLCULOS)
             df_vac["dni"] = df_vac["dni"].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
             
-            # Evitar filas duplicadas del mismo trabajador
+            # Evitar filas duplicadas del mismo trabajador en vacaciones (nos quedamos con el último registro)
             df_v_limpio = df_vac.drop_duplicates(subset=["dni"], keep="last").copy()
 
             # Identificar exactamente cuáles son tus columnas de vacaciones
@@ -1216,7 +1216,7 @@ else:
             col_goz = next((c for c in df_v_limpio.columns if "gozad" in c), None)
             col_sal = next((c for c in df_v_limpio.columns if "saldo" in c), None)
 
-            # Aislar SOLO esas 3 columnas + DNI (para no jalar basura que corrompa la tabla)
+            # Aislar SOLO esas 3 columnas + DNI
             cols_vac = ["dni"]
             if col_gen: cols_vac.append(col_gen)
             if col_goz: cols_vac.append(col_goz)
@@ -1225,7 +1225,7 @@ else:
             df_v_limpio = df_v_limpio[cols_vac]
 
             # Unir (pegar los datos)
-            df_reporte = df_reporte.merge(df_v_limpio, on="dni", how="inner")
+            df_reporte = df_reporte.merge(df_v_limpio, on="dni", how="left")
 
             # Renombrar columnas para la tabla final
             rename_dict = {"dni": "DNI", col_nom_per: "Apellidos y Nombres", "sede": "Sede", "area": "Área", "fecha_ingreso": "Fecha Ingreso"}
@@ -1234,12 +1234,13 @@ else:
             if col_sal: rename_dict[col_sal] = "Saldo"
             df_reporte.rename(columns=rename_dict, inplace=True)
 
+            # === EL ESCUDO ANTI-DUPLICADOS === (La solución a tu error de ahorita)
+            df_reporte = df_reporte.loc[:, ~df_reporte.columns.duplicated()].copy()
+
             # Conversión super segura a decimales (respeta el 80.14 tal cual)
             for col in ["Días Generados", "Días Gozados", "Saldo"]:
                 if col in df_reporte.columns:
-                    # Cambia la coma por punto si fuera necesario y fuerza el formato decimal
                     df_reporte[col] = df_reporte[col].astype(str).str.replace(",", ".", regex=False)
-                    # Si detecta texto en vez de número, lo deja vacío, pero extrae el valor exacto si existe
                     df_reporte[col] = pd.to_numeric(df_reporte[col], errors='coerce').fillna(0.0)
 
             # Rellenar textos vacíos
@@ -1274,7 +1275,7 @@ else:
             
             st.success(f"📋 **Total de registros:** {len(df_final)}")
             
-            # Forzamos visualmente a que Streamlit muestre los 2 decimales sin redondear
+            # Forzamos visualmente a que Streamlit muestre los decimales exactos
             try:
                 st.dataframe(
                     df_final.style.format({
@@ -1285,7 +1286,6 @@ else:
                     hide_index=True
                 )
             except Exception:
-                # Fallback por si hay algún error en el formato
                 st.dataframe(df_final, hide_index=True)
 # ==========================================
     # MÓDULO: VENCIMIENTO DE CONTRATOS
@@ -1387,6 +1387,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
