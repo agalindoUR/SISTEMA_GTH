@@ -1354,10 +1354,7 @@ else:
         else:
             st.warning("⚠️ Faltan datos en Personal o Datos Generales.")
 
-# ==========================================
-    # MÓDULO: VACACIONES (SISTEMA UNIFICADO)
-    # ==========================================
-    elif m == "Vacaciones":
+elif m == "Vacaciones":
         st.markdown("<h2 style='color: #4A0000;'>🌴 Reporte Integrado de Vacaciones</h2>", unsafe_allow_html=True)
         
         df_per = dfs.get("PERSONAL", pd.DataFrame())
@@ -1386,7 +1383,7 @@ else:
                     temp_gen = df_gen[["DNI_KEY"] + cols_gen].drop_duplicates("DNI_KEY")
                     df_res = df_res.merge(temp_gen, on="DNI_KEY", how="left")
 
-            # Si AREA sigue vacía, buscar en CONTRATOS (Plan B)
+            # Si AREA sigue vacía, buscar en CONTRATOS
             if "area" not in df_res.columns and not df_cont.empty:
                 df_cont["DNI_KEY"] = df_cont["dni"].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
                 if "area" in df_cont.columns:
@@ -1397,26 +1394,24 @@ else:
 
             if "sede" not in df_res.columns: df_res["sede"] = "No registrada"
 
-            # CÁLCULO DE DÍAS GENERADOS (Vacaciones)
+            # CÁLCULO DE DÍAS GENERADOS
             df_vac["DNI_KEY"] = df_vac["dni"].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
             df_v = df_vac.copy()
             c_dia_v = next((c for c in df_v.columns if "dia" in c.lower() and "gen" in c.lower()), None)
             
             if c_dia_v:
-                # --- SOLUCIÓN AL ERROR DE ATRIBUTO Y DUPLICADOS ---
                 if isinstance(df_v[c_dia_v], pd.DataFrame):
-                    col_dias_segura = df_v[c_dia_v].iloc[:, 0] 
+                    col_dias_segura = df_v[c_dia_v].iloc[:, 0]
                 else:
                     col_dias_segura = df_v[c_dia_v]
                 
-                # Conversión segura a float
                 df_v["v_n"] = pd.to_numeric(col_dias_segura.astype(str).str.replace(",", ".", regex=False), errors="coerce").fillna(0.0)
                 df_sum_v = df_v.groupby("DNI_KEY")["v_n"].sum().reset_index().rename(columns={"v_n": "DÍAS GENERADOS"})
                 df_res = df_res.merge(df_sum_v, on="DNI_KEY", how="left")
             else:
                 df_res["DÍAS GENERADOS"] = 0.0
 
-            # CÁLCULO DE DÍAS GOZADOS (Vacaciones)
+            # CÁLCULO DE DÍAS GOZADOS
             c_dia_g = next((c for c in df_v.columns if "dia" in c.lower() and "goz" in c.lower()), None)
             
             if c_dia_g:
@@ -1425,7 +1420,6 @@ else:
                 else:
                     col_goz_segura = df_v[c_dia_g]
                     
-                # Conversión segura a float
                 df_v["g_n"] = pd.to_numeric(col_goz_segura.astype(str).str.replace(",", ".", regex=False), errors="coerce").fillna(0.0)
                 df_sum_g = df_v.groupby("DNI_KEY")["g_n"].sum().reset_index().rename(columns={"g_n": "DÍAS GOZADOS"})
                 df_res = df_res.merge(df_sum_g, on="DNI_KEY", how="left")
@@ -1445,14 +1439,12 @@ else:
                 "area": "AREA"
             })
             
-            # Poner todo en mayúsculas
             df_res.columns = [str(c).upper() for c in df_res.columns]
 
             # Filtros Interactivos
             st.markdown("### 🔍 Filtros")
             c1, c2 = st.columns(2)
             
-            # Asegurar que las listas no tengan 'nan' antes de mostrarlas
             sedes_unicas = ["TODAS"] + sorted([str(x) for x in df_res["SEDE"].dropna().unique() if str(x) != 'nan'])
             areas_unicas = ["TODAS"] + sorted([str(x) for x in df_res["AREA"].dropna().unique() if str(x) != 'nan'])
             
@@ -1587,6 +1579,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
