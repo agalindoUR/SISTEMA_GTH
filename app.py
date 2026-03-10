@@ -806,17 +806,31 @@ else:
                                             key="dl_papeleta_tab"
                                         )
                             st.markdown("---")
-                        # 1. Mostrar la tabla completa (solo lectura visual)
-                        st.dataframe(df_filtro, hide_index=True, use_container_width=True)
+                        # 1. Mostrar la tabla completa limpia (usamos 'vst' que no tiene las columnas basura)
+                        st.dataframe(vst, hide_index=True, use_container_width=True)
 
                         # 2. Selector sutil para decirle al sistema qué registro queremos tocar
-                        opciones = ["-- Seleccione un registro --"] + df_filtro["id"].astype(str).tolist()
-                        sel_val = st.selectbox("🎯 ID del registro a editar/imprimir:", opciones)
+                        opciones = ["-- Seleccione un registro --"]
+                        c_df_upper = c_df.copy()
+                        c_df_upper.columns = [str(c).upper() for c in c_df_upper.columns]
+                        
+                        if not c_df.empty:
+                            for idx_row, row in c_df_upper.iterrows():
+                                if h_name == "CONTRATOS":
+                                    lbl = f"ID: {idx_row} | Cargo: {str(row.get('CARGO',''))} | Inicio: {str(row.get('F_INICIO',''))}"
+                                else:
+                                    valores = [str(v) for k, v in row.items() if pd.notna(v) and str(v).strip() != "" and str(v).lower() != "nan" and k not in ["DNI", "LINK", "ID"]][:2]
+                                    lbl = f"ID: {idx_row} | " + " - ".join(valores)
+                                opciones.append(lbl)
+
+                        sel_val = st.selectbox("🎯 Seleccione el registro a editar/imprimir/eliminar:", opciones, key=f"sel_main_{h_name}_{dni_buscado}")
 
                         # 3. Preparar los datos ('fila') si seleccionó algo
                         fila = {}
+                        idx = None
                         if sel_val != "-- Seleccione un registro --":
-                            fila = df_filtro[df_filtro["id"] == int(sel_val)].iloc[0].to_dict()
+                            idx = int(sel_val.split(" |")[0].replace("ID: ", ""))
+                            fila = c_df_upper.loc[idx]
 
                         # ---> AQUÍ PEGAS EL BLOQUE DE VACACIONES DE ARRIBA <---
 
@@ -1741,6 +1755,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
