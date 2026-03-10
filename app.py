@@ -632,12 +632,14 @@ else:
                                         n_car = st.text_input("Cargo", value=str(fila.get("cargo", "")))
                                         n_area_cont = st.text_input("Área", value=str(fila.get("area", ""))).upper()
                                         
-                                        try: val_rem = float(fila.get("remuneración básica", 0.0))
+                                        # CORRECCIÓN: Quitamos tilde en "remuneracion basica"
+                                        try: val_rem = float(fila.get("remuneracion basica", 0.0))
                                         except: val_rem = 0.0
                                         n_rem = st.number_input("Remuneración básica", value=val_rem)
                                         
-                                        n_bon = st.text_input("Bonificación", value=str(fila.get("bonificación", "")))
-                                        n_cond = st.text_input("Condición de trabajo", value=str(fila.get("condición de trabajo", "")))
+                                        # CORRECCIÓN: Quitamos tildes en "bonificacion" y "condicion de trabajo"
+                                        n_bon = st.text_input("Bonificación", value=str(fila.get("bonificacion", "")))
+                                        n_cond = st.text_input("Condición de trabajo", value=str(fila.get("condicion de trabajo", "")))
                                         
                                         try: ini_val = pd.to_datetime(fila.get("f_inicio")).date()
                                         except: ini_val = date.today()
@@ -681,12 +683,22 @@ else:
                                     b1, b2 = st.columns(2)
                                     with b1:
                                         if st.form_submit_button("💾 Actualizar Contrato", use_container_width=True):
+                                            # CORRECCIÓN: El diccionario update_vals ya no tiene tildes en sus llaves
                                             update_vals = {
-                                                "cargo": n_car, "area": n_area_cont, "remuneración básica": n_rem, "bonificación": n_bon,
-                                                "condición de trabajo": n_cond, "f_inicio": n_ini,
-                                                "f_fin": n_fin, "tipo de trabajador": n_ttrab,
-                                                "modalidad": n_mod, "temporalidad": n_tem, "link": n_lnk, "tipo contrato": n_tcont,
-                                                "estado": est_e, "motivo cese": mot_e
+                                                "cargo": n_car, 
+                                                "area": n_area_cont, 
+                                                "remuneracion basica": n_rem, 
+                                                "bonificacion": n_bon,
+                                                "condicion de trabajo": n_cond, 
+                                                "f_inicio": n_ini,
+                                                "f_fin": n_fin, 
+                                                "tipo de trabajador": n_ttrab,
+                                                "modalidad": n_mod, 
+                                                "temporalidad": n_tem, 
+                                                "link": n_lnk, 
+                                                "tipo contrato": n_tcont,
+                                                "estado": est_e, 
+                                                "motivo cese": mot_e
                                             }
                                             for k, v in update_vals.items():
                                                 dfs[h_name].at[idx, k] = v
@@ -1586,6 +1598,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
