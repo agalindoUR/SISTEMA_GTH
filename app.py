@@ -649,27 +649,53 @@ else:
                             # Eliminamos duplicados de la base
                         vst = vst.loc[:, ~vst.columns.duplicated()]
             
-                        if "SEL" not in vst.columns:
-                            vst.insert(0, "SEL", False)
-                            
-                            # Dejamos un solo "DIAS GENERADOS" sin tilde
-                        columnas_basura = ["DNI", "FECHA DE INICIO", "FECHA DE FIN", "DIAS GENERADOS", "SALDO"]
-                        for col in columnas_basura:
-                            if col in vst.columns:
-                                col_conf[col] = None
-                                    
-                            # Dejamos un solo "DIAS GOZADOS" sin tilde
-                        cols_importantes = ["SEL", "PERIODO", "F_INICIO", "F_FIN", "DIAS GOZADOS"]
-                        cols_finales = [c for c in cols_importantes if c in vst.columns] + [c for c in vst.columns if c not in cols_importantes]
-                            
-                            # TRUCO ANTIFALLOS: Eliminamos cualquier duplicado accidental en la lista final
-                        cols_finales = list(dict.fromkeys(cols_finales))
-                            
-                        vst = vst[cols_finales]
+                        # =========================================================
+                                    # 1. SI ES DATOS GENERALES -> DISEÑO TIPO FICHA (TARJETA)
+                                    # =========================================================
+                                    if h_name == "DATOS GENERALES" and not vst.empty:
+                                        ficha = vst.iloc[0] # Tomamos el único registro
+                                        
+                                        with st.container(border=True):
+                                            st.markdown("### 🪪 Perfil del Trabajador")
+                                            c1, c2, c3 = st.columns(3)
+                                            
+                                            c1.info(f"**📍 Sede:** {ficha.get('SEDE', '-')}")
+                                            c1.markdown(f"**🚻 Sexo:** {ficha.get('SEXO', '-')}")
+                                            
+                                            c2.info(f"**💍 Estado Civil:** {ficha.get('ESTADO CIVIL', '-')}")
+                                            c2.markdown(f"**🎂 F. Nacimiento:** {ficha.get('FECHA DE NACIMIENTO', '-')}")
+                                            
+                                            c3.info(f"**🏠 Dirección:** {ficha.get('DIRECCIÓN', '-')}")
+                                            c3.markdown(f"**🔢 Edad:** {ficha.get('EDAD', '-')} años")
+                                            
+                                        # Como no hay tabla, seleccionamos la fila automáticamente para el modo edición
+                                        sel = vst.head(1) 
+                                        
+                                    # =========================================================
+                                    # 2. SI ES CUALQUIER OTRA PESTAÑA -> DISEÑO DE TABLA NORMAL
+                                    # =========================================================
+                                    else:
+                                        if "SEL" not in vst.columns:
+                                            vst.insert(0, "SEL", False)
+                                            
+                                        # Dejamos un solo "DIAS GENERADOS" sin tilde
+                                        columnas_basura = ["DNI", "FECHA DE INICIO", "FECHA DE FIN", "DIAS GENERADOS", "SALDO"]
+                                        for col in columnas_basura:
+                                            if col in vst.columns:
+                                                col_conf[col] = None
+                                                
+                                        # Dejamos un solo "DIAS GOZADOS" sin tilde
+                                        cols_importantes = ["SEL", "PERIODO", "F_INICIO", "F_FIN", "DIAS GOZADOS"]
+                                        cols_finales = [c for c in cols_importantes if c in vst.columns] + [c for c in vst.columns if c not in cols_importantes]
+                                            
+                                        # TRUCO ANTIFALLOS: Eliminamos cualquier duplicado accidental en la lista final
+                                        cols_finales = list(dict.fromkeys(cols_finales))
+                                            
+                                        vst = vst[cols_finales]
 
-                        st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 10px !important; }</style>""", unsafe_allow_html=True)
-                        ed = st.data_editor(vst, hide_index=True, use_container_width=False, column_config=col_conf, key=f"ed_{h_name}")
-                        sel = ed[ed["SEL"] == True]
+                                        st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 10px !important; }</style>""", unsafe_allow_html=True)
+                                        ed = st.data_editor(vst, hide_index=True, use_container_width=False, column_config=col_conf, key=f"ed_{h_name}")
+                                        sel = ed[ed["SEL"] == True]
 
                         # ==========================================
                         # BOTÓN DE IMPRESIÓN DE PAPELETA (SOLO EN VACACIONES)
@@ -1554,6 +1580,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
