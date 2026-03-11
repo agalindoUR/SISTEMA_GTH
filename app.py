@@ -880,17 +880,22 @@ else:
                                                 n_car = st.text_input("Cargo", value=str(sel.iloc[0].get("CARGO", "")))
                                                 n_area = st.text_input("AREA")
                                                 try: 
-                                                    val_rem = float(sel.iloc[0].get("REMUNERACIÓN BÁSICA", 0.0))
+                                                    # SIN TILDE AQUÍ
+                                                    val_rem = float(sel.iloc[0].get("REMUNERACION BASICA", 0.0))
                                                 except: 
                                                     val_rem = 0.0
                                                 n_rem = st.number_input("Remuneración básica", value=val_rem)
-                                                n_bon = st.text_input("Bonificación", value=str(sel.iloc[0].get("BONIFICACIÓN", "")))
-                                                n_cond = st.text_input("Condición de trabajo", value=str(sel.iloc[0].get("CONDICIÓN DE TRABAJO", "")))
+                                                
+                                                # SIN TILDES AQUÍ
+                                                n_bon = st.text_input("Bonificación", value=str(sel.iloc[0].get("BONIFICACION", "")))
+                                                n_cond = st.text_input("Condición de trabajo", value=str(sel.iloc[0].get("CONDICION DE TRABAJO", "")))
+                                                
                                                 try: 
                                                     ini_val = pd.to_datetime(sel.iloc[0].get("F_INICIO")).date()
                                                 except: 
                                                     ini_val = date.today()
                                                 n_ini = st.date_input("Inicio", value=ini_val, format="DD/MM/YYYY")
+                                                
                                                 try: 
                                                     fin_val = pd.to_datetime(sel.iloc[0].get("F_FIN")).date()
                                                 except: 
@@ -931,14 +936,14 @@ else:
                                                 mot_e = st.selectbox("Motivo Cese", opts_mot, index=opts_mot.index(v_mot)) if est_e == "CESADO" else "Vigente"
 
                                                 st.markdown("---")
-                                                # Este es el ÚNICO botón dentro del form
                                                 if st.form_submit_button("Actualizar Registro"):
+                                                    # SIN TILDES AQUÍ TAMPOCO
                                                     update_vals = {
                                                         "CARGO": n_car, 
                                                         "AREA": n_area, 
-                                                        "REMUNERACIÓN BÁSICA": n_rem, 
-                                                        "BONIFICACIÓN": n_bon, 
-                                                        "CONDICIÓN DE TRABAJO": n_cond, 
+                                                        "REMUNERACION BASICA": n_rem, 
+                                                        "BONIFICACION": n_bon, 
+                                                        "CONDICION DE TRABAJO": n_cond, 
                                                         "F_INICIO": n_ini, 
                                                         "F_FIN": n_fin, 
                                                         "TIPO DE TRABAJADOR": n_ttrab, 
@@ -1516,6 +1521,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
