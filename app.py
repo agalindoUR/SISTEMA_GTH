@@ -901,64 +901,68 @@ else:
                                         idx = sel.index[0]
                                         with st.form(f"f_edit_{h_name}"):
                                             if h_name == "CONTRATOS":
-                                                # CARGAMOS DATOS SIN TILDES Y EN MINÚSCULAS PARA QUE NO FALLE
-                                                n_car = st.text_input("Cargo", value=str(sel.iloc[0].get("cargo", "")))
-                                                n_area = st.text_input("Área", value=str(sel.iloc[0].get("area", "")))
+                                                # LEEMOS DE 'sel' EN MAYÚSCULAS (porque así viene de la tabla visual)
+                                                n_car = st.text_input("Cargo", value=str(sel.iloc[0].get("CARGO", "")))
+                                                n_area = st.text_input("Área", value=str(sel.iloc[0].get("AREA", "")))
+                                                
                                                 try: 
-                                                    val_rem = float(sel.iloc[0].get("remuneracion basica", 0.0))
+                                                    val_rem = float(sel.iloc[0].get("REMUNERACION BASICA", 0.0))
                                                 except: 
                                                     val_rem = 0.0
                                                 n_rem = st.number_input("Remuneración básica", value=val_rem)
-                                                n_bon = st.text_input("Bonificación", value=str(sel.iloc[0].get("bonificacion", "")))
-                                                n_cond = st.text_input("Condición de trabajo", value=str(sel.iloc[0].get("condicion de trabajo", "")))
+                                                
+                                                n_bon = st.text_input("Bonificación", value=str(sel.iloc[0].get("BONIFICACION", "")))
+                                                n_cond = st.text_input("Condición de trabajo", value=str(sel.iloc[0].get("CONDICION DE TRABAJO", "")))
                                                 
                                                 try: 
-                                                    ini_val = pd.to_datetime(sel.iloc[0].get("f_inicio")).date()
+                                                    val_ini = sel.iloc[0].get("F_INICIO")
+                                                    ini_val = pd.to_datetime(val_ini).date() if pd.notnull(val_ini) else date.today()
                                                 except: 
                                                     ini_val = date.today()
                                                 n_ini = st.date_input("Inicio", value=ini_val, format="DD/MM/YYYY")
                                                 
                                                 try: 
-                                                    fin_val = pd.to_datetime(sel.iloc[0].get("f_fin")).date()
+                                                    val_fin = sel.iloc[0].get("F_FIN")
+                                                    fin_val = pd.to_datetime(val_fin).date() if pd.notnull(val_fin) else date.today()
                                                 except: 
                                                     fin_val = date.today()
                                                 n_fin = st.date_input("Fin", value=fin_val, format="DD/MM/YYYY")
                                                 
-                                                v_ttrab = str(sel.iloc[0].get("tipo de trabajador", "Administrativo"))
+                                                v_ttrab = str(sel.iloc[0].get("TIPO DE TRABAJADOR", "Administrativo"))
                                                 opts_tt = ["Administrativo", "Docente", "Externo"]
                                                 if v_ttrab not in opts_tt: 
                                                     opts_tt.append(v_ttrab)
                                                 n_ttrab = st.selectbox("Tipo de trabajador", opts_tt, index=opts_tt.index(v_ttrab))
                                                 
-                                                v_mod = str(sel.iloc[0].get("modalidad", "Presencial"))
+                                                v_mod = str(sel.iloc[0].get("MODALIDAD", "Presencial"))
                                                 opts_mod = ["Presencial", "Semipresencial", "Virtual"]
                                                 if v_mod not in opts_mod: 
                                                     opts_mod.append(v_mod)
                                                 n_mod = st.selectbox("Modalidad", opts_mod, index=opts_mod.index(v_mod))
                                                 
-                                                v_tem = str(sel.iloc[0].get("temporalidad", "Plazo fijo"))
+                                                v_tem = str(sel.iloc[0].get("TEMPORALIDAD", "Plazo fijo"))
                                                 opts_tem = ["Plazo fijo", "Plazo indeterminado", "Ordinarizado"]
                                                 if v_tem not in opts_tem: 
                                                     opts_tem.append(v_tem)
                                                 n_tem = st.selectbox("Temporalidad", opts_tem, index=opts_tem.index(v_tem))
                                                 
-                                                n_lnk = st.text_input("Link", value=str(sel.iloc[0].get("link", "")))
+                                                n_lnk = st.text_input("Link", value=str(sel.iloc[0].get("LINK", "")))
                                                 
-                                                v_tcont = str(sel.iloc[0].get("tipo contrato", "Planilla completo"))
+                                                v_tcont = str(sel.iloc[0].get("TIPO CONTRATO", "Planilla completo"))
                                                 opts_tcon = ["Planilla completo", "Tiempo Parcial", "Recibo por Honorarios", "Otro"]
                                                 if v_tcont not in opts_tcon: 
                                                     opts_tcon.append(v_tcont)
                                                 n_tcont = st.selectbox("Tipo Contrato", opts_tcon, index=opts_tcon.index(v_tcont))
 
                                                 est_e = "ACTIVO" if n_fin >= date.today() else "CESADO"
-                                                v_mot = str(sel.iloc[0].get("motivo cese", "Vigente"))
+                                                v_mot = str(sel.iloc[0].get("MOTIVO CESE", "Vigente"))
                                                 opts_mot = ["Vigente"] + MOTIVOS_CESE
                                                 if v_mot not in opts_mot: 
                                                     opts_mot.append(v_mot)
                                                 mot_e = st.selectbox("Motivo Cese", opts_mot, index=opts_mot.index(v_mot)) if est_e == "CESADO" else "Vigente"
 
                                                 if st.form_submit_button("Actualizar"):
-                                                    # DICCIONARIO DE EDICIÓN SIN TILDES
+                                                    # GUARDAMOS EN MINÚSCULAS (Para mantener tu Google Sheet sano y sin duplicados)
                                                     update_vals = {
                                                         "cargo": n_car, 
                                                         "area": n_area,
@@ -1537,6 +1541,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
