@@ -496,34 +496,64 @@ else:
 
                 for i, tab in enumerate(tabs):
                     h_name = h_keys[i]
-                    with tab:
-                        if "dni" in dfs[h_name].columns:
-                            c_df = dfs[h_name][dfs[h_name]["dni"] == dni_buscado]
-                        else:
-                            c_df = pd.DataFrame(columns=COLUMNAS.get(h_name, []))
+                with tab:
+                    # 1. Filtrado de datos por DNI según la pestaña
+                    if "dni" in dfs[h_name].columns:
+                        c_df = dfs[h_name][dfs[h_name]["dni"] == dni_buscado]
+                    else:
+                        c_df = pd.DataFrame(columns=COLUMNAS.get(h_name, []))
 
-                        if h_name == "CONTRATOS":
-                            # 1. Forzamos a limpiar cualquier espacio invisible al inicio o final de las columnas
-                            dfs["CONTRATOS"].columns = [str(c).strip().upper() for c in dfs["CONTRATOS"].columns]
+                    # 2. Lógica específica para la pestaña CONTRATOS
+                    if h_name == "CONTRATOS":
+                        # Limpieza de nombres de columnas para evitar espacios invisibles
+                        dfs["CONTRATOS"].columns = [str(c).strip().upper() for c in dfs["CONTRATOS"].columns]
+                        
+                        # Verificación de existencia de columna DNI
+                        if "DNI" not in dfs["CONTRATOS"].columns:
+                            st.error(f"🚨 ALERTA: No se encuentra la columna 'DNI' en CONTRATOS. Columnas detectadas: {list(dfs['CONTRATOS'].columns)}")
+                            st.stop()
                             
-                            # 2. Verificamos si realmente existe la columna
-                            if "DNI" not in dfs["CONTRATOS"].columns:
-                                st.error(f"🚨 ALERTA: No encuentro la columna 'DNI'. Esto es lo que Python está leyendo desde tu Excel: {list(dfs['CONTRATOS'].columns)}")
-                                st.stop()
-                                
-                            # 3. Si todo está bien, hacemos el filtro
-                            df_contratos = dfs["CONTRATOS"][dfs["CONTRATOS"]["DNI"] == str(dni_buscado).strip()]
-                            if not df_contratos.empty:
-                                st.markdown("""
-                                    <style>
-                                    [data-testid="stDownloadButton"] button { background-color: #FFD700 !important; border: 2px solid #4A0000 !important; }
-                                    [data-testid="stDownloadButton"] button p { color: #4A0000 !important; font-weight: bold !important; font-size: 16px !important; }
-                                    [data-testid="stDownloadButton"] button:hover { background-color: #ffffff !important; border: 2px solid #FFD700 !important; }
-                                    </style>
-                                """, unsafe_allow_html=True)
-                                word_file = gen_word(nom_c, dni_buscado, df_contratos)
-                                st.download_button("📄 Generar Certificado de Trabajo", data=word_file, file_name=f"Certificado_{dni_buscado}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-                                st.markdown("<br>", unsafe_allow_html=True)
+                        # Filtrado riguroso para el Certificado
+                        df_contratos = dfs["CONTRATOS"][dfs["CONTRATOS"]["DNI"].astype(str).str.strip() == str(dni_buscado).strip()]
+                        
+                        if not df_contratos.empty:
+                            # Estilo personalizado para el botón de descarga
+                            st.markdown("""
+                                <style>
+                                [data-testid="stDownloadButton"] button { background-color: #FFD700 !important; border: 2px solid #4A0000 !important; }
+                                [data-testid="stDownloadButton"] button p { color: #4A0000 !important; font-weight: bold !important; font-size: 16px !important; }
+                                [data-testid="stDownloadButton"] button:hover { background-color: #ffffff !important; border: 2px solid #FFD700 !important; }
+                                </style>
+                            """, unsafe_allow_html=True)
+                            
+                            # Generación y botón de descarga del Certificado
+                            # Se añade una key única para evitar errores de DuplicatedElement
+                            word_file = gen_word(nom_c, dni_buscado, df_contratos)
+                            if word_file:
+                                st.download_button(
+                                    label="📄 Generar Certificado de Trabajo", 
+                                    data=word_file, 
+                                    file_name=f"Certificado_{dni_buscado}.docx", 
+                                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                                    key=f"btn_cert_{dni_buscado}"
+                                )
+                            st.markdown("<br>", unsafe_allow_html=True)
+
+                    # 3. Visualización de la tabla de datos con capacidad de edición
+                    vst = c_df.copy()
+                    vst.insert(0, "SEL", False)
+                    
+                    st.write(f"### Registros en {h_name}")
+                    # Es vital que el data_editor tenga una key única basada en la pestaña y el DNI
+                    ed = st.data_editor(
+                        vst, 
+                        hide_index=True, 
+                        use_container_width=True, 
+                        key=f"editor_{h_name}_{dni_buscado}"
+                    )
+                    
+                    # Identificar fila seleccionada
+                    sel = ed[ed["SEL"] == True]
 
                         if h_name == "VACACIONES":
                             df_tc = df_contratos[df_contratos["TIPO CONTRATO"].astype(str).str.lower().str.contains("planilla", na=False)] if "df_contratos" in locals() else pd.DataFrame()
@@ -945,7 +975,7 @@ else:
                                 st.rerun()
                         
                         else:
-                            st.info("💡 Activa la casilla **(SEL)** en la tabla superior para editar o eliminar este registro.")
+                            st.info("💡 Activa la casilla (SEL) en la tabla superior para editar.")
                             edit_row = {}
                             for col in cols_reales:
                                 val = sel.iloc[0].get(col.upper(), "")
@@ -1550,6 +1580,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
