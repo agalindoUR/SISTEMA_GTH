@@ -825,11 +825,11 @@ else:
                                                         last_c = df_contratos.assign(f_fin_dt=pd.to_datetime(df_contratos['f_fin'], errors='coerce')).sort_values('f_fin_dt').iloc[-1]
                                                         d_car = str(last_c.get("cargo", ""))
                                                         try: 
-                                                            d_rem = float(last_c.get("remuneración básica", 0.0))
+                                                            d_rem = float(last_c.get("remuneracion básica", 0.0))
                                                         except: 
                                                             pass
-                                                        d_bon = str(last_c.get("bonificación", ""))
-                                                        d_cond = str(last_c.get("condición de trabajo", ""))
+                                                        d_bon = str(last_c.get("bonificacion", ""))
+                                                        d_cond = str(last_c.get("condicion de trabajo", ""))
                                                         try: 
                                                             d_ini = pd.to_datetime(last_c["f_fin"]).date() + pd.Timedelta(days=1)
                                                         except: 
@@ -1532,6 +1532,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
