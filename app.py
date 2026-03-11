@@ -925,75 +925,61 @@ else:
 
                             with col_b:
                                 with st.expander("📝 Editar / Eliminar"):
-                                    # Si hay una fila seleccionada en el data_editor
-                        if not sel.empty:
-                            idx = sel.index[0]
-                            cols_reales = [c for c in vst.columns if c not in ["SEL"]]
-                            
-                            st.markdown("### 📝 Editar Registro")
-                            # Creamos el formulario con una llave única para evitar el DuplicateElementId
-                            with st.form(key=f"form_edit_{h_name}_{dni_buscado}"):
-                                edit_row = {}
-                                for col in cols_reales:
-                                    val = sel.iloc[0].get(col.upper(), "")
+                                    # TODO este bloque debe estar dentro del expander
+                                    if not sel.empty:
+                                        idx = sel.index[0]
+                                        cols_reales = [c for c in vst.columns if c not in ["SEL"]]
+                                        
+                                        st.markdown("### 📝 Editar Registro")
+                                        
+                                        # Formulario de edición
+                                        with st.form(key=f"form_edit_{h_name}_{dni_buscado}"):
+                                            edit_row = {}
+                                            for col in cols_reales:
+                                                val = sel.iloc[0].get(col.upper(), "")
+                                                
+                                                # 1. Lógica para FECHAS
+                                                if "fecha" in col.lower() or "f_" in col.lower():
+                                                    try:
+                                                        fecha_dt = pd.to_datetime(val, errors='coerce')
+                                                        fecha_val = fecha_dt.date() if pd.notnull(fecha_dt) else date.today()
+                                                    except:
+                                                        fecha_val = date.today()
+                                                        
+                                                    edit_row[col] = st.date_input(
+                                                        col.title(), 
+                                                        value=fecha_val,
+                                                        min_value=date(1930, 1, 1),
+                                                        max_value=date(2100, 12, 31),
+                                                        format="DD/MM/YYYY",
+                                                        key=f"date_{h_name}_{col}_{dni_buscado}"
+                                                    )
+                                                
+                                                # 2. Lógica para TEXTO O NÚMEROS (puedes añadir más elif aquí)
+                                                else:
+                                                    edit_row[col] = st.text_input(
+                                                        col.title(),
+                                                        value=str(val) if pd.notnull(val) else "",
+                                                        key=f"edit_{h_name}_{col}_{dni_buscado}"
+                                                    )
+
+                                            # Botón de envío del formulario
+                                            if st.form_submit_button("✅ Actualizar Registro"):
+                                                for col in cols_reales:
+                                                    dfs[h_name].at[idx, col.upper()] = edit_row[col]
+                                                save_data(dfs)
+                                                st.success("Registro actualizado")
+                                                st.rerun()
+
+                                        # Botón de eliminar (fuera del form pero dentro del expander)
+                                        st.markdown("---")
+                                        if st.button("🗑️ Eliminar Registro", type="primary", use_container_width=True, key=f"del_{h_name}_{dni_buscado}"):
+                                            dfs[h_name] = dfs[h_name].drop(idx)
+                                            save_data(dfs)
+                                            st.rerun()
                                     
-                                    # 1. Lógica para FECHAS
-                                    if "fecha" in col.lower() or "f_" in col.lower():
-                                        try:
-                                            fecha_dt = pd.to_datetime(val, errors='coerce')
-                                            fecha_val = fecha_dt.date() if pd.notnull(fecha_dt) else date.today()
-                                        except:
-                                            fecha_val = date.today()
-                                            
-                                        edit_row[col] = st.date_input(
-                                            col.title(), 
-                                            value=fecha_val,
-                                            min_value=date(1930, 1, 1),
-                                            max_value=date(2100, 12, 31),
-                                            format="DD/MM/YYYY",
-                                            key=f"date_{h_name}_{col}_{dni_buscado}"
-                                        )
-                                    
-                                    # 2. Lógica para EDAD (Calculada automáticamente)
-                                    elif col.lower() == "edad":
-                                        # Intentamos obtener la fecha de nacimiento del diccionario si ya se procesó
-                                        fnac = edit_row.get("fecha de nacimiento")
-                                        if fnac:
-                                            edad_calc = int(date.today().year - fnac.year - ((date.today().month, date.today().day) < (fnac.month, fnac.day)))
-                                            edit_row[col] = st.number_input("Edad (Calculada)", value=edad_calc, disabled=True, key=f"edad_{h_name}_{dni_buscado}")
-                                        else:
-                                            edit_row[col] = st.number_input(col.title(), value=int(val) if str(val).isdigit() else 0, disabled=True, key=f"edad_manual_{h_name}_{dni_buscado}")
-                                    
-                                    # 3. Lógica para NÚMEROS Y MONTOS
-                                    elif col.lower() in ["remuneración", "bonificación", "sueldo", "días generados", "días gozados", "saldo", "monto"]:
-                                        try:
-                                            num_val = float(val) if pd.notnull(val) else 0.0
-                                        except:
-                                            num_val = 0.0
-                                        edit_row[col] = st.number_input(col.title(), value=num_val, key=f"num_{h_name}_{col}_{dni_buscado}")
-                                    
-                                    # 4. Lógica para TEXTO GENERAL
                                     else:
-                                        edit_row[col] = st.text_input(
-                                            col.title(), 
-                                            value=str(val) if pd.notnull(val) else "", 
-                                            key=f"edit_{h_name}_{col}_{dni_buscado}"
-                                        )
-
-                                st.markdown("---")
-                                if st.form_submit_button("✅ Actualizar Registro"):
-                                    for col in cols_reales:
-                                        dfs[h_name].at[idx, col.upper()] = edit_row[col]
-                                    save_data(dfs)
-                                    st.success("¡Registro actualizado con éxito!")
-                                    st.rerun()
-
-                            # Botón Eliminar fuera del formulario para evitar conflictos
-                            st.markdown("<br>", unsafe_allow_html=True)
-                            if st.button("🗑️ Eliminar Registro Permanentemente", type="primary", use_container_width=True, key=f"del_{h_name}_{dni_buscado}"):
-                                dfs[h_name] = dfs[h_name].drop(idx)
-                                save_data(dfs)
-                                st.rerun()
+                                        st.info("💡 Selecciona la casilla **(SEL)** en la tabla para editar.")
                         
                         else:
                             st.info("💡 Activa la casilla (SEL) en la tabla superior para editar.")
@@ -1601,6 +1587,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
