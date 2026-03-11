@@ -492,7 +492,7 @@ else:
                 nom_p_c = str(fila_pers.iloc[0].get("nombres", "")).strip()
                 # -----------------------------
 
-               # --- NUEVA LÓGICA DE FOTO ---
+               # --- NUEVA LÓGICA DE FOTO (Revisada para mayor tamaño y ajuste perfecto) ---
                 # Buscamos la columna "foto" (minúscula o mayúscula)
                 link_foto_raw = fila_pers.iloc[0].get("foto", fila_pers.iloc[0].get("FOTO", ""))
                 
@@ -502,34 +502,38 @@ else:
                 else:
                     foto_directa = None
 
-                # Renderizamos la cabecera con efecto Hover y enlace para agrandar
+                # Renderizamos la cabecera con FOTO MÁS GRANDE y AJUSTE PERFECTO
                 if foto_directa:
                     st.markdown(f"""
                         <style>
-                        .foto-perfil {{
-                            width: 75px; 
-                            height: 75px; 
+                        /* Nueva clase para foto más grande que oculta los bordes guindos */
+                        .foto-perfil-large {{
+                            width: 110px; /* Aumentado de 75px (aprox +50%) */
+                            height: 110px; /* Aumentado de 75px (aprox +50%) */
                             border-radius: 50%; 
+                            /* object-fit: cover es la clave: encaja el rostro al círculo
+                               ocultando el fondo (el marco guindo original) */
                             object-fit: cover; 
-                            border: 3px solid #FFD700; 
-                            margin-right: 15px;
-                            transition: transform 0.2s ease-in-out;
-                            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                            object-position: center; /* Centramos el rostro */
+                            border: 4px solid #FFD700; /* Borde dorado un poco más grueso para destacar */
+                            margin-right: 20px; /* Más espacio */
+                            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+                            transition: transform 0.2s ease-in-out; /* Mantenemos el pequeño efecto hover */
                         }}
-                        .foto-perfil:hover {{
-                            transform: scale(1.15); /* Efecto de zoom al pasar el mouse */
-                            cursor: pointer;
+                        /* Efecto hover ligero, pero SIN clic y SIN abrir ventana */
+                        .foto-perfil-large:hover {{
+                            transform: scale(1.08); /* Un zoom sutil al pasar el mouse */
                         }}
                         </style>
-                        <div style='border-bottom: 2px solid #FFD700; padding-bottom: 10px; margin-bottom: 20px; display: flex; align-items: center;'>
-                            <a href='{foto_directa}' target='_blank' title='Clic para ver a tamaño completo'>
-                                <img src='{foto_directa}' class='foto-perfil' onerror="this.parentElement.style.display='none'; document.getElementById('avatar-{dni_buscado}').style.display='block';">
-                            </a>
+                        <div style='border-bottom: 2px solid #FFD700; padding-bottom: 15px; margin-bottom: 25px; display: flex; align-items: center;'>
+                            /* Eliminamos el enlace <a> que abría la pestaña */
+                            <img src='{foto_directa}' class='foto-perfil-large' onerror="this.style.display='none'; document.getElementById('avatar-{dni_buscado}').style.display='block';">
                             <h1 id='avatar-{dni_buscado}' style='color: white; margin: 0; margin-right: 15px; font-size: 3em; display: none;'>👤</h1>
                             <h1 style='color: #FFD700; margin: 0; font-size: 2.5em;'>{nom_c}</h1>
                         </div>
                     """, unsafe_allow_html=True)
                 else:
+                    # Versión por defecto si no hay foto
                     st.markdown(f"""
                         <div style='border-bottom: 2px solid #FFD700; padding-bottom: 10px; margin-bottom: 20px; display: flex; align-items: center;'>
                             <h1 style='color: white; margin: 0; margin-right: 15px; font-size: 3em;'>👤</h1>
@@ -1466,6 +1470,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
