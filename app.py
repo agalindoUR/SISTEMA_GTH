@@ -42,6 +42,21 @@ COLUMNAS = {
 }
 
 # ==========================================
+# ---> NUEVA FUNCIÓN: CONVERTIR LINK DE DRIVE A IMAGEN DIRECTA <---
+# ==========================================
+def obtener_link_directo_drive(url):
+    """Convierte un link de compartir de Google Drive en un link directo de imagen."""
+    if not isinstance(url, str) or not url.strip():
+        return None
+    if "drive.google.com" in url and "/d/" in url:
+        try:
+            # Extrae el ID del archivo del link de Drive
+            file_id = url.split("/d/")[1].split("/")[0]
+            return f"https://drive.google.com/uc?id={file_id}"
+        except:
+            return url
+    return url
+# ==========================================
 # 2. FUNCIONES DE DATOS Y WORD (VERSIÓN GOOGLE SHEETS)
 # ==========================================
 
@@ -476,12 +491,32 @@ else:
                 nom_p_c = str(fila_pers.iloc[0].get("nombres", "")).strip()
                 # -----------------------------
 
-                st.markdown(f"""
-                    <div style='border-bottom: 2px solid #FFD700; padding-bottom: 10px; margin-bottom: 20px; display: flex; align-items: center;'>
-                        <h1 style='color: white; margin: 0; margin-right: 15px; font-size: 3em;'>👤</h1>
-                        <h1 style='color: #FFD700; margin: 0; font-size: 2.5em;'>{nom_c}</h1>
-                    </div>
-                """, unsafe_allow_html=True)
+                # --- NUEVA LÓGICA DE FOTO ---
+                # Buscamos la columna "foto" (minúscula o mayúscula)
+                link_foto_raw = fila_pers.iloc[0].get("foto", fila_pers.iloc[0].get("FOTO", ""))
+                
+                # Transformamos el link de Google Drive a link directo
+                if pd.notnull(link_foto_raw) and str(link_foto_raw).strip() != "":
+                    foto_directa = obtener_link_directo_drive(str(link_foto_raw).strip())
+                else:
+                    foto_directa = None
+
+                # Renderizamos la cabecera (con foto si existe, si no, con el muñeco)
+                if foto_directa:
+                    st.markdown(f"""
+                        <div style='border-bottom: 2px solid #FFD700; padding-bottom: 10px; margin-bottom: 20px; display: flex; align-items: center;'>
+                            <img src='{foto_directa}' style='width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 3px solid #FFD700; margin-right: 15px;' onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                            <h1 style='color: white; margin: 0; margin-right: 15px; font-size: 3em; display: none;'>👤</h1>
+                            <h1 style='color: #FFD700; margin: 0; font-size: 2.5em;'>{nom_c}</h1>
+                        </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.markdown(f"""
+                        <div style='border-bottom: 2px solid #FFD700; padding-bottom: 10px; margin-bottom: 20px; display: flex; align-items: center;'>
+                            <h1 style='color: white; margin: 0; margin-right: 15px; font-size: 3em;'>👤</h1>
+                            <h1 style='color: #FFD700; margin: 0; font-size: 2.5em;'>{nom_c}</h1>
+                        </div>
+                    """, unsafe_allow_html=True)
                 
                 t_noms = ["Datos Generales", "Exp. Laboral", "Form. Académica", "Investigación", "Datos Familiares", "Contratos", "Vacaciones", "Otros Beneficios", "Méritos/Demer.", "Evaluación", "Liquidaciones"]
                 h_keys = ["DATOS GENERALES", "EXP. LABORAL", "FORM. ACADEMICA", "INVESTIGACION", "DATOS FAMILIARES", "CONTRATOS", "VACACIONES", "OTROS BENEFICIOS", "MERITOS Y DEMERITOS", "EVALUACION DEL DESEMPEÑO", "LIQUIDACIONES"]
@@ -1412,6 +1447,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
