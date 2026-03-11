@@ -1034,8 +1034,8 @@ else:
                             save_data(dfs)
                             st.rerun()
 
-                else: # Si no hay selección
-                    st.info("💡 Selecciona la casilla **(SEL)** en la tabla para editar o eliminar datos.")
+                    else: # Si no hay selección
+                        st.info("💡 Selecciona la casilla **(SEL)** en la tabla para editar o eliminar datos.")
             else:
                 st.error("DNI no encontrado.")
     # --- SECCIÓN REGISTRO Y NÓMINA ---
@@ -1587,6 +1587,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
