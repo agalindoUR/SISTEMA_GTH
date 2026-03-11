@@ -136,12 +136,6 @@ def save_data(dfs):
     st.cache_data.clear()
 
 def get_consolidated_contracts(df_c):
-    # --- TRUCO: Convertimos columnas a minúsculas solo para el Word ---
-    df_c = df_c.copy()
-    df_c.columns = [str(c).strip().lower() for c in df_c.columns]
-    
-    # ... aquí sigue el resto de tu código normal:
-    # df_c['f_inicio'] = pd.to_datetime(df_c['f_inicio'], errors='coerce')
     # Función inteligente para fusionar contratos consecutivos
     if df_c.empty: return df_c
     df_c = df_c.copy()
@@ -503,16 +497,7 @@ else:
                             c_df = pd.DataFrame(columns=COLUMNAS.get(h_name, []))
 
                         if h_name == "CONTRATOS":
-                            # 1. Forzamos a limpiar cualquier espacio invisible al inicio o final de las columnas
-                            dfs["CONTRATOS"].columns = [str(c).strip().upper() for c in dfs["CONTRATOS"].columns]
-                            
-                            # 2. Verificamos si realmente existe la columna
-                            if "DNI" not in dfs["CONTRATOS"].columns:
-                                st.error(f"🚨 ALERTA: No encuentro la columna 'DNI'. Esto es lo que Python está leyendo desde tu Excel: {list(dfs['CONTRATOS'].columns)}")
-                                st.stop()
-                                
-                            # 3. Si todo está bien, hacemos el filtro
-                            df_contratos = dfs["CONTRATOS"][dfs["CONTRATOS"]["DNI"] == str(dni_buscado).strip()]
+                            df_contratos = dfs["CONTRATOS"][dfs["CONTRATOS"]["dni"] == dni_buscado]
                             if not df_contratos.empty:
                                 st.markdown("""
                                     <style>
@@ -526,7 +511,7 @@ else:
                                 st.markdown("<br>", unsafe_allow_html=True)
 
                         if h_name == "VACACIONES":
-                            df_tc = df_contratos[df_contratos["TIPO CONTRATO"].astype(str).str.lower().str.contains("planilla", na=False)] if "df_contratos" in locals() else pd.DataFrame()
+                            df_tc = df_contratos[df_contratos["tipo contrato"].astype(str).str.lower().str.contains("planilla", na=False)] if "df_contratos" in locals() else pd.DataFrame()
                             
                             detalles = []
                             dias_generados_totales = 0
@@ -534,8 +519,8 @@ else:
 
                             if not df_tc.empty:
                                 df_tc_calc = df_tc.copy()
-                                df_tc_calc['f_inicio_dt'] = pd.to_datetime(df_tc_calc['F_INICIO'], errors='coerce')
-                                df_tc_calc['f_fin_dt'] = pd.to_datetime(df_tc_calc['F_FIN'], errors='coerce')
+                                df_tc_calc['f_inicio_dt'] = pd.to_datetime(df_tc_calc['f_inicio'], errors='coerce')
+                                df_tc_calc['f_fin_dt'] = pd.to_datetime(df_tc_calc['f_fin'], errors='coerce')
                                 
                                 start_global = df_tc_calc['f_inicio_dt'].min()
                                 
@@ -629,56 +614,53 @@ else:
                         ed = st.data_editor(vst, hide_index=True, use_container_width=False, column_config=col_conf, key=f"ed_{h_name}")
                         sel = ed[ed["SEL"] == True]
 
-                       # ==========================================
-                        # BOTÓN DE PAPELETA (DENTRO DE LA PESTAÑA VACACIONES)
+                        # ==========================================
+                        # BOTÓN DE IMPRESIÓN DE PAPELETA (SOLO EN VACACIONES)
                         # ==========================================
                         if h_name == "VACACIONES" and not sel.empty:
                             st.markdown("---")
-                            current_cargo = "TRABAJADOR" 
-                            f_ingreso_val = "No detectada"
-
-                            # 1. Rescatamos datos de CONTRATOS para la papeleta
-                            if "CONTRATOS" in dfs:
-                                df_c_temp = dfs["CONTRATOS"].copy()
-                                df_c_temp.columns = [str(c).strip().lower() for c in df_c_temp.columns]
-                                df_c_data = df_c_temp[df_c_temp["dni"].astype(str).str.strip() == str(dni_buscado).strip()]
-                                
-                                if not df_c_data.empty:
-                                    # Cargo más reciente
-                                    df_c_data['f_fin_dt'] = pd.to_datetime(df_c_data['f_fin'], errors='coerce')
-                                    last_contract = df_c_data.sort_values('f_fin_dt').iloc[-1]
-                                    current_cargo = str(last_contract.get("cargo", "TRABAJADOR")).upper()
+                            # Necesitamos el cargo actual y fecha de ingreso del trabajador
+                            current_cargo = "TRABAJADOR" # Default
+                            f_ingreso_val = ""
+                            df_c_data = dfs["CONTRATOS"][dfs["CONTRATOS"]["dni"] == dni_buscado]
+                            
+                            if not df_c_data.empty:
+                                try:
+                                    # Obtener cargo (último contrato)
+                                    last_contract = df_c_data.assign(f_fin_dt=pd.to_datetime(df_c_data['f_fin'], errors='coerce')).sort_values('f_fin_dt').iloc[-1]
+                                    current_cargo = last_contract.get("cargo", "TRABAJADOR")
                                     
-                                    # Fecha de ingreso planilla
+                                    # Obtener fecha de ingreso (primer contrato de planilla)
                                     df_planilla = df_c_data[df_c_data["tipo contrato"].astype(str).str.lower().str.contains("planilla", na=False)]
                                     if not df_planilla.empty:
                                         f_min = pd.to_datetime(df_planilla['f_inicio'], errors='coerce').min()
-                                        if pd.notnull(f_min): 
-                                            f_ingreso_val = f_min.strftime('%d/%m/%Y')
+                                        if pd.notnull(f_min): f_ingreso_val = f_min.date()
+                                except: pass
 
-                            # 2. Capturamos datos de la fila de vacaciones seleccionada
-                            # ESTA PARTE ES LA QUE DABA EL ERROR DE INDENTACIÓN
+                            # Capturar datos de la fila seleccionada
                             r_sel = sel.iloc[0]
-                            p_papeleta = str(r_sel.get("PERIODO", "S/P"))
+                            p_papeleta = str(r_sel.get("PERIODO", ""))
                             fi_papeleta = r_sel.get("F_INICIO")
                             ff_papeleta = r_sel.get("F_FIN")
                             dg_papeleta = r_sel.get("DÍAS GOZADOS", 0)
 
-                            st.info(f"📋 **Datos Detectados:** {current_cargo} | **Ingreso:** {f_ingreso_val}")
+                            if hasattr(fi_papeleta, 'date'): fi_papeleta = fi_papeleta.date()
+                            if hasattr(ff_papeleta, 'date'): ff_papeleta = ff_papeleta.date()
 
-                            if st.button(f"📄 Generar Papeleta (Periodo {p_papeleta})", key=f"btn_papeleta_{dni_buscado}"):
+                            if st.button(f"📄 Generar Papeleta de Impresión (Periodo {p_papeleta})", key="btn_print_vaca_tab", use_container_width=False):
                                 if pd.isnull(fi_papeleta) or pd.isnull(ff_papeleta):
-                                    st.error("⚠️ Faltan fechas en la fila seleccionada.")
+                                    st.error("⚠️ La fila seleccionada no tiene fechas válidas de inicio o fin.")
                                 else:
-                                    # Llamada a tu función de Word
+                                    # AQUÍ LLAMAMOS A LA FUNCIÓN CON TODOS LOS DATOS
                                     papeleta_word = gen_papeleta_vac(ape_c, nom_p_c, dni_buscado, current_cargo, f_ingreso_val, p_papeleta, fi_papeleta, ff_papeleta, dg_papeleta)
                                     if papeleta_word:
+                                        st.markdown("""<style>[data-testid="stDownloadButton"] button { background-color: #FFD700 !important; color: #4A0000 !important; font-weight: bold !important; border: 2px solid #4A0000 !important; width: 100% !important; }</style>""", unsafe_allow_html=True)
                                         st.download_button(
-                                            label="⬇️ Descargar Papeleta.docx",
+                                            label=f"⬇️ Descargar Papeleta Duplicada - {nom_c}.docx",
                                             data=papeleta_word,
-                                            file_name=f"Papeleta_{dni_buscado}.docx",
+                                            file_name=f"Papeleta_{dni_buscado}_{p_papeleta}.docx",
                                             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                                            key=f"dl_papeleta_{dni_buscado}"
+                                            key="dl_papeleta_tab"
                                         )
                             st.markdown("---")
                         
@@ -687,8 +669,7 @@ else:
                             cols_reales = [c for c in dfs[h_name].columns if c.lower() not in ["id", "dni", "apellidos y nombres", "apellidos", "nombres"]]
 
                             with col_a:
-                                col_dni = next((c for c in dfs[h_name].columns if str(c).strip().upper() == "DNI"), "DNI")
-                                df_filtro = dfs[h_name][dfs[h_name][col_dni] == dni_buscado] if not dfs[h_name].empty else pd.DataFrame()
+                                df_filtro = dfs[h_name][dfs[h_name]["dni"] == dni_buscado] if not dfs[h_name].empty else pd.DataFrame()
                                 if h_name == "DATOS GENERALES" and len(df_filtro) > 0:
                                     st.info("📌 Los datos generales ya están registrados. Selecciona el registro en la tabla de arriba para editarlos.")
                                 else:
@@ -764,7 +745,6 @@ else:
                                             with st.form(f"f_add_{h_name}", clear_on_submit=True):
                                                 if h_name == "CONTRATOS":
                                                     d_car = ""
-                                                    d_area = ""  # Agregamos variable para AREA
                                                     d_rem = 0.0
                                                     d_bon = ""
                                                     d_cond = ""
@@ -778,32 +758,34 @@ else:
                                                     if es_renovacion and not df_contratos.empty:
                                                         last_c = df_contratos.assign(f_fin_dt=pd.to_datetime(df_contratos['f_fin'], errors='coerce')).sort_values('f_fin_dt').iloc[-1]
                                                         d_car = str(last_c.get("cargo", ""))
-                                                        
-                                                        # Recuperamos el área del contrato anterior
-                                                        v_area_old = str(last_c.get("area", ""))
-                                                        d_area = "" if v_area_old.lower() == "nan" else v_area_old
-                                                        
-                                                        try: d_rem = float(last_c.get("remuneración básica", 0.0))
-                                                        except: pass
+                                                        try: 
+                                                            d_rem = float(last_c.get("remuneración básica", 0.0))
+                                                        except: 
+                                                            pass
                                                         d_bon = str(last_c.get("bonificación", ""))
                                                         d_cond = str(last_c.get("condición de trabajo", ""))
-                                                        try: d_ini = pd.to_datetime(last_c["f_fin"]).date() + pd.Timedelta(days=1)
-                                                        except: pass
+                                                        try: 
+                                                            d_ini = pd.to_datetime(last_c["f_fin"]).date() + pd.Timedelta(days=1)
+                                                        except: 
+                                                            pass
                                                         
                                                         v_tt = str(last_c.get("tipo de trabajador", ""))
-                                                        if v_tt in ["Administrativo", "Docente", "Externo"]: d_ttrab = v_tt
+                                                        if v_tt in ["Administrativo", "Docente", "Externo"]: 
+                                                            d_ttrab = v_tt
+                                                            
                                                         v_m = str(last_c.get("modalidad", ""))
-                                                        if v_m in ["Presencial", "Semipresencial", "Virtual"]: d_mod = v_m
+                                                        if v_m in ["Presencial", "Semipresencial", "Virtual"]: 
+                                                            d_mod = v_m
+                                                            
                                                         v_te = str(last_c.get("temporalidad", ""))
-                                                        if v_te in ["Plazo fijo", "Plazo indeterminado", "Ordinarizado"]: d_temp = v_te
+                                                        if v_te in ["Plazo fijo", "Plazo indeterminado", "Ordinarizado"]: 
+                                                            d_temp = v_te
+                                                            
                                                         v_tc = str(last_c.get("tipo contrato", ""))
-                                                        if v_tc in ["Planilla completo", "Tiempo Parcial", "Recibo por Honorarios", "Otro"]: d_tcont = v_tc
+                                                        if v_tc in ["Planilla completo", "Tiempo Parcial", "Recibo por Honorarios", "Otro"]: 
+                                                            d_tcont = v_tc
 
                                                     car = st.text_input("Cargo", value=d_car)
-                                                    
-                                                    # Input de AREA forzado a MAYÚSCULAS
-                                                    area_input = st.text_input("AREA", value=d_area).upper() 
-                                                    
                                                     rem_b = st.number_input("Remuneración básica", value=d_rem)
                                                     bono = st.text_input("Bonificación", value=d_bon)
                                                     cond = st.text_input("Condición de trabajo", value=d_cond)
@@ -820,30 +802,7 @@ else:
 
                                                     if st.form_submit_button("Guardar Contrato"):
                                                         nid = dfs[h_name]["id"].max() + 1 if not dfs[h_name].empty else 1
-                                                        
-                                                        # --- SOLUCIÓN COLUMNAS DUPLICADAS ---
-                                                        # Esto lee tus columnas reales de Google Sheets y las empareja automáticamente (ignora tildes y mayúsculas)
-                                                        real_cols = {str(c).lower().replace('á','a').replace('é','e').replace('í','i').replace('ó','o').replace('ú','u').strip(): c for c in dfs[h_name].columns}
-                                                        
-                                                        new = {
-                                                            real_cols.get("id", "id"): nid, 
-                                                            real_cols.get("dni", "dni"): dni_buscado, 
-                                                            real_cols.get("apellidos y nombres", "apellidos y nombres"): nom_c, 
-                                                            real_cols.get("cargo", "cargo"): car, 
-                                                            real_cols.get("area", "area"): area_input, 
-                                                            real_cols.get("remuneracion basica", "remuneración básica"): rem_b, 
-                                                            real_cols.get("bonificacion", "bonificación"): bono, 
-                                                            real_cols.get("condicion de trabajo", "condición de trabajo"): cond, 
-                                                            real_cols.get("f_inicio", "f_inicio"): ini, 
-                                                            real_cols.get("f_fin", "f_fin"): fin, 
-                                                            real_cols.get("tipo de trabajador", "tipo de trabajador"): t_trab, 
-                                                            real_cols.get("modalidad", "modalidad"): mod, 
-                                                            real_cols.get("temporalidad", "temporalidad"): temp, 
-                                                            real_cols.get("link", "link"): lnk, 
-                                                            real_cols.get("tipo contrato", "tipo contrato"): tcont, 
-                                                            real_cols.get("estado", "estado"): est_a, 
-                                                            real_cols.get("motivo cese", "motivo cese"): mot_a
-                                                        }
+                                                        new = {"id": nid, "dni": dni_buscado, "apellidos y nombres": nom_c, "cargo": car, "remuneración básica": rem_b, "bonificación": bono, "condición de trabajo": cond, "f_inicio": ini, "f_fin": fin, "tipo de trabajador": t_trab, "modalidad": mod, "temporalidad": temp, "link": lnk, "tipo contrato": tcont, "estado": est_a, "motivo cese": mot_a}
                                                         dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new])], ignore_index=True)
                                                         save_data(dfs)
                                                         st.rerun()
@@ -874,133 +833,106 @@ else:
 
                             with col_b:
                                 with st.expander("📝 Editar / Eliminar"):
-                                    # Si hay una fila seleccionada en el data_editor
-                        if not sel.empty:
-                            idx = sel.index[0]
-                            cols_reales = [c for c in vst.columns if c not in ["SEL"]]
-                            
-                            st.markdown("### 📝 Editar Registro")
-                            # Creamos el formulario con una llave única para evitar el DuplicateElementId
-                            with st.form(key=f"form_edit_{h_name}_{dni_buscado}"):
-                                edit_row = {}
-                                for col in cols_reales:
-                                    val = sel.iloc[0].get(col.upper(), "")
-                                    
-                                    # 1. Lógica para FECHAS
-                                    if "fecha" in col.lower() or "f_" in col.lower():
-                                        try:
-                                            fecha_dt = pd.to_datetime(val, errors='coerce')
-                                            fecha_val = fecha_dt.date() if pd.notnull(fecha_dt) else date.today()
-                                        except:
-                                            fecha_val = date.today()
-                                            
-                                        edit_row[col] = st.date_input(
-                                            col.title(), 
-                                            value=fecha_val,
-                                            min_value=date(1930, 1, 1),
-                                            max_value=date(2100, 12, 31),
-                                            format="DD/MM/YYYY",
-                                            key=f"date_{h_name}_{col}_{dni_buscado}"
-                                        )
-                                    
-                                    # 2. Lógica para EDAD (Calculada automáticamente)
-                                    elif col.lower() == "edad":
-                                        # Intentamos obtener la fecha de nacimiento del diccionario si ya se procesó
-                                        fnac = edit_row.get("fecha de nacimiento")
-                                        if fnac:
-                                            edad_calc = int(date.today().year - fnac.year - ((date.today().month, date.today().day) < (fnac.month, fnac.day)))
-                                            edit_row[col] = st.number_input("Edad (Calculada)", value=edad_calc, disabled=True, key=f"edad_{h_name}_{dni_buscado}")
-                                        else:
-                                            edit_row[col] = st.number_input(col.title(), value=int(val) if str(val).isdigit() else 0, disabled=True, key=f"edad_manual_{h_name}_{dni_buscado}")
-                                    
-                                    # 3. Lógica para NÚMEROS Y MONTOS
-                                    elif col.lower() in ["remuneración", "bonificación", "sueldo", "días generados", "días gozados", "saldo", "monto"]:
-                                        try:
-                                            num_val = float(val) if pd.notnull(val) else 0.0
-                                        except:
-                                            num_val = 0.0
-                                        edit_row[col] = st.number_input(col.title(), value=num_val, key=f"num_{h_name}_{col}_{dni_buscado}")
-                                    
-                                    # 4. Lógica para TEXTO GENERAL
+                                    if not sel.empty:
+                                        idx = sel.index[0]
+                                        with st.form(f"f_edit_{h_name}"):
+                                            if h_name == "CONTRATOS":
+                                                n_car = st.text_input("Cargo", value=str(sel.iloc[0].get("CARGO", "")))
+                                                área = st.text_input("AREA")
+                                                try: 
+                                                    val_rem = float(sel.iloc[0].get("REMUNERACIÓN BÁSICA", 0.0))
+                                                except: 
+                                                    val_rem = 0.0
+                                                n_rem = st.number_input("Remuneración básica", value=val_rem)
+                                                n_bon = st.text_input("Bonificación", value=str(sel.iloc[0].get("BONIFICACIÓN", "")))
+                                                n_cond = st.text_input("Condición de trabajo", value=str(sel.iloc[0].get("CONDICIÓN DE TRABAJO", "")))
+                                                try: 
+                                                    ini_val = pd.to_datetime(sel.iloc[0].get("F_INICIO")).date()
+                                                except: 
+                                                    ini_val = date.today()
+                                                n_ini = st.date_input("Inicio", value=ini_val, format="DD/MM/YYYY")
+                                                try: 
+                                                    fin_val = pd.to_datetime(sel.iloc[0].get("F_FIN")).date()
+                                                except: 
+                                                    fin_val = date.today()
+                                                n_fin = st.date_input("Fin", value=fin_val, format="DD/MM/YYYY")
+                                                
+                                                v_ttrab = str(sel.iloc[0].get("TIPO DE TRABAJADOR", "Administrativo"))
+                                                opts_tt = ["Administrativo", "Docente", "Externo"]
+                                                if v_ttrab not in opts_tt: 
+                                                    opts_tt.append(v_ttrab)
+                                                n_ttrab = st.selectbox("Tipo de trabajador", opts_tt, index=opts_tt.index(v_ttrab))
+                                                
+                                                v_mod = str(sel.iloc[0].get("MODALIDAD", "Presencial"))
+                                                opts_mod = ["Presencial", "Semipresencial", "Virtual"]
+                                                if v_mod not in opts_mod: 
+                                                    opts_mod.append(v_mod)
+                                                n_mod = st.selectbox("Modalidad", opts_mod, index=opts_mod.index(v_mod))
+                                                
+                                                v_tem = str(sel.iloc[0].get("TEMPORALIDAD", "Plazo fijo"))
+                                                opts_tem = ["Plazo fijo", "Plazo indeterminado", "Ordinarizado"]
+                                                if v_tem not in opts_tem: 
+                                                    opts_tem.append(v_tem)
+                                                n_tem = st.selectbox("Temporalidad", opts_tem, index=opts_tem.index(v_tem))
+                                                
+                                                n_lnk = st.text_input("Link", value=str(sel.iloc[0].get("LINK", "")))
+                                                
+                                                v_tcont = str(sel.iloc[0].get("TIPO CONTRATO", "Planilla completo"))
+                                                opts_tcon = ["Planilla completo", "Tiempo Parcial", "Recibo por Honorarios", "Otro"]
+                                                if v_tcont not in opts_tcon: 
+                                                    opts_tcon.append(v_tcont)
+                                                n_tcont = st.selectbox("Tipo Contrato", opts_tcon, index=opts_tcon.index(v_tcont))
+
+                                                est_e = "ACTIVO" if n_fin >= date.today() else "CESADO"
+                                                v_mot = str(sel.iloc[0].get("MOTIVO CESE", "Vigente"))
+                                                opts_mot = ["Vigente"] + MOTIVOS_CESE
+                                                if v_mot not in opts_mot: 
+                                                    opts_mot.append(v_mot)
+                                                mot_e = st.selectbox("Motivo Cese", opts_mot, index=opts_mot.index(v_mot)) if est_e == "CESADO" else "Vigente"
+
+                                                if st.form_submit_button("Actualizar"):
+                                                    update_vals = {"cargo": n_car, "remuneración básica": n_rem, "bonificación": n_bon, "condición de trabajo": n_cond, "f_inicio": n_ini, "f_fin": n_fin, "tipo de trabajador": n_ttrab, "modalidad": n_mod, "temporalidad": n_tem, "link": n_lnk, "tipo contrato": n_tcont, "estado": est_e, "motivo cese": mot_e}
+                                                    for k, v in update_vals.items(): 
+                                                        dfs[h_name].at[idx, k] = v
+                                                    save_data(dfs)
+                                                    st.rerun()
+                                            else:
+                                                edit_row = {}
+                                                for col in cols_reales:
+                                                    val = sel.iloc[0].get(col.upper(), "")
+                                                    if "fecha" in col.lower() or "f_" in col.lower():
+                                                        edit_row[col] = st.date_input(col.title(), value=pd.to_datetime(val, errors='coerce').date() if pd.notnull(pd.to_datetime(val, errors='coerce')) else date.today(), min_value=date(1930, 1, 1), max_value=date(2100, 12, 31), format="DD/MM/YYYY")
+                                                    elif col.lower() == "edad":
+                                                        fnac = edit_row.get("fecha de nacimiento")
+                                                        if fnac: 
+                                                            edit_row[col] = st.number_input("Edad (Calculada)", value=int(date.today().year - fnac.year - ((date.today().month, date.today().day) < (fnac.month, fnac.day))), disabled=True)
+                                                        else: 
+                                                            edit_row[col] = st.number_input(col.title(), value=int(val) if pd.notnull(val) and str(val).isdigit() else 0, disabled=True)
+                                                    elif col.lower() in ["remuneración", "bonificación", "sueldo", "días generados", "días gozados", "saldo", "monto"]:
+                                                        try: 
+                                                            num_val = float(val) if pd.notnull(val) else 0.0
+                                                        except: 
+                                                            num_val = 0.0
+                                                        edit_row[col] = st.number_input(col.title(), value=num_val)
+                                                    else:
+                                                        edit_row[col] = st.text_input(col.title(), value=str(val) if pd.notnull(val) else "")
+
+                                                col_btn1, col_btn2 = st.columns(2)
+                                                with col_btn1:
+                                                    if st.form_submit_button("Actualizar Registro"):
+                                                        for k, v in edit_row.items(): 
+                                                            dfs[h_name].at[idx, k] = v
+                                                        save_data(dfs)
+                                                        st.rerun()
+                                                with col_btn2:
+                                                    if st.form_submit_button("🗑️ Eliminar Registro", type="primary"):
+                                                        dfs[h_name] = dfs[h_name].drop(idx)
+                                                        save_data(dfs)
+                                                        st.rerun()
                                     else:
-                                        edit_row[col] = st.text_input(
-                                            col.title(), 
-                                            value=str(val) if pd.notnull(val) else "", 
-                                            key=f"edit_{h_name}_{col}_{dni_buscado}"
-                                        )
-
-                                st.markdown("---")
-                                if st.form_submit_button("✅ Actualizar Registro"):
-                                    for col in cols_reales:
-                                        dfs[h_name].at[idx, col.upper()] = edit_row[col]
-                                    save_data(dfs)
-                                    st.success("¡Registro actualizado con éxito!")
-                                    st.rerun()
-
-                            # Botón Eliminar fuera del formulario para evitar conflictos
-                            st.markdown("<br>", unsafe_allow_html=True)
-                            if st.button("🗑️ Eliminar Registro Permanentemente", type="primary", use_container_width=True, key=f"del_{h_name}_{dni_buscado}"):
-                                dfs[h_name] = dfs[h_name].drop(idx)
-                                save_data(dfs)
-                                st.rerun()
-                        
-                        else:
-                            st.info("💡 Activa la casilla **(SEL)** en la tabla superior para editar o eliminar este registro.")
-                            edit_row = {}
-                            for col in cols_reales:
-                                val = sel.iloc[0].get(col.upper(), "")
-                                
-                                if "fecha" in col.lower() or "f_" in col.lower():
-                                    edit_row[col] = st.date_input(
-                                        col.title(), 
-                                        value=pd.to_datetime(val, errors='coerce').date() if pd.notnull(pd.to_datetime(val, errors='coerce')) else date.today(), 
-                                        min_value=date(1930, 1, 1), 
-                                        max_value=date(2100, 12, 31), 
-                                        format="DD/MM/YYYY",
-                                        key=f"date_{h_name}_{col}_{dni_buscado}"
-                                    )
-                                elif col.lower() == "edad":
-                                    fnac = edit_row.get("fecha de nacimiento")
-                                    if fnac: 
-                                        edad_calc = int(date.today().year - fnac.year - ((date.today().month, date.today().day) < (fnac.month, fnac.day)))
-                                        edit_row[col] = st.number_input("Edad (Calculada)", value=edad_calc, disabled=True, key=f"edad_{h_name}_{dni_buscado}")
-                                    else: 
-                                        edit_row[col] = st.number_input(col.title(), value=int(val) if pd.notnull(val) and str(val).isdigit() else 0, disabled=True)
-                                
-                                elif col.lower() in ["remuneración", "bonificación", "sueldo", "días generados", "días gozados", "saldo", "monto"]:
-                                    try: 
-                                        num_val = float(val) if pd.notnull(val) else 0.0
-                                    except: 
-                                        num_val = 0.0
-                                    edit_row[col] = st.number_input(col.title(), value=num_val, key=f"num_{h_name}_{col}_{dni_buscado}")
-                                
-                                else:
-                                    edit_row[col] = st.text_input(
-                                        col.title(), 
-                                        value=str(val) if pd.notnull(val) else "", 
-                                        key=f"edit_{h_name}_{col}_{dni_buscado}"
-                                    )
-                            
-                            st.markdown("---")
-                            # Botón de actualización dentro del formulario
-                            if st.form_submit_button("✅ Actualizar Registro"):
-                                for col in cols_reales:
-                                    dfs[h_name].at[idx, col.upper()] = edit_row[col]
-                                save_data(dfs)
-                                st.success("¡Registro actualizado!")
-                                st.rerun()
-
-                        # --- BOTÓN DE ELIMINAR (FUERA DEL BUCLE DE COLUMNAS) ---
-                        st.markdown("<br>", unsafe_allow_html=True)
-                        if st.button("🗑️ Eliminar Registro Permanentemente", type="primary", use_container_width=True, key=f"del_{h_name}_{dni_buscado}"):
-                            dfs[h_name] = dfs[h_name].drop(idx)
-                            save_data(dfs)
-                            st.rerun()
-
-                else: # Si no hay selección
-                    st.info("💡 Selecciona la casilla **(SEL)** en la tabla para editar o eliminar datos.")
+                                        st.info("Activa la casilla (SEL) en la tabla superior para editar o eliminar el registro.")
             else:
-                st.error("DNI no encontrado.")
+                st.error("DNI no encontrado en la base de datos.")
     # --- SECCIÓN REGISTRO Y NÓMINA ---
     elif m == "➕ Registro" and not es_lector:
         with st.form("reg_p", clear_on_submit=True):
@@ -1177,112 +1109,91 @@ else:
             st.warning("⚠️ Necesitas tener datos registrados en Personal y Contratos para generar reportes.")
 
     # ==========================================
-    # MÓDULO: VACACIONES (VERSIÓN ANTIDUPLICADOS)
+    # MÓDULO: VACACIONES (VERSIÓN ANTIFALLOS)
     # ==========================================
     elif m == "Vacaciones":
         st.markdown("<h2 style='color: #4A0000;'>🌴 Reporte Integrado de Vacaciones</h2>", unsafe_allow_html=True)
         
-        # 1. Carga de datos con RESET de índice y eliminación de columnas duplicadas
-        d_p = dfs.get("PERSONAL", pd.DataFrame()).copy().reset_index(drop=True)
-        d_v = dfs.get("VACACIONES", pd.DataFrame()).copy().reset_index(drop=True)
-        d_c = dfs.get("CONTRATOS", pd.DataFrame()).copy().reset_index(drop=True)
-        d_g = dfs.get("DATOS GENERALES", pd.DataFrame()).copy().reset_index(drop=True)
+        df_per = dfs.get("PERSONAL", pd.DataFrame())
+        df_vac = dfs.get("VACACIONES", pd.DataFrame())
+        df_cont = dfs.get("CONTRATOS", pd.DataFrame())
+        df_gen = dfs.get("DATOS GENERALES", pd.DataFrame())
 
-        if d_p.empty:
-            st.warning("⚠️ No hay datos en la pestaña PERSONAL.")
+        if df_per.empty or df_vac.empty:
+            st.warning("⚠️ No se encontraron las pestañas necesarias.")
         else:
-            # LIMPIEZA DE COLUMNAS DUPLICADAS (Esto evita el ValueError)
-            d_v = d_v.loc[:, ~d_v.columns.duplicated()]
+            # 1. Normalizar Personal
+            df_per.columns = df_per.columns.str.strip().str.lower()
+            df_per["dni_key"] = df_per["dni"].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
+            col_n_p = next((c for c in df_per.columns if "apellido" in c or "nombre" in c), "apellidos y nombres")
             
-            # Estandarizar nombres de columnas a minúsculas
-            d_p.columns = [str(c).strip().lower() for c in d_p.columns]
+            # Base del reporte
+            df_res = df_per[["dni_key", col_n_p]].copy()
+
+            # 2. SEDE (Datos Generales)
+            if not df_gen.empty:
+                df_gen.columns = df_gen.columns.str.strip().str.lower()
+                df_gen["dni_key"] = df_gen["dni"].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
+                col_s_g = next((c for c in df_gen.columns if "sede" in c), None)
+                if col_s_g:
+                    df_s = df_gen[["dni_key", col_s_g]].drop_duplicates("dni_key").rename(columns={col_s_g: "Sede"})
+                    df_res = df_res.merge(df_s, on="dni_key", how="left")
+
+            # 3. AREA (Contratos)
+            if not df_cont.empty:
+                df_cont.columns = df_cont.columns.str.strip().str.lower()
+                df_cont["dni_key"] = df_cont["dni"].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
+                col_a_c = next((c for c in df_cont.columns if "rea" in c), None)
+                if col_a_c:
+                    df_a = df_cont.sort_index(ascending=False).drop_duplicates("dni_key")[["dni_key", col_a_c]].rename(columns={col_a_c: "Area_Reporte"})
+                    df_res = df_res.merge(df_a, on="dni_key", how="left")
+
+            # 4. DIAS (Suma de columna 'días' de VACACIONES para obtener el 80.14)
+            df_v = df_vac.copy()
+            df_v.columns = df_v.columns.str.strip().str.lower()
+            c_dni_v = next((c for c in df_v.columns if "dni" in c), None)
+            c_dia_v = next((c for c in df_v.columns if "días" in c or "dias" in c), None)
             
-            # Crear llave DNI
-            col_dni_p = next((c for c in d_p.columns if "dni" in c), "dni")
-            d_p["dni_key"] = d_p[col_dni_p].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
-            
-            # Nombre del trabajador
-            col_nom_p = next((c for c in d_p.columns if "apellido" in c or "nombre" in c), "trabajador")
-            
-            # DataFrame Base
-            res = d_p[["dni_key", col_nom_p]].copy()
+            if c_dni_v and c_dia_v:
+                df_v["dni_key"] = df_v[c_dni_v].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
+                df_v["v_n"] = pd.to_numeric(df_v[c_dia_v].astype(str).str.replace(",", "."), errors="coerce").fillna(0)
+                df_v_sum = df_v.groupby("dni_key")["v_n"].sum().reset_index().rename(columns={"v_n": "Días Generados"})
+                df_res = df_res.merge(df_v_sum, on="dni_key", how="left")
 
-            # 2. SEDE (Desde Datos Generales)
-            if not d_g.empty:
-                d_g = d_g.loc[:, ~d_g.columns.duplicated()]
-                d_g.columns = [str(c).strip().lower() for c in d_g.columns]
-                c_dni_g = next((c for c in d_g.columns if "dni" in c), None)
-                if c_dni_g:
-                    d_g["dni_key"] = d_g[c_dni_g].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
-                    c_sede = next((c for c in d_g.columns if "sede" in c), None)
-                    if c_sede:
-                        df_sede = d_g[["dni_key", c_sede]].drop_duplicates("dni_key").rename(columns={c_sede: "Sede"})
-                        res = res.merge(df_sede, on="dni_key", how="left")
+            # 5. LIMPIEZA POST-MERGE
+            # Asegurar que las columnas existan aunque el merge falle
+            if "Sede" not in df_res.columns: df_res["Sede"] = "No registrada"
+            if "Area_Reporte" not in df_res.columns: df_res["Area_Reporte"] = "No registrada"
+            if "Días Generados" not in df_res.columns: df_res["Días Generados"] = 0.0
 
-            # 3. ÁREA (Desde Contratos)
-            if not d_c.empty:
-                d_c = d_c.loc[:, ~d_c.columns.duplicated()]
-                d_c.columns = [str(c).strip().lower() for c in d_c.columns]
-                c_dni_c = next((c for c in d_c.columns if "dni" in c), None)
-                if c_dni_c:
-                    d_c["dni_key"] = d_c[c_dni_c].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
-                    c_area = next((c for c in d_c.columns if "area" in c or "rea" in c), None)
-                    if c_area:
-                        df_area = d_c.sort_index(ascending=False).drop_duplicates("dni_key")[["dni_key", c_area]].rename(columns={c_area: "Área"})
-                        res = res.merge(df_area, on="dni_key", how="left")
+            df_res["Sede"] = df_res["Sede"].fillna("No registrada")
+            df_res["Area_Reporte"] = df_res["Area_Reporte"].fillna("No registrada")
+            df_res["Días Generados"] = df_res["Días Generados"].fillna(0.0)
 
-            # 4. CÁLCULO DE DÍAS (Desde Vacaciones)
-            if not d_v.empty:
-                d_v.columns = [str(c).strip().lower() for c in d_v.columns]
-                c_dni_v = next((c for c in d_v.columns if "dni" in c), None)
-                c_dias_v = next((c for c in d_v.columns if "días" in c or "dias" in c), None)
+            # Renombrar DNI y Nombre para la vista
+            df_res.rename(columns={"dni_key": "DNI", col_n_p: "Trabajador", "Area_Reporte": "Área"}, inplace=True)
 
-                if c_dni_v and c_dias_v:
-                    # Reset index de nuevo por seguridad antes de crear columnas
-                    d_v = d_v.reset_index(drop=True)
-                    d_v["dni_key"] = d_v[c_dni_v].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
-                    
-                    # Conversión numérica segura
-                    def a_numero(x):
-                        try:
-                            if pd.isna(x): return 0.0
-                            return float(str(x).replace(",", ".").strip())
-                        except:
-                            return 0.0
-                    
-                    # Usamos una serie temporal para evitar problemas de reindexación
-                    valores_num = [a_numero(v) for v in d_v[c_dias_v]]
-                    d_v["num"] = valores_num
-                    
-                    d_sum = d_v.groupby("dni_key")["num"].sum().reset_index().rename(columns={"num": "Días"})
-                    res = res.merge(d_sum, on="dni_key", how="left")
-
-            # 5. LIMPIEZA FINAL
-            res["Sede"] = res.get("Sede", pd.Series(dtype='object')).fillna("No registrada")
-            res["Área"] = res.get("Área", pd.Series(dtype='object')).fillna("No registrada")
-            res["Días"] = res.get("Días", pd.Series(dtype='float')).fillna(0.0)
-            
-            res.rename(columns={"dni_key": "DNI", col_nom_p: "Trabajador"}, inplace=True)
-
-            # 6. FILTROS E INTERFAZ
+            # 6. FILTROS
             st.markdown("### 🔍 Filtros")
-            col1, col2 = st.columns(2)
-            with col1:
-                s_op = ["Todas"] + sorted(res["Sede"].unique().astype(str).tolist())
-                f_sede = st.selectbox("Sede", s_op)
-            with col2:
-                a_op = ["Todas"] + sorted(res["Área"].unique().astype(str).tolist())
-                f_area = st.selectbox("Área", a_op)
+            c1, c2 = st.columns(2)
+            with c1:
+                s_list = ["Todas"] + sorted(df_res["Sede"].unique().tolist())
+                sel_s = st.selectbox("Sede", s_list)
+            with c2:
+                a_list = ["Todas"] + sorted(df_res["Área"].unique().tolist())
+                sel_a = st.selectbox("Área", a_list)
 
-            # Aplicar filtros
-            final = res.copy()
-            if f_sede != "Todas": final = final[final["Sede"] == f_sede]
-            if f_area != "Todas": final = final[final["Área"] == f_area]
+            df_f = df_res.copy()
+            if sel_s != "Todas": df_f = df_f[df_f["Sede"] == sel_s]
+            if sel_a != "Todas": df_f = df_f[df_f["Área"] == sel_a]
 
-            # 7. TABLA
-            st.info(f"Registros mostrados: {len(final)}")
+            # 7. TABLA FINAL
+            st.success(f"📋 Registros: {len(df_f)}")
+            
+            # Seleccionamos solo las que queremos mostrar
+            cols_ver = ["DNI", "Trabajador", "Sede", "Área", "Días Generados"]
             st.dataframe(
-                final[["DNI", "Trabajador", "Sede", "Área", "Días"]].style.format({"Días": "{:.2f}"}),
+                df_f[cols_ver].style.format({"Días Generados": "{:.2f}"}),
                 hide_index=True,
                 use_container_width=True
             )
@@ -1352,101 +1263,95 @@ else:
             st.warning("⚠️ Faltan datos en Personal o Datos Generales.")
 
 # ==========================================
-    # MÓDULO: VACACIONES (VERSIÓN DEFINITIVA)
+    # MÓDULO: VACACIONES (SISTEMA UNIFICADO)
     # ==========================================
     elif m == "Vacaciones":
         st.markdown("<h2 style='color: #4A0000;'>🌴 Reporte Integrado de Vacaciones</h2>", unsafe_allow_html=True)
         
-        # 1. Carga de datos con limpieza de índices
-        d_p = dfs.get("PERSONAL", pd.DataFrame()).copy().reset_index(drop=True)
-        d_v = dfs.get("VACACIONES", pd.DataFrame()).copy().reset_index(drop=True)
-        d_c = dfs.get("CONTRATOS", pd.DataFrame()).copy().reset_index(drop=True)
-        d_g = dfs.get("DATOS GENERALES", pd.DataFrame()).copy().reset_index(drop=True)
+        # 1. Cargar y Normalizar todas las tablas a Mayúsculas
+        df_per = dfs.get("PERSONAL", pd.DataFrame()).copy()
+        df_vac = dfs.get("VACACIONES", pd.DataFrame()).copy()
+        df_cont = dfs.get("CONTRATOS", pd.DataFrame()).copy()
+        df_gen = dfs.get("DATOS GENERALES", pd.DataFrame()).copy()
 
-        if d_p.empty:
-            st.warning("⚠️ No hay datos en la pestaña PERSONAL.")
+        for d in [df_per, df_vac, df_cont, df_gen]:
+            if not d.empty:
+                d.columns = [str(c).strip().upper() for c in d.columns]
+
+        if df_per.empty or df_vac.empty:
+            st.warning("⚠️ No se encontraron datos en PERSONAL o VACACIONES.")
         else:
-            # Estandarizar nombres de columnas a minúsculas
-            d_p.columns = [str(c).strip().lower() for c in d_p.columns]
+            # 2. Preparar DNI puente
+            df_per["DNI_KEY"] = df_per["DNI"].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
+            col_nom = next((c for c in df_per.columns if "NOMBRE" in c or "APELLIDO" in c), "TRABAJADOR")
             
-            # Crear llave DNI
-            col_dni_p = next((c for c in d_p.columns if "dni" in c), "dni")
-            d_p["dni_key"] = d_p[col_dni_p].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
+            # Base limpia
+            df_res = df_per[["DNI_KEY", col_nom]].copy()
+
+            # 3. AREA y SEDE (Desde DATOS GENERALES como fuente primaria)
+            if not df_gen.empty:
+                df_gen["DNI_KEY"] = df_gen["DNI"].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
+                # Buscamos AREA y SEDE
+                cols_gen = []
+                if "SEDE" in df_gen.columns: cols_gen.append("SEDE")
+                if "AREA" in df_gen.columns: cols_gen.append("AREA")
+                
+                if cols_gen:
+                    temp_gen = df_gen[["DNI_KEY"] + cols_gen].drop_duplicates("DNI_KEY")
+                    df_res = df_res.merge(temp_gen, on="DNI_KEY", how="left")
+
+            # 4. Si AREA sigue vacía, buscar en CONTRATOS (Plan B)
+            if "AREA" not in df_res.columns and not df_cont.empty:
+                df_cont["DNI_KEY"] = df_cont["DNI"].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
+                if "AREA" in df_cont.columns:
+                    temp_cont = df_cont.sort_index(ascending=False).drop_duplicates("DNI_KEY")[["DNI_KEY", "AREA"]]
+                    df_res = df_res.merge(temp_cont, on="DNI_KEY", how="left")
+
+            # 5. DIAS (Suma de columna DIAS en VACACIONES para el 80.14)
+            df_vac["DNI_KEY"] = df_vac["DNI"].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
+            col_dias_v = next((c for c in df_vac.columns if "DIAS" in c or "DÍAS" in c), None)
             
-            # Nombre del trabajador
-            col_nom_p = next((c for c in d_p.columns if "apellido" in c or "nombre" in c), "trabajador")
+            if col_dias_v:
+                # Convertir a número con punto decimal
+                df_vac[col_dias_v] = pd.to_numeric(df_vac[col_dias_v].astype(str).str.replace(",", "."), errors="coerce").fillna(0)
+                df_sum = df_vac.groupby("DNI_KEY")[col_dias_v].sum().reset_index().rename(columns={col_dias_v: "VAC_TOTAL"})
+                df_res = df_res.merge(df_sum, on="DNI_KEY", how="left")
+
+            # 6. Limpieza final de la tabla antes de mostrar
+            for c in ["SEDE", "AREA"]:
+                if c not in df_res.columns: df_res[c] = "NO REGISTRADO"
+                df_res[c] = df_res[c].fillna("NO REGISTRADO").astype(str).str.upper()
             
-            # DataFrame Base
-            res = d_p[["dni_key", col_nom_p]].copy()
+            if "VAC_TOTAL" not in df_res.columns: df_res["VAC_TOTAL"] = 0.0
+            df_res["VAC_TOTAL"] = df_res["VAC_TOTAL"].fillna(0.0)
 
-            # 2. SEDE (Desde Datos Generales)
-            if not d_g.empty:
-                d_g.columns = [str(c).strip().lower() for c in d_g.columns]
-                c_dni_g = next((c for c in d_g.columns if "dni" in c), None)
-                if c_dni_g:
-                    d_g["dni_key"] = d_g[c_dni_g].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
-                    c_sede = next((c for c in d_g.columns if "sede" in c), None)
-                    if c_sede:
-                        df_sede = d_g[["dni_key", c_sede]].drop_duplicates("dni_key").rename(columns={c_sede: "Sede"})
-                        res = res.merge(df_sede, on="dni_key", how="left")
+            # --- FILTROS ---
+            st.markdown("### 🔍 Filtros por AREA y SEDE")
+            c1, c2 = st.columns(2)
+            with c1:
+                sedes = ["TODAS"] + sorted([x for x in df_res["SEDE"].unique() if x != "NAN"])
+                sel_s = st.selectbox("Seleccionar Sede", sedes)
+            with c2:
+                areas = ["TODAS"] + sorted([x for x in df_res["AREA"].unique() if x != "NAN"])
+                sel_a = st.selectbox("Seleccionar Área", areas)
 
-            # 3. ÁREA (Desde Contratos)
-            if not d_c.empty:
-                d_c.columns = [str(c).strip().lower() for c in d_c.columns]
-                c_dni_c = next((c for c in d_c.columns if "dni" in c), None)
-                if c_dni_c:
-                    d_c["dni_key"] = d_c[c_dni_c].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
-                    c_area = next((c for c in d_c.columns if "area" in c or "rea" in c), None)
-                    if c_area:
-                        df_area = d_c.sort_index(ascending=False).drop_duplicates("dni_key")[["dni_key", c_area]].rename(columns={c_area: "Área"})
-                        res = res.merge(df_area, on="dni_key", how="left")
+            # Aplicar
+            df_f = df_res.copy()
+            if sel_s != "TODAS": df_f = df_f[df_f["SEDE"] == sel_s]
+            if sel_a != "TODAS": df_f = df_f[df_f["AREA"] == sel_a]
 
-            # 4. CÁLCULO DE DÍAS (Desde Vacaciones)
-            if not d_v.empty:
-                d_v.columns = [str(c).strip().lower() for c in d_v.columns]
-                c_dni_v = next((c for c in d_v.columns if "dni" in c), None)
-                c_dias_v = next((c for c in d_v.columns if "días" in c or "dias" in c), None)
-
-                if c_dni_v and c_dias_v:
-                    d_v["dni_key"] = d_v[c_dni_v].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
-                    
-                    # Conversión numérica segura
-                    def a_numero(x):
-                        try:
-                            return float(str(x).replace(",", ".").strip()) if x else 0.0
-                        except:
-                            return 0.0
-                    
-                    d_v["num"] = d_v[c_dias_v].apply(a_numero)
-                    d_sum = d_v.groupby("dni_key")["num"].sum().reset_index().rename(columns={"num": "Días"})
-                    res = res.merge(d_sum, on="dni_key", how="left")
-
-            # 5. LIMPIEZA FINAL
-            res["Sede"] = res.get("Sede", pd.Series(dtype='object')).fillna("No registrada")
-            res["Área"] = res.get("Área", pd.Series(dtype='object')).fillna("No registrada")
-            res["Días"] = res.get("Días", pd.Series(dtype='float')).fillna(0.0)
+            # 7. VISTA FINAL
+            st.success(f"📋 Personal encontrado: {len(df_f)}")
             
-            res.rename(columns={"dni_key": "DNI", col_nom_p: "Trabajador"}, inplace=True)
-
-            # 6. FILTROS E INTERFAZ
-            st.markdown("### 🔍 Filtros")
-            col1, col2 = st.columns(2)
-            with col1:
-                s_op = ["Todas"] + sorted(res["Sede"].unique().astype(str).tolist())
-                f_sede = st.selectbox("Sede", s_op)
-            with col2:
-                a_op = ["Todas"] + sorted(res["Área"].unique().astype(str).tolist())
-                f_area = st.selectbox("Área", a_op)
-
-            # Aplicar filtros
-            final = res.copy()
-            if f_sede != "Todas": final = final[final["Sede"] == f_sede]
-            if f_area != "Todas": final = final[final["Área"] == f_area]
-
-            # 7. TABLA
-            st.info(f"Registros: {len(final)}")
+            # Formatear nombres para el usuario
+            df_vista = df_f.rename(columns={
+                "DNI_KEY": "DNI",
+                col_nom: "TRABAJADOR",
+                "VAC_TOTAL": "DÍAS GENERADOS"
+            })
+            
             st.dataframe(
-                final[["DNI", "Trabajador", "Sede", "Área", "Días"]].style.format({"Días": "{:.2f}"}),
+                df_vista[["DNI", "TRABAJADOR", "SEDE", "AREA", "DÍAS GENERADOS"]].style.format({"DÍAS GENERADOS": "{:.2f}"}),
                 hide_index=True,
                 use_container_width=True
             )
@@ -1550,6 +1455,129 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
