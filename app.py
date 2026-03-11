@@ -868,7 +868,24 @@ else:
 
                                                     if st.form_submit_button("Guardar Contrato"):
                                                         nid = dfs[h_name]["id"].max() + 1 if not dfs[h_name].empty else 1
-                                                        new = {"id": nid, "dni": dni_buscado, "apellidos y nombres": nom_c, "cargo": car, "remuneración básica": rem_b, "bonificación": bono, "condición de trabajo": cond, "f_inicio": ini, "f_fin": fin, "tipo de trabajador": t_trab, "modalidad": mod, "temporalidad": temp, "link": lnk, "tipo contrato": tcont, "estado": est_a, "motivo cese": mot_a}
+                                                        new = {
+                                                        "id": nid, 
+                                                        "dni": dni_buscado, 
+                                                        # "apellidos y nombres": nom_c,  <-- (OPCIONAL: Bórrala si no la necesitas en la hoja CONTRATOS)
+                                                        "cargo": car, 
+                                                        "remuneracion basica": rem_b, # Sin tildes
+                                                        "bonificacion": bono,         # Sin tildes
+                                                        "condicion de trabajo": cond, # Sin tildes
+                                                        "f_inicio": ini, 
+                                                        "f_fin": fin, 
+                                                        "tipo de trabajador": t_trab, 
+                                                        "modalidad": mod, 
+                                                        "temporalidad": temp, 
+                                                        "link": lnk, 
+                                                        "tipo contrato": tcont, 
+                                                        "estado": est_a, 
+                                                        "motivo cese": mot_a
+                                                    }
                                                         dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new])], ignore_index=True)
                                                         save_data(dfs)
                                                         st.rerun()
@@ -1515,6 +1532,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
