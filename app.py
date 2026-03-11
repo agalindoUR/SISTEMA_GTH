@@ -629,18 +629,32 @@ else:
                         ed = st.data_editor(vst, hide_index=True, use_container_width=False, column_config=col_conf, key=f"ed_{h_name}")
                         sel = ed[ed["SEL"] == True]
 
-                        # ==========================================
+                       # ==========================================
                         # BOTÓN DE IMPRESIÓN DE PAPELETA (SOLO EN VACACIONES)
                         # ==========================================
                         if h_name == "VACACIONES" and not sel.empty:
                             st.markdown("---")
-                            # Necesitamos el cargo actual y fecha de ingreso del trabajador
-                            current_cargo = "TRABAJADOR" # Default
+                            # 1. Variables por defecto
+                            current_cargo = "TRABAJADOR" 
                             f_ingreso_val = ""
-                            if "DNI" in dfs["CONTRATOS"].columns:
-                            df_c_data = dfs["CONTRATOS"][dfs["CONTRATOS"]["DNI"].astype(str).str.strip() == str(dni_buscado).strip()]
-                        else:
-                            st.error("No se encontró la columna 'DNI' en la pestaña CONTRATOS")
+                            
+                            # 2. Intentamos rescatar datos desde CONTRATOS
+                            if dni_buscado:
+                                if "CONTRATOS" in dfs and "DNI" in dfs["CONTRATOS"].columns:
+                                    # Filtramos los contratos del trabajador
+                                    df_c_data = dfs["CONTRATOS"][dfs["CONTRATOS"]["DNI"].astype(str).str.strip() == str(dni_buscado).strip()]
+                                    
+                                    if not df_c_data.empty:
+                                        # Sacamos el cargo y fecha del último contrato registrado
+                                        ultimo_contrato = df_c_data.iloc[-1]
+                                        current_cargo = str(ultimo_contrato.get("CARGO", "TRABAJADOR")).upper()
+                                        f_ingreso_val = str(ultimo_contrato.get("F_INICIO", ""))
+                                else:
+                                    # Este else ahora sí está bien alineado con el chequeo de la columna
+                                    st.error("No se encontró la columna 'DNI' en la pestaña CONTRATOS")
+                            
+                            # Aquí continuaría tu lógica para generar la papeleta...
+                            st.info(f"Datos detectados: {current_cargo} | Ingreso: {f_ingreso_val}")
                             
                             if not df_c_data.empty:
                                 try:
@@ -1551,6 +1565,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
