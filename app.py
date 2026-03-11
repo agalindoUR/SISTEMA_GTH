@@ -557,19 +557,17 @@ else:
                         dias_generados_totales = 0
                         dias_gozados_totales = 0
 
-                       # ==========================================================
-                        # BLOQUE ÚNICO Y DEFINITIVO DE VACACIONES (CON SANGRÍA CORRECTA)
-                        # ==========================================================
+                       # ==========================================
+                        # BLOQUE 1: CÁLCULOS Y CUADROS RESUMEN
+                        # ==========================================
                         if h_name == "VACACIONES":
                             detalles = []
                             dias_generados_totales = 0
                             
-                            # 1. Preparación de datos (Evita el KeyError)
                             c_df_interna = c_df.copy()
                             c_df_interna.columns = [c.lower().strip() for c in c_df_interna.columns]
                             dias_gozados_totales = pd.to_numeric(c_df_interna.get("días gozados", 0), errors='coerce').sum()
 
-                            # 2. Lógica de cálculo de periodos
                             df_tc = df_contratos[df_contratos["TIPO CONTRATO"].astype(str).str.lower().str.contains("planilla", na=False)] if not df_contratos.empty else pd.DataFrame()
                             
                             if not df_tc.empty:
@@ -590,11 +588,8 @@ else:
                                                 o_s, o_e = max(curr_start, c_s), min(curr_end, c_e, date.today())
                                                 if o_s <= o_e: days_in_p += (o_e - o_s).days + 1
                                         
-                                        total_days = (curr_end - curr_start).days + 1
-                                        gen_p = round((days_in_p / total_days) * 30, 2)
+                                        gen_p = round((days_in_p / ((curr_end - curr_start).days + 1)) * 30, 2)
                                         p_name = f"{curr_start.year}-{curr_start.year+1}"
-                                        
-                                        # Buscar días gozados usando la columna en minúsculas
                                         goz_p = pd.to_numeric(c_df_interna[c_df_interna["periodo"].astype(str).str.strip() == p_name]["días gozados"], errors='coerce').sum()
                                         
                                         detalles.append({
@@ -608,59 +603,52 @@ else:
                                         dias_generados_totales += gen_p
                                         curr_start = (pd.to_datetime(curr_start) + pd.DateOffset(years=1)).date()
 
-                            # 3. Resumen Visual (Cuadros)
-                            saldo_disponible = round(dias_generados_totales - dias_gozados_totales, 2)
+                            saldo_v = round(dias_generados_totales - dias_gozados_totales, 2)
                             st.markdown(f"""
                                 <div style="display: flex; gap: 15px; margin-bottom: 20px;">
                                     <div style="flex: 1; background-color: #4A0000; padding: 15px; border-radius: 10px; text-align: center; border: 2px solid #FFD700;"><h2 style="color: #FFD700; margin: 0;">{dias_generados_totales:.2f}</h2><p style="color: white; margin: 0; font-size: 0.9em;">Días Generados</p></div>
                                     <div style="flex: 1; background-color: #4A0000; padding: 15px; border-radius: 10px; text-align: center; border: 2px solid #FFD700;"><h2 style="color: #FFD700; margin: 0;">{dias_gozados_totales:.2f}</h2><p style="color: white; margin: 0; font-size: 0.9em;">Días Gozados</p></div>
-                                    <div style="flex: 1; background-color: #4A0000; padding: 15px; border-radius: 10px; text-align: center; border: 2px solid #FFD700;"><h2 style="color: #FFD700; margin: 0;">{saldo_disponible:.2f}</h2><p style="color: white; margin: 0; font-size: 0.9em;">Saldo Disponible</p></div>
+                                    <div style="flex: 1; background-color: #4A0000; padding: 15px; border-radius: 10px; text-align: center; border: 2px solid #FFD700;"><h2 style="color: #FFD700; margin: 0;">{saldo_v:.2f}</h2><p style="color: white; margin: 0; font-size: 0.9em;">Saldo Disponible</p></div>
                                 </div>
                             """, unsafe_allow_html=True)
 
-                            # 4. Desglose Amarillo (TABLA CALCULADA)
+                        # ==========================================
+                        # BLOQUE 2: DESGLOSE (TABLA AMARILLA)
+                        # ==========================================
+                        if h_name == "VACACIONES":
                             if detalles:
-                                st.markdown("<h4 style='color: #FFD700;'>📅 Desglose Detallado por Periodos</h4>", unsafe_allow_html=True)
-                                div_table = """<div style='border: 2px solid #FFD700; border-radius: 10px; overflow: hidden; margin-bottom: 20px;'>
-                                    <table style='width: 100%; border-collapse: collapse; background-color: #FFF9C4; color: #4A0000;'>
-                                        <tr style='background-color: #4A0000; color: #FFD700; font-weight: bold;'>
-                                            <th style='padding: 10px;'>PERIODO</th><th>DEL / AL</th><th>GENERADOS</th><th>GOZADOS</th><th>SALDO</th>
+                                with st.expander("📂 Ver Desglose por Periodos", expanded=True):
+                                    tabla_html = """<div style='border: 2px solid #FFD700; border-radius: 10px; overflow: hidden;'>
+                                        <table style='width: 100%; border-collapse: collapse; background-color: #FFF9C4; color: #4A0000;'>
+                                            <tr style='background-color: #4A0000; color: #FFD700;'>
+                                                <th style='padding: 8px;'>PERIODO</th><th>DEL/AL</th><th>GEN.</th><th>GOZ.</th><th>SALDO</th>
+                                            </tr>"""
+                                    for d in detalles:
+                                        tabla_html += f"""<tr style='border-top: 1px solid #FFD700; text-align: center;'>
+                                            <td>{d['PERIODO']}</td><td><small>{d['DEL']}-{d['AL']}</small></td>
+                                            <td>{d['DÍAS GENERADOS']:.2f}</td><td>{d['DÍAS GOZADOS']:.2f}</td>
+                                            <td style='background-color: #FFD700;'><b>{d['SALDO']:.2f}</b></td>
                                         </tr>"""
-                                for d in detalles:
-                                    div_table += f"""<tr style='border-top: 1px solid #FFD700; text-align: center; font-weight: bold;'>
-                                        <td style='padding: 8px;'>{d['PERIODO']}</td>
-                                        <td><small>{d['DEL']} - {d['AL']}</small></td>
-                                        <td>{d['DÍAS GENERADOS']:.2f}</td>
-                                        <td style='color: #D32F2F;'>{d['DÍAS GOZADOS']:.2f}</td>
-                                        <td style='background-color: #FFD700; color: black; padding: 5px;'>{d['SALDO']:.2f}</td>
-                                    </tr>"""
-                                div_table += "</table></div>"
-                                st.markdown(div_table, unsafe_allow_html=True)
+                                    tabla_html += "</table></div>"
+                                    st.markdown(tabla_html, unsafe_allow_html=True)
 
-                            # 5. Editor de Datos (Historial de la Hoja)
+                        # ==========================================
+                        # BLOQUE 3: REGISTROS Y NUEVO FORMULARIO
+                        # ==========================================
+                        if h_name == "VACACIONES":
+                            st.write(f"### Registros en {h_name}")
                             vst = c_df.copy()
+                            # Limpieza de columnas para el editor
                             vst.columns = [str(c).upper().strip() for c in vst.columns]
                             if "SEL" not in vst.columns: vst.insert(0, "SEL", False)
                             
-                            # Configuración de columnas
-                            col_conf = {}
-                            cols_ocultar = ["DNI", "APELLIDOS Y NOMBRES", "APELLIDOS", "NOMBRES", "DÍAS GENERADOS", "SALDO"]
-                            for c in vst.columns:
-                                if c in cols_ocultar: col_conf[c] = None
-                                if "FECHA" in c or "F_" in c:
-                                    vst[c] = pd.to_datetime(vst[c], errors='coerce').dt.date
-                                    col_conf[c] = st.column_config.DateColumn(format="DD/MM/YYYY")
-
-                            st.write("### Historial de Vacaciones (Registros)")
-                            ed = st.data_editor(vst, hide_index=True, use_container_width=True, column_config=col_conf, key=f"ed_v_{dni_buscado}")
+                            ed = st.data_editor(vst, hide_index=True, use_container_width=True, key=f"ed_{h_name}_{dni_buscado}")
                             
-                            # 6. Nuevo Registro y Papeleta
                             if not es_lector:
-                                with st.expander("➕ Registrar Salida de Vacaciones"):
-                                    # SE SOLUCIONA KEYERROR USANDO "PERIODO" EN MAYÚSCULAS
-                                    opciones_p = [d["PERIODO"] for d in detalles] if detalles else ["S/P"]
-                                    st.selectbox("Seleccione el Periodo", opciones_p, key=f"sel_p_v_{dni_buscado}")
-                                    # ... resto de campos del formulario ...
+                                with st.expander("➕ Nuevo Registro"):
+                                    # CORRECCIÓN DEL KEYERROR AQUÍ:
+                                    opciones_periodo = [d["PERIODO"] for d in detalles] if detalles else ["S/P"]
+                                    sel_p = st.selectbox("Periodo", opciones_periodo, key=f"p_sel_{dni_buscado}")
                                     
                                         # ==========================================
                                         # FORMULARIOS NORMALES PARA EL RESTO DE HOJAS
@@ -1445,6 +1433,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
