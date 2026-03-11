@@ -904,7 +904,7 @@ else:
                                                 n_car = st.text_input("Cargo", value=str(sel.iloc[0].get("CARGO", "")))
                                                 área = st.text_input("AREA")
                                                 try: 
-                                                    val_rem = float(sel.iloc[0].get("REMUNERACION BASICA", 0.0))
+                                                    val_rem = float(sel.iloc[0].get("remuneracion basica", 0.0))
                                                 except: 
                                                     val_rem = 0.0
                                                 n_rem = st.number_input("Remuneración básica", value=val_rem)
@@ -1518,6 +1518,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
