@@ -985,9 +985,10 @@ else:
                                                     st.rerun()
                                             else:
                                                 edit_row = {}
-                                                row = sel.iloc[0]  # <-- 1. AQUÍ DEFINIMOS QUÉ ES 'row'
-                                                for col in cols_reales:
-                                                    # 2. BUSCAMOS EN MAYÚSCULAS PARA QUE JALE LOS DATOS CORRECTAMENTE
+                                                row = sel.iloc[0] 
+                                                
+                                                # ---> AQUÍ AGREGAMOS 'enumerate' PARA ENUMERAR CADA COLUMNA <---
+                                                for i, col in enumerate(cols_reales):
                                                     val = row.get(str(col).upper(), "")
                                                     
                                                     if "fecha" in col.lower() or "f_" in col.lower(): 
@@ -996,21 +997,21 @@ else:
                                                             try: d_val = pd.to_datetime(val).date()
                                                             except: d_val = date.today()
                                                         else: d_val = date.today()
-                                                        edit_row[col] = st.date_input(col.title(), value=d_val, format="DD/MM/YYYY", key=f"date_{h_name}_{col}_{idx}")
+                                                        # Notar el _{i} al final de la línea
+                                                        edit_row[col] = st.date_input(col.title(), value=d_val, format="DD/MM/YYYY", key=f"date_{h_name}_{col}_{idx}_{i}")
                                                         
                                                     elif col.lower() == "edad":
                                                         val_edad = int(val) if pd.notnull(val) and str(val).replace('.','',1).isdigit() else 0
-                                                        edit_row[col] = st.number_input(col.title(), value=val_edad, disabled=True, key=f"edad_{h_name}_{col}_{idx}")
+                                                        edit_row[col] = st.number_input(col.title(), value=val_edad, disabled=True, key=f"edad_{h_name}_{col}_{idx}_{i}")
                                                         
                                                     elif col.lower() in ["remuneración", "bonificación", "sueldo", "días generados", "dias gozados", "saldo", "monto", "remuneracion basica", "bonificacion"]: 
                                                         try: n_val = float(val) if pd.notnull(val) else 0.0
                                                         except: n_val = 0.0
-                                                        edit_row[col] = st.number_input(col.title(), value=n_val, key=f"num_{h_name}_{col}_{idx}")
+                                                        edit_row[col] = st.number_input(col.title(), value=n_val, key=f"num_{h_name}_{col}_{idx}_{i}")
                                                         
                                                     else: 
-                                                        edit_row[col] = st.text_input(col.title(), value=str(val) if pd.notnull(val) else "", key=f"text_{h_name}_{col}_{idx}")
+                                                        edit_row[col] = st.text_input(col.title(), value=str(val) if pd.notnull(val) else "", key=f"text_{h_name}_{col}_{idx}_{i}")
 
-                                                # ESTO AHORA ESTÁ DENTRO DEL 'ELSE' (Alineado con el 'for')
                                                 col_btn1, col_btn2 = st.columns(2)
                                                 with col_btn1:
                                                     if st.form_submit_button("Actualizar Registro"):
@@ -1544,6 +1545,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
