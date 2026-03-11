@@ -1314,10 +1314,50 @@ else:
                     d_sum = d_v.groupby("dni_key")["num"].sum().reset_index().rename(columns={"num": "Días"})
                     res = res.merge(d_sum, on="dni_key", how="left")
 
-            # 5. LIMPIEZA FINAL
+            # 5. LIMPIEZA FINAL (Corregido: Paréntesis cerrados correctamente)
             res["Sede"] = res.get("Sede", pd.Series(dtype='object')).fillna("No registrada")
             res["Área"] = res.get("Área", pd.Series(dtype='object')).fillna("No registrada")
-            res["Días"] = res.get("Días", pd.Series(dtype='float')).fillna(
+            res["Días"] = res.get("Días", pd.Series(dtype='float')).fillna(0.0)
+            
+            # Renombrar para estética
+            if "dni_key" in res.columns:
+                res.rename(columns={"dni_key": "DNI"}, inplace=True)
+            if col_nom_p in res.columns:
+                res.rename(columns={col_nom_p: "Trabajador"}, inplace=True)
+
+            # 6. FILTROS E INTERFAZ
+            st.markdown("### 🔍 Filtros")
+            col1, col2 = st.columns(2)
+            with col1:
+                s_op = ["Todas"] + sorted(res["Sede"].unique().astype(str).tolist())
+                f_sede = st.selectbox("Sede", s_op)
+            with col2:
+                a_op = ["Todas"] + sorted(res["Área"].unique().astype(str).tolist())
+                f_area = st.selectbox("Área", a_op)
+
+            # Aplicar filtros
+            final = res.copy()
+            if f_sede != "Todas": 
+                final = final[final["Sede"] == f_sede]
+            if f_area != "Todas": 
+                final = final[final["Área"] == f_area]
+
+            # 7. TABLA
+            st.info(f"Registros: {len(final)}")
+            
+            # Nos aseguramos de que las columnas existan antes de mostrar el dataframe
+            cols_mostrar = ["DNI", "Trabajador", "Sede", "Área", "Días"]
+            cols_presentes = [c for c in cols_mostrar if c in final.columns]
+            
+            st.dataframe(
+                final[cols_presentes].style.format({"Días": "{:.2f}"}, subset=["Días"] if "Días" in final.columns else []),
+                hide_index=True,
+                use_container_width=True
+            )
+
+            # Botón de descarga rápido
+            csv = final.to_csv(index=False).encode('utf-8')
+            st.download_button("📥 Descargar Reporte CSV", csv, "reporte_vacaciones.csv", "text/csv")
 # ==========================================
     # MÓDULO: CUMPLEAÑEROS
     # ==========================================
@@ -1582,6 +1622,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
