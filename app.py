@@ -874,96 +874,78 @@ else:
 
                             with col_b:
                                 with st.expander("📝 Editar / Eliminar"):
-                                    if not sel.empty:
-                                        idx = sel.index[0]
-                                        
-                                        # --- INICIO DEL FORMULARIO DE EDICIÓN ---
-                                        with st.form(f"f_edit_{h_name}"):
-                                            if h_name == "CONTRATOS":
-                                                n_car = st.text_input("Cargo", value=str(sel.iloc[0].get("CARGO", "")))
-                                                n_area = st.text_input("AREA")
-                                                try: 
-                                                    # SIN TILDE AQUÍ
-                                                    val_rem = float(sel.iloc[0].get("REMUNERACION BASICA", 0.0))
-                                                except: 
-                                                    val_rem = 0.0
-                                                n_rem = st.number_input("Remuneración básica", value=val_rem)
-                                                
-                                                # SIN TILDES AQUÍ
-                                                n_bon = st.text_input("Bonificación", value=str(sel.iloc[0].get("BONIFICACION", "")))
-                                                n_cond = st.text_input("Condición de trabajo", value=str(sel.iloc[0].get("CONDICION DE TRABAJO", "")))
-                                                
-                                                try: 
-                                                    ini_val = pd.to_datetime(sel.iloc[0].get("F_INICIO")).date()
-                                                except: 
-                                                    ini_val = date.today()
-                                                n_ini = st.date_input("Inicio", value=ini_val, format="DD/MM/YYYY")
-                                                
-                                                try: 
-                                                    fin_val = pd.to_datetime(sel.iloc[0].get("F_FIN")).date()
-                                                except: 
-                                                    fin_val = date.today()
-                                                n_fin = st.date_input("Fin", value=fin_val, format="DD/MM/YYYY")
-                                                
-                                                v_ttrab = str(sel.iloc[0].get("TIPO DE TRABAJADOR", "Administrativo"))
-                                                opts_tt = ["Administrativo", "Docente", "Externo"]
-                                                if v_ttrab not in opts_tt: 
-                                                    opts_tt.append(v_ttrab)
-                                                n_ttrab = st.selectbox("Tipo de trabajador", opts_tt, index=opts_tt.index(v_ttrab))
-                                                
-                                                v_mod = str(sel.iloc[0].get("MODALIDAD", "Presencial"))
-                                                opts_mod = ["Presencial", "Semipresencial", "Virtual"]
-                                                if v_mod not in opts_mod: 
-                                                    opts_mod.append(v_mod)
-                                                n_mod = st.selectbox("Modalidad", opts_mod, index=opts_mod.index(v_mod))
-                                                
-                                                v_tem = str(sel.iloc[0].get("TEMPORALIDAD", "Plazo fijo"))
-                                                opts_tem = ["Plazo fijo", "Plazo indeterminado", "Ordinarizado"]
-                                                if v_tem not in opts_tem: 
-                                                    opts_tem.append(v_tem)
-                                                n_tem = st.selectbox("Temporalidad", opts_tem, index=opts_tem.index(v_tem))
-                                                
-                                                n_lnk = st.text_input("Link", value=str(sel.iloc[0].get("LINK", "")))
-                                                
-                                                v_tcont = str(sel.iloc[0].get("TIPO CONTRATO", "Planilla completo"))
-                                                opts_tcon = ["Planilla completo", "Tiempo Parcial", "Recibo por Honorarios", "Otro"]
-                                                if v_tcont not in opts_tcon: 
-                                                    opts_tcon.append(v_tcont)
-                                                n_tcont = st.selectbox("Tipo Contrato", opts_tcon, index=opts_tcon.index(v_tcont))
+                                    # Si hay una fila seleccionada en el data_editor
+                        if not sel.empty:
+                            idx = sel.index[0]
+                            cols_reales = [c for c in vst.columns if c not in ["SEL"]]
+                            
+                            st.markdown("### 📝 Editar Registro")
+                            # Creamos el formulario con una llave única para evitar el DuplicateElementId
+                            with st.form(key=f"form_edit_{h_name}_{dni_buscado}"):
+                                edit_row = {}
+                                for col in cols_reales:
+                                    val = sel.iloc[0].get(col.upper(), "")
+                                    
+                                    # 1. Lógica para FECHAS
+                                    if "fecha" in col.lower() or "f_" in col.lower():
+                                        try:
+                                            fecha_dt = pd.to_datetime(val, errors='coerce')
+                                            fecha_val = fecha_dt.date() if pd.notnull(fecha_dt) else date.today()
+                                        except:
+                                            fecha_val = date.today()
+                                            
+                                        edit_row[col] = st.date_input(
+                                            col.title(), 
+                                            value=fecha_val,
+                                            min_value=date(1930, 1, 1),
+                                            max_value=date(2100, 12, 31),
+                                            format="DD/MM/YYYY",
+                                            key=f"date_{h_name}_{col}_{dni_buscado}"
+                                        )
+                                    
+                                    # 2. Lógica para EDAD (Calculada automáticamente)
+                                    elif col.lower() == "edad":
+                                        # Intentamos obtener la fecha de nacimiento del diccionario si ya se procesó
+                                        fnac = edit_row.get("fecha de nacimiento")
+                                        if fnac:
+                                            edad_calc = int(date.today().year - fnac.year - ((date.today().month, date.today().day) < (fnac.month, fnac.day)))
+                                            edit_row[col] = st.number_input("Edad (Calculada)", value=edad_calc, disabled=True, key=f"edad_{h_name}_{dni_buscado}")
+                                        else:
+                                            edit_row[col] = st.number_input(col.title(), value=int(val) if str(val).isdigit() else 0, disabled=True, key=f"edad_manual_{h_name}_{dni_buscado}")
+                                    
+                                    # 3. Lógica para NÚMEROS Y MONTOS
+                                    elif col.lower() in ["remuneración", "bonificación", "sueldo", "días generados", "días gozados", "saldo", "monto"]:
+                                        try:
+                                            num_val = float(val) if pd.notnull(val) else 0.0
+                                        except:
+                                            num_val = 0.0
+                                        edit_row[col] = st.number_input(col.title(), value=num_val, key=f"num_{h_name}_{col}_{dni_buscado}")
+                                    
+                                    # 4. Lógica para TEXTO GENERAL
+                                    else:
+                                        edit_row[col] = st.text_input(
+                                            col.title(), 
+                                            value=str(val) if pd.notnull(val) else "", 
+                                            key=f"edit_{h_name}_{col}_{dni_buscado}"
+                                        )
 
-                                                est_e = "ACTIVO" if n_fin >= date.today() else "CESADO"
-                                                v_mot = str(sel.iloc[0].get("MOTIVO CESE", "Vigente"))
-                                                opts_mot = ["Vigente"] + MOTIVOS_CESE
-                                                if v_mot not in opts_mot: 
-                                                    opts_mot.append(v_mot)
-                                                mot_e = st.selectbox("Motivo Cese", opts_mot, index=opts_mot.index(v_mot)) if est_e == "CESADO" else "Vigente"
+                                st.markdown("---")
+                                if st.form_submit_button("✅ Actualizar Registro"):
+                                    for col in cols_reales:
+                                        dfs[h_name].at[idx, col.upper()] = edit_row[col]
+                                    save_data(dfs)
+                                    st.success("¡Registro actualizado con éxito!")
+                                    st.rerun()
 
-                                                st.markdown("---")
-                                                if st.form_submit_button("Actualizar Registro"):
-                                                    # SIN TILDES AQUÍ TAMPOCO
-                                                    update_vals = {
-                                                        "CARGO": n_car, 
-                                                        "AREA": n_area, 
-                                                        "REMUNERACION BASICA": n_rem, 
-                                                        "BONIFICACION": n_bon, 
-                                                        "CONDICION DE TRABAJO": n_cond, 
-                                                        "F_INICIO": n_ini, 
-                                                        "F_FIN": n_fin, 
-                                                        "TIPO DE TRABAJADOR": n_ttrab, 
-                                                        "MODALIDAD": n_mod, 
-                                                        "TEMPORALIDAD": n_tem, 
-                                                        "LINK": n_lnk, 
-                                                        "TIPO CONTRATO": n_tcont, 
-                                                        "ESTADO": est_e, 
-                                                        "MOTIVO CESE": mot_e
-                                                    }
-                                                    for k, v in update_vals.items(): 
-                                                        dfs["CONTRATOS"].at[idx, k] = v
-                                                    save_data(dfs)
-                                                    st.rerun()
-
-                                            else:
-                                                else: # Este else corresponde a la lógica de edición
+                            # Botón Eliminar fuera del formulario para evitar conflictos
+                            st.markdown("<br>", unsafe_allow_html=True)
+                            if st.button("🗑️ Eliminar Registro Permanentemente", type="primary", use_container_width=True, key=f"del_{h_name}_{dni_buscado}"):
+                                dfs[h_name] = dfs[h_name].drop(idx)
+                                save_data(dfs)
+                                st.rerun()
+                        
+                        else:
+                            st.info("💡 Activa la casilla **(SEL)** en la tabla superior para editar o eliminar este registro.")
                             edit_row = {}
                             for col in cols_reales:
                                 val = sel.iloc[0].get(col.upper(), "")
@@ -1568,6 +1550,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
