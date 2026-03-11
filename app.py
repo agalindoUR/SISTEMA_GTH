@@ -647,7 +647,7 @@ else:
                         vst.columns = [str(col).upper() for col in vst.columns]
                             
                             # Eliminamos duplicados de la base
-                            vst = vst.loc[:, ~vst.columns.duplicated()]
+                        vst = vst.loc[:, ~vst.columns.duplicated()]
             
                             if "SEL" not in vst.columns:
                                 vst.insert(0, "SEL", False)
@@ -1469,6 +1469,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
