@@ -557,17 +557,20 @@ else:
                         dias_generados_totales = 0
                         dias_gozados_totales = 0
 
-                       # ==========================================
-                        # BLOQUE 1: CÁLCULOS Y CUADROS RESUMEN
-                        # ==========================================
-                        
+                       # ==========================================================
+                        # BLOQUE DE VACACIONES (LÍNEAS 561-717 RESTRUCTURADAS)
+                        # ==========================================================
+                        if h_name == "VACACIONES":
+                            # 1. Inicialización de variables de cálculo
                             detalles = []
                             dias_generados_totales = 0
                             
+                            # Estandarización de columnas para evitar KeyError
                             c_df_interna = c_df.copy()
                             c_df_interna.columns = [c.lower().strip() for c in c_df_interna.columns]
                             dias_gozados_totales = pd.to_numeric(c_df_interna.get("días gozados", 0), errors='coerce').sum()
 
+                            # 2. Lógica de cálculo de periodos (Planilla)
                             df_tc = df_contratos[df_contratos["TIPO CONTRATO"].astype(str).str.lower().str.contains("planilla", na=False)] if not df_contratos.empty else pd.DataFrame()
                             
                             if not df_tc.empty:
@@ -588,8 +591,11 @@ else:
                                                 o_s, o_e = max(curr_start, c_s), min(curr_end, c_e, date.today())
                                                 if o_s <= o_e: days_in_p += (o_e - o_s).days + 1
                                         
-                                        gen_p = round((days_in_p / ((curr_end - curr_start).days + 1)) * 30, 2)
+                                        total_dias_p = (curr_end - curr_start).days + 1
+                                        gen_p = round((days_in_p / total_dias_p) * 30, 2)
                                         p_name = f"{curr_start.year}-{curr_start.year+1}"
+                                        
+                                        # Buscar días gozados usando la columna estandarizada
                                         goz_p = pd.to_numeric(c_df_interna[c_df_interna["periodo"].astype(str).str.strip() == p_name]["días gozados"], errors='coerce').sum()
                                         
                                         detalles.append({
@@ -603,118 +609,49 @@ else:
                                         dias_generados_totales += gen_p
                                         curr_start = (pd.to_datetime(curr_start) + pd.DateOffset(years=1)).date()
 
-                            saldo_v = round(dias_generados_totales - dias_gozados_totales, 2)
+                            # 3. Resumen Visual (Cuadros de Resumen)
+                            saldo_final = round(dias_generados_totales - dias_gozados_totales, 2)
                             st.markdown(f"""
                                 <div style="display: flex; gap: 15px; margin-bottom: 20px;">
                                     <div style="flex: 1; background-color: #4A0000; padding: 15px; border-radius: 10px; text-align: center; border: 2px solid #FFD700;"><h2 style="color: #FFD700; margin: 0;">{dias_generados_totales:.2f}</h2><p style="color: white; margin: 0; font-size: 0.9em;">Días Generados</p></div>
                                     <div style="flex: 1; background-color: #4A0000; padding: 15px; border-radius: 10px; text-align: center; border: 2px solid #FFD700;"><h2 style="color: #FFD700; margin: 0;">{dias_gozados_totales:.2f}</h2><p style="color: white; margin: 0; font-size: 0.9em;">Días Gozados</p></div>
-                                    <div style="flex: 1; background-color: #4A0000; padding: 15px; border-radius: 10px; text-align: center; border: 2px solid #FFD700;"><h2 style="color: #FFD700; margin: 0;">{saldo_v:.2f}</h2><p style="color: white; margin: 0; font-size: 0.9em;">Saldo Disponible</p></div>
+                                    <div style="flex: 1; background-color: #4A0000; padding: 15px; border-radius: 10px; text-align: center; border: 2px solid #FFD700;"><h2 style="color: #FFD700; margin: 0;">{saldo_final:.2f}</h2><p style="color: white; margin: 0; font-size: 0.9em;">Saldo Disponible</p></div>
                                 </div>
                             """, unsafe_allow_html=True)
 
-                        if h_name == "VACACIONES":
-                            df_tc = df_contratos[df_contratos["TIPO CONTRATO"].astype(str).str.lower().str.contains("planilla", na=False)] if "df_contratos" in locals() else pd.DataFrame()
-                            
-                            detalles = []
-                            dias_generados_totales = 0
-                            dias_gozados_totales = pd.to_numeric(c_df["días gozados"], errors='coerce').sum()
-
-                            if not df_tc.empty:
-                                df_tc_calc = df_tc.copy()
-                                df_tc_calc['f_inicio_dt'] = pd.to_datetime(df_tc_calc['F_INICIO'], errors='coerce')
-                                df_tc_calc['f_fin_dt'] = pd.to_datetime(df_tc_calc['F_FIN'], errors='coerce')
-                                
-                                start_global = df_tc_calc['f_inicio_dt'].min()
-                                
-                                if pd.notnull(start_global):
-                                    start_global = start_global.date()
-                                    curr_start = start_global
-                                    
-                                    while curr_start <= date.today():
-                                        curr_end = (pd.to_datetime(curr_start) + pd.DateOffset(years=1) - pd.Timedelta(days=1)).date()
-                                        days_in_p = 0
-                                        
-                                        for _, r in df_tc_calc.iterrows():
-                                            c_start = r['f_inicio_dt'].date() if pd.notnull(r['f_inicio_dt']) else None
-                                            c_end = r['f_fin_dt'].date() if pd.notnull(r['f_fin_dt']) else None
-                                            if c_start and c_end:
-                                                o_start = max(curr_start, c_start)
-                                                o_end = min(curr_end, c_end, date.today())
-                                                if o_start <= o_end: 
-                                                    days_in_p += (o_end - o_start).days + 1
-                                                
-                                        # --- SOLUCIÓN: CÁLCULO PROPORCIONAL EXACTO ---
-                                        # Obtenemos los días totales reales que tiene ese periodo (365 o 366 si cruza un bisiesto)
-                                        total_dias_periodo = (curr_end - curr_start).days + 1
-                                        
-                                        # Nueva fórmula: garantizamos un máximo exacto de 30 días por año completo
-                                        gen_p = round((days_in_p / total_dias_periodo) * 30, 2)
-                                        # ---------------------------------------------
-                                        
-                                        p_name = f"{curr_start.year}-{curr_start.year+1}"
-                                        
-                                        goz_df = c_df[c_df["periodo"].astype(str).str.strip() == p_name]
-                                        goz_p = pd.to_numeric(goz_df["días gozados"], errors='coerce').sum()
-                                        
-                                        if gen_p > 0 or goz_p > 0:
-                                            detalles.append({"Periodo": p_name, "Del": curr_start.strftime("%d/%m/%Y"), "Al": curr_end.strftime("%d/%m/%Y"), "Días Generados": gen_p, "Días Gozados": goz_p, "Saldo": round(gen_p - goz_p, 2)})
-                                        
-                                        dias_generados_totales += gen_p
-                                        curr_start = (pd.to_datetime(curr_start) + pd.DateOffset(years=1)).date()
-
-                            saldo_v = round(dias_generados_totales - dias_gozados_totales, 2)
-
-                            st.markdown(f"""
-                            <div style="display: flex; gap: 15px; margin-bottom: 20px;">
-                                <div style="flex: 1; background-color: #4A0000; padding: 20px; border-radius: 10px; text-align: center; border: 2px solid #FFD700;"><h2 style="color: #FFD700; margin: 0; font-size: 2.5em;">{dias_generados_totales:.2f}</h2><p style="color: #FFFFFF; margin: 0; font-weight: bold; font-size: 1.1em;">Días Generados Totales</p></div>
-                                <div style="flex: 1; background-color: #4A0000; padding: 20px; border-radius: 10px; text-align: center; border: 2px solid #FFD700;"><h2 style="color: #FFD700; margin: 0; font-size: 2.5em;">{dias_gozados_totales:.2f}</h2><p style="color: #FFFFFF; margin: 0; font-weight: bold; font-size: 1.1em;">Días Gozados</p></div>
-                                <div style="flex: 1; background-color: #4A0000; padding: 20px; border-radius: 10px; text-align: center; border: 2px solid #FFD700;"><h2 style="color: #FFD700; margin: 0; font-size: 2.5em;">{saldo_v:.2f}</h2><p style="color: #FFFFFF; margin: 0; font-weight: bold; font-size: 1.1em;">Saldo Disponible</p></div>
-                            </div>
-                            """, unsafe_allow_html=True)
-                            
+                            # 4. Desglose Detallado (Cuadro Amarillo)
                             if detalles:
-                                st.markdown("<h4 style='color: #FFD700;'>Desglose por Periodos</h4>", unsafe_allow_html=True)
-                                div_table = "<div style='display: flex; flex-direction: column; width: 100%; border: 2px solid #FFD700; border-radius: 8px; overflow: hidden; margin-bottom: 20px;'><div style='display: flex; background-color: #4A0000; color: #FFD700; font-weight: bold;'><div style='flex: 1; padding: 12px; text-align: center; border-right: 1px solid #FFD700;'>PERIODO</div><div style='flex: 1; padding: 12px; text-align: center; border-right: 1px solid #FFD700;'>DEL</div><div style='flex: 1; padding: 12px; text-align: center; border-right: 1px solid #FFD700;'>AL</div><div style='flex: 1; padding: 12px; text-align: center; border-right: 1px solid #FFD700;'>DÍAS GENERADOS</div><div style='flex: 1; padding: 12px; text-align: center; border-right: 1px solid #FFD700;'>DÍAS GOZADOS</div><div style='flex: 1; padding: 12px; text-align: center;'>SALDO</div></div>"
-                                for d in detalles:
-                                    div_table += f"<div style='display: flex; background-color: #FFF9C4; color: #4A0000; font-weight: bold; border-top: 1px solid #FFD700;'><div style='flex: 1; padding: 10px; text-align: center; border-right: 1px solid #FFD700;'>{d['Periodo']}</div><div style='flex: 1; padding: 10px; text-align: center; border-right: 1px solid #FFD700;'>{d['Del']}</div><div style='flex: 1; padding: 10px; text-align: center; border-right: 1px solid #FFD700;'>{d['Al']}</div><div style='flex: 1; padding: 10px; text-align: center; border-right: 1px solid #FFD700;'>{d['Días Generados']:.2f}</div><div style='flex: 1; padding: 10px; text-align: center; border-right: 1px solid #FFD700;'>{d['Días Gozados']:.2f}</div><div style='flex: 1; padding: 10px; text-align: center;'>{d['Saldo']:.2f}</div></div>"
-                                div_table += "</div>"
-                                st.markdown(div_table, unsafe_allow_html=True)
+                                with st.expander("📂 Ver Desglose por Periodos", expanded=True):
+                                    tabla_html = """<div style='border: 2px solid #FFD700; border-radius: 10px; overflow: hidden;'>
+                                        <table style='width: 100%; border-collapse: collapse; background-color: #FFF9C4; color: #4A0000;'>
+                                            <tr style='background-color: #4A0000; color: #FFD700;'>
+                                                <th style='padding: 10px;'>PERIODO</th><th>DEL / AL</th><th>GENERADOS</th><th>GOZADOS</th><th>SALDO</th>
+                                            </tr>"""
+                                    for d in detalles:
+                                        tabla_html += f"""<tr style='border-top: 1px solid #FFD700; text-align: center; font-weight: bold;'>
+                                            <td style='padding: 8px;'>{d['PERIODO']}</td>
+                                            <td><small>{d['DEL']} - {d['AL']}</small></td>
+                                            <td>{d['DÍAS GENERADOS']:.2f}</td>
+                                            <td style='color: #D32F2F;'>{d['DÍAS GOZADOS']:.2f}</td>
+                                            <td style='background-color: #FFD700; color: black;'>{d['SALDO']:.2f}</td>
+                                        </tr>"""
+                                    tabla_html += "</table></div>"
+                                    st.markdown(tabla_html, unsafe_allow_html=True)
 
-                        vst = c_df.copy()
-                        
-                        cols_ocultar = [c for c in vst.columns if c.lower() in ["apellidos y nombres", "apellidos", "nombres"]]
-                        vst = vst.drop(columns=cols_ocultar)
-
-                        col_conf = {}
-                        for col in vst.columns:
-                            if "fecha" in col.lower() or "f_" in col.lower():
-                                vst[col] = pd.to_datetime(vst[col], errors='coerce').dt.date
-                                col_conf[str(col).upper()] = st.column_config.DateColumn(format="DD/MM/YYYY")
-
-                        vst.columns = [str(col).upper() for col in vst.columns]
-                        # --- SOLUCIÓN AL ERROR ---
-                        # Si hay columnas duplicadas en Google Sheets, esto las elimina para que la app no colapse
-                        vst = vst.loc[:, ~vst.columns.duplicated()]
-        
-                        if "SEL" not in vst.columns:
-                            vst.insert(0, "SEL", False)
-                        
-                        # --- MAGIA: OCULTAR Y ORDENAR COLUMNAS ---
-                        # 1. Lista de todo lo que queremos desaparecer de la vista
-                        columnas_basura = ["DNI", "FECHA DE INICIO", "FECHA DE FIN", "DÍAS GENERADOS", "DIAS GENERADOS", "SALDO"]
-                        for col in columnas_basura:
-                            if col in vst.columns:
-                                col_conf[col] = None
-                                
-                        # 2. Reordenar las columnas para que F_INICIO y F_FIN salgan primero
-                        cols_importantes = ["SEL", "PERIODO", "F_INICIO", "F_FIN", "DÍAS GOZADOS", "DIAS GOZADOS"]
-                        cols_finales = [c for c in cols_importantes if c in vst.columns] + [c for c in vst.columns if c not in cols_importantes]
-                        vst = vst[cols_finales]
-                        # ----------------------------------------
-
-                        st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 10px !important; }</style>""", unsafe_allow_html=True)
-                        ed = st.data_editor(vst, hide_index=True, use_container_width=False, column_config=col_conf, key=f"ed_{h_name}")
-                        sel = ed[ed["SEL"] == True]
+                            # 5. Visualización de Registros (Historial)
+                            st.write(f"### Registros en {h_name}")
+                            vst = c_df.copy()
+                            vst.columns = [str(c).upper().strip() for c in vst.columns]
+                            if "SEL" not in vst.columns: vst.insert(0, "SEL", False)
+                            
+                            ed = st.data_editor(vst, hide_index=True, use_container_width=True, key=f"ed_vac_{dni_buscado}")
+                            
+                            # 6. Formulario de Nuevo Registro
+                            if not es_lector:
+                                with st.expander("➕ Nuevo Registro"):
+                                    opciones_periodo = [d["PERIODO"] for d in detalles] if detalles else ["S/P"]
+                                    sel_p = st.selectbox("Seleccione Periodo", opciones_periodo, key=f"p_sel_{dni_buscado}")
+                                    # ... resto de la lógica de guardado ...
 
                        # ==========================================
                         # BOTÓN DE PAPELETA (DENTRO DE LA PESTAÑA VACACIONES)
@@ -1872,6 +1809,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
