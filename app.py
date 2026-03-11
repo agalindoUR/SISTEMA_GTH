@@ -630,44 +630,48 @@ else:
                         sel = ed[ed["SEL"] == True]
 
                        # ==========================================
-                        # BOTÓN DE IMPRESIÓN DE PAPELETA (SOLO EN VACACIONES)
-                        # ==========================================
-                        if h_name == "VACACIONES" and not sel.empty:
-                            st.markdown("---")
-                            # 1. Variables por defecto
-                            current_cargo = "TRABAJADOR" 
-                            f_ingreso_val = ""
-                            
-                            # 2. Intentamos rescatar datos desde CONTRATOS
-                            if dni_buscado:
-                                if "CONTRATOS" in dfs and "DNI" in dfs["CONTRATOS"].columns:
-                                    # Filtramos los contratos del trabajador
-                                    df_c_data = dfs["CONTRATOS"][dfs["CONTRATOS"]["DNI"].astype(str).str.strip() == str(dni_buscado).strip()]
-                                    
-                                    if not df_c_data.empty:
-                                        # Sacamos el cargo y fecha del último contrato registrado
-                                        ultimo_contrato = df_c_data.iloc[-1]
-                                        current_cargo = str(ultimo_contrato.get("CARGO", "TRABAJADOR")).upper()
-                                        f_ingreso_val = str(ultimo_contrato.get("F_INICIO", ""))
-                                else:
-                                    # Este else ahora sí está bien alineado con el chequeo de la columna
-                                    st.error("No se encontró la columna 'DNI' en la pestaña CONTRATOS")
-                            
-                            # Aquí continuaría tu lógica para generar la papeleta...
-                            st.info(f"Datos detectados: {current_cargo} | Ingreso: {f_ingreso_val}")
-                            
-                            if not df_c_data.empty:
-                                try:
-                                    # Obtener cargo (último contrato)
-                                    last_contract = df_c_data.assign(f_fin_dt=pd.to_datetime(df_c_data['f_fin'], errors='coerce')).sort_values('f_fin_dt').iloc[-1]
-                                    current_cargo = last_contract.get("cargo", "TRABAJADOR")
-                                    
-                                    # Obtener fecha de ingreso (primer contrato de planilla)
-                                    df_planilla = df_c_data[df_c_data["tipo contrato"].astype(str).str.lower().str.contains("planilla", na=False)]
-                                    if not df_planilla.empty:
-                                        f_min = pd.to_datetime(df_planilla['f_inicio'], errors='coerce').min()
-                                        if pd.notnull(f_min): f_ingreso_val = f_min.date()
-                                except: pass
+# BOTÓN DE IMPRESIÓN DE PAPELETA (SOLO EN VACACIONES)
+# ==========================================
+if h_name == "VACACIONES" and not sel.empty:
+    st.markdown("---")
+    # 1. Variables por defecto
+    current_cargo = "TRABAJADOR" 
+    f_ingreso_val = "No detectada"
+    
+    # 2. Intentamos rescatar datos precisos desde CONTRATOS
+    if dni_buscado and "CONTRATOS" in dfs:
+        # Normalizamos nombres de columnas para evitar errores
+        df_c_temp = dfs["CONTRATOS"].copy()
+        df_c_temp.columns = [str(c).strip().lower() for c in df_c_temp.columns]
+        
+        # Filtramos por DNI
+        df_c_data = df_c_temp[df_c_temp["dni"].astype(str).str.strip() == str(dni_buscado).strip()]
+        
+        if not df_c_data.empty:
+            try:
+                # A. Obtener cargo actual (del contrato más reciente por fecha de fin)
+                df_c_data['f_fin_dt'] = pd.to_datetime(df_c_data['f_fin'], errors='coerce')
+                last_contract = df_c_data.sort_values('f_fin_dt', ascending=True).iloc[-1]
+                current_cargo = str(last_contract.get("cargo", "TRABAJADOR")).upper()
+                
+                # B. Obtener fecha de ingreso real (primer contrato tipo 'planilla')
+                # Buscamos en la columna 'tipo contrato'
+                col_tipo = next((c for c in df_c_data.columns if "tipo contrato" in c or "tipo_contrato" in c), None)
+                if col_tipo:
+                    df_planilla = df_c_data[df_c_data[col_tipo].astype(str).str.lower().str.contains("planilla", na=False)]
+                    if not df_planilla.empty:
+                        f_min = pd.to_datetime(df_planilla['f_inicio'], errors='coerce').min()
+                        if pd.notnull(f_min): 
+                            f_ingreso_val = f_min.strftime('%d/%m/%Y')
+            except Exception as e:
+                st.warning(f"Nota: No se pudo calcular la fecha de ingreso exacta ({e})")
+
+    # 3. Mostrar confirmación de datos
+    st.info(f"📋 **Datos para Papeleta:** {current_cargo} | **Ingreso Planilla:** {f_ingreso_val}")
+    
+    # Aquí puedes poner tu botón de generar PDF
+    if st.button(f"📄 Generar Papeleta de Impresión ({sel.iloc[0].get('PERIODO', 'S/P')})", key=f"btn_pdf_{dni_buscado}"):
+        st.write("Generando documento...") # Aquí iría tu función de PDF
 
                             # Capturar datos de la fila seleccionada
                             r_sel = sel.iloc[0]
@@ -992,10 +996,9 @@ else:
                                                         try: 
                                                             num_val = float(val) if pd.notnull(val) else 0.0
                                                         except: 
-                                                            num_val = 0.0
-                                                        edit_row[col] = st.number_input(col.title(), value=num_val)
+                                                            num_val = 0.0                                                    
                                                     else:
-                                                        edit_row[col] = st.text_input(col.title(), value=str(val) if pd.notnull(val) else "")
+                                                        edit_row[col] = st.text_input(col.title(), value=str(val) if pd.notnull(val) else "", key=f"edit_{h_name}_{col}"  # <--- ESTA ES LA CLAVE DEL ÉXITO)
                                                 
                                                 st.markdown("---")
                                                 # Botón para las demás pestañas
@@ -1565,6 +1568,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
