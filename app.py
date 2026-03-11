@@ -1389,11 +1389,25 @@ else:
         df_gen = dfs.get("DATOS GENERALES", pd.DataFrame())
         
         if not df_per.empty and not df_cont.empty:
-            # 1. Base: DNI y Nombres
-            col_nom_per = next((c for c in df_per.columns if "apellido" in c.lower() or "nombre" in c.lower()), None)
-            cols_per = ["dni"]
-            if col_nom_per: cols_per.append(col_nom_per)
-            df_venc = df_per[cols_per].copy()
+            # 1. Base: DNI y Nombres Completos
+            df_venc = df_per.copy()
+            
+            # Buscamos las columnas exactas de apellidos y nombres
+            col_ape = next((c for c in df_venc.columns if "apellido" in c.lower()), None)
+            col_nom = next((c for c in df_venc.columns if "nombre" in c.lower()), None)
+            
+            # Juntamos ambas columnas con un espacio en el medio
+            if col_ape and col_nom:
+                # Usamos fillna("") para evitar errores si hay celdas vacías
+                df_venc["Nombre Completo"] = df_venc[col_ape].fillna("").astype(str) + " " + df_venc[col_nom].fillna("").astype(str)
+            elif col_ape:
+                df_venc["Nombre Completo"] = df_venc[col_ape]
+            else:
+                df_venc["Nombre Completo"] = "Desconocido"
+                
+            # Nos quedamos solo con el DNI y la nueva columna combinada
+            cols_per = ["dni", "Nombre Completo"]
+            df_venc = df_venc[cols_per]
             
             # 2. Sede (de Datos Generales)
             if not df_gen.empty and "sede" in df_gen.columns:
@@ -1416,10 +1430,10 @@ else:
             meses_dict = {1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril", 5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto", 9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"}
             df_venc["Mes de Vencimiento"] = df_venc["f_fin_dt"].dt.month.map(meses_dict)
             
-            # Renombrar para que se vea bien
+            # Renombrar para que se vea bien (AQUÍ USAMOS "Nombre Completo")
             rename_dict = {
                 "dni": "DNI",
-                col_nom_per: "Trabajador",
+                "Nombre Completo": "Trabajador", 
                 "sede": "Sede",
                 "cargo": "Puesto",
                 "AREA": "AREA",
@@ -1428,20 +1442,7 @@ else:
                 "tipo contrato": "Tipo de Contrato"
             }
             df_venc.rename(columns=rename_dict, inplace=True)
-            # ... (Aquí termina tu código del Paso 4) ...
-            # Renombrar para que se vea bien
-            rename_dict = {
-                "dni": "DNI",
-                col_nom_per: "Trabajador",
-                "sede": "Sede",
-                "cargo": "Puesto",
-                "AREA": "AREA",
-                "f_fin": "Fecha de Vencimiento",
-                "tipo de trabajador": "Tipo de Trabajador",
-                "tipo contrato": "Tipo de Contrato"
-            }
-            df_venc.rename(columns=rename_dict, inplace=True)
-            
+
             # =========================================================
             # NUEVO: ALERTA DE VENCIMIENTOS (PRÓXIMOS 30 DÍAS)
             # =========================================================
@@ -1464,7 +1465,7 @@ else:
                 
             st.markdown("---")
             # =========================================================
-                    
+
             # 5. Filtros de Búsqueda
             col1, col2, col3 = st.columns(3)
             with col1:
@@ -1514,6 +1515,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
