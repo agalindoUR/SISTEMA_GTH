@@ -971,21 +971,17 @@ else:
                                                         try: d_val = pd.to_datetime(val).date()
                                                         except: d_val = date.today()
                                                     else: d_val = date.today()
-                                                    # ---> AQUI AGREGAMOS EL KEY
                                                     edit_row[col] = st.date_input(col.title(), value=d_val, format="DD/MM/YYYY", key=f"date_{h_name}_{col}_{idx}")
                                                     
                                                 elif col.lower() == "edad":
-                                                    # ---> AQUI AGREGAMOS EL KEY
                                                     edit_row[col] = st.number_input(col.title(), value=int(val) if pd.notnull(val) and str(val).isdigit() else 0, disabled=True, key=f"edad_{h_name}_{col}_{idx}")
                                                     
                                                 elif col.lower() in ["remuneración", "bonificación", "sueldo", "días generados", "dias gozados", "saldo", "monto", "remuneracion basica", "bonificacion"]: 
                                                     try: n_val = float(val) if pd.notnull(val) else 0.0
                                                     except: n_val = 0.0
-                                                    # ---> AQUI AGREGAMOS EL KEY (Línea 979 de tu foto)
                                                     edit_row[col] = st.number_input(col.title(), value=n_val, key=f"num_{h_name}_{col}_{idx}")
                                                     
                                                 else: 
-                                                    # ---> AQUI AGREGAMOS EL KEY (Línea 982 de tu foto)
                                                     edit_row[col] = st.text_input(col.title(), value=str(val) if pd.notnull(val) else "", key=f"text_{h_name}_{col}_{idx}")
 
                                                 col_btn1, col_btn2 = st.columns(2)
@@ -1520,6 +1516,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
