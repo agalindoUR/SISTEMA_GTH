@@ -987,8 +987,18 @@ else:
                                                 edit_row = {}
                                                 row = sel.iloc[0] 
                                                 
-                                                # ---> AQUÍ AGREGAMOS 'enumerate' PARA ENUMERAR CADA COLUMNA <---
-                                                for i, col in enumerate(cols_reales):
+                                                # ---> NUEVO FILTRO: Eliminamos duplicados y la columna AREA <---
+                                                columnas_limpias = []
+                                                vistas = set()
+                                                for c in cols_reales:
+                                                    c_upper = str(c).upper().strip() # Quitamos espacios extra y pasamos a mayúsculas
+                                                    # Ignoramos la columna si ya la vimos o si es "AREA"
+                                                    if c_upper not in vistas and c_upper != "AREA":
+                                                        vistas.add(c_upper)
+                                                        columnas_limpias.append(c)
+                                                
+                                                # Ahora iteramos sobre la lista filtrada, no sobre cols_reales
+                                                for i, col in enumerate(columnas_limpias):
                                                     val = row.get(str(col).upper(), "")
                                                     
                                                     if "fecha" in col.lower() or "f_" in col.lower(): 
@@ -997,7 +1007,6 @@ else:
                                                             try: d_val = pd.to_datetime(val).date()
                                                             except: d_val = date.today()
                                                         else: d_val = date.today()
-                                                        # Notar el _{i} al final de la línea
                                                         edit_row[col] = st.date_input(col.title(), value=d_val, format="DD/MM/YYYY", key=f"date_{h_name}_{col}_{idx}_{i}")
                                                         
                                                     elif col.lower() == "edad":
@@ -1545,6 +1554,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
