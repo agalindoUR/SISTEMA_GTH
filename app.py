@@ -492,22 +492,40 @@ else:
                 nom_p_c = str(fila_pers.iloc[0].get("nombres", "")).strip()
                 # -----------------------------
 
-                # --- NUEVA LÓGICA DE FOTO ---
+               # --- NUEVA LÓGICA DE FOTO ---
                 # Buscamos la columna "foto" (minúscula o mayúscula)
                 link_foto_raw = fila_pers.iloc[0].get("foto", fila_pers.iloc[0].get("FOTO", ""))
                 
-                # Transformamos el link de Google Drive a link directo
+                # Transformamos el link (si usas Postimages/Blogger, la función lo dejará igual)
                 if pd.notnull(link_foto_raw) and str(link_foto_raw).strip() != "":
                     foto_directa = obtener_link_directo_drive(str(link_foto_raw).strip())
                 else:
                     foto_directa = None
 
-                # Renderizamos la cabecera (con foto si existe, si no, con el muñeco)
+                # Renderizamos la cabecera con efecto Hover y enlace para agrandar
                 if foto_directa:
                     st.markdown(f"""
+                        <style>
+                        .foto-perfil {{
+                            width: 75px; 
+                            height: 75px; 
+                            border-radius: 50%; 
+                            object-fit: cover; 
+                            border: 3px solid #FFD700; 
+                            margin-right: 15px;
+                            transition: transform 0.2s ease-in-out;
+                            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                        }}
+                        .foto-perfil:hover {{
+                            transform: scale(1.15); /* Efecto de zoom al pasar el mouse */
+                            cursor: pointer;
+                        }}
+                        </style>
                         <div style='border-bottom: 2px solid #FFD700; padding-bottom: 10px; margin-bottom: 20px; display: flex; align-items: center;'>
-                            <img src='{foto_directa}' style='width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 3px solid #FFD700; margin-right: 15px;' onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                            <h1 style='color: white; margin: 0; margin-right: 15px; font-size: 3em; display: none;'>👤</h1>
+                            <a href='{foto_directa}' target='_blank' title='Clic para ver a tamaño completo'>
+                                <img src='{foto_directa}' class='foto-perfil' onerror="this.parentElement.style.display='none'; document.getElementById('avatar-{dni_buscado}').style.display='block';">
+                            </a>
+                            <h1 id='avatar-{dni_buscado}' style='color: white; margin: 0; margin-right: 15px; font-size: 3em; display: none;'>👤</h1>
                             <h1 style='color: #FFD700; margin: 0; font-size: 2.5em;'>{nom_c}</h1>
                         </div>
                     """, unsafe_allow_html=True)
@@ -517,8 +535,8 @@ else:
                             <h1 style='color: white; margin: 0; margin-right: 15px; font-size: 3em;'>👤</h1>
                             <h1 style='color: #FFD700; margin: 0; font-size: 2.5em;'>{nom_c}</h1>
                         </div>
-                    """, unsafe_allow_html=True)
-                
+                    """, unsafe_allow_html=True))
+                                
                 t_noms = ["Datos Generales", "Exp. Laboral", "Form. Académica", "Investigación", "Datos Familiares", "Contratos", "Vacaciones", "Otros Beneficios", "Méritos/Demer.", "Evaluación", "Liquidaciones"]
                 h_keys = ["DATOS GENERALES", "EXP. LABORAL", "FORM. ACADEMICA", "INVESTIGACION", "DATOS FAMILIARES", "CONTRATOS", "VACACIONES", "OTROS BENEFICIOS", "MERITOS Y DEMERITOS", "EVALUACION DEL DESEMPEÑO", "LIQUIDACIONES"]
 
@@ -1448,6 +1466,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
