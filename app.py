@@ -963,23 +963,30 @@ else:
                                             else:
                                                 edit_row = {}
                                                 for col in cols_reales:
-                                                    val = sel.iloc[0].get(col.upper(), "")
-                                                    if "fecha" in col.lower() or "f_" in col.lower():
-                                                        edit_row[col] = st.date_input(col.title(), value=pd.to_datetime(val, errors='coerce').date() if pd.notnull(pd.to_datetime(val, errors='coerce')) else date.today(), min_value=date(1930, 1, 1), max_value=date(2100, 12, 31), format="DD/MM/YYYY")
-                                                    elif col.lower() == "edad":
-                                                        fnac = edit_row.get("fecha de nacimiento")
-                                                        if fnac: 
-                                                            edit_row[col] = st.number_input("Edad (Calculada)", value=int(date.today().year - fnac.year - ((date.today().month, date.today().day) < (fnac.month, fnac.day))), disabled=True)
-                                                        else: 
-                                                            edit_row[col] = st.number_input(col.title(), value=int(val) if pd.notnull(val) and str(val).isdigit() else 0, disabled=True)
-                                                    elif col.lower() in ["remuneración", "bonificación", "sueldo", "días generados", "dias gozados", "saldo", "monto"]:
-                                                        try: 
-                                                            num_val = float(val) if pd.notnull(val) else 0.0
-                                                        except: 
-                                                            num_val = 0.0
-                                                        edit_row[col] = st.number_input(col.title(), value=num_val)
-                                                    else:
-                                                        edit_row[col] = st.text_input(col.title(), value=str(val) if pd.notnull(val) else "")
+                                                val = row.get(col, "")
+                                                
+                                                if "fecha" in col.lower() or "f_" in col.lower(): 
+                                                    if pd.notnull(val) and isinstance(val, (date, datetime)): d_val = val
+                                                    elif pd.notnull(val) and isinstance(val, str):
+                                                        try: d_val = pd.to_datetime(val).date()
+                                                        except: d_val = date.today()
+                                                    else: d_val = date.today()
+                                                    # ---> AQUI AGREGAMOS EL KEY
+                                                    edit_row[col] = st.date_input(col.title(), value=d_val, format="DD/MM/YYYY", key=f"date_{h_name}_{col}_{idx}")
+                                                    
+                                                elif col.lower() == "edad":
+                                                    # ---> AQUI AGREGAMOS EL KEY
+                                                    edit_row[col] = st.number_input(col.title(), value=int(val) if pd.notnull(val) and str(val).isdigit() else 0, disabled=True, key=f"edad_{h_name}_{col}_{idx}")
+                                                    
+                                                elif col.lower() in ["remuneración", "bonificación", "sueldo", "días generados", "dias gozados", "saldo", "monto", "remuneracion basica", "bonificacion"]: 
+                                                    try: n_val = float(val) if pd.notnull(val) else 0.0
+                                                    except: n_val = 0.0
+                                                    # ---> AQUI AGREGAMOS EL KEY (Línea 979 de tu foto)
+                                                    edit_row[col] = st.number_input(col.title(), value=n_val, key=f"num_{h_name}_{col}_{idx}")
+                                                    
+                                                else: 
+                                                    # ---> AQUI AGREGAMOS EL KEY (Línea 982 de tu foto)
+                                                    edit_row[col] = st.text_input(col.title(), value=str(val) if pd.notnull(val) else "", key=f"text_{h_name}_{col}_{idx}")
 
                                                 col_btn1, col_btn2 = st.columns(2)
                                                 with col_btn1:
@@ -1513,6 +1520,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
