@@ -985,8 +985,10 @@ else:
                                                     st.rerun()
                                             else:
                                                 edit_row = {}
+                                                row = sel.iloc[0]  # <-- 1. AQUÍ DEFINIMOS QUÉ ES 'row'
                                                 for col in cols_reales:
-                                                    val = row.get(col, "")
+                                                    # 2. BUSCAMOS EN MAYÚSCULAS PARA QUE JALE LOS DATOS CORRECTAMENTE
+                                                    val = row.get(str(col).upper(), "")
                                                     
                                                     if "fecha" in col.lower() or "f_" in col.lower(): 
                                                         if pd.notnull(val) and isinstance(val, (date, datetime)): d_val = val
@@ -1541,6 +1543,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
