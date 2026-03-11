@@ -556,56 +556,79 @@ else:
                     sel = ed[ed["SEL"] == True]
 
                         if h_name == "VACACIONES":
-                            df_tc = df_contratos[df_contratos["TIPO CONTRATO"].astype(str).str.lower().str.contains("planilla", na=False)] if "df_contratos" in locals() else pd.DataFrame()
+                    # 1. Filtramos contratos de planilla para el cálculo de días generados
+                    # Usamos .get() para evitar errores si la columna no existe momentáneamente
+                    df_tc = df_contratos[df_contratos["TIPO CONTRATO"].astype(str).str.lower().str.contains("planilla", na=False)] if not df_contratos.empty else pd.DataFrame()
+                    
+                    detalles = []
+                    dias_generados_totales = 0
+                    # Aseguramos que 'días gozados' se lea correctamente sin importar minúsculas
+                    c_df.columns = [c.lower() for c in c_df.columns]
+                    dias_gozados_totales = pd.to_numeric(c_df.get("días gozados", 0), errors='coerce').sum()
+
+                    if not df_tc.empty:
+                        df_tc_calc = df_tc.copy()
+                        # Estandarizamos nombres de columnas de contratos
+                        df_tc_calc.columns = [c.upper() for c in df_tc_calc.columns]
+                        df_tc_calc['f_inicio_dt'] = pd.to_datetime(df_tc_calc['F_INICIO'], errors='coerce')
+                        df_tc_calc['f_fin_dt'] = pd.to_datetime(df_tc_calc['F_FIN'], errors='coerce')
+                        
+                        start_global = df_tc_calc['f_inicio_dt'].min()
+                        
+                        if pd.notnull(start_global):
+                            start_global = start_global.date()
+                            curr_start = start_global
                             
-                            detalles = []
-                            dias_generados_totales = 0
-                            dias_gozados_totales = pd.to_numeric(c_df["días gozados"], errors='coerce').sum()
-
-                            if not df_tc.empty:
-                                df_tc_calc = df_tc.copy()
-                                df_tc_calc['f_inicio_dt'] = pd.to_datetime(df_tc_calc['F_INICIO'], errors='coerce')
-                                df_tc_calc['f_fin_dt'] = pd.to_datetime(df_tc_calc['F_FIN'], errors='coerce')
+                            while curr_start <= date.today():
+                                curr_end = (pd.to_datetime(curr_start) + pd.DateOffset(years=1) - pd.Timedelta(days=1)).date()
+                                days_in_p = 0
                                 
-                                start_global = df_tc_calc['f_inicio_dt'].min()
-                                
-                                if pd.notnull(start_global):
-                                    start_global = start_global.date()
-                                    curr_start = start_global
+                                for _, r in df_tc_calc.iterrows():
+                                    c_start = r['f_inicio_dt'].date() if pd.notnull(r['f_inicio_dt']) else None
+                                    c_end = r['f_fin_dt'].date() if pd.notnull(r['f_fin_dt']) else date.today()
                                     
-                                    while curr_start <= date.today():
-                                        curr_end = (pd.to_datetime(curr_start) + pd.DateOffset(years=1) - pd.Timedelta(days=1)).date()
-                                        days_in_p = 0
-                                        
-                                        for _, r in df_tc_calc.iterrows():
-                                            c_start = r['f_inicio_dt'].date() if pd.notnull(r['f_inicio_dt']) else None
-                                            c_end = r['f_fin_dt'].date() if pd.notnull(r['f_fin_dt']) else None
-                                            if c_start and c_end:
-                                                o_start = max(curr_start, c_start)
-                                                o_end = min(curr_end, c_end, date.today())
-                                                if o_start <= o_end: 
-                                                    days_in_p += (o_end - o_start).days + 1
-                                                
-                                        # --- SOLUCIÓN: CÁLCULO PROPORCIONAL EXACTO ---
-                                        # Obtenemos los días totales reales que tiene ese periodo (365 o 366 si cruza un bisiesto)
-                                        total_dias_periodo = (curr_end - curr_start).days + 1
-                                        
-                                        # Nueva fórmula: garantizamos un máximo exacto de 30 días por año completo
-                                        gen_p = round((days_in_p / total_dias_periodo) * 30, 2)
-                                        # ---------------------------------------------
-                                        
-                                        p_name = f"{curr_start.year}-{curr_start.year+1}"
-                                        
-                                        goz_df = c_df[c_df["periodo"].astype(str).str.strip() == p_name]
-                                        goz_p = pd.to_numeric(goz_df["días gozados"], errors='coerce').sum()
-                                        
-                                        if gen_p > 0 or goz_p > 0:
-                                            detalles.append({"Periodo": p_name, "Del": curr_start.strftime("%d/%m/%Y"), "Al": curr_end.strftime("%d/%m/%Y"), "Días Generados": gen_p, "Días Gozados": goz_p, "Saldo": round(gen_p - goz_p, 2)})
-                                        
-                                        dias_generados_totales += gen_p
-                                        curr_start = (pd.to_datetime(curr_start) + pd.DateOffset(years=1)).date()
+                                    if c_start:
+                                        o_start = max(curr_start, c_start)
+                                        o_end = min(curr_end, c_end, date.today())
+                                        if o_start <= o_end: 
+                                            days_in_p += (o_end - o_start).days + 1
+                                
+                                # Cálculo proporcional exacto (Máximo 30 días por año)
+                                total_dias_periodo = (curr_end - curr_start).days + 1
+                                gen_p = round((days_in_p / total_dias_periodo) * 30, 2)
+                                
+                                p_name = f"{curr_start.year}-{curr_start.year+1}"
+                                
+                                # Buscamos lo gozado en este periodo específico
+                                goz_df = c_df[c_df["periodo"].astype(str).str.strip() == p_name]
+                                goz_p = pd.to_numeric(goz_df["días gozados"], errors='coerce').sum()
+                                
+                                if gen_p > 0 or goz_p > 0:
+                                    detalles.append({
+                                        "PERIODO": p_name, 
+                                        "DEL": curr_start.strftime("%d/%m/%Y"), 
+                                        "AL": curr_end.strftime("%d/%m/%Y"), 
+                                        "DÍAS GENERADOS": gen_p, 
+                                        "DÍAS GOZADOS": goz_p, 
+                                        "SALDO": round(gen_p - goz_p, 2)
+                                    })
+                                
+                                dias_generados_totales += gen_p
+                                curr_start = (pd.to_datetime(curr_start) + pd.DateOffset(years=1)).date()
 
-                            saldo_v = round(dias_generados_totales - dias_gozados_totales, 2)
+                    # 2. Mostrar Resumen en Pantalla
+                    saldo_v = round(dias_generados_totales - dias_gozados_totales, 2)
+                    
+                    c1, c2, c3 = st.columns(3)
+                    c1.metric("Días Generados Totales", f"{dias_generados_totales:.2f}")
+                    c2.metric("Días Gozados Totales", f"{dias_gozados_totales:.2f}")
+                    c3.metric("Saldo Disponible", f"{saldo_v:.2f}", delta_color="normal")
+
+                    if detalles:
+                        st.write("### Desglose por Periodos")
+                        st.table(pd.DataFrame(detalles))
+                    else:
+                        st.info("No se dispone de historial de planilla para calcular periodos vacacionales.")
 
                             st.markdown(f"""
                             <div style="display: flex; gap: 15px; margin-bottom: 20px;">
@@ -1580,6 +1603,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
