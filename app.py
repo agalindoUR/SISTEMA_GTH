@@ -800,7 +800,7 @@ else:
                                                     st.success("✅ Registro guardado correctamente.")
                                                     st.rerun()
 
-                                        # ==========================================
+                                       # ==========================================
                                         # FORMULARIOS NORMALES PARA EL RESTO DE HOJAS
                                         # ==========================================
                                         else:
@@ -811,6 +811,7 @@ else:
                                             with st.form(f"f_add_{h_name}", clear_on_submit=True):
                                                 if h_name == "CONTRATOS":
                                                     d_car = ""
+                                                    d_area = ""  # <-- 1. INICIALIZAMOS EL ÁREA AQUÍ
                                                     d_rem = 0.0
                                                     d_bon = ""
                                                     d_cond = ""
@@ -824,7 +825,7 @@ else:
                                                     if es_renovacion and not df_contratos.empty:
                                                         last_c = df_contratos.assign(f_fin_dt=pd.to_datetime(df_contratos['f_fin'], errors='coerce')).sort_values('f_fin_dt').iloc[-1]
                                                         d_car = str(last_c.get("cargo", ""))
-                                                        d_area = str(row.get("area", ""))
+                                                        d_area = str(last_c.get("area", ""))  # <-- 2. AQUÍ ES last_c (NO row)
                                                         try: 
                                                             d_rem = float(last_c.get("remuneracion basica", 0.0))
                                                         except: 
@@ -852,11 +853,12 @@ else:
                                                         if v_tc in ["Planilla completo", "Tiempo Parcial", "Recibo por Honorarios", "Otro"]: 
                                                             d_tcont = v_tc
 
+                                                    # 3. TEXTOS VISUALES CON TILDE PARA QUE SE VEA BIEN EN PANTALLA
                                                     car = st.text_input("Cargo", value=d_car)
-                                                    area_input = st.text_input("Area") # <- AGREGA ESTO
-                                                    rem_b = st.number_input("Remuneracion basica", value=d_rem)
-                                                    bono = st.text_input("Bonificacion", value=d_bon)
-                                                    cond = st.text_input("Condicion de trabajo", value=d_cond)
+                                                    area_input = st.text_input("Área", value=d_area) 
+                                                    rem_b = st.number_input("Remuneración básica", value=d_rem)
+                                                    bono = st.text_input("Bonificación", value=d_bon)
+                                                    cond = st.text_input("Condición de trabajo", value=d_cond)
                                                     ini = st.date_input("Inicio", value=d_ini, format="DD/MM/YYYY")
                                                     fin = st.date_input("Fin", value=d_fin, format="DD/MM/YYYY")
                                                     t_trab = st.selectbox("Tipo de trabajador", ["Administrativo", "Docente", "Externo"], index=["Administrativo", "Docente", "Externo"].index(d_ttrab))
@@ -870,53 +872,29 @@ else:
 
                                                     if st.form_submit_button("Guardar Contrato"):
                                                         nid = dfs[h_name]["id"].max() + 1 if not dfs[h_name].empty else 1
+                                                        
+                                                        # 4. DICCIONARIO INTERNO: ¡SIN TILDES EN LAS CLAVES!
                                                         new = {
-                                                        "id": nid, 
-                                                        "dni": dni_buscado, 
-                                                        # "apellidos y nombres": nom_c,  <-- (OPCIONAL: Bórrala si no la necesitas en la hoja CONTRATOS)
-                                                        "cargo": car,
-                                                        "area": area_input,
-                                                        "remuneracion basica": rem_b, # Sin tildes
-                                                        "bonificacion": bono,         # Sin tildes
-                                                        "condicion de trabajo": cond, # Sin tildes
-                                                        "f_inicio": ini, 
-                                                        "f_fin": fin, 
-                                                        "tipo de trabajador": t_trab, 
-                                                        "modalidad": mod, 
-                                                        "temporalidad": temp, 
-                                                        "link": lnk, 
-                                                        "tipo contrato": tcont, 
-                                                        "estado": est_a, 
-                                                        "motivo cese": mot_a
-                                                    }
+                                                            "id": nid, 
+                                                            "dni": dni_buscado, 
+                                                            "cargo": car,
+                                                            "area": area_input,
+                                                            "remuneracion basica": rem_b, 
+                                                            "bonificacion": bono,         
+                                                            "condicion de trabajo": cond, 
+                                                            "f_inicio": ini, 
+                                                            "f_fin": fin, 
+                                                            "tipo de trabajador": t_trab, 
+                                                            "modalidad": mod, 
+                                                            "temporalidad": temp, 
+                                                            "link": lnk, 
+                                                            "tipo contrato": tcont, 
+                                                            "estado": est_a, 
+                                                            "motivo cese": mot_a
+                                                        }
                                                         dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new])], ignore_index=True)
                                                         save_data(dfs)
                                                         st.rerun()
-                                                elif h_name != "VACACIONES":
-                                                    new_row = {"dni": dni_buscado, "apellidos y nombres": nom_c} 
-                                                    for col in cols_reales:
-                                                        if "fecha" in col.lower() or "f_" in col.lower(): 
-                                                            new_row[col] = st.date_input(col.title(), min_value=date(1930, 1, 1), max_value=date.today(), format="DD/MM/YYYY")
-                                                        elif col.lower() == "edad":
-                                                            fnac = new_row.get("fecha de nacimiento")
-                                                            if fnac: 
-                                                                new_row[col] = st.number_input("Edad (Calculada)", value=int(date.today().year - fnac.year - ((date.today().month, date.today().day) < (fnac.month, fnac.day))), disabled=True)
-                                                            else: 
-                                                                new_row[col] = st.number_input(col.title(), value=0, disabled=True)
-                                                        elif col.lower() in ["remuneración", "bonificación", "sueldo", "días generados", "dias gozados", "saldo", "monto"]: 
-                                                            new_row[col] = st.number_input(col.title(), 0.0)
-                                                        else: 
-                                                            new_row[col] = st.text_input(col.title())
-
-                                                    if st.form_submit_button("Guardar Registro"):
-                                                        if not dfs[h_name].empty and "id" in dfs[h_name].columns: 
-                                                            new_row["id"] = dfs[h_name]["id"].max() + 1
-                                                        elif "id" in dfs[h_name].columns: 
-                                                            new_row["id"] = 1
-                                                        dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new_row])], ignore_index=True)
-                                                        save_data(dfs)
-                                                        st.rerun()
-
                             with col_b:
                                 with st.expander("📝 Editar / Eliminar"):
                                     if not sel.empty:
@@ -1535,6 +1513,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
