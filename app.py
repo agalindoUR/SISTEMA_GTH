@@ -494,7 +494,9 @@ else:
 
                 tabs = st.tabs(t_noms)
 
-                for i, tab in enumerate(tabs):
+                # Línea 497: El bucle for
+            for i, tab in enumerate(tabs):
+                # Línea 498: AHORA ESTÁ INDENTADA (4 espacios más que el for)
                 h_name = h_keys[i]
                 with tab:
                     # NORMALIZACIÓN TOTAL: Forzamos minúsculas para trabajar internamente
@@ -505,7 +507,8 @@ else:
                         c_df = dfs[h_name][dfs[h_name]["dni"].astype(str).str.strip() == str(dni_buscado).strip()]
                     else:
                         c_df = pd.DataFrame(columns=COLUMNAS.get(h_name, []))
-
+                    
+                    # A partir de aquí sigue el resto de tu código de visualización...
                     # 2. Lógica específica para la pestaña CONTRATOS
                     if h_name == "CONTRATOS":
                         # Limpieza de nombres de columnas para evitar espacios invisibles
@@ -1593,6 +1596,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
