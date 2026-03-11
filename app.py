@@ -1428,7 +1428,43 @@ else:
                 "tipo contrato": "Tipo de Contrato"
             }
             df_venc.rename(columns=rename_dict, inplace=True)
+            # ... (Aquí termina tu código del Paso 4) ...
+            # Renombrar para que se vea bien
+            rename_dict = {
+                "dni": "DNI",
+                col_nom_per: "Trabajador",
+                "sede": "Sede",
+                "cargo": "Puesto",
+                "AREA": "AREA",
+                "f_fin": "Fecha de Vencimiento",
+                "tipo de trabajador": "Tipo de Trabajador",
+                "tipo contrato": "Tipo de Contrato"
+            }
+            df_venc.rename(columns=rename_dict, inplace=True)
             
+            # =========================================================
+            # NUEVO: ALERTA DE VENCIMIENTOS (PRÓXIMOS 30 DÍAS)
+            # =========================================================
+            hoy = pd.to_datetime('today').normalize() # Toma la fecha de hoy sin horas
+            limite_30_dias = hoy + pd.Timedelta(days=30)
+
+            # Filtramos usando la columna de fecha que ya creaste arriba (f_fin_dt)
+            df_alerta = df_venc[(df_venc['f_fin_dt'] >= hoy) & (df_venc['f_fin_dt'] <= limite_30_dias)]
+
+            if not df_alerta.empty:
+                cantidad = len(df_alerta)
+                st.warning(f"⚠️ **¡ATENCIÓN!** Tienes **{cantidad}** contrato(s) que vencen en los próximos 30 días.")
+                
+                with st.expander("👀 Ver detalle de los contratos por vencer"):
+                    cols_alerta = ["DNI", "Trabajador", "Puesto", "Fecha de Vencimiento"]
+                    cols_disp = [c for c in cols_alerta if c in df_venc.columns]
+                    st.dataframe(df_alerta[cols_disp], use_container_width=True, hide_index=True)
+            else:
+                st.success("✅ **¡Todo al día!** No tienes contratos próximos a vencer en los siguientes 30 días.")
+                
+            st.markdown("---")
+            # =========================================================
+                    
             # 5. Filtros de Búsqueda
             col1, col2, col3 = st.columns(3)
             with col1:
@@ -1478,6 +1514,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
