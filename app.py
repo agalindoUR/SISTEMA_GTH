@@ -637,7 +637,10 @@ else:
                             # Necesitamos el cargo actual y fecha de ingreso del trabajador
                             current_cargo = "TRABAJADOR" # Default
                             f_ingreso_val = ""
-                            df_c_data = dfs["CONTRATOS"][dfs["CONTRATOS"]["dni"] == dni_buscado]
+                            if "DNI" in dfs["CONTRATOS"].columns:
+                            df_c_data = dfs["CONTRATOS"][dfs["CONTRATOS"]["DNI"].astype(str).str.strip() == str(dni_buscado).strip()]
+                        else:
+                            st.error("No se encontró la columna 'DNI' en la pestaña CONTRATOS")
                             
                             if not df_c_data.empty:
                                 try:
@@ -1548,6 +1551,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
