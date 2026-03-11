@@ -52,7 +52,8 @@ def obtener_link_directo_drive(url):
         try:
             # Extrae el ID del archivo del link de Drive
             file_id = url.split("/d/")[1].split("/")[0]
-            return f"https://drive.google.com/uc?id={file_id}"
+            # Formato más estable para forzar la vista de la imagen
+            return f"https://drive.google.com/uc?export=view&id={file_id}"
         except:
             return url
     return url
@@ -1447,6 +1448,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
