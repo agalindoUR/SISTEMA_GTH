@@ -104,7 +104,7 @@ def load_data():
                 
                 # Otros renombres específicos de tu lógica
                 if h == "CONTRATOS":
-                    if "sueldo" in df.columns: df.rename(columns={"sueldo": "remuneración básica"}, inplace=True)
+                    if "sueldo" in df.columns: df.rename(columns={"sueldo": "remuneracion basica"}, inplace=True)
                     if "tipo colaborador" in df.columns: df.rename(columns={"tipo colaborador": "tipo de trabajador"}, inplace=True)
                     if "tipo" in df.columns and "tipo de trabajador" not in df.columns: df.rename(columns={"tipo": "tipo de trabajador"}, inplace=True)
 
@@ -824,8 +824,9 @@ else:
                                                     if es_renovacion and not df_contratos.empty:
                                                         last_c = df_contratos.assign(f_fin_dt=pd.to_datetime(df_contratos['f_fin'], errors='coerce')).sort_values('f_fin_dt').iloc[-1]
                                                         d_car = str(last_c.get("cargo", ""))
+                                                        d_area = str(row.get("area", ""))
                                                         try: 
-                                                            d_rem = float(last_c.get("remuneracion básica", 0.0))
+                                                            d_rem = float(last_c.get("remuneracion basica", 0.0))
                                                         except: 
                                                             pass
                                                         d_bon = str(last_c.get("bonificacion", ""))
@@ -852,9 +853,10 @@ else:
                                                             d_tcont = v_tc
 
                                                     car = st.text_input("Cargo", value=d_car)
-                                                    rem_b = st.number_input("Remuneración básica", value=d_rem)
-                                                    bono = st.text_input("Bonificación", value=d_bon)
-                                                    cond = st.text_input("Condición de trabajo", value=d_cond)
+                                                    area_input = st.text_input("Area") # <- AGREGA ESTO
+                                                    rem_b = st.number_input("Remuneracion basica", value=d_rem)
+                                                    bono = st.text_input("Bonificacion", value=d_bon)
+                                                    cond = st.text_input("Condicion de trabajo", value=d_cond)
                                                     ini = st.date_input("Inicio", value=d_ini, format="DD/MM/YYYY")
                                                     fin = st.date_input("Fin", value=d_fin, format="DD/MM/YYYY")
                                                     t_trab = st.selectbox("Tipo de trabajador", ["Administrativo", "Docente", "Externo"], index=["Administrativo", "Docente", "Externo"].index(d_ttrab))
@@ -872,7 +874,8 @@ else:
                                                         "id": nid, 
                                                         "dni": dni_buscado, 
                                                         # "apellidos y nombres": nom_c,  <-- (OPCIONAL: Bórrala si no la necesitas en la hoja CONTRATOS)
-                                                        "cargo": car, 
+                                                        "cargo": car,
+                                                        "area": area_input,
                                                         "remuneracion basica": rem_b, # Sin tildes
                                                         "bonificacion": bono,         # Sin tildes
                                                         "condicion de trabajo": cond, # Sin tildes
@@ -974,7 +977,7 @@ else:
                                                 mot_e = st.selectbox("Motivo Cese", opts_mot, index=opts_mot.index(v_mot)) if est_e == "CESADO" else "Vigente"
 
                                                 if st.form_submit_button("Actualizar"):
-                                                    update_vals = {"cargo": n_car, "remuneración básica": n_rem, "bonificación": n_bon, "condición de trabajo": n_cond, "f_inicio": n_ini, "f_fin": n_fin, "tipo de trabajador": n_ttrab, "modalidad": n_mod, "temporalidad": n_tem, "link": n_lnk, "tipo contrato": n_tcont, "estado": est_e, "motivo cese": mot_e}
+                                                    update_vals = {"cargo": n_car, "remuneracion básica": n_rem, "bonificacion": n_bon, "condicion de trabajo": n_cond, "f_inicio": n_ini, "f_fin": n_fin, "tipo de trabajador": n_ttrab, "modalidad": n_mod, "temporalidad": n_tem, "link": n_lnk, "tipo contrato": n_tcont, "estado": est_e, "motivo cese": mot_e}
                                                     for k, v in update_vals.items(): 
                                                         dfs[h_name].at[idx, k] = v
                                                     save_data(dfs)
@@ -1532,6 +1535,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
