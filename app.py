@@ -699,7 +699,16 @@ else:
                             p_papeleta = str(r_sel.get("PERIODO", ""))
                             fi_papeleta = r_sel.get("F_INICIO")
                             ff_papeleta = r_sel.get("F_FIN")
-                            dg_papeleta = r_sel.get("DIAS GOZADOS", 0)
+                            
+                            # TRUCO: Buscamos con o sin tilde, por si acaso, y forzamos a que sea un número entero
+                            dg_papeleta = r_sel.get("DIAS GOZADOS")
+                            if pd.isna(dg_papeleta) or dg_papeleta is None:
+                                dg_papeleta = r_sel.get("DÍAS GOZADOS", 0)
+                            
+                            try:
+                                dg_papeleta = int(float(dg_papeleta)) # Esto convierte "19.0" o "19" en 19 limpio
+                            except:
+                                dg_papeleta = "" # Si está vacío en tu Excel, lo deja en blanco
 
                             if hasattr(fi_papeleta, 'date'): fi_papeleta = fi_papeleta.date()
                             if hasattr(ff_papeleta, 'date'): ff_papeleta = ff_papeleta.date()
@@ -1469,6 +1478,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
