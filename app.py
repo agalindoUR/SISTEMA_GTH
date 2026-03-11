@@ -546,23 +546,102 @@ else:
                             st.markdown("<br>", unsafe_allow_html=True)
 
                     # 3. Visualización de la tabla (ESTO DEBE ESTAR ALINEADO CON LOS IF DE ARRIBA)
+                    # ==========================================
+                    # 1. PREPARACIÓN DE DATOS (COMÚN PARA TODAS LAS PESTAÑAS)
+                    # ==========================================
                     if not c_df.empty:
-                        vst = c_df.copy()
-                        vst.columns = [str(col).upper() for col in vst.columns] # Volvemos a mayúsculas para mostrar
+                        # Estandarizamos para cálculos internos
+                        c_df.columns = [str(c).lower().strip() for c in c_df.columns]
                         
-                        if "SEL" not in vst.columns:
-                            vst.insert(0, "SEL", False)
+                        detalles = []
+                        dias_generados_totales = 0
+                        dias_gozados_totales = 0
+
+                        # ==========================================
+                        # 2. LÓGICA ESPECÍFICA: CÁLCULOS DE VACACIONES
+                        # ==========================================
+                        if h_name == "VACACIONES":
+                            dias_gozados_totales = pd.to_numeric(c_df.get("días gozados", 0), errors='coerce').sum()
+                            
+                            # Filtrar contratos de planilla para calcular periodos
+                            df_tc = df_contratos[df_contratos["TIPO CONTRATO"].astype(str).str.lower().str.contains("planilla", na=False)] if not df_contratos.empty else pd.DataFrame()
+                            
+                            if not df_tc.empty:
+                                df_tc_calc = df_tc.copy()
+                                df_tc_calc.columns = [c.upper() for c in df_tc_calc.columns]
+                                df_tc_calc['f_inicio_dt'] = pd.to_datetime(df_tc_calc['F_INICIO'], errors='coerce')
+                                start_global = df_tc_calc['f_inicio_dt'].min()
+                                
+                                if pd.notnull(start_global):
+                                    curr_start = start_global.date()
+                                    while curr_start <= date.today():
+                                        curr_end = (pd.to_datetime(curr_start) + pd.DateOffset(years=1) - pd.Timedelta(days=1)).date()
+                                        days_in_p = 0
+                                        for _, r in df_tc_calc.iterrows():
+                                            c_s = r['f_inicio_dt'].date() if pd.notnull(r['f_inicio_dt']) else None
+                                            c_e = pd.to_datetime(r['F_FIN'], errors='coerce').date() if pd.notnull(r['F_FIN']) else date.today()
+                                            if c_s:
+                                                o_s, o_e = max(curr_start, c_s), min(curr_end, c_e, date.today())
+                                                if o_s <= o_e: days_in_p += (o_e - o_s).days + 1
+                                        
+                                        total_dias_p = (curr_end - curr_start).days + 1
+                                        gen_p = round((days_in_p / total_dias_p) * 30, 2)
+                                        p_name = f"{curr_start.year}-{curr_start.year+1}"
+                                        
+                                        # Buscar días gozados registrados para este periodo
+                                        goz_p = pd.to_numeric(c_df[c_df["periodo"].astype(str).str.strip() == p_name]["días gozados"], errors='coerce').sum()
+                                        
+                                        if gen_p > 0 or goz_p > 0:
+                                            detalles.append({
+                                                "Periodo": p_name, "Del": curr_start.strftime("%d/%m/%Y"), "Al": curr_end.strftime("%d/%m/%Y"),
+                                                "Días Generados": gen_p, "Días Gozados": goz_p, "Saldo": round(gen_p - goz_p, 2)
+                                            })
+                                        dias_generados_totales += gen_p
+                                        curr_start = (pd.to_datetime(curr_start) + pd.DateOffset(years=1)).date()
+
+                            # Mostrar resumen visual (Cuadros de colores)
+                            saldo_v = round(dias_generados_totales - dias_gozados_totales, 2)
+                            st.markdown(f"""
+                                <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                                    <div style="flex: 1; background-color: #4A0000; padding: 15px; border-radius: 10px; text-align: center; border: 2px solid #FFD700;"><h2 style="color: #FFD700; margin: 0;">{dias_generados_totales:.2f}</h2><p style="color: white; margin: 0; font-size: 0.9em;">Días Generados</p></div>
+                                    <div style="flex: 1; background-color: #4A0000; padding: 15px; border-radius: 10px; text-align: center; border: 2px solid #FFD700;"><h2 style="color: #FFD700; margin: 0;">{dias_gozados_totales:.2f}</h2><p style="color: white; margin: 0; font-size: 0.9em;">Días Gozados</p></div>
+                                    <div style="flex: 1; background-color: #4A0000; padding: 15px; border-radius: 10px; text-align: center; border: 2px solid #FFD700;"><h2 style="color: #FFD700; margin: 0;">{saldo_v:.2f}</h2><p style="color: white; margin: 0; font-size: 0.9em;">Saldo Disponible</p></div>
+                                </div>
+                            """, unsafe_allow_html=True)
+
+                            if detalles:
+                                with st.expander("📅 Ver Desglose por Periodos"):
+                                    st.table(pd.DataFrame(detalles))
+
+                        # ==========================================
+                        # 3. VISUALIZACIÓN DE LA TABLA (EL EDITOR)
+                        # ==========================================
+                        vst = c_df.copy()
+                        vst.columns = [str(c).upper().strip() for c in vst.columns]
+                        vst = vst.loc[:, ~vst.columns.duplicated()] # Mata duplicados de columnas
+                        
+                        # Ocultar columnas innecesarias
+                        cols_basura = ["DNI", "APELLIDOS Y NOMBRES", "APELLIDOS", "NOMBRES", "DÍAS GENERADOS", "SALDO"]
+                        col_conf = {}
+                        for c in vst.columns:
+                            if c in cols_basura:
+                                col_conf[c] = None
+                            if "FECHA" in c or "F_" in c:
+                                vst[c] = pd.to_datetime(vst[c], errors='coerce').dt.date
+                                col_conf[c] = st.column_config.DateColumn(format="DD/MM/YYYY")
+
+                        if "SEL" not in vst.columns: vst.insert(0, "SEL", False)
+                        
+                        # Ordenar columnas (SEL, PERIODO, F_INICIO, F_FIN primero)
+                        cols_pref = ["SEL", "PERIODO", "F_INICIO", "F_FIN", "DÍAS GOZADOS"]
+                        cols_finales = [c for c in cols_pref if c in vst.columns] + [c for c in vst.columns if c not in cols_pref]
                         
                         st.write(f"### Registros en {h_name}")
-                        ed = st.data_editor(
-                            vst, 
-                            hide_index=True, 
-                            use_container_width=True, 
-                            key=f"editor_{h_name}_{dni_buscado}"
-                        )
+                        ed = st.data_editor(vst[cols_finales], hide_index=True, use_container_width=True, column_config=col_conf, key=f"ed_final_{h_name}")
                         sel = ed[ed["SEL"] == True]
+
                     else:
-                        st.warning("No se encontraron registros para este DNI.")
+                        st.warning("No se encontraron registros.")
 
                         # BLOQUE DE VACACIONES CORREGIDO (Línea 558 aprox)
                     if h_name == "VACACIONES":
@@ -1596,6 +1675,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
