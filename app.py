@@ -769,132 +769,104 @@ else:
                         sel = ed[ed["SEL"] == True]
 
                        # ==========================================
-                        # BOTÓN DE PAPELETA (DENTRO DE LA PESTAÑA VACACIONES)
+                        # SECCIÓN DE PAPELETA Y NUEVO REGISTRO (REEMPLAZO COMPLETO)
                         # ==========================================
-                        if h_name == "VACACIONES" and not sel.empty:
-                            st.markdown("---")
-                            current_cargo = "TRABAJADOR" 
-                            f_ingreso_val = "No detectada"
+                        if h_name == "VACACIONES":
+                            if not sel.empty:
+                                st.markdown("---")
+                                current_cargo = "TRABAJADOR" 
+                                f_ingreso_val = "No detectada"
 
-                            # 1. Rescatamos datos de CONTRATOS para la papeleta
-                            if "CONTRATOS" in dfs:
-                                df_c_temp = dfs["CONTRATOS"].copy()
-                                df_c_temp.columns = [str(c).strip().lower() for c in df_c_temp.columns]
-                                df_c_data = df_c_temp[df_c_temp["dni"].astype(str).str.strip() == str(dni_buscado).strip()]
-                                
-                                if not df_c_data.empty:
-                                    # Cargo más reciente
-                                    df_c_data['f_fin_dt'] = pd.to_datetime(df_c_data['f_fin'], errors='coerce')
-                                    last_contract = df_c_data.sort_values('f_fin_dt').iloc[-1]
-                                    current_cargo = str(last_contract.get("cargo", "TRABAJADOR")).upper()
+                                # 1. Rescatamos datos de CONTRATOS para la papeleta
+                                if "CONTRATOS" in dfs:
+                                    df_c_temp = dfs["CONTRATOS"].copy()
+                                    df_c_temp.columns = [str(c).strip().upper() for c in df_c_temp.columns]
+                                    df_c_data = df_c_temp[df_c_temp["DNI"].astype(str).str.strip() == str(dni_buscado).strip()]
                                     
-                                    # Fecha de ingreso planilla
-                                    df_planilla = df_c_data[df_c_data["tipo contrato"].astype(str).str.lower().str.contains("planilla", na=False)]
-                                    if not df_planilla.empty:
-                                        f_min = pd.to_datetime(df_planilla['f_inicio'], errors='coerce').min()
-                                        if pd.notnull(f_min): 
-                                            f_ingreso_val = f_min.strftime('%d/%m/%Y')
-
-                            # 2. Capturamos datos de la fila de vacaciones seleccionada
-                            # ESTA PARTE ES LA QUE DABA EL ERROR DE INDENTACIÓN
-                            r_sel = sel.iloc[0]
-                            p_papeleta = str(r_sel.get("PERIODO", "S/P"))
-                            fi_papeleta = r_sel.get("F_INICIO")
-                            ff_papeleta = r_sel.get("F_FIN")
-                            dg_papeleta = r_sel.get("DÍAS GOZADOS", 0)
-
-                            st.info(f"📋 **Datos Detectados:** {current_cargo} | **Ingreso:** {f_ingreso_val}")
-
-                            if st.button(f"📄 Generar Papeleta (Periodo {p_papeleta})", key=f"btn_papeleta_{dni_buscado}"):
-                                if pd.isnull(fi_papeleta) or pd.isnull(ff_papeleta):
-                                    st.error("⚠️ Faltan fechas en la fila seleccionada.")
-                                else:
-                                    # Llamada a tu función de Word
-                                    papeleta_word = gen_papeleta_vac(ape_c, nom_p_c, dni_buscado, current_cargo, f_ingreso_val, p_papeleta, fi_papeleta, ff_papeleta, dg_papeleta)
-                                    if papeleta_word:
-                                        st.download_button(
-                                            label="⬇️ Descargar Papeleta.docx",
-                                            data=papeleta_word,
-                                            file_name=f"Papeleta_{dni_buscado}.docx",
-                                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                                            key=f"dl_papeleta_{dni_buscado}"
-                                        )
-                            st.markdown("---")
-                        
-                        if not es_lector:
-                            col_a, col_b = st.columns(2)
-                            cols_reales = [c for c in dfs[h_name].columns if c.lower() not in ["id", "dni", "apellidos y nombres", "apellidos", "nombres"]]
-
-                            with col_a:
-                                col_dni = next((c for c in dfs[h_name].columns if str(c).strip().upper() == "DNI"), "DNI")
-                                df_filtro = dfs[h_name][dfs[h_name][col_dni] == dni_buscado] if not dfs[h_name].empty else pd.DataFrame()
-                                if h_name == "DATOS GENERALES" and len(df_filtro) > 0:
-                                    st.info("📌 Los datos generales ya están registrados. Selecciona el registro en la tabla de arriba para editarlos.")
-                                else:
-                                   with st.expander("➕ Nuevo Registro"):
+                                    if not df_c_data.empty:
+                                        df_c_data['F_FIN_DT'] = pd.to_datetime(df_c_data['F_FIN'], errors='coerce')
+                                        last_contract = df_c_data.sort_values('F_FIN_DT').iloc[-1]
+                                        current_cargo = str(last_contract.get("CARGO", "TRABAJADOR")).upper()
                                         
-                                        # ==========================================
-# NUEVO REGISTRO REACTIVO DE VACACIONES (CORREGIDO)
-# ==========================================
-if h_name == "VACACIONES":
-    st.markdown("<div style='font-size: 1.5em; font-weight: bold; color: white; background-color: #4A0000; padding: 10px; border-radius: 8px; margin-bottom: 15px;'>➕ Registrar Nuevas Vacaciones</div>", unsafe_allow_html=True)
-    
-    if detalles:
-        # IMPORTANTE: Usamos "PERIODO", "DÍAS GENERADOS" y "SALDO" tal cual se definieron arriba
-        opciones_periodo = [d["PERIODO"] for d in detalles]
-        dict_generados = {d["PERIODO"]: d["DÍAS GENERADOS"] for d in detalles}
-        dict_saldo_actual = {d["PERIODO"]: d["SALDO"] for d in detalles}
-    else:
-        opciones_periodo = ["Sin periodo calculado"]
-        dict_generados = {"Sin periodo calculado": 0}
-        dict_saldo_actual = {"Sin periodo calculado": 0}
+                                        df_planilla = df_c_data[df_c_data["TIPO CONTRATO"].astype(str).str.upper().str.contains("PLANILLA", na=False)]
+                                        if not df_planilla.empty:
+                                            f_min = pd.to_datetime(df_planilla['F_INICIO'], errors='coerce').min()
+                                            if pd.notnull(f_min): 
+                                                f_ingreso_val = f_min.strftime('%d/%m/%Y')
 
-    sel_periodo = st.selectbox("Periodo Vacacional", options=opciones_periodo)
-    
-    col_f1, col_f2 = st.columns(2)
-    with col_f1:
-        f_ini_val = st.date_input("Fecha de Salida (Inicio)")
-    with col_f2:
-        f_fin_val = st.date_input("Fecha de Retorno (Último día)")
+                                # 2. Datos de la fila seleccionada en la tabla
+                                r_sel = sel.iloc[0]
+                                p_papeleta = str(r_sel.get("PERIODO", "S/P"))
+                                fi_papeleta = r_sel.get("F_INICIO")
+                                ff_papeleta = r_sel.get("F_FIN")
+                                dg_papeleta = r_sel.get("DÍAS GOZADOS", 0)
 
-    dias_gozar_calc = 0
-    if f_fin_val >= f_ini_val:
-        dias_gozar_calc = (f_fin_val - f_ini_val).days + 1
-    
-    gen_periodo = dict_generados.get(sel_periodo, 0)
-    saldo_previo = dict_saldo_actual.get(sel_periodo, 0)
-    nuevo_saldo = saldo_previo - dias_gozar_calc
+                                st.info(f"📋 **Datos para Papeleta:** {current_cargo} | **Ingreso:** {f_ingreso_val}")
 
-    # Lógica visual del saldo
-    color_saldo = "red" if nuevo_saldo < 0 else "green"
-    
-    st.info(f"""
-    📊 **Resumen del Cálculo:**
-    * **Días Generados (Periodo {sel_periodo}):** {gen_periodo:.2f}
-    * **Días a Gozar (Calculado):** {dias_gozar_calc}
-    * **Saldo Restante:** :{color_saldo}[{nuevo_saldo:.2f}]
-    """)
+                                if st.button(f"📄 Generar Papeleta (Periodo {p_papeleta})", key=f"btn_papeleta_{dni_buscado}"):
+                                    if pd.isnull(fi_papeleta) or pd.isnull(ff_papeleta):
+                                        st.error("⚠️ Faltan fechas en la fila seleccionada.")
+                                    else:
+                                        papeleta_word = gen_papeleta_vac(ape_c, nom_p_c, dni_buscado, current_cargo, f_ingreso_val, p_papeleta, fi_papeleta, ff_papeleta, dg_papeleta)
+                                        if papeleta_word:
+                                            st.download_button(
+                                                label="⬇️ Descargar Papeleta.docx",
+                                                data=papeleta_word,
+                                                file_name=f"Papeleta_{dni_buscado}.docx",
+                                                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                                                key=f"dl_papeleta_{dni_buscado}"
+                                            )
+                                st.markdown("---")
 
-                                            st.info(f"""
-                                            📊 **Resumen del Cálculo:**
-                                            * **Días Generados (Periodo {sel_periodo}):** {gen_periodo:.2f}
-                                            * **Días a Gozar (Calculado):** {dias_gozar_calc}
-                                            * **Saldo Restante:** {txt_saldo}
-                                            """)
+                            # 3. Formulario de Nuevo Registro (Solo si no es lector)
+                            if not es_lector:
+                                with st.expander("➕ Nuevo Registro de Vacaciones"):
+                                    st.markdown("<div style='font-size: 1.1em; font-weight: bold; color: white; background-color: #4A0000; padding: 8px; border-radius: 5px; margin-bottom: 10px;'>Registrar Salida</div>", unsafe_allow_html=True)
+                                    
+                                    if detalles:
+                                        opciones_periodo = [d["PERIODO"] for d in detalles]
+                                        dict_generados = {d["PERIODO"]: d["DÍAS GENERADOS"] for d in detalles}
+                                        dict_saldo_actual = {d["PERIODO"]: d["SALDO"] for d in detalles}
+                                    else:
+                                        opciones_periodo = ["Sin periodo calculado"]
+                                        dict_generados = {"Sin periodo calculado": 0}
+                                        dict_saldo_actual = {"Sin periodo calculado": 0}
 
-                                            if st.button("💾 Guardar Registro de Vacaciones", type="primary", use_container_width=False):
-                                                if dias_gozar_calc <= 0:
-                                                    st.error("⚠️ La Fecha de Fin debe ser igual o posterior a la Fecha de Inicio.")
-                                                else:
-                                                    new_row = {"dni": dni_buscado, "periodo": sel_periodo, "f_inicio": f_ini_val, "f_fin": f_fin_val, "días gozados": dias_gozar_calc}
-                                                    if not dfs[h_name].empty and "id" in dfs[h_name].columns: new_row["id"] = dfs[h_name]["id"].max() + 1
-                                                    elif "id" in dfs[h_name].columns: new_row["id"] = 1
-                                                    dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new_row])], ignore_index=True)
-                                                    save_data(dfs)
-                                                    st.session_state['just_saved_vacation'] = new_row
-                                                    st.success("✅ Registro guardado correctamente.")
-                                                    st.rerun()
+                                    sel_periodo = st.selectbox("Seleccione Periodo a afectar", options=opciones_periodo, key=f"sel_p_new_{dni_buscado}")
+                                    
+                                    c1, c2 = st.columns(2)
+                                    with c1:
+                                        f_ini_new = st.date_input("Fecha Inicio", key=f"fini_new_{dni_buscado}")
+                                    with c2:
+                                        f_fin_new = st.date_input("Fecha Fin", key=f"ffin_new_{dni_buscado}")
 
+                                    dias_calc = (f_fin_new - f_ini_new).days + 1 if f_fin_new >= f_ini_new else 0
+                                    saldo_p = dict_saldo_actual.get(sel_periodo, 0)
+                                    nuevo_s = saldo_p - dias_calc
+                                    col_s = "red" if nuevo_s < 0 else "green"
+
+                                    st.info(f"**Cálculo:** {dias_calc} días. **Saldo resultante:** :{col_s}[{nuevo_s:.2f}]")
+
+                                    if st.button("💾 Guardar Vacaciones", type="primary", key=f"btn_save_v_{dni_buscado}"):
+                                        if dias_calc <= 0:
+                                            st.error("La fecha fin debe ser mayor a la inicial")
+                                        else:
+                                            nueva_fila = {
+                                                "dni": dni_buscado,
+                                                "periodo": sel_periodo,
+                                                "f_inicio": f_ini_new.strftime("%d/%m/%Y"),
+                                                "f_fin": f_fin_new.strftime("%d/%m/%Y"),
+                                                "días gozados": dias_calc
+                                            }
+                                            # Asignar ID
+                                            if not dfs["VACACIONES"].empty and "id" in dfs["VACACIONES"].columns:
+                                                nueva_fila["id"] = dfs["VACACIONES"]["id"].max() + 1
+                                            else: nueva_fila["id"] = 1
+                                            
+                                            dfs["VACACIONES"] = pd.concat([dfs["VACACIONES"], pd.DataFrame([nueva_fila])], ignore_index=True)
+                                            save_data(dfs)
+                                            st.success("✅ Guardado.")
+                                            st.rerun()
                                         # ==========================================
                                         # FORMULARIOS NORMALES PARA EL RESTO DE HOJAS
                                         # ==========================================
@@ -1678,6 +1650,7 @@ if h_name == "VACACIONES":
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
