@@ -535,7 +535,7 @@ else:
                             <h1 style='color: white; margin: 0; margin-right: 15px; font-size: 3em;'>👤</h1>
                             <h1 style='color: #FFD700; margin: 0; font-size: 2.5em;'>{nom_c}</h1>
                         </div>
-                    """, unsafe_allow_html=True))
+                    """, unsafe_allow_html=True)
                                 
                 t_noms = ["Datos Generales", "Exp. Laboral", "Form. Académica", "Investigación", "Datos Familiares", "Contratos", "Vacaciones", "Otros Beneficios", "Méritos/Demer.", "Evaluación", "Liquidaciones"]
                 h_keys = ["DATOS GENERALES", "EXP. LABORAL", "FORM. ACADEMICA", "INVESTIGACION", "DATOS FAMILIARES", "CONTRATOS", "VACACIONES", "OTROS BENEFICIOS", "MERITOS Y DEMERITOS", "EVALUACION DEL DESEMPEÑO", "LIQUIDACIONES"]
@@ -1466,6 +1466,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
