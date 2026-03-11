@@ -34,7 +34,7 @@ COLUMNAS = {
     "INVESTIGACION": ["año publicación", "autor, coautor o asesor", "tipo de investigación publicada", "nivel de publicación", "lugar de publicación"],
     # NUEVAS COLUMNAS DE CONTRATOS APLICADAS:
     "CONTRATOS": ["dni", "cargo", "AREA", "f_inicio", "f_fin", "tipo de trabajador", "modalidad", "temporalidad", "tipo contrato", "estado", "LINK"],
-    "VACACIONES": ["periodo", "fecha de inicio", "fecha de fin", "días generados", "días gozados", "saldo", "link"],
+    "VACACIONES": ["periodo", "fecha de inicio", "fecha de fin", "días generados", "dias gozados", "saldo", "link"],
     "OTROS BENEFICIOS": ["periodo", "tipo de beneficio", "link"],
     "MERITOS Y DEMERITOS": ["periodo", "merito o demerito", "motivo", "link"],
     "EVALUACION DEL DESEMPEÑO": ["periodo", "merito o demerito", "motivo", "link"],
@@ -570,7 +570,7 @@ else:
                             
                             detalles = []
                             dias_generados_totales = 0
-                            dias_gozados_totales = pd.to_numeric(c_df["días gozados"], errors='coerce').sum()
+                            dias_gozados_totales = pd.to_numeric(c_df["dias gozados"], errors='coerce').sum()
 
                             if not df_tc.empty:
                                 df_tc_calc = df_tc.copy()
@@ -607,10 +607,10 @@ else:
                                         p_name = f"{curr_start.year}-{curr_start.year+1}"
                                         
                                         goz_df = c_df[c_df["periodo"].astype(str).str.strip() == p_name]
-                                        goz_p = pd.to_numeric(goz_df["días gozados"], errors='coerce').sum()
+                                        goz_p = pd.to_numeric(goz_df["dias gozados"], errors='coerce').sum()
                                         
                                         if gen_p > 0 or goz_p > 0:
-                                            detalles.append({"Periodo": p_name, "Del": curr_start.strftime("%d/%m/%Y"), "Al": curr_end.strftime("%d/%m/%Y"), "Días Generados": gen_p, "Días Gozados": goz_p, "Saldo": round(gen_p - goz_p, 2)})
+                                            detalles.append({"Periodo": p_name, "Del": curr_start.strftime("%d/%m/%Y"), "Al": curr_end.strftime("%d/%m/%Y"), "Días Generados": gen_p, "Dias Gozados": goz_p, "Saldo": round(gen_p - goz_p, 2)})
                                         
                                         dias_generados_totales += gen_p
                                         curr_start = (pd.to_datetime(curr_start) + pd.DateOffset(years=1)).date()
@@ -620,16 +620,16 @@ else:
                             st.markdown(f"""
                             <div style="display: flex; gap: 15px; margin-bottom: 20px;">
                                 <div style="flex: 1; background-color: #4A0000; padding: 20px; border-radius: 10px; text-align: center; border: 2px solid #FFD700;"><h2 style="color: #FFD700; margin: 0; font-size: 2.5em;">{dias_generados_totales:.2f}</h2><p style="color: #FFFFFF; margin: 0; font-weight: bold; font-size: 1.1em;">Días Generados Totales</p></div>
-                                <div style="flex: 1; background-color: #4A0000; padding: 20px; border-radius: 10px; text-align: center; border: 2px solid #FFD700;"><h2 style="color: #FFD700; margin: 0; font-size: 2.5em;">{dias_gozados_totales:.2f}</h2><p style="color: #FFFFFF; margin: 0; font-weight: bold; font-size: 1.1em;">Días Gozados</p></div>
+                                <div style="flex: 1; background-color: #4A0000; padding: 20px; border-radius: 10px; text-align: center; border: 2px solid #FFD700;"><h2 style="color: #FFD700; margin: 0; font-size: 2.5em;">{dias_gozados_totales:.2f}</h2><p style="color: #FFFFFF; margin: 0; font-weight: bold; font-size: 1.1em;">Dias Gozados</p></div>
                                 <div style="flex: 1; background-color: #4A0000; padding: 20px; border-radius: 10px; text-align: center; border: 2px solid #FFD700;"><h2 style="color: #FFD700; margin: 0; font-size: 2.5em;">{saldo_v:.2f}</h2><p style="color: #FFFFFF; margin: 0; font-weight: bold; font-size: 1.1em;">Saldo Disponible</p></div>
                             </div>
                             """, unsafe_allow_html=True)
                             
                             if detalles:
                                 st.markdown("<h4 style='color: #FFD700;'>Desglose por Periodos</h4>", unsafe_allow_html=True)
-                                div_table = "<div style='display: flex; flex-direction: column; width: 100%; border: 2px solid #FFD700; border-radius: 8px; overflow: hidden; margin-bottom: 20px;'><div style='display: flex; background-color: #4A0000; color: #FFD700; font-weight: bold;'><div style='flex: 1; padding: 12px; text-align: center; border-right: 1px solid #FFD700;'>PERIODO</div><div style='flex: 1; padding: 12px; text-align: center; border-right: 1px solid #FFD700;'>DEL</div><div style='flex: 1; padding: 12px; text-align: center; border-right: 1px solid #FFD700;'>AL</div><div style='flex: 1; padding: 12px; text-align: center; border-right: 1px solid #FFD700;'>DÍAS GENERADOS</div><div style='flex: 1; padding: 12px; text-align: center; border-right: 1px solid #FFD700;'>DÍAS GOZADOS</div><div style='flex: 1; padding: 12px; text-align: center;'>SALDO</div></div>"
+                                div_table = "<div style='display: flex; flex-direction: column; width: 100%; border: 2px solid #FFD700; border-radius: 8px; overflow: hidden; margin-bottom: 20px;'><div style='display: flex; background-color: #4A0000; color: #FFD700; font-weight: bold;'><div style='flex: 1; padding: 12px; text-align: center; border-right: 1px solid #FFD700;'>PERIODO</div><div style='flex: 1; padding: 12px; text-align: center; border-right: 1px solid #FFD700;'>DEL</div><div style='flex: 1; padding: 12px; text-align: center; border-right: 1px solid #FFD700;'>AL</div><div style='flex: 1; padding: 12px; text-align: center; border-right: 1px solid #FFD700;'>DÍAS GENERADOS</div><div style='flex: 1; padding: 12px; text-align: center; border-right: 1px solid #FFD700;'>DIAS GOZADOS</div><div style='flex: 1; padding: 12px; text-align: center;'>SALDO</div></div>"
                                 for d in detalles:
-                                    div_table += f"<div style='display: flex; background-color: #FFF9C4; color: #4A0000; font-weight: bold; border-top: 1px solid #FFD700;'><div style='flex: 1; padding: 10px; text-align: center; border-right: 1px solid #FFD700;'>{d['Periodo']}</div><div style='flex: 1; padding: 10px; text-align: center; border-right: 1px solid #FFD700;'>{d['Del']}</div><div style='flex: 1; padding: 10px; text-align: center; border-right: 1px solid #FFD700;'>{d['Al']}</div><div style='flex: 1; padding: 10px; text-align: center; border-right: 1px solid #FFD700;'>{d['Días Generados']:.2f}</div><div style='flex: 1; padding: 10px; text-align: center; border-right: 1px solid #FFD700;'>{d['Días Gozados']:.2f}</div><div style='flex: 1; padding: 10px; text-align: center;'>{d['Saldo']:.2f}</div></div>"
+                                    div_table += f"<div style='display: flex; background-color: #FFF9C4; color: #4A0000; font-weight: bold; border-top: 1px solid #FFD700;'><div style='flex: 1; padding: 10px; text-align: center; border-right: 1px solid #FFD700;'>{d['Periodo']}</div><div style='flex: 1; padding: 10px; text-align: center; border-right: 1px solid #FFD700;'>{d['Del']}</div><div style='flex: 1; padding: 10px; text-align: center; border-right: 1px solid #FFD700;'>{d['Al']}</div><div style='flex: 1; padding: 10px; text-align: center; border-right: 1px solid #FFD700;'>{d['Días Generados']:.2f}</div><div style='flex: 1; padding: 10px; text-align: center; border-right: 1px solid #FFD700;'>{d['Dias Gozados']:.2f}</div><div style='flex: 1; padding: 10px; text-align: center;'>{d['Saldo']:.2f}</div></div>"
                                 div_table += "</div>"
                                 st.markdown(div_table, unsafe_allow_html=True)
 
@@ -660,7 +660,7 @@ else:
                                 col_conf[col] = None
                                 
                         # 2. Reordenar las columnas para que F_INICIO y F_FIN salgan primero
-                        cols_importantes = ["SEL", "PERIODO", "F_INICIO", "F_FIN", "DÍAS GOZADOS", "DIAS GOZADOS"]
+                        cols_importantes = ["SEL", "PERIODO", "F_INICIO", "F_FIN", "DIAS GOZADOS", "DIAS GOZADOS"]
                         cols_finales = [c for c in cols_importantes if c in vst.columns] + [c for c in vst.columns if c not in cols_importantes]
                         vst = vst[cols_finales]
                         # ----------------------------------------
@@ -697,7 +697,7 @@ else:
                             p_papeleta = str(r_sel.get("PERIODO", ""))
                             fi_papeleta = r_sel.get("F_INICIO")
                             ff_papeleta = r_sel.get("F_FIN")
-                            dg_papeleta = r_sel.get("DÍAS GOZADOS", 0)
+                            dg_papeleta = r_sel.get("DIAS GOZADOS", 0)
 
                             if hasattr(fi_papeleta, 'date'): fi_papeleta = fi_papeleta.date()
                             if hasattr(ff_papeleta, 'date'): ff_papeleta = ff_papeleta.date()
@@ -780,7 +780,7 @@ else:
                                                 if dias_gozar_calc <= 0:
                                                     st.error("⚠️ La Fecha de Fin debe ser igual o posterior a la Fecha de Inicio.")
                                                 else:
-                                                    new_row = {"dni": dni_buscado, "periodo": sel_periodo, "f_inicio": f_ini_val, "f_fin": f_fin_val, "días gozados": dias_gozar_calc}
+                                                    new_row = {"dni": dni_buscado, "periodo": sel_periodo, "f_inicio": f_ini_val, "f_fin": f_fin_val, "dias gozados": dias_gozar_calc}
                                                     if not dfs[h_name].empty and "id" in dfs[h_name].columns: new_row["id"] = dfs[h_name]["id"].max() + 1
                                                     elif "id" in dfs[h_name].columns: new_row["id"] = 1
                                                     dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new_row])], ignore_index=True)
@@ -872,7 +872,7 @@ else:
                                                                 new_row[col] = st.number_input("Edad (Calculada)", value=int(date.today().year - fnac.year - ((date.today().month, date.today().day) < (fnac.month, fnac.day))), disabled=True)
                                                             else: 
                                                                 new_row[col] = st.number_input(col.title(), value=0, disabled=True)
-                                                        elif col.lower() in ["remuneración", "bonificación", "sueldo", "días generados", "días gozados", "saldo", "monto"]: 
+                                                        elif col.lower() in ["remuneración", "bonificación", "sueldo", "días generados", "dias gozados", "saldo", "monto"]: 
                                                             new_row[col] = st.number_input(col.title(), 0.0)
                                                         else: 
                                                             new_row[col] = st.text_input(col.title())
@@ -963,7 +963,7 @@ else:
                                                             edit_row[col] = st.number_input("Edad (Calculada)", value=int(date.today().year - fnac.year - ((date.today().month, date.today().day) < (fnac.month, fnac.day))), disabled=True)
                                                         else: 
                                                             edit_row[col] = st.number_input(col.title(), value=int(val) if pd.notnull(val) and str(val).isdigit() else 0, disabled=True)
-                                                    elif col.lower() in ["remuneración", "bonificación", "sueldo", "días generados", "días gozados", "saldo", "monto"]:
+                                                    elif col.lower() in ["remuneración", "bonificación", "sueldo", "días generados", "dias gozados", "saldo", "monto"]:
                                                         try: 
                                                             num_val = float(val) if pd.notnull(val) else 0.0
                                                         except: 
@@ -1234,7 +1234,7 @@ else:
                 dias_generados_totales = 0
                 dias_gozados_totales = 0
                 
-                # --- A. Días Gozados ---
+                # --- A. Dias Gozados ---
                 if not df_vac.empty:
                     v_df = df_vac.copy()
                     v_df.columns = [str(c).upper().strip() for c in v_df.columns]
@@ -1467,6 +1467,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
