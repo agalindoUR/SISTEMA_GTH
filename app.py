@@ -497,11 +497,11 @@ else:
                 for i, tab in enumerate(tabs):
                 h_name = h_keys[i]
                 with tab:
-                    # NORMALIZACIÓN: Forzamos minúsculas para que el filtro no falle
+                    # NORMALIZACIÓN TOTAL: Forzamos minúsculas para trabajar internamente
                     dfs[h_name].columns = [str(c).lower().strip() for c in dfs[h_name].columns]
                     
+                    # Filtro de DNI ultra-robusto
                     if "dni" in dfs[h_name].columns:
-                        # Filtro robusto: convierte ambos lados a string y quita espacios
                         c_df = dfs[h_name][dfs[h_name]["dni"].astype(str).str.strip() == str(dni_buscado).strip()]
                     else:
                         c_df = pd.DataFrame(columns=COLUMNAS.get(h_name, []))
@@ -1593,6 +1593,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
