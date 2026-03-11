@@ -649,27 +649,27 @@ else:
                             # Eliminamos duplicados de la base
                         vst = vst.loc[:, ~vst.columns.duplicated()]
             
-                            if "SEL" not in vst.columns:
-                                vst.insert(0, "SEL", False)
+                        if "SEL" not in vst.columns:
+                            vst.insert(0, "SEL", False)
                             
                             # Dejamos un solo "DIAS GENERADOS" sin tilde
-                            columnas_basura = ["DNI", "FECHA DE INICIO", "FECHA DE FIN", "DIAS GENERADOS", "SALDO"]
-                            for col in columnas_basura:
-                                if col in vst.columns:
-                                    col_conf[col] = None
+                        columnas_basura = ["DNI", "FECHA DE INICIO", "FECHA DE FIN", "DIAS GENERADOS", "SALDO"]
+                        for col in columnas_basura:
+                            if col in vst.columns:
+                                col_conf[col] = None
                                     
                             # Dejamos un solo "DIAS GOZADOS" sin tilde
-                            cols_importantes = ["SEL", "PERIODO", "F_INICIO", "F_FIN", "DIAS GOZADOS"]
-                            cols_finales = [c for c in cols_importantes if c in vst.columns] + [c for c in vst.columns if c not in cols_importantes]
+                        cols_importantes = ["SEL", "PERIODO", "F_INICIO", "F_FIN", "DIAS GOZADOS"]
+                        cols_finales = [c for c in cols_importantes if c in vst.columns] + [c for c in vst.columns if c not in cols_importantes]
                             
                             # TRUCO ANTIFALLOS: Eliminamos cualquier duplicado accidental en la lista final
-                            cols_finales = list(dict.fromkeys(cols_finales))
+                        cols_finales = list(dict.fromkeys(cols_finales))
                             
-                            vst = vst[cols_finales]
+                        vst = vst[cols_finales]
 
-                            st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 10px !important; }</style>""", unsafe_allow_html=True)
-                            ed = st.data_editor(vst, hide_index=True, use_container_width=False, column_config=col_conf, key=f"ed_{h_name}")
-                            sel = ed[ed["SEL"] == True]
+                        st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 10px !important; }</style>""", unsafe_allow_html=True)
+                        ed = st.data_editor(vst, hide_index=True, use_container_width=False, column_config=col_conf, key=f"ed_{h_name}")
+                        sel = ed[ed["SEL"] == True]
 
                         # ==========================================
                         # BOTÓN DE IMPRESIÓN DE PAPELETA (SOLO EN VACACIONES)
@@ -1469,6 +1469,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
