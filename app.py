@@ -630,73 +630,55 @@ else:
                         sel = ed[ed["SEL"] == True]
 
                        # ==========================================
-# BOTÓN DE IMPRESIÓN DE PAPELETA (SOLO EN VACACIONES)
-# ==========================================
-if h_name == "VACACIONES" and not sel.empty:
-    st.markdown("---")
-    # 1. Variables por defecto
-    current_cargo = "TRABAJADOR" 
-    f_ingreso_val = "No detectada"
-    
-    # 2. Intentamos rescatar datos precisos desde CONTRATOS
-    if dni_buscado and "CONTRATOS" in dfs:
-        # Normalizamos nombres de columnas para evitar errores
-        df_c_temp = dfs["CONTRATOS"].copy()
-        df_c_temp.columns = [str(c).strip().lower() for c in df_c_temp.columns]
-        
-        # Filtramos por DNI
-        df_c_data = df_c_temp[df_c_temp["dni"].astype(str).str.strip() == str(dni_buscado).strip()]
-        
-        if not df_c_data.empty:
-            try:
-                # A. Obtener cargo actual (del contrato más reciente por fecha de fin)
-                df_c_data['f_fin_dt'] = pd.to_datetime(df_c_data['f_fin'], errors='coerce')
-                last_contract = df_c_data.sort_values('f_fin_dt', ascending=True).iloc[-1]
-                current_cargo = str(last_contract.get("cargo", "TRABAJADOR")).upper()
-                
-                # B. Obtener fecha de ingreso real (primer contrato tipo 'planilla')
-                # Buscamos en la columna 'tipo contrato'
-                col_tipo = next((c for c in df_c_data.columns if "tipo contrato" in c or "tipo_contrato" in c), None)
-                if col_tipo:
-                    df_planilla = df_c_data[df_c_data[col_tipo].astype(str).str.lower().str.contains("planilla", na=False)]
-                    if not df_planilla.empty:
-                        f_min = pd.to_datetime(df_planilla['f_inicio'], errors='coerce').min()
-                        if pd.notnull(f_min): 
-                            f_ingreso_val = f_min.strftime('%d/%m/%Y')
-            except Exception as e:
-                st.warning(f"Nota: No se pudo calcular la fecha de ingreso exacta ({e})")
+                        # BOTÓN DE PAPELETA (DENTRO DE LA PESTAÑA VACACIONES)
+                        # ==========================================
+                        if h_name == "VACACIONES" and not sel.empty:
+                            st.markdown("---")
+                            current_cargo = "TRABAJADOR" 
+                            f_ingreso_val = "No detectada"
 
-    # 3. Mostrar confirmación de datos
-    st.info(f"📋 **Datos para Papeleta:** {current_cargo} | **Ingreso Planilla:** {f_ingreso_val}")
-    
-    # Aquí puedes poner tu botón de generar PDF
-    if st.button(f"📄 Generar Papeleta de Impresión ({sel.iloc[0].get('PERIODO', 'S/P')})", key=f"btn_pdf_{dni_buscado}"):
-        st.write("Generando documento...") # Aquí iría tu función de PDF
+                            # 1. Rescatamos datos de CONTRATOS para la papeleta
+                            if "CONTRATOS" in dfs:
+                                df_c_temp = dfs["CONTRATOS"].copy()
+                                df_c_temp.columns = [str(c).strip().lower() for c in df_c_temp.columns]
+                                df_c_data = df_c_temp[df_c_temp["dni"].astype(str).str.strip() == str(dni_buscado).strip()]
+                                
+                                if not df_c_data.empty:
+                                    # Cargo más reciente
+                                    df_c_data['f_fin_dt'] = pd.to_datetime(df_c_data['f_fin'], errors='coerce')
+                                    last_contract = df_c_data.sort_values('f_fin_dt').iloc[-1]
+                                    current_cargo = str(last_contract.get("cargo", "TRABAJADOR")).upper()
+                                    
+                                    # Fecha de ingreso planilla
+                                    df_planilla = df_c_data[df_c_data["tipo contrato"].astype(str).str.lower().str.contains("planilla", na=False)]
+                                    if not df_planilla.empty:
+                                        f_min = pd.to_datetime(df_planilla['f_inicio'], errors='coerce').min()
+                                        if pd.notnull(f_min): 
+                                            f_ingreso_val = f_min.strftime('%d/%m/%Y')
 
-                            # Capturar datos de la fila seleccionada
+                            # 2. Capturamos datos de la fila de vacaciones seleccionada
+                            # ESTA PARTE ES LA QUE DABA EL ERROR DE INDENTACIÓN
                             r_sel = sel.iloc[0]
-                            p_papeleta = str(r_sel.get("PERIODO", ""))
+                            p_papeleta = str(r_sel.get("PERIODO", "S/P"))
                             fi_papeleta = r_sel.get("F_INICIO")
                             ff_papeleta = r_sel.get("F_FIN")
                             dg_papeleta = r_sel.get("DÍAS GOZADOS", 0)
 
-                            if hasattr(fi_papeleta, 'date'): fi_papeleta = fi_papeleta.date()
-                            if hasattr(ff_papeleta, 'date'): ff_papeleta = ff_papeleta.date()
+                            st.info(f"📋 **Datos Detectados:** {current_cargo} | **Ingreso:** {f_ingreso_val}")
 
-                            if st.button(f"📄 Generar Papeleta de Impresión (Periodo {p_papeleta})", key="btn_print_vaca_tab", use_container_width=False):
+                            if st.button(f"📄 Generar Papeleta (Periodo {p_papeleta})", key=f"btn_papeleta_{dni_buscado}"):
                                 if pd.isnull(fi_papeleta) or pd.isnull(ff_papeleta):
-                                    st.error("⚠️ La fila seleccionada no tiene fechas válidas de inicio o fin.")
+                                    st.error("⚠️ Faltan fechas en la fila seleccionada.")
                                 else:
-                                    # AQUÍ LLAMAMOS A LA FUNCIÓN CON TODOS LOS DATOS
+                                    # Llamada a tu función de Word
                                     papeleta_word = gen_papeleta_vac(ape_c, nom_p_c, dni_buscado, current_cargo, f_ingreso_val, p_papeleta, fi_papeleta, ff_papeleta, dg_papeleta)
                                     if papeleta_word:
-                                        st.markdown("""<style>[data-testid="stDownloadButton"] button { background-color: #FFD700 !important; color: #4A0000 !important; font-weight: bold !important; border: 2px solid #4A0000 !important; width: 100% !important; }</style>""", unsafe_allow_html=True)
                                         st.download_button(
-                                            label=f"⬇️ Descargar Papeleta Duplicada - {nom_c}.docx",
+                                            label="⬇️ Descargar Papeleta.docx",
                                             data=papeleta_word,
-                                            file_name=f"Papeleta_{dni_buscado}_{p_papeleta}.docx",
+                                            file_name=f"Papeleta_{dni_buscado}.docx",
                                             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                                            key="dl_papeleta_tab"
+                                            key=f"dl_papeleta_{dni_buscado}"
                                         )
                             st.markdown("---")
                         
@@ -1568,6 +1550,7 @@ if h_name == "VACACIONES" and not sel.empty:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
