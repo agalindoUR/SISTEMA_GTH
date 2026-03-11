@@ -1214,20 +1214,32 @@ else:
                     df_a = df_cont.sort_index(ascending=False).drop_duplicates("dni_key")[["dni_key", col_a_c]].rename(columns={col_a_c: "Area_Reporte"})
                     df_res = df_res.merge(df_a, on="dni_key", how="left")
 
-            # 4. DIAS (Suma de columna 'días' de VACACIONES para obtener el 80.14)
+            # 4. DIAS (Suma de columna de VACACIONES con lógica de seguridad)
             df_v = df_vac.copy()
             df_v.columns = df_v.columns.str.strip().str.lower()
+            
+            # Identificar columnas dinámicamente para evitar el AttributeError
             c_dni_v = next((c for c in df_v.columns if "dni" in c), None)
+            # Buscamos 'días' o 'dias' pero que NO sea 'días gozados' para el total, o ajusta según tu necesidad
             c_dia_v = next((c for c in df_v.columns if "días" in c or "dias" in c), None)
             
             if c_dni_v and c_dia_v:
+                # Normalizar DNI en la tabla de vacaciones
                 df_v["dni_key"] = df_v[c_dni_v].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
-                df_v["v_n"] = pd.to_numeric(df_v[c_dia_v].astype(str).str.replace(",", "."), errors="coerce").fillna(0)
+                
+                # Conversión segura a número: maneja strings, comas y espacios
+                df_v["v_n"] = pd.to_numeric(
+                    df_v[c_dia_v].astype(str).str.replace(",", ".").str.strip(), 
+                    errors="coerce"
+                ).fillna(0)
+                
+                # Agrupar y sumar
                 df_v_sum = df_v.groupby("dni_key")["v_n"].sum().reset_index().rename(columns={"v_n": "Días Generados"})
                 df_res = df_res.merge(df_v_sum, on="dni_key", how="left")
+            else:
+                st.error("❌ No se encontró la columna de DNI o Días en la pestaña VACACIONES.")
 
             # 5. LIMPIEZA POST-MERGE
-            # Asegurar que las columnas existan aunque el merge falle
             if "Sede" not in df_res.columns: df_res["Sede"] = "No registrada"
             if "Area_Reporte" not in df_res.columns: df_res["Area_Reporte"] = "No registrada"
             if "Días Generados" not in df_res.columns: df_res["Días Generados"] = 0.0
@@ -1236,27 +1248,26 @@ else:
             df_res["Area_Reporte"] = df_res["Area_Reporte"].fillna("No registrada")
             df_res["Días Generados"] = df_res["Días Generados"].fillna(0.0)
 
-            # Renombrar DNI y Nombre para la vista
+            # Renombrar para la vista final
             df_res.rename(columns={"dni_key": "DNI", col_n_p: "Trabajador", "Area_Reporte": "Área"}, inplace=True)
 
             # 6. FILTROS
-            st.markdown("### 🔍 Filtros")
+            st.markdown("### 🔍 Filtros de Reporte")
             c1, c2 = st.columns(2)
             with c1:
-                s_list = ["Todas"] + sorted(df_res["Sede"].unique().tolist())
-                sel_s = st.selectbox("Sede", s_list)
+                s_list = ["Todas"] + sorted(df_res["Sede"].unique().astype(str).tolist())
+                sel_s = st.selectbox("Filtrar por Sede", s_list)
             with c2:
-                a_list = ["Todas"] + sorted(df_res["Área"].unique().tolist())
-                sel_a = st.selectbox("Área", a_list)
+                a_list = ["Todas"] + sorted(df_res["Área"].unique().astype(str).tolist())
+                sel_a = st.selectbox("Filtrar por Área", a_list)
 
             df_f = df_res.copy()
             if sel_s != "Todas": df_f = df_f[df_f["Sede"] == sel_s]
             if sel_a != "Todas": df_f = df_f[df_f["Área"] == sel_a]
 
             # 7. TABLA FINAL
-            st.success(f"📋 Registros: {len(df_f)}")
+            st.success(f"📋 Mostrando {len(df_f)} colaboradores")
             
-            # Seleccionamos solo las que queremos mostrar
             cols_ver = ["DNI", "Trabajador", "Sede", "Área", "Días Generados"]
             st.dataframe(
                 df_f[cols_ver].style.format({"Días Generados": "{:.2f}"}),
@@ -1521,6 +1532,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
