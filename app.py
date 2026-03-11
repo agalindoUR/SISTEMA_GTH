@@ -1384,95 +1384,101 @@ else:
             st.warning("⚠️ Faltan datos en Personal o Datos Generales.")
 
 # ==========================================
-    # MÓDULO: VACACIONES (SISTEMA UNIFICADO)
+    # MÓDULO: VACACIONES (VERSIÓN DEFINITIVA)
     # ==========================================
     elif m == "Vacaciones":
         st.markdown("<h2 style='color: #4A0000;'>🌴 Reporte Integrado de Vacaciones</h2>", unsafe_allow_html=True)
         
-        # 1. Cargar y Normalizar todas las tablas a Mayúsculas
-        df_per = dfs.get("PERSONAL", pd.DataFrame()).copy()
-        df_vac = dfs.get("VACACIONES", pd.DataFrame()).copy()
-        df_cont = dfs.get("CONTRATOS", pd.DataFrame()).copy()
-        df_gen = dfs.get("DATOS GENERALES", pd.DataFrame()).copy()
+        # 1. Carga de datos con limpieza de índices
+        d_p = dfs.get("PERSONAL", pd.DataFrame()).copy().reset_index(drop=True)
+        d_v = dfs.get("VACACIONES", pd.DataFrame()).copy().reset_index(drop=True)
+        d_c = dfs.get("CONTRATOS", pd.DataFrame()).copy().reset_index(drop=True)
+        d_g = dfs.get("DATOS GENERALES", pd.DataFrame()).copy().reset_index(drop=True)
 
-        for d in [df_per, df_vac, df_cont, df_gen]:
-            if not d.empty:
-                d.columns = [str(c).strip().upper() for c in d.columns]
-
-        if df_per.empty or df_vac.empty:
-            st.warning("⚠️ No se encontraron datos en PERSONAL o VACACIONES.")
+        if d_p.empty:
+            st.warning("⚠️ No hay datos en la pestaña PERSONAL.")
         else:
-            # 2. Preparar DNI puente
-            df_per["DNI_KEY"] = df_per["DNI"].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
-            col_nom = next((c for c in df_per.columns if "NOMBRE" in c or "APELLIDO" in c), "TRABAJADOR")
+            # Estandarizar nombres de columnas a minúsculas
+            d_p.columns = [str(c).strip().lower() for c in d_p.columns]
             
-            # Base limpia
-            df_res = df_per[["DNI_KEY", col_nom]].copy()
-
-            # 3. AREA y SEDE (Desde DATOS GENERALES como fuente primaria)
-            if not df_gen.empty:
-                df_gen["DNI_KEY"] = df_gen["DNI"].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
-                # Buscamos AREA y SEDE
-                cols_gen = []
-                if "SEDE" in df_gen.columns: cols_gen.append("SEDE")
-                if "AREA" in df_gen.columns: cols_gen.append("AREA")
-                
-                if cols_gen:
-                    temp_gen = df_gen[["DNI_KEY"] + cols_gen].drop_duplicates("DNI_KEY")
-                    df_res = df_res.merge(temp_gen, on="DNI_KEY", how="left")
-
-            # 4. Si AREA sigue vacía, buscar en CONTRATOS (Plan B)
-            if "AREA" not in df_res.columns and not df_cont.empty:
-                df_cont["DNI_KEY"] = df_cont["DNI"].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
-                if "AREA" in df_cont.columns:
-                    temp_cont = df_cont.sort_index(ascending=False).drop_duplicates("DNI_KEY")[["DNI_KEY", "AREA"]]
-                    df_res = df_res.merge(temp_cont, on="DNI_KEY", how="left")
-
-            # 5. DIAS (Suma de columna DIAS en VACACIONES para el 80.14)
-            df_vac["DNI_KEY"] = df_vac["DNI"].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
-            col_dias_v = next((c for c in df_vac.columns if "DIAS" in c or "DÍAS" in c), None)
+            # Crear llave DNI
+            col_dni_p = next((c for c in d_p.columns if "dni" in c), "dni")
+            d_p["dni_key"] = d_p[col_dni_p].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
             
-            if col_dias_v:
-                # Convertir a número con punto decimal
-                df_vac[col_dias_v] = pd.to_numeric(df_vac[col_dias_v].astype(str).str.replace(",", "."), errors="coerce").fillna(0)
-                df_sum = df_vac.groupby("DNI_KEY")[col_dias_v].sum().reset_index().rename(columns={col_dias_v: "VAC_TOTAL"})
-                df_res = df_res.merge(df_sum, on="DNI_KEY", how="left")
-
-            # 6. Limpieza final de la tabla antes de mostrar
-            for c in ["SEDE", "AREA"]:
-                if c not in df_res.columns: df_res[c] = "NO REGISTRADO"
-                df_res[c] = df_res[c].fillna("NO REGISTRADO").astype(str).str.upper()
+            # Nombre del trabajador
+            col_nom_p = next((c for c in d_p.columns if "apellido" in c or "nombre" in c), "trabajador")
             
-            if "VAC_TOTAL" not in df_res.columns: df_res["VAC_TOTAL"] = 0.0
-            df_res["VAC_TOTAL"] = df_res["VAC_TOTAL"].fillna(0.0)
+            # DataFrame Base
+            res = d_p[["dni_key", col_nom_p]].copy()
 
-            # --- FILTROS ---
-            st.markdown("### 🔍 Filtros por AREA y SEDE")
-            c1, c2 = st.columns(2)
-            with c1:
-                sedes = ["TODAS"] + sorted([x for x in df_res["SEDE"].unique() if x != "NAN"])
-                sel_s = st.selectbox("Seleccionar Sede", sedes)
-            with c2:
-                areas = ["TODAS"] + sorted([x for x in df_res["AREA"].unique() if x != "NAN"])
-                sel_a = st.selectbox("Seleccionar Área", areas)
+            # 2. SEDE (Desde Datos Generales)
+            if not d_g.empty:
+                d_g.columns = [str(c).strip().lower() for c in d_g.columns]
+                c_dni_g = next((c for c in d_g.columns if "dni" in c), None)
+                if c_dni_g:
+                    d_g["dni_key"] = d_g[c_dni_g].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
+                    c_sede = next((c for c in d_g.columns if "sede" in c), None)
+                    if c_sede:
+                        df_sede = d_g[["dni_key", c_sede]].drop_duplicates("dni_key").rename(columns={c_sede: "Sede"})
+                        res = res.merge(df_sede, on="dni_key", how="left")
 
-            # Aplicar
-            df_f = df_res.copy()
-            if sel_s != "TODAS": df_f = df_f[df_f["SEDE"] == sel_s]
-            if sel_a != "TODAS": df_f = df_f[df_f["AREA"] == sel_a]
+            # 3. ÁREA (Desde Contratos)
+            if not d_c.empty:
+                d_c.columns = [str(c).strip().lower() for c in d_c.columns]
+                c_dni_c = next((c for c in d_c.columns if "dni" in c), None)
+                if c_dni_c:
+                    d_c["dni_key"] = d_c[c_dni_c].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
+                    c_area = next((c for c in d_c.columns if "area" in c or "rea" in c), None)
+                    if c_area:
+                        df_area = d_c.sort_index(ascending=False).drop_duplicates("dni_key")[["dni_key", c_area]].rename(columns={c_area: "Área"})
+                        res = res.merge(df_area, on="dni_key", how="left")
 
-            # 7. VISTA FINAL
-            st.success(f"📋 Personal encontrado: {len(df_f)}")
+            # 4. CÁLCULO DE DÍAS (Desde Vacaciones)
+            if not d_v.empty:
+                d_v.columns = [str(c).strip().lower() for c in d_v.columns]
+                c_dni_v = next((c for c in d_v.columns if "dni" in c), None)
+                c_dias_v = next((c for c in d_v.columns if "días" in c or "dias" in c), None)
+
+                if c_dni_v and c_dias_v:
+                    d_v["dni_key"] = d_v[c_dni_v].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
+                    
+                    # Conversión numérica segura
+                    def a_numero(x):
+                        try:
+                            return float(str(x).replace(",", ".").strip()) if x else 0.0
+                        except:
+                            return 0.0
+                    
+                    d_v["num"] = d_v[c_dias_v].apply(a_numero)
+                    d_sum = d_v.groupby("dni_key")["num"].sum().reset_index().rename(columns={"num": "Días"})
+                    res = res.merge(d_sum, on="dni_key", how="left")
+
+            # 5. LIMPIEZA FINAL
+            res["Sede"] = res.get("Sede", pd.Series(dtype='object')).fillna("No registrada")
+            res["Área"] = res.get("Área", pd.Series(dtype='object')).fillna("No registrada")
+            res["Días"] = res.get("Días", pd.Series(dtype='float')).fillna(0.0)
             
-            # Formatear nombres para el usuario
-            df_vista = df_f.rename(columns={
-                "DNI_KEY": "DNI",
-                col_nom: "TRABAJADOR",
-                "VAC_TOTAL": "DÍAS GENERADOS"
-            })
-            
+            res.rename(columns={"dni_key": "DNI", col_nom_p: "Trabajador"}, inplace=True)
+
+            # 6. FILTROS E INTERFAZ
+            st.markdown("### 🔍 Filtros")
+            col1, col2 = st.columns(2)
+            with col1:
+                s_op = ["Todas"] + sorted(res["Sede"].unique().astype(str).tolist())
+                f_sede = st.selectbox("Sede", s_op)
+            with col2:
+                a_op = ["Todas"] + sorted(res["Área"].unique().astype(str).tolist())
+                f_area = st.selectbox("Área", a_op)
+
+            # Aplicar filtros
+            final = res.copy()
+            if f_sede != "Todas": final = final[final["Sede"] == f_sede]
+            if f_area != "Todas": final = final[final["Área"] == f_area]
+
+            # 7. TABLA
+            st.info(f"Registros: {len(final)}")
             st.dataframe(
-                df_vista[["DNI", "TRABAJADOR", "SEDE", "AREA", "DÍAS GENERADOS"]].style.format({"DÍAS GENERADOS": "{:.2f}"}),
+                final[["DNI", "Trabajador", "Sede", "Área", "Días"]].style.format({"Días": "{:.2f}"}),
                 hide_index=True,
                 use_container_width=True
             )
@@ -1576,6 +1582,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
