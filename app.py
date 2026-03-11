@@ -655,18 +655,47 @@ else:
                         if h_name == "DATOS GENERALES" and not vst.empty:
                             ficha = vst.iloc[0] # Tomamos el único registro
                             
+                            # Extraemos datos (usamos get con opciones por si no llevan tilde)
+                            sede = ficha.get('SEDE', '-')
+                            sexo = ficha.get('SEXO', '-')
+                            est_civil = ficha.get('ESTADO CIVIL', '-')
+                            f_nac = ficha.get('FECHA DE NACIMIENTO', '-')
+                            edad = ficha.get('EDAD', '-')
+                            
+                            # Buscamos teléfono y correo (intenta varios nombres comunes)
+                            telefono = ficha.get('CELULAR', ficha.get('TELÉFONO', ficha.get('TELEFONO', '-')))
+                            correo = ficha.get('CORREO', ficha.get('EMAIL', '-'))
+                            direccion = str(ficha.get('DIRECCIÓN', ficha.get('DIRECCION', '-')))
+                            
+                            # --- MAGIA DE GOOGLE MAPS ---
+                            if direccion not in ['-', '', 'nan', 'None']:
+                                # Limpiamos la dirección para la URL de Google Maps
+                                dir_url = direccion.replace(' ', '+').replace(',', '')
+                                link_mapa = f"https://www.google.com/maps/search/?api=1&query={dir_url}"
+                                dir_visual = f"[{direccion}]({link_mapa}) 🗺️ *(Ver mapa)*"
+                            else:
+                                dir_visual = "-"
+
                             with st.container(border=True):
                                 st.markdown("### 🪪 Perfil del Trabajador")
+                                
+                                # Fila 1: Datos Básicos
                                 c1, c2, c3 = st.columns(3)
+                                c1.info(f"**📍 Sede:** {sede}")
+                                c2.info(f"**🚻 Sexo:** {sexo}")
+                                c3.info(f"**💍 Estado Civil:** {est_civil}")
                                 
-                                c1.info(f"**📍 Sede:** {ficha.get('SEDE', '-')}")
-                                c1.markdown(f"**🚻 Sexo:** {ficha.get('SEXO', '-')}")
+                                # Fila 2: Nacimiento y Contacto
+                                c4, c5, c6 = st.columns(3)
+                                c4.markdown(f"**🎂 F. Nacimiento:** {f_nac}")
+                                c5.markdown(f"**🔢 Edad:** {edad} años")
+                                c6.markdown(f"**📱 Teléfono:** {telefono}")
                                 
-                                c2.info(f"**💍 Estado Civil:** {ficha.get('ESTADO CIVIL', '-')}")
-                                c2.markdown(f"**🎂 F. Nacimiento:** {ficha.get('FECHA DE NACIMIENTO', '-')}")
-                                
-                                c3.info(f"**🏠 Dirección:** {ficha.get('DIRECCIÓN', '-')}")
-                                c3.markdown(f"**🔢 Edad:** {ficha.get('EDAD', '-')} años")
+                                # Fila 3: Correo y Dirección con Mapa
+                                st.divider() # Línea divisoria elegante
+                                c7, c8 = st.columns([1, 2]) # La dirección toma más espacio
+                                c7.markdown(f"**📧 Correo:** {correo}")
+                                c8.markdown(f"**🏠 Dirección:** {dir_visual}")
                                 
                             # Como no hay tabla, seleccionamos la fila automáticamente para el modo edición
                             sel = vst.head(1) 
@@ -1580,6 +1609,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
