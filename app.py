@@ -559,7 +559,7 @@ else:
                         )
                         sel = ed[ed["SEL"] == True]
                     else:
-                        st.warning("No se encontraron registros para este DNI.")]
+                        st.warning("No se encontraron registros para este DNI.")
 
                         # BLOQUE DE VACACIONES CORREGIDO (Línea 558 aprox)
                     if h_name == "VACACIONES":
@@ -1593,6 +1593,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
