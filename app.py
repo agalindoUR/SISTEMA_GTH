@@ -1126,49 +1126,54 @@ else:
             df_per_calc = df_per.copy()
             df_per_calc.columns = [str(c).upper().strip() for c in df_per_calc.columns]
             df_per_calc["DNI"] = df_per_calc["DNI"].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
-            col_n_p = next((c for c in df_per_calc.columns if "APELLIDO" in c or "NOMBRE" in c), "APELLIDOS Y NOMBRES")
+            col_n_p = next((c for c in df_per_calc.columns if "APELLIDO" in c or "NOMBRE" in c), "TRABAJADOR")
             
             df_rep = df_per_calc[["DNI", col_n_p]].copy()
             
-            # 2. Obtener Área y Sede
+            # 2. Obtener SEDE (De Datos Generales)
             if not df_gen.empty:
                 df_g_calc = df_gen.copy()
                 df_g_calc.columns = [str(c).upper().strip() for c in df_g_calc.columns]
                 df_g_calc["DNI"] = df_g_calc["DNI"].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
+                if "SEDE" in df_g_calc.columns:
+                    df_rep = df_rep.merge(df_g_calc[["DNI", "SEDE"]].drop_duplicates("DNI"), on="DNI", how="left")
+            
+            # 3. Obtener AREA (De Contratos - Tomando el más reciente)
+            if not df_cont.empty:
+                df_c_calc = df_cont.copy()
+                # Quitamos tildes a las columnas por si acaso dice "ÁREA"
+                df_c_calc.columns = [str(c).upper().strip().replace("Á", "A") for c in df_c_calc.columns]
+                df_c_calc["DNI"] = df_c_calc["DNI"].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
                 
-                cols_extra = ["DNI"]
-                if "SEDE" in df_g_calc.columns: cols_extra.append("SEDE")
-                if "ÁREA" in df_g_calc.columns: cols_extra.append("ÁREA")
-                elif "AREA" in df_g_calc.columns: cols_extra.append("AREA")
-                
-                if len(cols_extra) > 1:
-                    df_rep = df_rep.merge(df_g_calc[cols_extra].drop_duplicates("DNI"), on="DNI", how="left")
+                if "AREA" in df_c_calc.columns:
+                    # Sort index descending asume que los últimos agregados están al final, así tomamos el área actual
+                    df_area = df_c_calc.sort_index(ascending=False).drop_duplicates("DNI")[["DNI", "AREA"]]
+                    df_rep = df_rep.merge(df_area, on="DNI", how="left")
             
-            # Limpiar columnas
-            if "SEDE" not in df_rep.columns: df_rep["SEDE"] = "No Registrada"
-            if "ÁREA" not in df_rep.columns and "AREA" not in df_rep.columns: df_rep["ÁREA"] = "No Registrada"
-            if "AREA" in df_rep.columns: df_rep.rename(columns={"AREA": "ÁREA"}, inplace=True)
+            # Limpiar columnas y forzar mayúsculas
+            if "SEDE" not in df_rep.columns: df_rep["SEDE"] = "NO REGISTRADA"
+            if "AREA" not in df_rep.columns: df_rep["AREA"] = "NO REGISTRADA"
             
-            df_rep["SEDE"] = df_rep["SEDE"].fillna("No Registrada")
-            df_rep["ÁREA"] = df_rep["ÁREA"].fillna("No Registrada")
+            df_rep["SEDE"] = df_rep["SEDE"].fillna("NO REGISTRADA").astype(str).str.upper()
+            df_rep["AREA"] = df_rep["AREA"].fillna("NO REGISTRADA").astype(str).str.upper()
             
-            # 3. FILTROS VISUALES (Antes del cálculo pesado)
+            # 4. FILTROS VISUALES
             st.markdown("### 🔍 Filtros")
             c1, c2 = st.columns(2)
             with c1:
-                sedes = ["Todas"] + sorted([str(x) for x in df_rep["SEDE"].unique()])
-                sel_sede = st.selectbox("Sede", sedes)
+                sedes = ["TODAS"] + sorted([str(x) for x in df_rep["SEDE"].unique() if str(x) != "NAN"])
+                sel_sede = st.selectbox("SEDE", sedes)
             with c2:
-                areas = ["Todas"] + sorted([str(x) for x in df_rep["ÁREA"].unique()])
-                sel_area = st.selectbox("Área", areas)
+                areas = ["TODAS"] + sorted([str(x) for x in df_rep["AREA"].unique() if str(x) != "NAN"])
+                sel_area = st.selectbox("AREA", areas)
 
             # Aplicar filtros
-            if sel_sede != "Todas": df_rep = df_rep[df_rep["SEDE"] == sel_sede]
-            if sel_area != "Todas": df_rep = df_rep[df_rep["ÁREA"] == sel_area]
+            if sel_sede != "TODAS": df_rep = df_rep[df_rep["SEDE"] == sel_sede]
+            if sel_area != "TODAS": df_rep = df_rep[df_rep["AREA"] == sel_area]
             
             saldos_finales = []
             
-            # 4. Cálculo del Saldo de Vacaciones para los DNI filtrados
+            # 5. Cálculo del Saldo de Vacaciones para los DNI filtrados
             for dni in df_rep["DNI"]:
                 dni_str = str(dni).strip()
                 dias_generados_totales = 0
@@ -1207,7 +1212,6 @@ else:
                                     days_in_p = 0
                                     for _, r in df_tc.iterrows():
                                         c_s = r['F_INICIO_DT'].date() if pd.notnull(r['F_INICIO_DT']) else None
-                                        # Buscar F_FIN en la fila
                                         c_e_val = r.get('F_FIN')
                                         c_e = pd.to_datetime(c_e_val, errors='coerce').date() if pd.notnull(c_e_val) else date.today()
                                         
@@ -1224,17 +1228,17 @@ else:
                 saldo = round(dias_generados_totales - dias_gozados_totales, 2)
                 saldos_finales.append(saldo)
             
-            # 5. Agregar resultados y mostrar
-            df_rep["Saldo de Vacaciones"] = saldos_finales
-            df_rep.rename(columns={col_n_p: "Trabajador", "SEDE": "Sede", "ÁREA": "Área"}, inplace=True)
+            # 6. Agregar resultados y mostrar
+            df_rep["SALDO DE VACACIONES"] = saldos_finales
+            df_rep.rename(columns={col_n_p: "TRABAJADOR"}, inplace=True)
             
             st.success(f"📋 **Resultados:** {len(df_rep)} registros calculados con éxito.")
-            st.dataframe(df_rep[["DNI", "Trabajador", "Sede", "Área", "Saldo de Vacaciones"]], hide_index=True, use_container_width=True)
+            st.dataframe(df_rep[["DNI", "TRABAJADOR", "SEDE", "AREA", "SALDO DE VACACIONES"]], hide_index=True, use_container_width=True)
             
-            # 6. Exportar a Excel
+            # 7. Exportar a Excel
             output_vac = BytesIO()
             with pd.ExcelWriter(output_vac, engine='openpyxl') as writer:
-                df_rep[["DNI", "Trabajador", "Sede", "Área", "Saldo de Vacaciones"]].to_excel(writer, index=False, sheet_name='Saldos_Vacaciones')
+                df_rep[["DNI", "TRABAJADOR", "SEDE", "AREA", "SALDO DE VACACIONES"]].to_excel(writer, index=False, sheet_name='Saldos_Vacaciones')
             st.download_button(
                 label="📥 Exportar a Excel", 
                 data=output_vac.getvalue(), 
@@ -1408,6 +1412,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
