@@ -895,7 +895,7 @@ else:
                                                         dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new])], ignore_index=True)
                                                         save_data(dfs)
                                                         st.rerun()
-                            with col_b:
+                           with col_b:
                                 with st.expander("📝 Editar / Eliminar"):
                                     if not sel.empty:
                                         idx = sel.index[0]
@@ -963,26 +963,28 @@ else:
                                             else:
                                                 edit_row = {}
                                                 for col in cols_reales:
-                                                val = row.get(col, "")
-                                                
-                                                if "fecha" in col.lower() or "f_" in col.lower(): 
-                                                    if pd.notnull(val) and isinstance(val, (date, datetime)): d_val = val
-                                                    elif pd.notnull(val) and isinstance(val, str):
-                                                        try: d_val = pd.to_datetime(val).date()
-                                                        except: d_val = date.today()
-                                                    else: d_val = date.today()
-                                                    edit_row[col] = st.date_input(col.title(), value=d_val, format="DD/MM/YYYY", key=f"date_{h_name}_{col}_{idx}")
+                                                    val = row.get(col, "")
                                                     
-                                                elif col.lower() == "edad":
-                                                    edit_row[col] = st.number_input(col.title(), value=int(val) if pd.notnull(val) and str(val).isdigit() else 0, disabled=True, key=f"edad_{h_name}_{col}_{idx}")
-                                                    
-                                                elif col.lower() in ["remuneración", "bonificación", "sueldo", "días generados", "dias gozados", "saldo", "monto", "remuneracion basica", "bonificacion"]: 
-                                                    try: n_val = float(val) if pd.notnull(val) else 0.0
-                                                    except: n_val = 0.0
-                                                    edit_row[col] = st.number_input(col.title(), value=n_val, key=f"num_{h_name}_{col}_{idx}")
-                                                    
-                                                else: 
-                                                    edit_row[col] = st.text_input(col.title(), value=str(val) if pd.notnull(val) else "", key=f"text_{h_name}_{col}_{idx}")
+                                                    if "fecha" in col.lower() or "f_" in col.lower(): 
+                                                        if pd.notnull(val) and isinstance(val, (date, datetime)): d_val = val
+                                                        elif pd.notnull(val) and isinstance(val, str):
+                                                            try: d_val = pd.to_datetime(val).date()
+                                                            except: d_val = date.today()
+                                                        else: d_val = date.today()
+                                                        edit_row[col] = st.date_input(col.title(), value=d_val, format="DD/MM/YYYY", key=f"date_{h_name}_{col}_{idx}")
+                                                        
+                                                    elif col.lower() == "edad":
+                                                        # Aquí había un st.number_input al que le faltaba el key, y la lógica de la edad la simplifiqué para evitar errores con isdigit() en objetos nulos
+                                                        val_edad = int(val) if pd.notnull(val) and str(val).replace('.','',1).isdigit() else 0
+                                                        edit_row[col] = st.number_input(col.title(), value=val_edad, disabled=True, key=f"edad_{h_name}_{col}_{idx}")
+                                                        
+                                                    elif col.lower() in ["remuneración", "bonificación", "sueldo", "días generados", "dias gozados", "saldo", "monto", "remuneracion basica", "bonificacion"]: 
+                                                        try: n_val = float(val) if pd.notnull(val) else 0.0
+                                                        except: n_val = 0.0
+                                                        edit_row[col] = st.number_input(col.title(), value=n_val, key=f"num_{h_name}_{col}_{idx}")
+                                                        
+                                                    else: 
+                                                        edit_row[col] = st.text_input(col.title(), value=str(val) if pd.notnull(val) else "", key=f"text_{h_name}_{col}_{idx}")
 
                                                 col_btn1, col_btn2 = st.columns(2)
                                                 with col_btn1:
@@ -1516,6 +1518,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
