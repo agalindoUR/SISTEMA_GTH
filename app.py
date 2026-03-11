@@ -495,7 +495,7 @@ else:
                 tabs = st.tabs(t_noms)
 
                 for i, tab in enumerate(tabs):
-                    h_name = h_keys[i]
+                h_name = h_keys[i]
                 with tab:
                     # NORMALIZACIÓN: Forzamos minúsculas para que el filtro no falle
                     dfs[h_name].columns = [str(c).lower().strip() for c in dfs[h_name].columns]
@@ -1593,6 +1593,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
