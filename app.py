@@ -497,9 +497,12 @@ else:
                 for i, tab in enumerate(tabs):
                     h_name = h_keys[i]
                 with tab:
-                    # 1. Filtrado de datos por DNI según la pestaña
+                    # NORMALIZACIÓN: Forzamos minúsculas para que el filtro no falle
+                    dfs[h_name].columns = [str(c).lower().strip() for c in dfs[h_name].columns]
+                    
                     if "dni" in dfs[h_name].columns:
-                        c_df = dfs[h_name][dfs[h_name]["dni"] == dni_buscado]
+                        # Filtro robusto: convierte ambos lados a string y quita espacios
+                        c_df = dfs[h_name][dfs[h_name]["dni"].astype(str).str.strip() == str(dni_buscado).strip()]
                     else:
                         c_df = pd.DataFrame(columns=COLUMNAS.get(h_name, []))
 
@@ -539,21 +542,24 @@ else:
                                 )
                             st.markdown("<br>", unsafe_allow_html=True)
 
-                    # 3. Visualización de la tabla de datos con capacidad de edición
-                    vst = c_df.copy()
-                    vst.insert(0, "SEL", False)
-                    
-                    st.write(f"### Registros en {h_name}")
-                    # Es vital que el data_editor tenga una key única basada en la pestaña y el DNI
-                    ed = st.data_editor(
-                        vst, 
-                        hide_index=True, 
-                        use_container_width=True, 
-                        key=f"editor_{h_name}_{dni_buscado}"
-                    )
-                    
-                    # Identificar fila seleccionada
-                    sel = ed[ed["SEL"] == True]
+                    # 3. Visualización de la tabla (ESTO DEBE ESTAR ALINEADO CON LOS IF DE ARRIBA)
+                    if not c_df.empty:
+                        vst = c_df.copy()
+                        vst.columns = [str(col).upper() for col in vst.columns] # Volvemos a mayúsculas para mostrar
+                        
+                        if "SEL" not in vst.columns:
+                            vst.insert(0, "SEL", False)
+                        
+                        st.write(f"### Registros en {h_name}")
+                        ed = st.data_editor(
+                            vst, 
+                            hide_index=True, 
+                            use_container_width=True, 
+                            key=f"editor_{h_name}_{dni_buscado}"
+                        )
+                        sel = ed[ed["SEL"] == True]
+                    else:
+                        st.warning("No se encontraron registros para este DNI.")]
 
                         # BLOQUE DE VACACIONES CORREGIDO (Línea 558 aprox)
                     if h_name == "VACACIONES":
@@ -936,7 +942,7 @@ else:
                                         with st.form(key=f"form_edit_{h_name}_{dni_buscado}"):
                                             edit_row = {}
                                             for col in cols_reales:
-                                                val = sel.iloc[0].get(col.upper(), "")
+                                                val = sel.iloc[0].get(col, "")
                                                 
                                                 # 1. Lógica para FECHAS
                                                 if "fecha" in col.lower() or "f_" in col.lower():
@@ -985,7 +991,7 @@ else:
                             st.info("💡 Activa la casilla (SEL) en la tabla superior para editar.")
                             edit_row = {}
                             for col in cols_reales:
-                                val = sel.iloc[0].get(col.upper(), "")
+                                val = sel.iloc[0].get(col, "")
                                 
                                 if "fecha" in col.lower() or "f_" in col.lower():
                                     edit_row[col] = st.date_input(
@@ -1587,6 +1593,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
