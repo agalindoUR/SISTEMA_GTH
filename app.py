@@ -508,25 +508,22 @@ else:
                         <style>
                         /* Nueva clase para foto más grande que oculta los bordes guindos */
                         .foto-perfil-large {{
-                            width: 110px; /* Aumentado de 75px (aprox +50%) */
-                            height: 110px; /* Aumentado de 75px (aprox +50%) */
+                            width: 110px;
+                            height: 110px;
                             border-radius: 50%; 
-                            /* object-fit: cover es la clave: encaja el rostro al círculo
-                               ocultando el fondo (el marco guindo original) */
                             object-fit: cover; 
-                            object-position: center; /* Centramos el rostro */
-                            border: 4px solid #FFD700; /* Borde dorado un poco más grueso para destacar */
-                            margin-right: 20px; /* Más espacio */
+                            object-position: center;
+                            border: 4px solid #FFD700;
+                            margin-right: 20px;
                             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-                            transition: transform 0.2s ease-in-out; /* Mantenemos el pequeño efecto hover */
+                            transition: transform 0.2s ease-in-out;
                         }}
                         /* Efecto hover ligero, pero SIN clic y SIN abrir ventana */
                         .foto-perfil-large:hover {{
-                            transform: scale(1.08); /* Un zoom sutil al pasar el mouse */
+                            transform: scale(1.08);
                         }}
                         </style>
                         <div style='border-bottom: 2px solid #FFD700; padding-bottom: 15px; margin-bottom: 25px; display: flex; align-items: center;'>
-                            /* Eliminamos el enlace <a> que abría la pestaña */
                             <img src='{foto_directa}' class='foto-perfil-large' onerror="this.style.display='none'; document.getElementById('avatar-{dni_buscado}').style.display='block';">
                             <h1 id='avatar-{dni_buscado}' style='color: white; margin: 0; margin-right: 15px; font-size: 3em; display: none;'>👤</h1>
                             <h1 style='color: #FFD700; margin: 0; font-size: 2.5em;'>{nom_c}</h1>
@@ -1470,6 +1467,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
