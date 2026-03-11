@@ -896,7 +896,7 @@ else:
                                                         save_data(dfs)
                                                         st.rerun()
 
-                            with col_b:
+                           with col_b:
                                 with st.expander("📝 Editar / Eliminar"):
                                     # Si hay una fila seleccionada en el data_editor
                                     if not sel.empty:
@@ -904,7 +904,6 @@ else:
                                         cols_reales = [c for c in vst.columns if c not in ["SEL"]]
                                         
                                         st.markdown("### 📝 Editar Registro")
-                                        # Creamos el formulario con una llave única
                                         with st.form(key=f"form_edit_{h_name}_{dni_buscado}"):
                                             edit_row = {}
                                             for col in cols_reales:
@@ -934,7 +933,7 @@ else:
                                                         edad_calc = int(date.today().year - fnac.year - ((date.today().month, date.today().day) < (fnac.month, fnac.day)))
                                                         edit_row[col] = st.number_input("Edad (Calculada)", value=edad_calc, disabled=True, key=f"edad_{h_name}_{dni_buscado}")
                                                     else:
-                                                        edit_row[col] = st.number_input(col.title(), value=int(val) if str(val).isdigit() else 0, disabled=True, key=f"edad_manual_{h_name}_{dni_buscado}")
+                                                        edit_row[col] = st.number_input(col.title(), value=int(val) if str(val).isdigit() else 0, disabled=True, key=f"edad_m_{h_name}_{dni_buscado}")
                                                 
                                                 # 3. Lógica para NÚMEROS
                                                 elif col.lower() in ["remuneración", "bonificación", "sueldo", "días generados", "días gozados", "saldo", "monto"]:
@@ -953,27 +952,23 @@ else:
                                                     )
 
                                             st.markdown("---")
-                                            # El submit button debe estar dentro del bloque with st.form
-                                            submit_actualizar = st.form_submit_button("✅ Actualizar Registro")
-                                            
-                                            if submit_actualizar:
+                                            if st.form_submit_button("✅ Actualizar Registro"):
                                                 for col in cols_reales:
                                                     dfs[h_name].at[idx, col.upper()] = edit_row[col]
                                                 save_data(dfs)
                                                 st.success("¡Registro actualizado con éxito!")
                                                 st.rerun()
 
-                                        # Botón Eliminar: FUERA del form, pero DENTRO del `if not sel.empty`
+                                        # --- BOTÓN DE ELIMINAR ---
                                         st.markdown("<br>", unsafe_allow_html=True)
                                         if st.button("🗑️ Eliminar Registro Permanentemente", type="primary", use_container_width=True, key=f"del_{h_name}_{dni_buscado}"):
                                             dfs[h_name] = dfs[h_name].drop(idx)
                                             save_data(dfs)
-                                            st.success("Registro eliminado.")
                                             st.rerun()
-                                            
+
+                                    # EL ELSE ALINEADO CORRECTAMENTE CON EL "if not sel.empty:"
                                     else:
-                                        # Si NO hay fila seleccionada, solo mostramos el mensaje informativo
-                                        st.info("💡 Activa la casilla **(SEL)** en la tabla superior para editar o eliminar un registro.")
+                                        st.info("💡 Activa la casilla **(SEL)** en la tabla para editar o eliminar un registro.")
 
                         # --- BOTÓN DE ELIMINAR (FUERA DEL BUCLE DE COLUMNAS) ---
                         st.markdown("<br>", unsafe_allow_html=True)
@@ -1770,6 +1765,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
