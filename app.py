@@ -873,10 +873,12 @@ else:
                                 with st.expander("📝 Editar / Eliminar"):
                                     if not sel.empty:
                                         idx = sel.index[0]
+                                        
+                                        # --- INICIO DEL FORMULARIO DE EDICIÓN ---
                                         with st.form(f"f_edit_{h_name}"):
                                             if h_name == "CONTRATOS":
                                                 n_car = st.text_input("Cargo", value=str(sel.iloc[0].get("CARGO", "")))
-                                                área = st.text_input("AREA")
+                                                n_area = st.text_input("AREA")
                                                 try: 
                                                     val_rem = float(sel.iloc[0].get("REMUNERACIÓN BÁSICA", 0.0))
                                                 except: 
@@ -928,12 +930,30 @@ else:
                                                     opts_mot.append(v_mot)
                                                 mot_e = st.selectbox("Motivo Cese", opts_mot, index=opts_mot.index(v_mot)) if est_e == "CESADO" else "Vigente"
 
-                                                if st.form_submit_button("Actualizar"):
-                                                    update_vals = {"CARGO": n_car, "AREA": n_area,"REMUNERACION BASICA": n_rem, "BONIFICACION": n_bon, "CONDICION DE TRABAJO": n_cond, "F_INICIO": n_ini, "F_FIN": n_fin, "TIPO DE TRABAJADOR": n_ttrab, "MODALIDAD": n_mod, "TEMPORALIDAD": n_tem, "LINK": n_lnk, "TIPO CONTRATO": n_tcont, "ESTADO": est_e, "MOTIVO CESE": mot_e}
+                                                st.markdown("---")
+                                                # Este es el ÚNICO botón dentro del form
+                                                if st.form_submit_button("Actualizar Registro"):
+                                                    update_vals = {
+                                                        "CARGO": n_car, 
+                                                        "AREA": n_area, 
+                                                        "REMUNERACIÓN BÁSICA": n_rem, 
+                                                        "BONIFICACIÓN": n_bon, 
+                                                        "CONDICIÓN DE TRABAJO": n_cond, 
+                                                        "F_INICIO": n_ini, 
+                                                        "F_FIN": n_fin, 
+                                                        "TIPO DE TRABAJADOR": n_ttrab, 
+                                                        "MODALIDAD": n_mod, 
+                                                        "TEMPORALIDAD": n_tem, 
+                                                        "LINK": n_lnk, 
+                                                        "TIPO CONTRATO": n_tcont, 
+                                                        "ESTADO": est_e, 
+                                                        "MOTIVO CESE": mot_e
+                                                    }
                                                     for k, v in update_vals.items(): 
-                                                        dfs[h_name].at[idx, k] = v
+                                                        dfs["CONTRATOS"].at[idx, k] = v
                                                     save_data(dfs)
                                                     st.rerun()
+
                                             else:
                                                 edit_row = {}
                                                 for col in cols_reales:
@@ -954,39 +974,22 @@ else:
                                                         edit_row[col] = st.number_input(col.title(), value=num_val)
                                                     else:
                                                         edit_row[col] = st.text_input(col.title(), value=str(val) if pd.notnull(val) else "")
-
-                                                st.markdown("---")
-                                                # --- BOTONES DE ACTUALIZAR Y ELIMINAR ---
-                                                col_btn1, col_btn2 = st.columns(2)
                                                 
-                                                with col_btn1:
-                                                    if st.form_submit_button("Actualizar"):
-                                                        update_vals = {
-                                                            "CARGO": n_car, 
-                                                            "AREA": n_area, 
-                                                            "REMUNERACIÓN BÁSICA": n_rem, 
-                                                            "BONIFICACIÓN": n_bon, 
-                                                            "CONDICIÓN DE TRABAJO": n_cond, 
-                                                            "F_INICIO": n_ini, 
-                                                            "F_FIN": n_fin, 
-                                                            "TIPO DE TRABAJADOR": n_ttrab, 
-                                                            "MODALIDAD": n_mod, 
-                                                            "TEMPORALIDAD": n_tem, 
-                                                            "LINK": n_lnk, 
-                                                            "TIPO CONTRATO": n_tcont, 
-                                                            "ESTADO": est_e, 
-                                                            "MOTIVO CESE": mot_e
-                                                        }
-                                                        for k, v in update_vals.items(): 
-                                                            dfs["CONTRATOS"].at[idx, k] = v
-                                                        save_data(dfs)
-                                                        st.rerun()
+                                                st.markdown("---")
+                                                # Botón para las demás pestañas
+                                                if st.form_submit_button("Actualizar Registro"):
+                                                    for col in cols_reales:
+                                                        dfs[h_name].at[idx, col.upper()] = edit_row[col]
+                                                    save_data(dfs)
+                                                    st.rerun()
 
-                                                with col_btn2:
-                                                    if st.form_submit_button("🗑️ Eliminar Contrato", type="primary"):
-                                                        dfs["CONTRATOS"] = dfs["CONTRATOS"].drop(idx)
-                                                        save_data(dfs)
-                                                        st.rerun()
+                                        # --- BOTÓN DE ELIMINAR FUERA DEL FORMULARIO ---
+                                        st.markdown("<br>", unsafe_allow_html=True) # Un pequeño salto de línea
+                                        if st.button("🗑️ Eliminar Registro Permanentemente", type="primary", use_container_width=True):
+                                            dfs[h_name] = dfs[h_name].drop(idx)
+                                            save_data(dfs)
+                                            st.rerun()
+
                                     else:
                                         st.info("Activa la casilla (SEL) en la tabla superior para editar o eliminar el registro.")
             else:
@@ -1513,6 +1516,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
