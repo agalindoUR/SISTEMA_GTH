@@ -58,14 +58,13 @@ def obtener_link_directo_drive(url):
             return url
     return url
 # ==========================================
-# 2. FUNCIONES DE DATOS Y CARGA OPTIMIZADA
+# 2. FUNCIONES DE DATOS (VERSIÓN DEFINITIVA)
 # ==========================================
 
 SCOPE = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 SHEET_NAME = "DB_SISTEMA_GTH" 
 
 def obtener_credenciales():
-    """Obtiene las credenciales desde Streamlit Secrets o archivo local."""
     if "google_json" in st.secrets:
         import json
         creds_dict = json.loads(st.secrets["google_json"])
@@ -75,64 +74,36 @@ def obtener_credenciales():
 
 @st.cache_data(ttl=600)
 def load_data():
-    """Carga y procesa todas las pestañas del Google Sheet de forma eficiente."""
     creds = obtener_credenciales()
     client = gspread.authorize(creds)
     spreadsheet = client.open(SHEET_NAME)
-    
-    # Traemos todas las hojas de una sola vez
     worksheets = spreadsheet.worksheets()
-    hojas_en_drive = {ws.title: ws for ws in worksheets}
     
     dfs = {}
-    
-    # Iteramos sobre las columnas que tu App espera (COLUMNAS debe estar definido antes)
-    # Si COLUMNAS no está definido, puedes usar: for h, worksheet in hojas_en_drive.items():
-    for h, cols_requeridas in COLUMNAS.items():
-        if h in hojas_en_drive:
-            try:
-                worksheet = hojas_en_drive[h]
-                data = worksheet.get_all_records()
-                df = pd.DataFrame(data)
-
-                if df.empty:
-                    dfs[h] = df
-                    continue
-
-                # 1. LIMPIEZA DE CABECERAS
-                # Quitamos espacios, tildes y pasamos a minúsculas para procesar internamente
-                df.columns = [str(c).strip().lower()
-                              .replace('á', 'a').replace('é', 'e')
-                              .replace('í', 'i').replace('ó', 'o')
-                              .replace('ú', 'u') for c in df.columns]
-
-                # 2. RENOMBRADO ESTRATÉGICO
-                for col in df.columns:
-                    if "rea" in col: 
-                        df.rename(columns={col: "area"}, inplace=True)
+    for worksheet in worksheets:
+        h_name = worksheet.title
+        try:
+            data = worksheet.get_all_records()
+            df = pd.DataFrame(data)
+            
+            if not df.empty:
+                # Limpieza: Todo a minúsculas, sin tildes y quitamos espacios
+                df.columns = [
+                    str(c).strip().lower()
+                    .replace('á', 'a').replace('é', 'e')
+                    .replace('í', 'i').replace('ó', 'o')
+                    .replace('ú', 'u').replace('_', ' ') 
+                    for c in df.columns
+                ]
                 
-                if h == "CONTRATOS":
-                    if "sueldo" in df.columns: df.rename(columns={"sueldo": "remuneracion basica"}, inplace=True)
-                    if "tipo colaborador" in df.columns: df.rename(columns={"tipo colaborador": "tipo de trabajador"}, inplace=True)
-
-                # 3. LIMPIEZA DE DNI
+                # Especial para el DNI: quitar .0 y asegurar 8 dígitos
                 if "dni" in df.columns:
                     df["dni"] = df["dni"].astype(str).str.strip().str.replace(r'\.0$', '', regex=True).str.zfill(8)
-
-                # 4. ASEGURAR COLUMNAS REQUERIDAS
-                for req_col in cols_requeridas:
-                    req_col_clean = req_col.strip().lower()
-                    if req_col_clean not in df.columns:
-                        df[req_col_clean] = "" 
-
-                dfs[h] = df
-
-            except Exception as e:
-                st.error(f"⚠️ Error al procesar la pestaña '{h}': {e}")
-                dfs[h] = pd.DataFrame()
-        else:
-            dfs[h] = pd.DataFrame()
-            
+                
+            dfs[h_name] = df
+        except Exception as e:
+            st.error(f"⚠️ Error en pestaña '{h_name}': {e}")
+            dfs[h_name] = pd.DataFrame()
     return dfs
 
 # --- CARGA ÚNICA DE DATOS ---
@@ -1652,6 +1623,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
