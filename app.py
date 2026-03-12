@@ -637,21 +637,20 @@ else:
                             idx = vst.index[0]  
                             ficha = vst.iloc[0] 
                             
-                            # Función interna para buscar datos con sangría y lógica correcta
                             def get_val(names):
-                                # Normalizamos las llaves de la fila actual para evitar errores por tildes o espacios
+                                # Limpiamos las llaves de la fila actual (minúsculas, sin tildes, sin guiones)
                                 ficha_clean = {str(k).lower().replace('á','a').replace('é','e').replace('í','i').replace('ó','o').replace('ú','u').replace('_',' '): v 
                                                for k, v in ficha.to_dict().items()}
                                 
                                 for name in names:
-                                    # Limpiamos el nombre buscado para que coincida con la llave normalizada
+                                    # Limpiamos el nombre buscado para que coincida
                                     clean_name = name.lower().replace('á','a').replace('é','e').replace('í','i').replace('ó','o').replace('ú','u').replace('_',' ')
                                     val = ficha_clean.get(clean_name)
                                     if pd.notnull(val) and str(val).strip() not in ["", "-", "0", "nan"]: 
                                         return str(val)
                                 return "-"
 
-                            # Recolección de variables basada en tu Google Sheets
+                            # Asignación de variables
                             sede = get_val(['SEDE'])
                             sexo = get_val(['SEXO'])
                             est_civil = get_val(['ESTADO CIVIL', 'ESTADO_CIVIL'])
@@ -661,7 +660,6 @@ else:
                             correo = get_val(['CORREO', 'EMAIL', 'CORREO ELECTRONICO'])
                             direccion = get_val(['DIRECCION', 'DIRECCIÓN', 'DOMICILIO'])
                             
-                            # --- LÓGICA DE GOOGLE MAPS ---
                             if direccion != "-":
                                 query_map = direccion.replace(" ", "+")
                                 link_mapa = f"https://www.google.com/maps/search/?api=1&query={query_map}"
@@ -669,7 +667,6 @@ else:
                             else:
                                 dir_display = "-"
 
-                            # RENDERIZADO DE LA FICHA (HTML)
                             st.markdown(f"""
                             <div style="background-color: rgba(255, 215, 0, 0.05); padding: 25px; border-radius: 15px; border: 2px solid #FFD700; color: inherit; font-family: sans-serif;">
                                 <h2 style="margin-top:0; color: #FFD700; border-bottom: 1px solid rgba(255,215,0,0.3); padding-bottom:10px;">🪪 Expediente del Personal</h2>
@@ -1608,6 +1605,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
