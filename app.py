@@ -81,46 +81,31 @@ def load_data():
     
     dfs = {}
     for worksheet in worksheets:
-        h_name = worksheet.title
         try:
             data = worksheet.get_all_records()
             df = pd.DataFrame(data)
-            
             if not df.empty:
-                # Limpieza base para todas las hojas
+                # Limpieza agresiva: quitamos espacios, tildes y guiones bajos
                 df.columns = [str(c).strip().lower()
                               .replace('á', 'a').replace('é', 'e')
                               .replace('í', 'i').replace('ó', 'o')
-                              .replace('ú', 'u') for c in df.columns]
+                              .replace('ú', 'u').replace('_', ' ') 
+                              for c in df.columns]
                 
-                # --- CORRECCIÓN CRÍTICA PARA CONTRATOS ---
-                if h_name == "CONTRATOS":
-                    # Mapeamos los nombres del Excel a lo que el código de Word espera
-                    mapeo = {
-                        'fecha inicio': 'f_inicio',
-                        'fecha_inicio': 'f_inicio',
-                        'f inicio': 'f_inicio',
-                        'fecha termino': 'f_fin',
-                        'fecha_fin': 'f_fin',
-                        'f fin': 'f_fin'
-                    }
-                    # Renombramos solo si la columna existe en el Excel
-                    for viejo, nuevo in mapeo.items():
-                        if viejo in df.columns:
-                            df.rename(columns={viejo: nuevo}, inplace=True)
-                    
-                    # Si después de renombrar NO existe f_inicio, la creamos vacía para que no explote
-                    if 'f_inicio' not in df.columns:
-                        df['f_inicio'] = None
-
+                # Arreglo especial para CONTRATOS (Evita el error f_inicio)
+                if worksheet.title == "CONTRATOS":
+                    # Mapeamos cualquier variante a 'f_inicio'
+                    for col in df.columns:
+                        if 'inicio' in col: df.rename(columns={col: 'f_inicio'}, inplace=True)
+                        if 'termino' in col or 'fin' in col: df.rename(columns={col: 'f_fin'}, inplace=True)
+                
                 # Limpieza de DNI
                 if "dni" in df.columns:
                     df["dni"] = df["dni"].astype(str).str.strip().str.replace(r'\.0$', '', regex=True).str.zfill(8)
                 
-            dfs[h_name] = df
+            dfs[worksheet.title] = df
         except Exception as e:
-            st.error(f"⚠️ Error en pestaña '{h_name}': {e}")
-            dfs[h_name] = pd.DataFrame()
+            st.error(f"Error en {worksheet.title}: {e}")
     return dfs
 
 dfs = load_data()
@@ -645,69 +630,56 @@ else:
                         # Eliminamos duplicados de la base
                         vst = vst.loc[:, ~vst.columns.duplicated()]
             
-                       # =========================================================
+                      # =========================================================
                         # 1. SI ES DATOS GENERALES -> DISEÑO TIPO FICHA (TARJETA)
                         # =========================================================
                         if h_name == "DATOS GENERALES" and not vst.empty:
-                            idx = vst.index[0]  # Crucial para que el botón Actualizar funcione
+                            idx = vst.index[0]  
                             ficha = vst.iloc[0] 
                             
-                            # Función interna para buscar datos incluso si cambian las tildes
+                            # Función interna con sangría corregida
                             def get_val(names):
+                                # Normalizamos las llaves para que coincidan con la limpieza
+                                ficha_clean = {str(k).lower().replace('á','a').replace('é','e').replace('í','i').replace('ó','o').replace('ú','u').replace('_',' '): v 
+                                               for k, v in ficha.to_dict().items()}
+                                
                                 for name in names:
-                                    val = ficha.get(name)
-                                    if pd.notnull(val) and str(val).strip() != "": return str(val)
+                                    clean_name = name.lower().replace('á','a').replace('é','e').replace('í','i').replace('ó','o').replace('ú','u').replace('_',' ')
+                                    val = ficha_clean.get(clean_name)
+                                    if pd.notnull(val) and str(val).strip() not in ["", "-", "0", "nan"]: 
+                                        return str(val)
                                 return "-"
 
                             # Recolección de variables
                             sede = get_val(['SEDE'])
                             sexo = get_val(['SEXO'])
-                            est_civil = get_val(['ESTADO CIVIL'])
-                            f_nac = get_val(['FECHA DE NACIMIENTO'])
+                            est_civil = get_val(['ESTADO CIVIL', 'ESTADO_CIVIL'])
+                            f_nac = get_val(['FECHA DE NACIMIENTO', 'NACIMIENTO'])
                             edad = get_val(['EDAD'])
-                            telefono = get_val(['CELULAR', 'TELÉFONO', 'TELEFONO'])
-                            correo = get_val(['CORREO', 'EMAIL'])
-                            direccion = get_val(['DIRECCIÓN', 'DIRECCION'])
+                            telefono = get_val(['CELULAR', 'TELEFONO', 'TELÉFONO'])
+                            correo = get_val(['CORREO', 'EMAIL', 'CORREO ELECTRONICO'])
+                            direccion = get_val(['DIRECCION', 'DIRECCIÓN', 'DOMICILIO'])
                             
-                            # --- LÓGICA DE GOOGLE MAPS ---
+                            # Lógica de Google Maps
                             if direccion != "-":
-                                # Limpiamos la dirección para la URL
                                 query_map = direccion.replace(" ", "+")
                                 link_mapa = f"https://www.google.com/maps/search/?api=1&query={query_map}"
                                 dir_display = f'<a href="{link_mapa}" target="_blank" style="color: #4da3ff; text-decoration: none; font-weight: bold;">📍 {direccion} (Ver en Google Maps 🗺️)</a>'
                             else:
                                 dir_display = "-"
 
-                            # RENDERIZADO DE LA TARJETA (CSS Inline para asegurar que se vea bien)
+                            # Renderizado HTML
                             st.markdown(f"""
-                            <div style="background-color: rgba(255, 215, 0, 0.08); padding: 25px; border-radius: 15px; border: 2px solid #FFD700; color: inherit; font-family: sans-serif;">
+                            <div style="background-color: rgba(255, 215, 0, 0.05); padding: 25px; border-radius: 15px; border: 2px solid #FFD700; color: inherit; font-family: sans-serif;">
                                 <h2 style="margin-top:0; color: #FFD700; border-bottom: 1px solid rgba(255,215,0,0.3); padding-bottom:10px;">🪪 Expediente del Personal</h2>
                                 
                                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin-top: 15px;">
-                                    <div>
-                                        <p style="margin:0; font-size: 0.85em; opacity: 0.7;">📍 SEDE</p>
-                                        <p style="margin:0; font-weight: bold; font-size: 1.1em;">{sede}</p>
-                                    </div>
-                                    <div>
-                                        <p style="margin:0; font-size: 0.85em; opacity: 0.7;">🚻 SEXO</p>
-                                        <p style="margin:0; font-weight: bold; font-size: 1.1em;">{sexo}</p>
-                                    </div>
-                                    <div>
-                                        <p style="margin:0; font-size: 0.85em; opacity: 0.7;">💍 ESTADO CIVIL</p>
-                                        <p style="margin:0; font-weight: bold; font-size: 1.1em;">{est_civil}</p>
-                                    </div>
-                                    <div>
-                                        <p style="margin:0; font-size: 0.85em; opacity: 0.7;">🎂 F. NACIMIENTO</p>
-                                        <p style="margin:0; font-weight: bold; font-size: 1.1em;">{f_nac}</p>
-                                    </div>
-                                    <div>
-                                        <p style="margin:0; font-size: 0.85em; opacity: 0.7;">🔢 EDAD ACTUAL</p>
-                                        <p style="margin:0; font-weight: bold; font-size: 1.1em;">{edad} años</p>
-                                    </div>
-                                    <div>
-                                        <p style="margin:0; font-size: 0.85em; opacity: 0.7;">📱 TELÉFONO / CELULAR</p>
-                                        <p style="margin:0; font-weight: bold; font-size: 1.1em;">{telefono}</p>
-                                    </div>
+                                    <div><p style="margin:0; font-size: 0.85em; opacity: 0.7;">📍 SEDE</p><p style="margin:0; font-weight: bold; font-size: 1.1em;">{sede}</p></div>
+                                    <div><p style="margin:0; font-size: 0.85em; opacity: 0.7;">🚻 SEXO</p><p style="margin:0; font-weight: bold; font-size: 1.1em;">{sexo}</p></div>
+                                    <div><p style="margin:0; font-size: 0.85em; opacity: 0.7;">💍 ESTADO CIVIL</p><p style="margin:0; font-weight: bold; font-size: 1.1em;">{est_civil}</p></div>
+                                    <div><p style="margin:0; font-size: 0.85em; opacity: 0.7;">🎂 F. NACIMIENTO</p><p style="margin:0; font-weight: bold; font-size: 1.1em;">{f_nac}</p></div>
+                                    <div><p style="margin:0; font-size: 0.85em; opacity: 0.7;">🔢 EDAD ACTUAL</p><p style="margin:0; font-weight: bold; font-size: 1.1em;">{edad} años</p></div>
+                                    <div><p style="margin:0; font-size: 0.85em; opacity: 0.7;">📱 TELÉFONO / CELULAR</p><p style="margin:0; font-weight: bold; font-size: 1.1em;">{telefono}</p></div>
                                 </div>
                                 
                                 <div style="margin-top: 25px; padding-top: 15px; border-top: 1px dashed rgba(255,215,0,0.3);">
@@ -723,9 +695,7 @@ else:
                             </div>
                             """, unsafe_allow_html=True)
                             
-                            st.write("") # Espaciador
-                            
-                            # IMPORTANTE: Definimos 'sel' para que los botones de Actualizar que están más abajo funcionen
+                            st.write("") 
                             sel = vst.head(1)
                             
                         # =========================================================
@@ -1637,6 +1607,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
