@@ -660,21 +660,21 @@ else:
                         # Eliminamos duplicados de la base
                         vst = vst.loc[:, ~vst.columns.duplicated()]
             
-                        # =========================================================
+                       # =========================================================
                         # 1. SI ES DATOS GENERALES -> DISEÑO TIPO FICHA (TARJETA)
                         # =========================================================
                         if h_name == "DATOS GENERALES" and not vst.empty:
-                            idx = vst.index[0]  # Crucial para que el botón Actualizar sepa qué fila es
+                            idx = vst.index[0]  # Crucial para que el botón Actualizar funcione
                             ficha = vst.iloc[0] 
                             
-                            # Función para obtener valores de forma segura
+                            # Función interna para buscar datos incluso si cambian las tildes
                             def get_val(names):
                                 for name in names:
                                     val = ficha.get(name)
                                     if pd.notnull(val) and str(val).strip() != "": return str(val)
                                 return "-"
 
-                            # Recolección de datos
+                            # Recolección de variables
                             sede = get_val(['SEDE'])
                             sexo = get_val(['SEXO'])
                             est_civil = get_val(['ESTADO CIVIL'])
@@ -684,58 +684,63 @@ else:
                             correo = get_val(['CORREO', 'EMAIL'])
                             direccion = get_val(['DIRECCIÓN', 'DIRECCION'])
                             
-                            # --- ENLACE A GOOGLE MAPS CORREGIDO ---
+                            # --- LÓGICA DE GOOGLE MAPS ---
                             if direccion != "-":
-                                query = direccion.replace(" ", "+")
-                                link_mapa = f"https://www.google.com/maps/search/?api=1&query={query}"
-                                dir_display = f'<a href="{link_mapa}" target="_blank" style="color: #007bff; text-decoration: none;">📍 {direccion} (Ver en Mapa)</a>'
+                                # Limpiamos la dirección para la URL
+                                query_map = direccion.replace(" ", "+")
+                                link_mapa = f"https://www.google.com/maps/search/?api=1&query={query_map}"
+                                dir_display = f'<a href="{link_mapa}" target="_blank" style="color: #4da3ff; text-decoration: none; font-weight: bold;">📍 {direccion} (Ver en Google Maps 🗺️)</a>'
                             else:
                                 dir_display = "-"
 
-                            # DISEÑO DE LA FICHA CON COLORES COMPATIBLES
+                            # RENDERIZADO DE LA TARJETA (CSS Inline para asegurar que se vea bien)
                             st.markdown(f"""
-                            <div style="background-color: rgba(255, 215, 0, 0.1); padding: 25px; border-radius: 15px; border: 2px solid #FFD700; color: inherit;">
-                                <h2 style="margin-top:0; color: #FFD700;">🪪 Expediente del Personal</h2>
-                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                            <div style="background-color: rgba(255, 215, 0, 0.08); padding: 25px; border-radius: 15px; border: 2px solid #FFD700; color: inherit; font-family: sans-serif;">
+                                <h2 style="margin-top:0; color: #FFD700; border-bottom: 1px solid rgba(255,215,0,0.3); padding-bottom:10px;">🪪 Expediente del Personal</h2>
+                                
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin-top: 15px;">
                                     <div>
-                                        <p style="margin:0; font-size: 0.9em; opacity: 0.8;">📍 SEDE</p>
+                                        <p style="margin:0; font-size: 0.85em; opacity: 0.7;">📍 SEDE</p>
                                         <p style="margin:0; font-weight: bold; font-size: 1.1em;">{sede}</p>
                                     </div>
                                     <div>
-                                        <p style="margin:0; font-size: 0.9em; opacity: 0.8;">🚻 SEXO</p>
+                                        <p style="margin:0; font-size: 0.85em; opacity: 0.7;">🚻 SEXO</p>
                                         <p style="margin:0; font-weight: bold; font-size: 1.1em;">{sexo}</p>
                                     </div>
                                     <div>
-                                        <p style="margin:0; font-size: 0.9em; opacity: 0.8;">💍 ESTADO CIVIL</p>
+                                        <p style="margin:0; font-size: 0.85em; opacity: 0.7;">💍 ESTADO CIVIL</p>
                                         <p style="margin:0; font-weight: bold; font-size: 1.1em;">{est_civil}</p>
                                     </div>
                                     <div>
-                                        <p style="margin:0; font-size: 0.9em; opacity: 0.8;">🎂 NACIMIENTO</p>
+                                        <p style="margin:0; font-size: 0.85em; opacity: 0.7;">🎂 F. NACIMIENTO</p>
                                         <p style="margin:0; font-weight: bold; font-size: 1.1em;">{f_nac}</p>
                                     </div>
                                     <div>
-                                        <p style="margin:0; font-size: 0.9em; opacity: 0.8;">🔢 EDAD</p>
+                                        <p style="margin:0; font-size: 0.85em; opacity: 0.7;">🔢 EDAD ACTUAL</p>
                                         <p style="margin:0; font-weight: bold; font-size: 1.1em;">{edad} años</p>
                                     </div>
                                     <div>
-                                        <p style="margin:0; font-size: 0.9em; opacity: 0.8;">📱 TELÉFONO</p>
+                                        <p style="margin:0; font-size: 0.85em; opacity: 0.7;">📱 TELÉFONO / CELULAR</p>
                                         <p style="margin:0; font-weight: bold; font-size: 1.1em;">{telefono}</p>
                                     </div>
                                 </div>
-                                <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.2); margin: 20px 0;">
-                                <div style="margin-bottom: 15px;">
-                                    <p style="margin:0; font-size: 0.9em; opacity: 0.8;">📧 CORREO ELECTRÓNICO</p>
-                                    <p style="margin:0; font-weight: bold; font-size: 1.1em;">{correo}</p>
-                                </div>
-                                <div>
-                                    <p style="margin:0; font-size: 0.9em; opacity: 0.8;">🏠 DIRECCIÓN ACTUAL</p>
-                                    <p style="margin:0; font-weight: bold; font-size: 1.1em;">{dir_display}</p>
+                                
+                                <div style="margin-top: 25px; padding-top: 15px; border-top: 1px dashed rgba(255,215,0,0.3);">
+                                    <div style="margin-bottom: 15px;">
+                                        <p style="margin:0; font-size: 0.85em; opacity: 0.7;">📧 CORREO ELECTRÓNICO</p>
+                                        <p style="margin:0; font-weight: bold; font-size: 1.1em;">{correo}</p>
+                                    </div>
+                                    <div>
+                                        <p style="margin:0; font-size: 0.85em; opacity: 0.7;">🏠 DIRECCIÓN DE DOMICILIO</p>
+                                        <p style="margin:0; font-size: 1.1em;">{dir_display}</p>
+                                    </div>
                                 </div>
                             </div>
                             """, unsafe_allow_html=True)
                             
-                            st.write("") # Espacio pequeño
-                            # Importante: dejamos 'sel' cargado para que los botones de abajo funcionen
+                            st.write("") # Espaciador
+                            
+                            # IMPORTANTE: Definimos 'sel' para que los botones de Actualizar que están más abajo funcionen
                             sel = vst.head(1)
                             
                         # =========================================================
@@ -1647,6 +1652,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
