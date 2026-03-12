@@ -1424,41 +1424,81 @@ else:
                 df_cumple[col_fnac] = pd.to_datetime(df_cumple[col_fnac], errors="coerce")
                 df_cumple = df_cumple.dropna(subset=[col_fnac])
                 
-                # Cálculos de meses en Español
+                # Cálculos de meses
                 meses = {1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril", 5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto", 9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"}
                 df_cumple["Mes_Num"] = df_cumple[col_fnac].dt.month
+                df_cumple["Dia"] = df_cumple[col_fnac].dt.day
                 df_cumple["Mes"] = df_cumple["Mes_Num"].map(meses)
                 
                 año_actual = date.today().year
                 df_cumple["Años a cumplir"] = año_actual - df_cumple[col_fnac].dt.year
+                df_cumple["Fecha de cumpleaños"] = df_cumple["Dia"].astype(str) + " de " + df_cumple["Mes"]
                 
-                # Formato en Español: "15 de Octubre"
-                df_cumple["Fecha de cumpleaños"] = df_cumple[col_fnac].dt.day.astype(str) + " de " + df_cumple["Mes"]
-                
-                # Filtros
+                # --- Filtros ---
                 col1, col2 = st.columns(2)
                 with col1:
-                    sedes_opciones = ["Local Giraldez", "Local San Carlos", "Local Abancay", "Local Lince", "Local Pueblo Libre"]
+                    sedes_opciones = sorted(df_cumple["sede"].unique())
                     f_sede = st.multiselect("Sede", options=sedes_opciones)
                 with col2:
-                    f_mes = st.multiselect("Mes", options=list(meses.values()))
+                    # Por defecto seleccionamos el mes actual
+                    f_mes = st.multiselect("Mes", options=list(meses.values()), default=[meses[date.today().month]])
                 
-                if f_sede and "sede" in df_cumple.columns: df_cumple = df_cumple[df_cumple["sede"].isin(f_sede)]
+                if f_sede: df_cumple = df_cumple[df_cumple["sede"].isin(f_sede)]
                 if f_mes: df_cumple = df_cumple[df_cumple["Mes"].isin(f_mes)]
                 
-                df_cumple = df_cumple.sort_values("Mes_Num")
-                df_cumple.rename(columns={"dni": "DNI", col_nom_per: "Trabajador", "sede": "Sede"}, inplace=True)
+                # Ordenar por día para la visualización de tarjetas
+                df_cumple = df_cumple.sort_values(["Mes_Num", "Dia"])
+
+                # --- DISEÑO DE TARJETAS VISUALES ---
+                st.markdown("### ✨ Celebraciones Visuales")
                 
+                # URL RAW de tus imágenes en GitHub
+                img_mes_url = "https://raw.githubusercontent.com/agalindoUR/SISTEMA_GTH/main/img_mes_url.png" 
+                img_ind_url = "https://raw.githubusercontent.com/agalindoUR/SISTEMA_GTH/main/img_ind_url.jpg"
+
+                # 1. Tarjeta Grupal (Cumpleañeros del Mes)
+                nombres_mes = "<br>".join(df_cumple["Trabajador"].tolist()) if not df_cumple.empty else "Nadie este mes"
+                
+                st.markdown(f"""
+                    <div style="position: relative; width: 100%; max-width: 600px; margin: auto;">
+                        <img src="{img_mes_url}" style="width: 100%; border-radius: 15px; box-shadow: 0px 4px 10px rgba(0,0,0,0.2);">
+                        <div style="position: absolute; top: 35%; left: 10%; right: 10%; text-align: center; color: #FFD700; font-family: sans-serif; font-weight: bold;">
+                            <p style="font-size: 1.8em; margin:0; text-shadow: 1px 1px 2px black;">{", ".join(f_mes) if f_mes else "Mes"}</p>
+                            <p style="font-size: 1.1em; color: white; margin-top: 15px; line-height: 1.5; text-shadow: 1px 1px 2px black;">{nombres_mes}</p>
+                        </div>
+                    </div>
+                """, unsafe_allow_html=True)
+
+                st.markdown("<br>", unsafe_allow_html=True)
+
+                # 2. Tarjetas Individuales
+                if not df_cumple.empty:
+                    st.info("💡 Desliza para ver las tarjetas individuales de este mes")
+                    for _, row in df_cumple.iterrows():
+                        with st.expander(f"Ver tarjeta de {row['Trabajador']}"):
+                            st.markdown(f"""
+                                <div style="position: relative; width: 100%; max-width: 500px; margin: auto;">
+                                    <img src="{img_ind_url}" style="width: 100%; border-radius: 15px; box-shadow: 0px 4px 10px rgba(0,0,0,0.2);">
+                                    <div style="position: absolute; top: 40%; left: 52%; width: 40%; text-align: center; color: #4A0000; font-family: sans-serif;">
+                                        <b style="font-size: 1.1em; display: block; margin-bottom: 5px;">{row['Trabajador']}</b>
+                                        <span style="font-size: 0.9em; background-color: rgba(255,215,0,0.3); padding: 2px 8px; border-radius: 10px;">{row['Fecha de cumpleaños']}</span>
+                                    </div>
+                                </div>
+                            """, unsafe_allow_html=True)
+
                 st.markdown("---")
-                st.dataframe(df_cumple[["DNI", "Trabajador", "Sede", "Fecha de cumpleaños", "Años a cumplir"]].style.set_properties(**{'font-size': '15px'}), hide_index=True, use_container_width=False)
-                # BOTÓN DE EXPORTAR A EXCEL (CUMPLEAÑEROS)
-                df_export_cump = df_cumple[["DNI", "Trabajador", "Sede", "Fecha de cumpleaños", "Años a cumplir"]].copy()
+                
+                # Tabla original y Botón de Exportar
+                df_cumple.rename(columns={"dni": "DNI", col_nom_per: "Trabajador", "sede": "Sede"}, inplace=True)
+                st.dataframe(df_cumple[["DNI", "Trabajador", "Sede", "Fecha de cumpleaños", "Años a cumplir"]], hide_index=True)
+                
                 output_cump = BytesIO()
                 with pd.ExcelWriter(output_cump, engine='openpyxl') as writer:
-                    df_export_cump.to_excel(writer, index=False, sheet_name='Cumpleañeros')
-                st.download_button(label="📥 Exportar a Excel", data=output_cump.getvalue(), file_name="Reporte_Cumpleañeros.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", key="btn_exp_cump")
+                    df_cumple[["DNI", "Trabajador", "Sede", "Fecha de cumpleaños", "Años a cumplir"]].to_excel(writer, index=False, sheet_name='Cumpleañeros')
+                st.download_button(label="📥 Exportar a Excel", data=output_cump.getvalue(), file_name="Reporte_Cumpleañeros.xlsx", key="btn_exp_cump")
+
             else:
-                st.warning("⚠️ No se encontró la columna de 'Fecha de nacimiento' en Datos Generales.")
+                st.warning("⚠️ No se encontró la columna de 'Fecha de nacimiento'.")
         else:
             st.warning("⚠️ Faltan datos en Personal o Datos Generales.")
 
@@ -1599,6 +1639,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
