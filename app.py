@@ -58,94 +58,86 @@ def obtener_link_directo_drive(url):
             return url
     return url
 # ==========================================
-# 2. FUNCIONES DE DATOS Y WORD (VERSIÓN GOOGLE SHEETS)
+# 2. FUNCIONES DE DATOS Y CARGA OPTIMIZADA
 # ==========================================
 
 SCOPE = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 SHEET_NAME = "DB_SISTEMA_GTH" 
 
 def obtener_credenciales():
+    """Obtiene las credenciales desde Streamlit Secrets o archivo local."""
     if "google_json" in st.secrets:
+        import json
         creds_dict = json.loads(st.secrets["google_json"])
         return ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, SCOPE)
     else:
-        # Intento por archivo local si no hay secrets
         return ServiceAccountCredentials.from_json_keyfile_name("credenciales.json", SCOPE)
 
 @st.cache_data(ttl=600)
 def load_data():
+    """Carga y procesa todas las pestañas del Google Sheet de forma eficiente."""
     creds = obtener_credenciales()
     client = gspread.authorize(creds)
     spreadsheet = client.open(SHEET_NAME)
     
-    # ⚡ OPTIMIZACIÓN REAL: Traemos la lista de hojas una sola vez
-    worksheets = spreadsheet.worksheets() 
+    # Traemos todas las hojas de una sola vez
+    worksheets = spreadsheet.worksheets()
+    hojas_en_drive = {ws.title: ws for ws in worksheets}
     
-    all_data = {}
-    for sh in worksheets:
-        # Cargamos los registros de cada pestaña
-        data = sh.get_all_records()
-        df = pd.DataFrame(data)
-        # Limpieza de nombres de columnas (vital para el buscador)
-        df.columns = df.columns.str.strip()
-        all_data[sh.title] = df
-        
-    return all_data
-
-# --- CARGA INICIAL ---
-# Ejecutamos la función y guardamos el diccionario en 'dfs'
-dfs = load_data()
-
-    # ⚡ SÚPER OPTIMIZACIÓN: Pedir todas las hojas en 1 sola petición
-    hojas_existentes = {ws.title: ws for ws in sheet.worksheets()}
-
     dfs = {}
+    
+    # Iteramos sobre las columnas que tu App espera (COLUMNAS debe estar definido antes)
+    # Si COLUMNAS no está definido, puedes usar: for h, worksheet in hojas_en_drive.items():
     for h, cols_requeridas in COLUMNAS.items():
-        if h in hojas_existentes:
+        if h in hojas_en_drive:
             try:
-                worksheet = hojas_existentes[h]
-                # 1. Obtenemos los datos crudos
+                worksheet = hojas_en_drive[h]
                 data = worksheet.get_all_records()
                 df = pd.DataFrame(data)
 
-                # 2. LIMPIEZA DE CABECERAS (Para evitar el error de duplicados y tildes)
-                # Pasamos todo a minúsculas y quitamos espacios para procesar internamente
+                if df.empty:
+                    dfs[h] = df
+                    continue
+
+                # 1. LIMPIEZA DE CABECERAS
+                # Quitamos espacios, tildes y pasamos a minúsculas para procesar internamente
                 df.columns = [str(c).strip().lower()
                               .replace('á', 'a').replace('é', 'e')
                               .replace('í', 'i').replace('ó', 'o')
                               .replace('ú', 'u') for c in df.columns]
 
-                # 3. RENOMBRADO ESTRATÉGICO (Estandarizar AREA y otros)
-                # Buscamos cualquier variante de "area" y la nombramos "area"
+                # 2. RENOMBRADO ESTRATÉGICO
                 for col in df.columns:
-                    if "rea" in col: # detecta area, AREA, área, Área
+                    if "rea" in col: 
                         df.rename(columns={col: "area"}, inplace=True)
                 
-                # Otros renombres específicos de tu lógica
                 if h == "CONTRATOS":
                     if "sueldo" in df.columns: df.rename(columns={"sueldo": "remuneracion basica"}, inplace=True)
                     if "tipo colaborador" in df.columns: df.rename(columns={"tipo colaborador": "tipo de trabajador"}, inplace=True)
-                    if "tipo" in df.columns and "tipo de trabajador" not in df.columns: df.rename(columns={"tipo": "tipo de trabajador"}, inplace=True)
 
-                # 4. LIMPIEZA DE DNI
+                # 3. LIMPIEZA DE DNI
                 if "dni" in df.columns:
                     df["dni"] = df["dni"].astype(str).str.strip().str.replace(r'\.0$', '', regex=True).str.zfill(8)
 
-                # 5. ASEGURAR COLUMNAS REQUERIDAS (Evita que la App explote si falta una columna)
+                # 4. ASEGURAR COLUMNAS REQUERIDAS
                 for req_col in cols_requeridas:
                     req_col_clean = req_col.strip().lower()
                     if req_col_clean not in df.columns:
-                        df[req_col_clean] = "" # Creamos la columna si no existe en el Excel
+                        df[req_col_clean] = "" 
 
                 dfs[h] = df
 
             except Exception as e:
                 st.error(f"⚠️ Error al procesar la pestaña '{h}': {e}")
-                dfs[h] = pd.DataFrame() # Entregar vacío para que no rompa el resto
+                dfs[h] = pd.DataFrame()
         else:
             dfs[h] = pd.DataFrame()
             
     return dfs
+
+# --- CARGA ÚNICA DE DATOS ---
+# Esto define la variable 'dfs' que usa el buscador y el resto de la app
+dfs = load_data()
 
 def save_data(dfs):
     creds = obtener_credenciales()
@@ -1660,6 +1652,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
