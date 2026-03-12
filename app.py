@@ -634,14 +634,12 @@ else:
                         # 1. SI ES DATOS GENERALES -> DISEÑO TIPO FICHA (TARJETA)
                         # =========================================================
                         if h_name == "DATOS GENERALES" and not vst.empty:
-                            idx = vst.index[0]  
-                            ficha = vst.iloc[0] 
+                            ficha = vst.iloc[0]
                             
                             def get_val(names):
-                                # Normalización de llaves (minúsculas, sin tildes, sin guiones bajos)
+                                # Limpieza interna para asegurar que encuentre las columnas
                                 ficha_clean = {str(k).lower().replace('á','a').replace('é','e').replace('í','i').replace('ó','o').replace('ú','u').replace('_',' '): v 
                                                for k, v in ficha.to_dict().items()}
-                                
                                 for name in names:
                                     clean_name = name.lower().replace('á','a').replace('é','e').replace('í','i').replace('ó','o').replace('ú','u').replace('_',' ')
                                     val = ficha_clean.get(clean_name)
@@ -649,7 +647,7 @@ else:
                                         return str(val)
                                 return "-"
 
-                            # Extracción de variables con limpieza
+                            # Asignación de variables desde tu Google Sheets
                             sede = get_val(['SEDE'])
                             sexo = get_val(['SEXO'])
                             est_civil = get_val(['ESTADO CIVIL', 'ESTADO_CIVIL'])
@@ -659,19 +657,15 @@ else:
                             correo = get_val(['CORREO', 'EMAIL', 'CORREO ELECTRONICO'])
                             direccion = get_val(['DIRECCION', 'DIRECCIÓN', 'DOMICILIO'])
                             
-                            # Configuración de Google Maps
+                            dir_display = "-"
                             if direccion != "-":
                                 query_map = direccion.replace(" ", "+")
                                 link_mapa = f"https://www.google.com/maps/search/?api=1&query={query_map}"
                                 dir_display = f'<a href="{link_mapa}" target="_blank" style="color: #4da3ff; text-decoration: none; font-weight: bold;">📍 {direccion} (Ver en Google Maps 🗺️)</a>'
-                            else:
-                                dir_display = "-"
 
-                            # Renderizado del bloque HTML (Mismo diseño dorado que usas)
                             st.markdown(f"""
                             <div style="background-color: rgba(255, 215, 0, 0.05); padding: 25px; border-radius: 15px; border: 2px solid #FFD700; color: inherit; font-family: sans-serif;">
                                 <h2 style="margin-top:0; color: #FFD700; border-bottom: 1px solid rgba(255,215,0,0.3); padding-bottom:10px;">🪪 Expediente del Personal</h2>
-                                
                                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin-top: 15px;">
                                     <div><p style="margin:0; font-size: 0.85em; opacity: 0.7;">📍 SEDE</p><p style="margin:0; font-weight: bold; font-size: 1.1em;">{sede}</p></div>
                                     <div><p style="margin:0; font-size: 0.85em; opacity: 0.7;">🚻 SEXO</p><p style="margin:0; font-weight: bold; font-size: 1.1em;">{sexo}</p></div>
@@ -680,7 +674,6 @@ else:
                                     <div><p style="margin:0; font-size: 0.85em; opacity: 0.7;">🔢 EDAD ACTUAL</p><p style="margin:0; font-weight: bold; font-size: 1.1em;">{edad} años</p></div>
                                     <div><p style="margin:0; font-size: 0.85em; opacity: 0.7;">📱 TELÉFONO / CELULAR</p><p style="margin:0; font-weight: bold; font-size: 1.1em;">{telefono}</p></div>
                                 </div>
-                                
                                 <div style="margin-top: 25px; padding-top: 15px; border-top: 1px dashed rgba(255,215,0,0.3);">
                                     <div style="margin-bottom: 15px;">
                                         <p style="margin:0; font-size: 0.85em; opacity: 0.7;">📧 CORREO ELECTRÓNICO</p>
@@ -694,7 +687,7 @@ else:
                             </div>
                             """, unsafe_allow_html=True)
                             
-                            st.write("") 
+                            st.write("")
                             sel = vst.head(1)
                                                                                                    
                         # =========================================================
@@ -1606,6 +1599,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
