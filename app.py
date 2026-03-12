@@ -75,7 +75,18 @@ def obtener_credenciales():
 def load_data():
     creds = obtener_credenciales()
     client = gspread.authorize(creds)
-    sheet = client.open(SHEET_NAME)
+    spreadsheet = client.open(SHEET_NAME)
+    
+    # Traemos la lista de todas las pestañas de una sola vez
+    worksheets = spreadsheet.worksheets() 
+    
+    all_data = {}
+    for sheet in worksheets:
+        # Convertimos cada pestaña a DataFrame de golpe
+        data = sheet.get_all_records()
+        all_data[sheet.title] = pd.DataFrame(data)
+        
+    return all_data
 
     # ⚡ SÚPER OPTIMIZACIÓN: Pedir todas las hojas en 1 sola petición
     hojas_existentes = {ws.title: ws for ws in sheet.worksheets()}
@@ -1636,6 +1647,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
