@@ -76,17 +76,20 @@ def load_data():
     creds = obtener_credenciales()
     client = gspread.authorize(creds)
     spreadsheet = client.open(SHEET_NAME)
-    
-    # Traemos la lista de todas las pestañas de una sola vez
     worksheets = spreadsheet.worksheets() 
     
     all_data = {}
     for sheet in worksheets:
-        # Convertimos cada pestaña a DataFrame de golpe
         data = sheet.get_all_records()
-        all_data[sheet.title] = pd.DataFrame(data)
+        df = pd.DataFrame(data)
+        # Normalizamos los nombres de columnas para evitar errores de espacios o mayúsculas
+        df.columns = df.columns.str.strip()
+        all_data[sheet.title] = df
         
     return all_data
+
+# --- LÍNEA VITAL DESPUÉS DE LA FUNCIÓN ---
+dfs = load_data() # Esto asigna los datos a la variable que usa tu buscador
 
     # ⚡ SÚPER OPTIMIZACIÓN: Pedir todas las hojas en 1 sola petición
     hojas_existentes = {ws.title: ws for ws in sheet.worksheets()}
@@ -1652,6 +1655,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
