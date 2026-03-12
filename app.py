@@ -649,7 +649,7 @@ else:
                                         return str(val)
                                 return "-"
 
-                            # Extracción de variables
+                            # Extracción de variables con limpieza
                             sede = get_val(['SEDE'])
                             sexo = get_val(['SEXO'])
                             est_civil = get_val(['ESTADO CIVIL', 'ESTADO_CIVIL'])
@@ -667,10 +667,11 @@ else:
                             else:
                                 dir_display = "-"
 
-                            # Renderizado del bloque HTML
+                            # Renderizado del bloque HTML (Mismo diseño dorado que usas)
                             st.markdown(f"""
-                            <h3 style='color: #FFD700;'>🪪 Expediente del Personal</h3>
                             <div style="background-color: rgba(255, 215, 0, 0.05); padding: 25px; border-radius: 15px; border: 2px solid #FFD700; color: inherit; font-family: sans-serif;">
+                                <h2 style="margin-top:0; color: #FFD700; border-bottom: 1px solid rgba(255,215,0,0.3); padding-bottom:10px;">🪪 Expediente del Personal</h2>
+                                
                                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin-top: 15px;">
                                     <div><p style="margin:0; font-size: 0.85em; opacity: 0.7;">📍 SEDE</p><p style="margin:0; font-weight: bold; font-size: 1.1em;">{sede}</p></div>
                                     <div><p style="margin:0; font-size: 0.85em; opacity: 0.7;">🚻 SEXO</p><p style="margin:0; font-weight: bold; font-size: 1.1em;">{sexo}</p></div>
@@ -695,7 +696,7 @@ else:
                             
                             st.write("") 
                             sel = vst.head(1)
-                                                                               
+                                                                                                   
                         # =========================================================
                         # 2. SI ES CUALQUIER OTRA PESTAÑA -> DISEÑO DE TABLA NORMAL
                         # =========================================================
@@ -1605,6 +1606,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
