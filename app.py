@@ -653,57 +653,78 @@ else:
                         # 1. SI ES DATOS GENERALES -> DISEÑO TIPO FICHA (TARJETA)
                         # =========================================================
                         if h_name == "DATOS GENERALES" and not vst.empty:
-                            idx = vst.index[0]  # CAPTURAMOS EL ÍNDICE REAL PARA PODER GUARDAR
+                            idx = vst.index[0]  # Crucial para que el botón Actualizar sepa qué fila es
                             ficha = vst.iloc[0] 
                             
-                            # Extraemos datos con limpieza
-                            def get_val(df_row, names):
+                            # Función para obtener valores de forma segura
+                            def get_val(names):
                                 for name in names:
-                                    val = df_row.get(name)
+                                    val = ficha.get(name)
                                     if pd.notnull(val) and str(val).strip() != "": return str(val)
                                 return "-"
 
-                            sede = get_val(ficha, ['SEDE'])
-                            sexo = get_val(ficha, ['SEXO'])
-                            est_civil = get_val(ficha, ['ESTADO CIVIL'])
-                            f_nac = get_val(ficha, ['FECHA DE NACIMIENTO'])
-                            edad = get_val(ficha, ['EDAD'])
-                            telefono = get_val(ficha, ['CELULAR', 'TELÉFONO', 'TELEFONO'])
-                            correo = get_val(ficha, ['CORREO', 'EMAIL'])
-                            direccion = get_val(ficha, ['DIRECCIÓN', 'DIRECCION'])
+                            # Recolección de datos
+                            sede = get_val(['SEDE'])
+                            sexo = get_val(['SEXO'])
+                            est_civil = get_val(['ESTADO CIVIL'])
+                            f_nac = get_val(['FECHA DE NACIMIENTO'])
+                            edad = get_val(['EDAD'])
+                            telefono = get_val(['CELULAR', 'TELÉFONO', 'TELEFONO'])
+                            correo = get_val(['CORREO', 'EMAIL'])
+                            direccion = get_val(['DIRECCIÓN', 'DIRECCION'])
                             
-                            # --- CORRECCIÓN GOOGLE MAPS ---
-                            dir_visual = direccion
+                            # --- ENLACE A GOOGLE MAPS CORREGIDO ---
                             if direccion != "-":
-                                # Creamos el link real a Google Maps
                                 query = direccion.replace(" ", "+")
                                 link_mapa = f"https://www.google.com/maps/search/?api=1&query={query}"
-                                dir_visual = f"[{direccion}]({link_mapa})"
+                                dir_display = f'<a href="{link_mapa}" target="_blank" style="color: #007bff; text-decoration: none;">📍 {direccion} (Ver en Mapa)</a>'
+                            else:
+                                dir_display = "-"
 
-                            # DISEÑO DE LA TARJETA
+                            # DISEÑO DE LA FICHA CON COLORES COMPATIBLES
                             st.markdown(f"""
-                            <div style="background-color: #f0f2f6; padding: 20px; border-radius: 15px; border-left: 5px solid #FFD700;">
-                                <h2 style="margin-top:0;">🪪 Expediente Personal</h2>
-                                <table style="width:100%; border:none;">
-                                    <tr>
-                                        <td style="width:33%"><b>📍 SEDE:</b><br>{sede}</td>
-                                        <td style="width:33%"><b>🚻 SEXO:</b><br>{sexo}</td>
-                                        <td style="width:33%"><b>💍 ESTADO CIVIL:</b><br>{est_civil}</td>
-                                    </tr>
-                                    <tr><td colspan="3"><br></td></tr>
-                                    <tr>
-                                        <td><b>🎂 NACIMIENTO:</b><br>{f_nac}</td>
-                                        <td><b>🔢 EDAD:</b><br>{edad} años</td>
-                                        <td><b>📱 TELÉFONO:</b><br>{telefono}</td>
-                                    </tr>
-                                </table>
-                                <hr>
-                                <p style="margin-bottom:5px;"><b>📧 CORREO ELECTRÓNICO:</b><br>{correo}</p>
-                                <p><b>🏠 DIRECCIÓN:</b><br>{dir_visual} 🗺️ <span style="font-size:0.8em;">(Clic para abrir mapa)</span></p>
+                            <div style="background-color: rgba(255, 215, 0, 0.1); padding: 25px; border-radius: 15px; border: 2px solid #FFD700; color: inherit;">
+                                <h2 style="margin-top:0; color: #FFD700;">🪪 Expediente del Personal</h2>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                                    <div>
+                                        <p style="margin:0; font-size: 0.9em; opacity: 0.8;">📍 SEDE</p>
+                                        <p style="margin:0; font-weight: bold; font-size: 1.1em;">{sede}</p>
+                                    </div>
+                                    <div>
+                                        <p style="margin:0; font-size: 0.9em; opacity: 0.8;">🚻 SEXO</p>
+                                        <p style="margin:0; font-weight: bold; font-size: 1.1em;">{sexo}</p>
+                                    </div>
+                                    <div>
+                                        <p style="margin:0; font-size: 0.9em; opacity: 0.8;">💍 ESTADO CIVIL</p>
+                                        <p style="margin:0; font-weight: bold; font-size: 1.1em;">{est_civil}</p>
+                                    </div>
+                                    <div>
+                                        <p style="margin:0; font-size: 0.9em; opacity: 0.8;">🎂 NACIMIENTO</p>
+                                        <p style="margin:0; font-weight: bold; font-size: 1.1em;">{f_nac}</p>
+                                    </div>
+                                    <div>
+                                        <p style="margin:0; font-size: 0.9em; opacity: 0.8;">🔢 EDAD</p>
+                                        <p style="margin:0; font-weight: bold; font-size: 1.1em;">{edad} años</p>
+                                    </div>
+                                    <div>
+                                        <p style="margin:0; font-size: 0.9em; opacity: 0.8;">📱 TELÉFONO</p>
+                                        <p style="margin:0; font-weight: bold; font-size: 1.1em;">{telefono}</p>
+                                    </div>
+                                </div>
+                                <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.2); margin: 20px 0;">
+                                <div style="margin-bottom: 15px;">
+                                    <p style="margin:0; font-size: 0.9em; opacity: 0.8;">📧 CORREO ELECTRÓNICO</p>
+                                    <p style="margin:0; font-weight: bold; font-size: 1.1em;">{correo}</p>
+                                </div>
+                                <div>
+                                    <p style="margin:0; font-size: 0.9em; opacity: 0.8;">🏠 DIRECCIÓN ACTUAL</p>
+                                    <p style="margin:0; font-weight: bold; font-size: 1.1em;">{dir_display}</p>
+                                </div>
                             </div>
                             """, unsafe_allow_html=True)
                             
-                            # ESTA LÍNEA ES VITAL PARA QUE EL BOTÓN "ACTUALIZAR" FUNCIONE
+                            st.write("") # Espacio pequeño
+                            # Importante: dejamos 'sel' cargado para que los botones de abajo funcionen
                             sel = vst.head(1)
                             
                         # =========================================================
@@ -1615,6 +1636,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
