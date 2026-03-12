@@ -653,52 +653,58 @@ else:
                         # 1. SI ES DATOS GENERALES -> DISEÑO TIPO FICHA (TARJETA)
                         # =========================================================
                         if h_name == "DATOS GENERALES" and not vst.empty:
-                            ficha = vst.iloc[0] # Tomamos el único registro
+                            idx = vst.index[0]  # CAPTURAMOS EL ÍNDICE REAL PARA PODER GUARDAR
+                            ficha = vst.iloc[0] 
                             
-                            # Extraemos datos (usamos get con opciones por si no llevan tilde)
-                            sede = ficha.get('SEDE', '-')
-                            sexo = ficha.get('SEXO', '-')
-                            est_civil = ficha.get('ESTADO CIVIL', '-')
-                            f_nac = ficha.get('FECHA DE NACIMIENTO', '-')
-                            edad = ficha.get('EDAD', '-')
-                            
-                            # Buscamos teléfono y correo (intenta varios nombres comunes)
-                            telefono = ficha.get('CELULAR', ficha.get('TELÉFONO', ficha.get('TELEFONO', '-')))
-                            correo = ficha.get('CORREO', ficha.get('EMAIL', '-'))
-                            direccion = str(ficha.get('DIRECCIÓN', ficha.get('DIRECCION', '-')))
-                            
-                            # --- MAGIA DE GOOGLE MAPS ---
-                            if direccion not in ['-', '', 'nan', 'None']:
-                                # Limpiamos la dirección para la URL de Google Maps
-                                dir_url = direccion.replace(' ', '+').replace(',', '')
-                                link_mapa = f"https://www.google.com/maps/search/?api=1&query={dir_url}"
-                                dir_visual = f"[{direccion}]({link_mapa}) 🗺️ *(Ver mapa)*"
-                            else:
-                                dir_visual = "-"
+                            # Extraemos datos con limpieza
+                            def get_val(df_row, names):
+                                for name in names:
+                                    val = df_row.get(name)
+                                    if pd.notnull(val) and str(val).strip() != "": return str(val)
+                                return "-"
 
-                            with st.container(border=True):
-                                st.markdown("### 🪪 Perfil del Trabajador")
-                                
-                                # Fila 1: Datos Básicos
-                                c1, c2, c3 = st.columns(3)
-                                c1.info(f"**📍 Sede:** {sede}")
-                                c2.info(f"**🚻 Sexo:** {sexo}")
-                                c3.info(f"**💍 Estado Civil:** {est_civil}")
-                                
-                                # Fila 2: Nacimiento y Contacto
-                                c4, c5, c6 = st.columns(3)
-                                c4.markdown(f"**🎂 F. Nacimiento:** {f_nac}")
-                                c5.markdown(f"**🔢 Edad:** {edad} años")
-                                c6.markdown(f"**📱 Teléfono:** {telefono}")
-                                
-                                # Fila 3: Correo y Dirección con Mapa
-                                st.divider() # Línea divisoria elegante
-                                c7, c8 = st.columns([1, 2]) # La dirección toma más espacio
-                                c7.markdown(f"**📧 Correo:** {correo}")
-                                c8.markdown(f"**🏠 Dirección:** {dir_visual}")
-                                
-                            # Como no hay tabla, seleccionamos la fila automáticamente para el modo edición
-                            sel = vst.head(1) 
+                            sede = get_val(ficha, ['SEDE'])
+                            sexo = get_val(ficha, ['SEXO'])
+                            est_civil = get_val(ficha, ['ESTADO CIVIL'])
+                            f_nac = get_val(ficha, ['FECHA DE NACIMIENTO'])
+                            edad = get_val(ficha, ['EDAD'])
+                            telefono = get_val(ficha, ['CELULAR', 'TELÉFONO', 'TELEFONO'])
+                            correo = get_val(ficha, ['CORREO', 'EMAIL'])
+                            direccion = get_val(ficha, ['DIRECCIÓN', 'DIRECCION'])
+                            
+                            # --- CORRECCIÓN GOOGLE MAPS ---
+                            dir_visual = direccion
+                            if direccion != "-":
+                                # Creamos el link real a Google Maps
+                                query = direccion.replace(" ", "+")
+                                link_mapa = f"https://www.google.com/maps/search/?api=1&query={query}"
+                                dir_visual = f"[{direccion}]({link_mapa})"
+
+                            # DISEÑO DE LA TARJETA
+                            st.markdown(f"""
+                            <div style="background-color: #f0f2f6; padding: 20px; border-radius: 15px; border-left: 5px solid #FFD700;">
+                                <h2 style="margin-top:0;">🪪 Expediente Personal</h2>
+                                <table style="width:100%; border:none;">
+                                    <tr>
+                                        <td style="width:33%"><b>📍 SEDE:</b><br>{sede}</td>
+                                        <td style="width:33%"><b>🚻 SEXO:</b><br>{sexo}</td>
+                                        <td style="width:33%"><b>💍 ESTADO CIVIL:</b><br>{est_civil}</td>
+                                    </tr>
+                                    <tr><td colspan="3"><br></td></tr>
+                                    <tr>
+                                        <td><b>🎂 NACIMIENTO:</b><br>{f_nac}</td>
+                                        <td><b>🔢 EDAD:</b><br>{edad} años</td>
+                                        <td><b>📱 TELÉFONO:</b><br>{telefono}</td>
+                                    </tr>
+                                </table>
+                                <hr>
+                                <p style="margin-bottom:5px;"><b>📧 CORREO ELECTRÓNICO:</b><br>{correo}</p>
+                                <p><b>🏠 DIRECCIÓN:</b><br>{dir_visual} 🗺️ <span style="font-size:0.8em;">(Clic para abrir mapa)</span></p>
+                            </div>
+                            """, unsafe_allow_html=True)
+                            
+                            # ESTA LÍNEA ES VITAL PARA QUE EL BOTÓN "ACTUALIZAR" FUNCIONE
+                            sel = vst.head(1)
                             
                         # =========================================================
                         # 2. SI ES CUALQUIER OTRA PESTAÑA -> DISEÑO DE TABLA NORMAL
@@ -1609,6 +1615,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
