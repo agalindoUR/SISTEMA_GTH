@@ -62,13 +62,14 @@ def obtener_link_directo_drive(url):
 # ==========================================
 
 SCOPE = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-SHEET_NAME = "DB_SISTEMA_GTH" # <- Asegúrate de que tu Google Sheet se llame exactamente así
+SHEET_NAME = "DB_SISTEMA_GTH" 
 
 def obtener_credenciales():
     if "google_json" in st.secrets:
         creds_dict = json.loads(st.secrets["google_json"])
         return ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, SCOPE)
     else:
+        # Intento por archivo local si no hay secrets
         return ServiceAccountCredentials.from_json_keyfile_name("credenciales.json", SCOPE)
 
 @st.cache_data(ttl=600)
@@ -76,20 +77,24 @@ def load_data():
     creds = obtener_credenciales()
     client = gspread.authorize(creds)
     spreadsheet = client.open(SHEET_NAME)
+    
+    # ⚡ OPTIMIZACIÓN REAL: Traemos la lista de hojas una sola vez
     worksheets = spreadsheet.worksheets() 
     
     all_data = {}
-    for sheet in worksheets:
-        data = sheet.get_all_records()
+    for sh in worksheets:
+        # Cargamos los registros de cada pestaña
+        data = sh.get_all_records()
         df = pd.DataFrame(data)
-        # Normalizamos los nombres de columnas para evitar errores de espacios o mayúsculas
+        # Limpieza de nombres de columnas (vital para el buscador)
         df.columns = df.columns.str.strip()
-        all_data[sheet.title] = df
+        all_data[sh.title] = df
         
     return all_data
 
-# --- LÍNEA VITAL DESPUÉS DE LA FUNCIÓN ---
-dfs = load_data() # Esto asigna los datos a la variable que usa tu buscador
+# --- CARGA INICIAL ---
+# Ejecutamos la función y guardamos el diccionario en 'dfs'
+dfs = load_data()
 
     # ⚡ SÚPER OPTIMIZACIÓN: Pedir todas las hojas en 1 sola petición
     hojas_existentes = {ws.title: ws for ws in sheet.worksheets()}
@@ -1655,6 +1660,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
