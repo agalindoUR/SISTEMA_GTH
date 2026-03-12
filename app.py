@@ -87,16 +87,33 @@ def load_data():
             df = pd.DataFrame(data)
             
             if not df.empty:
-                # Limpieza: Todo a minúsculas, sin tildes y quitamos espacios
-                df.columns = [
-                    str(c).strip().lower()
-                    .replace('á', 'a').replace('é', 'e')
-                    .replace('í', 'i').replace('ó', 'o')
-                    .replace('ú', 'u').replace('_', ' ') 
-                    for c in df.columns
-                ]
+                # Limpieza base para todas las hojas
+                df.columns = [str(c).strip().lower()
+                              .replace('á', 'a').replace('é', 'e')
+                              .replace('í', 'i').replace('ó', 'o')
+                              .replace('ú', 'u') for c in df.columns]
                 
-                # Especial para el DNI: quitar .0 y asegurar 8 dígitos
+                # --- CORRECCIÓN CRÍTICA PARA CONTRATOS ---
+                if h_name == "CONTRATOS":
+                    # Mapeamos los nombres del Excel a lo que el código de Word espera
+                    mapeo = {
+                        'fecha inicio': 'f_inicio',
+                        'fecha_inicio': 'f_inicio',
+                        'f inicio': 'f_inicio',
+                        'fecha termino': 'f_fin',
+                        'fecha_fin': 'f_fin',
+                        'f fin': 'f_fin'
+                    }
+                    # Renombramos solo si la columna existe en el Excel
+                    for viejo, nuevo in mapeo.items():
+                        if viejo in df.columns:
+                            df.rename(columns={viejo: nuevo}, inplace=True)
+                    
+                    # Si después de renombrar NO existe f_inicio, la creamos vacía para que no explote
+                    if 'f_inicio' not in df.columns:
+                        df['f_inicio'] = None
+
+                # Limpieza de DNI
                 if "dni" in df.columns:
                     df["dni"] = df["dni"].astype(str).str.strip().str.replace(r'\.0$', '', regex=True).str.zfill(8)
                 
@@ -106,10 +123,7 @@ def load_data():
             dfs[h_name] = pd.DataFrame()
     return dfs
 
-# --- CARGA ÚNICA DE DATOS ---
-# Esto define la variable 'dfs' que usa el buscador y el resto de la app
 dfs = load_data()
-
 def save_data(dfs):
     creds = obtener_credenciales()
     client = gspread.authorize(creds)
@@ -1623,6 +1637,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
