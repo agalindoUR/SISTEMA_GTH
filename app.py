@@ -1410,7 +1410,8 @@ else:
             col_fnac = next((c for c in df_gen.columns if "nacimiento" in c.lower() and "fecha" in c.lower()), None)
             
             if col_fnac:
-                col_nom_per = next((c for c in df_per.columns if "apellido" in c.lower() or "nombre" in c.lower()), None)
+                # Búsqueda ampliada para detectar la columna de nombres en tu Excel
+                col_nom_per = next((c for c in df_per.columns if any(x in str(c).lower() for x in ["apellido", "nombre", "trabajador", "colaborador", "personal"])), None)
                 cols_per = ["dni"]
                 if col_nom_per: cols_per.append(col_nom_per)
                 df_cumple = df_per[cols_per].copy()
@@ -1440,19 +1441,30 @@ else:
                     sedes_opciones = sorted(df_cumple["sede"].unique())
                     f_sede = st.multiselect("Sede", options=sedes_opciones)
                 with col2:
-                    # Por defecto seleccionamos el mes actual
                     f_mes = st.multiselect("Mes", options=list(meses.values()), default=[meses[date.today().month]])
                 
                 if f_sede: df_cumple = df_cumple[df_cumple["sede"].isin(f_sede)]
                 if f_mes: df_cumple = df_cumple[df_cumple["Mes"].isin(f_mes)]
                 
-                # Ordenar por día para la visualización de tarjetas
+                # Ordenar por día
                 df_cumple = df_cumple.sort_values(["Mes_Num", "Dia"])
+
+                # === CORRECCIÓN DEL KEYERROR ===
+                # Renombramos las columnas de forma dinámica y segura
+                renombres = {"dni": "DNI", "sede": "Sede"}
+                if col_nom_per:
+                    renombres[col_nom_per] = "Trabajador"
+                
+                df_cumple.rename(columns=renombres, inplace=True)
+                
+                # ¡Seguro anti-cuelgues! Si no logra encontrar la columna, la crea vacía
+                if "Trabajador" not in df_cumple.columns:
+                    df_cumple["Trabajador"] = "Nombre no especificado"
 
                 # --- DISEÑO DE TARJETAS VISUALES ---
                 st.markdown("### ✨ Celebraciones Visuales")
                 
-                # URL RAW de tus imágenes en GitHub
+                # URLs de Github confirmadas
                 img_mes_url = "https://raw.githubusercontent.com/agalindoUR/SISTEMA_GTH/main/img_mes_url.png" 
                 img_ind_url = "https://raw.githubusercontent.com/agalindoUR/SISTEMA_GTH/main/img_ind_url.jpg"
 
@@ -1488,10 +1500,10 @@ else:
 
                 st.markdown("---")
                 
-                # Tabla original y Botón de Exportar
-                df_cumple.rename(columns={"dni": "DNI", col_nom_per: "Trabajador", "sede": "Sede"}, inplace=True)
+                # Tabla original
                 st.dataframe(df_cumple[["DNI", "Trabajador", "Sede", "Fecha de cumpleaños", "Años a cumplir"]], hide_index=True)
                 
+                # Botón de Exportar
                 output_cump = BytesIO()
                 with pd.ExcelWriter(output_cump, engine='openpyxl') as writer:
                     df_cumple[["DNI", "Trabajador", "Sede", "Fecha de cumpleaños", "Años a cumplir"]].to_excel(writer, index=False, sheet_name='Cumpleañeros')
@@ -1639,6 +1651,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
