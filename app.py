@@ -743,33 +743,46 @@ else:
 
                             # Capturar datos de la fila seleccionada
                             r_sel = sel.iloc[0]
-                            p_papeleta = str(r_sel.get("PERIODO", ""))
-                            fi_papeleta = r_sel.get("F_INICIO")
-                            ff_papeleta = r_sel.get("F_FIN")
                             
-                            # TRUCO: Buscamos con o sin tilde, por si acaso, y forzamos a que sea un número entero
-                            dg_papeleta = r_sel.get("DIAS GOZADOS")
-                            if pd.isna(dg_papeleta) or dg_papeleta is None:
-                                dg_papeleta = r_sel.get("DÍAS GOZADOS", 0)
+                            # 1. BÚSQUEDA FLEXIBLE DE COLUMNAS (Ignora espacios, guiones o minúsculas)
+                            col_per = next((c for c in r_sel.index if "PERIODO" in str(c).upper()), "PERIODO")
+                            col_ini = next((c for c in r_sel.index if "INICIO" in str(c).upper()), "F_INICIO")
+                            col_fin = next((c for c in r_sel.index if "FIN" in str(c).upper()), "F_FIN")
+                            col_dias = next((c for c in r_sel.index if "GOZADOS" in str(c).upper()), "DIAS GOZADOS")
+
+                            p_papeleta = str(r_sel.get(col_per, ""))
+                            fi_papeleta_raw = r_sel.get(col_ini)
+                            ff_papeleta_raw = r_sel.get(col_fin)
+                            dg_papeleta_raw = r_sel.get(col_dias, 0)
                             
+                            # 2. CONVERSIÓN ULTRA ROBUSTA DE FECHAS (Transforma texto a fecha real)
                             try:
-                                dg_papeleta = int(float(dg_papeleta)) # Esto convierte "19.0" o "19" en 19 limpio
+                                fi_papeleta = pd.to_datetime(fi_papeleta_raw).date() if pd.notnull(fi_papeleta_raw) and str(fi_papeleta_raw).strip() != "" else None
                             except:
-                                dg_papeleta = "" # Si está vacío en tu Excel, lo deja en blanco
+                                fi_papeleta = None
+                                
+                            try:
+                                ff_papeleta = pd.to_datetime(ff_papeleta_raw).date() if pd.notnull(ff_papeleta_raw) and str(ff_papeleta_raw).strip() != "" else None
+                            except:
+                                ff_papeleta = None
 
-                            if hasattr(fi_papeleta, 'date'): fi_papeleta = fi_papeleta.date()
-                            if hasattr(ff_papeleta, 'date'): ff_papeleta = ff_papeleta.date()
+                            # 3. LIMPIEZA DE LOS DÍAS GOZADOS (Como lo tenías, pero más directo)
+                            try:
+                                dg_papeleta = int(float(dg_papeleta_raw))
+                            except:
+                                dg_papeleta = 0
 
+                            # 4. BOTÓN Y VALIDACIÓN FINAL
                             if st.button(f"📄 Generar Papeleta de Impresión (Periodo {p_papeleta})", key="btn_print_vaca_tab", use_container_width=False):
-                                if pd.isnull(fi_papeleta) or pd.isnull(ff_papeleta):
-                                    st.error("⚠️ La fila seleccionada no tiene fechas válidas de inicio o fin.")
+                                if fi_papeleta is None or ff_papeleta is None:
+                                    st.error(f"⚠️ La fila seleccionada no tiene fechas válidas. Detectado Inicio: '{fi_papeleta_raw}' | Fin: '{ff_papeleta_raw}'")
                                 else:
                                     # AQUÍ LLAMAMOS A LA FUNCIÓN CON TODOS LOS DATOS
                                     papeleta_word = gen_papeleta_vac(ape_c, nom_p_c, dni_buscado, current_cargo, f_ingreso_val, p_papeleta, fi_papeleta, ff_papeleta, dg_papeleta)
                                     if papeleta_word:
                                         st.markdown("""<style>[data-testid="stDownloadButton"] button { background-color: #FFD700 !important; color: #4A0000 !important; font-weight: bold !important; border: 2px solid #4A0000 !important; width: 100% !important; }</style>""", unsafe_allow_html=True)
                                         st.download_button(
-                                            label=f"⬇️ Descargar Papeleta Duplicada - {nom_c}.docx",
+                                            label=f"⬇️ Descargar Papeleta - {nom_c}.docx",
                                             data=papeleta_word,
                                             file_name=f"Papeleta_{dni_buscado}_{p_papeleta}.docx",
                                             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -1748,6 +1761,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
