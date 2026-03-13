@@ -1398,122 +1398,153 @@ else:
                 type="primary"
             )
 # ==========================================
-    # MÓDULO: CUMPLEAÑEROS
-    # ==========================================
-    elif m == "Cumpleañeros":
-        st.markdown("<h2 style='color: #4A0000;'>🎂 Reporte de Cumpleañeros</h2>", unsafe_allow_html=True)
-        
-        df_per = dfs.get("PERSONAL", pd.DataFrame())
-        df_gen = dfs.get("DATOS GENERALES", pd.DataFrame())
-        
-        if not df_per.empty and not df_gen.empty:
-            col_fnac = next((c for c in df_gen.columns if "nacimiento" in c.lower() and "fecha" in c.lower()), None)
+        # MÓDULO: CUMPLEAÑEROS
+        # ==========================================
+        elif m == "Cumpleañeros":
+            st.markdown("<h2 style='color: #4A0000;'>🎂 Reporte de Cumpleañeros</h2>", unsafe_allow_html=True)
             
-            if col_fnac:
-                # Búsqueda ampliada para detectar la columna de nombres en tu Excel
-                col_nom_per = next((c for c in df_per.columns if any(x in str(c).lower() for x in ["apellido", "nombre", "trabajador", "colaborador", "personal"])), None)
-                cols_per = ["dni"]
-                if col_nom_per: cols_per.append(col_nom_per)
-                df_cumple = df_per[cols_per].copy()
+            df_per = dfs.get("PERSONAL", pd.DataFrame())
+            df_gen = dfs.get("DATOS GENERALES", pd.DataFrame())
+            
+            if not df_per.empty and not df_gen.empty:
+                col_fnac = next((c for c in df_gen.columns if "nacimiento" in c.lower() and "fecha" in c.lower()), None)
                 
-                cols_gen_a_jalar = ["dni", col_fnac]
-                if "sede" in df_gen.columns: cols_gen_a_jalar.append("sede")
-                
-                df_cumple = df_cumple.merge(df_gen[cols_gen_a_jalar], on="dni", how="inner")
-                if "sede" not in df_cumple.columns: df_cumple["sede"] = "No registrada"
-                
-                df_cumple[col_fnac] = pd.to_datetime(df_cumple[col_fnac], errors="coerce")
-                df_cumple = df_cumple.dropna(subset=[col_fnac])
-                
-                # Cálculos de meses
-                meses = {1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril", 5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto", 9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"}
-                df_cumple["Mes_Num"] = df_cumple[col_fnac].dt.month
-                df_cumple["Dia"] = df_cumple[col_fnac].dt.day
-                df_cumple["Mes"] = df_cumple["Mes_Num"].map(meses)
-                
-                año_actual = date.today().year
-                df_cumple["Años a cumplir"] = año_actual - df_cumple[col_fnac].dt.year
-                df_cumple["Fecha de cumpleaños"] = df_cumple["Dia"].astype(str) + " de " + df_cumple["Mes"]
-                
-                # --- Filtros ---
-                col1, col2 = st.columns(2)
-                with col1:
-                    sedes_opciones = sorted(df_cumple["sede"].unique())
-                    f_sede = st.multiselect("Sede", options=sedes_opciones)
-                with col2:
-                    f_mes = st.multiselect("Mes", options=list(meses.values()), default=[meses[date.today().month]])
-                
-                if f_sede: df_cumple = df_cumple[df_cumple["sede"].isin(f_sede)]
-                if f_mes: df_cumple = df_cumple[df_cumple["Mes"].isin(f_mes)]
-                
-                # Ordenar por día
-                df_cumple = df_cumple.sort_values(["Mes_Num", "Dia"])
+                if col_fnac:
+                    # --- LÓGICA PARA NOMBRES Y APELLIDOS COMPLETOS ---
+                    col_nombres = next((c for c in df_per.columns if str(c).lower().strip() in ["nombres", "nombre"]), None)
+                    col_apellidos = next((c for c in df_per.columns if str(c).lower().strip() in ["apellidos", "apellido"]), None)
+                    
+                    # Si existen ambas columnas separadas, las unimos
+                    if col_nombres and col_apellidos:
+                        df_per["Nombre_Completo_Calc"] = df_per[col_apellidos].astype(str) + " " + df_per[col_nombres].astype(str)
+                        col_nom_per = "Nombre_Completo_Calc"
+                    else:
+                        # Si ya están en una sola columna, buscamos esa
+                        col_nom_per = next((c for c in df_per.columns if any(x in str(c).lower() for x in ["nombres completo", "personal", "colaborador", "trabajador"])), None)
+                        if not col_nom_per:
+                            col_nom_per = next((c for c in df_per.columns if any(x in str(c).lower() for x in ["apellido", "nombre"])), None)
+                    
+                    # --- LÓGICA PARA LA FOTO DEL TRABAJADOR ---
+                    col_foto = next((c for c in df_per.columns if "foto" in str(c).lower()), None)
+                    
+                    cols_per = ["dni"]
+                    if col_nom_per: cols_per.append(col_nom_per)
+                    if col_foto: cols_per.append(col_foto)
+                    
+                    df_cumple = df_per[cols_per].copy()
+                    
+                    cols_gen_a_jalar = ["dni", col_fnac]
+                    if "sede" in df_gen.columns: cols_gen_a_jalar.append("sede")
+                    
+                    df_cumple = df_cumple.merge(df_gen[cols_gen_a_jalar], on="dni", how="inner")
+                    if "sede" not in df_cumple.columns: df_cumple["sede"] = "No registrada"
+                    
+                    df_cumple[col_fnac] = pd.to_datetime(df_cumple[col_fnac], errors="coerce")
+                    df_cumple = df_cumple.dropna(subset=[col_fnac])
+                    
+                    # Cálculos de meses
+                    meses = {1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril", 5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto", 9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"}
+                    df_cumple["Mes_Num"] = df_cumple[col_fnac].dt.month
+                    df_cumple["Dia"] = df_cumple[col_fnac].dt.day
+                    df_cumple["Mes"] = df_cumple["Mes_Num"].map(meses)
+                    
+                    año_actual = date.today().year
+                    df_cumple["Años a cumplir"] = año_actual - df_cumple[col_fnac].dt.year
+                    df_cumple["Fecha de cumpleaños"] = df_cumple["Dia"].astype(str) + " de " + df_cumple["Mes"]
+                    
+                    # --- Filtros ---
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        sedes_opciones = sorted(df_cumple["sede"].unique())
+                        f_sede = st.multiselect("Sede", options=sedes_opciones)
+                    with col2:
+                        # Por defecto seleccionamos el mes actual
+                        f_mes = st.multiselect("Mes", options=list(meses.values()), default=[meses[date.today().month]])
+                    
+                    if f_sede: df_cumple = df_cumple[df_cumple["sede"].isin(f_sede)]
+                    if f_mes: df_cumple = df_cumple[df_cumple["Mes"].isin(f_mes)]
+                    
+                    # Ordenar por día para la visualización de tarjetas
+                    df_cumple = df_cumple.sort_values(["Mes_Num", "Dia"])
 
-                # === CORRECCIÓN DEL KEYERROR ===
-                # Renombramos las columnas de forma dinámica y segura
-                renombres = {"dni": "DNI", "sede": "Sede"}
-                if col_nom_per:
-                    renombres[col_nom_per] = "Trabajador"
-                
-                df_cumple.rename(columns=renombres, inplace=True)
-                
-                # ¡Seguro anti-cuelgues! Si no logra encontrar la columna, la crea vacía
-                if "Trabajador" not in df_cumple.columns:
-                    df_cumple["Trabajador"] = "Nombre no especificado"
+                    # Renombramos las columnas de forma dinámica
+                    renombres = {"dni": "DNI", "sede": "Sede"}
+                    if col_nom_per: renombres[col_nom_per] = "Trabajador"
+                    if col_foto: renombres[col_foto] = "Foto_URL"
+                    
+                    df_cumple.rename(columns=renombres, inplace=True)
+                    
+                    # Seguro anti-cuelgues
+                    if "Trabajador" not in df_cumple.columns:
+                        df_cumple["Trabajador"] = "Nombre no especificado"
 
-                # --- DISEÑO DE TARJETAS VISUALES ---
-                st.markdown("### ✨ Celebraciones Visuales")
-                
-                # URLs de Github confirmadas
-                img_mes_url = "https://raw.githubusercontent.com/agalindoUR/SISTEMA_GTH/main/img_mes_url.png" 
-                img_ind_url = "https://raw.githubusercontent.com/agalindoUR/SISTEMA_GTH/main/img_ind_url.jpg"
+                    # --- DISEÑO DE TARJETAS VISUALES ---
+                    st.markdown("### ✨ Celebraciones Visuales")
+                    
+                    # =========================================================
+                    # ⚠️ PEGA AQUÍ TUS "ENLACES DIRECTOS" DE POSTIMAGES 
+                    # =========================================================
+                    img_mes_url = "https://i.postimg.cc/AQUÍ_TU_ENLACE_FONDO_MES.jpg" 
+                    img_ind_url = "https://i.postimg.cc/AQUÍ_TU_ENLACE_FONDO_INDIVIDUAL.jpg"
 
-                # 1. Tarjeta Grupal (Cumpleañeros del Mes)
-                nombres_mes = "<br>".join(df_cumple["Trabajador"].tolist()) if not df_cumple.empty else "Nadie este mes"
-                
-                st.markdown(f"""
-                    <div style="position: relative; width: 100%; max-width: 600px; margin: auto;">
-                        <img src="{img_mes_url}" style="width: 100%; border-radius: 15px; box-shadow: 0px 4px 10px rgba(0,0,0,0.2);">
-                        <div style="position: absolute; top: 35%; left: 10%; right: 10%; text-align: center; color: #FFD700; font-family: sans-serif; font-weight: bold;">
-                            <p style="font-size: 1.8em; margin:0; text-shadow: 1px 1px 2px black;">{", ".join(f_mes) if f_mes else "Mes"}</p>
-                            <p style="font-size: 1.1em; color: white; margin-top: 15px; line-height: 1.5; text-shadow: 1px 1px 2px black;">{nombres_mes}</p>
+                    # 1. Tarjeta Grupal (Cumpleañeros del Mes)
+                    nombres_mes = "<br>".join(df_cumple["Trabajador"].tolist()) if not df_cumple.empty else "Nadie este mes"
+                    
+                    st.markdown(f"""
+                        <div style="position: relative; width: 100%; max-width: 600px; margin: auto;">
+                            <img src="{img_mes_url}" style="width: 100%; border-radius: 15px; box-shadow: 0px 4px 10px rgba(0,0,0,0.2);">
+                            <div style="position: absolute; top: 30%; left: 10%; right: 10%; text-align: center; color: #FFD700; font-family: sans-serif; font-weight: bold;">
+                                <p style="font-size: 2em; margin:0; text-shadow: 2px 2px 4px black;">{", ".join(f_mes) if f_mes else "Mes"}</p>
+                                <p style="font-size: 1.2em; color: white; margin-top: 15px; line-height: 1.5; text-shadow: 2px 2px 4px black;">{nombres_mes}</p>
+                            </div>
                         </div>
-                    </div>
-                """, unsafe_allow_html=True)
+                    """, unsafe_allow_html=True)
 
-                st.markdown("<br>", unsafe_allow_html=True)
+                    st.markdown("<br>", unsafe_allow_html=True)
 
-                # 2. Tarjetas Individuales
-                if not df_cumple.empty:
-                    st.info("💡 Desliza para ver las tarjetas individuales de este mes")
-                    for _, row in df_cumple.iterrows():
-                        with st.expander(f"Ver tarjeta de {row['Trabajador']}"):
-                            st.markdown(f"""
-                                <div style="position: relative; width: 100%; max-width: 500px; margin: auto;">
-                                    <img src="{img_ind_url}" style="width: 100%; border-radius: 15px; box-shadow: 0px 4px 10px rgba(0,0,0,0.2);">
-                                    <div style="position: absolute; top: 40%; left: 52%; width: 40%; text-align: center; color: #4A0000; font-family: sans-serif;">
-                                        <b style="font-size: 1.1em; display: block; margin-bottom: 5px;">{row['Trabajador']}</b>
-                                        <span style="font-size: 0.9em; background-color: rgba(255,215,0,0.3); padding: 2px 8px; border-radius: 10px;">{row['Fecha de cumpleaños']}</span>
+                    # 2. Tarjetas Individuales (Rediseño adaptado a tu fondo)
+                    if not df_cumple.empty:
+                        st.info("💡 Desliza para ver las tarjetas individuales de este mes")
+                        for _, row in df_cumple.iterrows():
+                            
+                            # Validar si hay foto real, si no, poner un ícono por defecto
+                            foto_url = row.get("Foto_URL", "")
+                            if pd.isna(foto_url) or not str(foto_url).startswith("http"):
+                                foto_url = "https://i.postimg.cc/h4Nbg64z/default-avatar.png" # Avatar genérico
+
+                            with st.expander(f"🎉 {row['Trabajador']} ({row['Dia']} de {row['Mes']})"):
+                                st.markdown(f"""
+                                    <div style="position: relative; width: 100%; max-width: 500px; margin: auto; overflow: hidden; border-radius: 15px; box-shadow: 0px 4px 10px rgba(0,0,0,0.2);">
+                                        
+                                        <img src="{img_ind_url}" style="width: 100%;">
+                                        
+                                        <div style="position: absolute; top: 25%; left: 0%; width: 100%; text-align: center; font-family: sans-serif; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);">
+                                            <b style="font-size: 1.6em; color: #FFD700; display: block; line-height: 1.1;">{row['Trabajador']}</b>
+                                            <span style="font-size: 1.1em; color: #FFFFFF; font-weight: bold; background-color: rgba(74, 0, 0, 0.4); padding: 4px 12px; border-radius: 10px; display: inline-block; margin-top: 8px;">{row['Fecha de cumpleaños']}</span>
+                                        </div>
+
+                                        <div style="position: absolute; top: 50%; left: 8%; width: 110px; height: 110px; overflow: hidden; border-radius: 50%; border: 4px solid #FFD700; box-shadow: 3px 3px 8px rgba(0,0,0,0.5);">
+                                            <img src="{foto_url}" style="width: 100%; height: 100%; object-fit: cover; background-color: white;">
+                                        </div>
+                                        
                                     </div>
-                                </div>
-                            """, unsafe_allow_html=True)
+                                """, unsafe_allow_html=True)
 
-                st.markdown("---")
-                
-                # Tabla original
-                st.dataframe(df_cumple[["DNI", "Trabajador", "Sede", "Fecha de cumpleaños", "Años a cumplir"]], hide_index=True)
-                
-                # Botón de Exportar
-                output_cump = BytesIO()
-                with pd.ExcelWriter(output_cump, engine='openpyxl') as writer:
-                    df_cumple[["DNI", "Trabajador", "Sede", "Fecha de cumpleaños", "Años a cumplir"]].to_excel(writer, index=False, sheet_name='Cumpleañeros')
-                st.download_button(label="📥 Exportar a Excel", data=output_cump.getvalue(), file_name="Reporte_Cumpleañeros.xlsx", key="btn_exp_cump")
+                    st.markdown("---")
+                    
+                    # Tabla original
+                    st.dataframe(df_cumple[["DNI", "Trabajador", "Sede", "Fecha de cumpleaños", "Años a cumplir"]], hide_index=True)
+                    
+                    # Botón de Exportar
+                    output_cump = BytesIO()
+                    with pd.ExcelWriter(output_cump, engine='openpyxl') as writer:
+                        df_cumple[["DNI", "Trabajador", "Sede", "Fecha de cumpleaños", "Años a cumplir"]].to_excel(writer, index=False, sheet_name='Cumpleañeros')
+                    st.download_button(label="📥 Exportar a Excel", data=output_cump.getvalue(), file_name="Reporte_Cumpleañeros.xlsx", key="btn_exp_cump")
 
+                else:
+                    st.warning("⚠️ No se encontró la columna de 'Fecha de nacimiento'.")
             else:
-                st.warning("⚠️ No se encontró la columna de 'Fecha de nacimiento'.")
-        else:
-            st.warning("⚠️ Faltan datos en Personal o Datos Generales.")
-
+                st.warning("⚠️ Faltan datos en Personal o Datos Generales.")
 # ==========================================
     # MÓDULO: VENCIMIENTO DE CONTRATOS
     # ==========================================
@@ -1651,6 +1682,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
