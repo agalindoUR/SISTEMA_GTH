@@ -1503,7 +1503,7 @@ else:
 
                 st.markdown("<br>", unsafe_allow_html=True)
 
-               if not df_cumple.empty:
+                if not df_cumple.empty:
                     st.info("💡 Haz clic en 'Descargar Tarjeta' para obtener la imagen final lista para enviar por WhatsApp.")
                     
                     # Función interna para procesar la imagen
@@ -1582,7 +1582,6 @@ else:
 
                 st.markdown("---")
                 
-                # Tabla y Exportación a Excel intactas
                 st.dataframe(df_cumple[["DNI", "Trabajador", "SEDE", "Fecha de cumpleaños", "Años a cumplir"]], hide_index=True)
                 
                 output_cump = BytesIO()
@@ -1732,6 +1731,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
