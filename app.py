@@ -1473,10 +1473,10 @@ else:
                 st.markdown("### ✨ Celebraciones Visuales")
                 
                 # =========================================================
-                # ⚠️ REEMPLAZA ESTOS ENLACES POR LOS DE POSTIMAGES DIRECTOS
+                # URLs DIRECTAS EXTRAÍDAS DE TU REPOSITORIO GITHUB
                 # =========================================================
-                img_mes_url = "https://i.postimg.cc/AQUÍ_TU_ENLACE_FONDO_MES.jpg" 
-                img_ind_url = "https://i.postimg.cc/AQUÍ_TU_ENLACE_FONDO_INDIVIDUAL.jpg"
+                img_mes_url = "https://raw.githubusercontent.com/agalindoUR/SISTEMA_GTH/main/img_mes_url.png" 
+                img_ind_url = "https://raw.githubusercontent.com/agalindoUR/SISTEMA_GTH/main/img_ind_url.jpg"
 
                 nombres_mes = "<br>".join(df_cumple["Trabajador"].tolist()) if not df_cumple.empty else "Nadie este mes"
                 
@@ -1499,7 +1499,7 @@ else:
                         foto_url = row.get("Foto_URL", "")
                         if pd.isna(foto_url) or not str(foto_url).startswith("http"):
                             # Avatar por defecto si no hay foto en el excel
-                            foto_url = "https://i.postimg.cc/h4Nbg64z/default-avatar.png"
+                            foto_url = "https://raw.githubusercontent.com/agalindoUR/SISTEMA_GTH/main/Logo_guindo.png"
 
                         with st.expander(f"🎉 {row['Trabajador']} ({row['Dia']} de {row['Mes']})"):
                             st.markdown(f"""
@@ -1522,7 +1522,17 @@ else:
                 output_cump = BytesIO()
                 with pd.ExcelWriter(output_cump, engine='openpyxl') as writer:
                     df_cumple[["DNI", "Trabajador", "Sede", "Fecha de cumpleaños", "Años a cumplir"]].to_excel(writer, index=False, sheet_name='Cumpleañeros')
-                st.download_button(label="📥 Exportar a Excel", data=output_cump.getvalue(), file_name="Reporte_Cumpleañeros.xlsx", key="btn_exp_cump")
+                
+                # =========================================================
+                # BOTÓN CON TYPE="PRIMARY" PARA QUE SE VEA CON COLOR
+                # =========================================================
+                st.download_button(
+                    label="📥 Exportar a Excel", 
+                    data=output_cump.getvalue(), 
+                    file_name="Reporte_Cumpleañeros.xlsx", 
+                    key="btn_exp_cump",
+                    type="primary"
+                )
 
             else:
                 st.warning("⚠️ No se encontró la columna de 'Fecha de nacimiento'.")
@@ -1665,6 +1675,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
