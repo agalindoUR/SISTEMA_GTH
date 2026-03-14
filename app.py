@@ -744,29 +744,37 @@ else:
                             # Capturar datos de la fila seleccionada
                             r_sel = sel.iloc[0]
                             
-                            # 1. BÚSQUEDA FLEXIBLE DE COLUMNAS (Ignora espacios, guiones o minúsculas)
-                            col_per = next((c for c in r_sel.index if "PERIODO" in str(c).upper()), "PERIODO")
-                            col_ini = next((c for c in r_sel.index if "INICIO" in str(c).upper()), "F_INICIO")
-                            col_fin = next((c for c in r_sel.index if "FIN" in str(c).upper()), "F_FIN")
-                            col_dias = next((c for c in r_sel.index if "GOZADOS" in str(c).upper()), "DIAS GOZADOS")
+                            # 1. BÚSQUEDA INTELIGENTE DE COLUMNAS (Barre todas las coincidencias)
+                            cols_per = [c for c in r_sel.index if "PERIODO" in str(c).upper()]
+                            cols_ini = [c for c in r_sel.index if "INICIO" in str(c).upper()]
+                            cols_fin = [c for c in r_sel.index if "FIN" in str(c).upper()]
+                            cols_dias = [c for c in r_sel.index if "GOZADOS" in str(c).upper()]
 
-                            p_papeleta = str(r_sel.get(col_per, ""))
-                            fi_papeleta_raw = r_sel.get(col_ini)
-                            ff_papeleta_raw = r_sel.get(col_fin)
-                            dg_papeleta_raw = r_sel.get(col_dias, 0)
+                            # Función para ignorar los 'NaT' y sacar el valor real
+                            def get_valid_val(cols):
+                                for c in cols:
+                                    val = r_sel.get(c)
+                                    if pd.notnull(val) and str(val).strip() not in ["", "NaT", "None"]:
+                                        return val
+                                return None
+
+                            p_papeleta = str(get_valid_val(cols_per) or "")
+                            fi_papeleta_raw = get_valid_val(cols_ini)
+                            ff_papeleta_raw = get_valid_val(cols_fin)
+                            dg_papeleta_raw = get_valid_val(cols_dias) or 0
                             
-                            # 2. CONVERSIÓN ULTRA ROBUSTA DE FECHAS (Transforma texto a fecha real)
+                            # 2. CONVERSIÓN ULTRA ROBUSTA DE FECHAS
                             try:
-                                fi_papeleta = pd.to_datetime(fi_papeleta_raw).date() if pd.notnull(fi_papeleta_raw) and str(fi_papeleta_raw).strip() != "" else None
+                                fi_papeleta = pd.to_datetime(fi_papeleta_raw).date() if fi_papeleta_raw else None
                             except:
                                 fi_papeleta = None
                                 
                             try:
-                                ff_papeleta = pd.to_datetime(ff_papeleta_raw).date() if pd.notnull(ff_papeleta_raw) and str(ff_papeleta_raw).strip() != "" else None
+                                ff_papeleta = pd.to_datetime(ff_papeleta_raw).date() if ff_papeleta_raw else None
                             except:
                                 ff_papeleta = None
 
-                            # 3. LIMPIEZA DE LOS DÍAS GOZADOS (Como lo tenías, pero más directo)
+                            # 3. LIMPIEZA DE LOS DÍAS GOZADOS
                             try:
                                 dg_papeleta = int(float(dg_papeleta_raw))
                             except:
@@ -775,7 +783,7 @@ else:
                             # 4. BOTÓN Y VALIDACIÓN FINAL
                             if st.button(f"📄 Generar Papeleta de Impresión (Periodo {p_papeleta})", key="btn_print_vaca_tab", use_container_width=False):
                                 if fi_papeleta is None or ff_papeleta is None:
-                                    st.error(f"⚠️ La fila seleccionada no tiene fechas válidas. Detectado Inicio: '{fi_papeleta_raw}' | Fin: '{ff_papeleta_raw}'")
+                                    st.error(f"⚠️ Aún no se detectan fechas válidas. Inicio extraído: '{fi_papeleta_raw}' | Fin extraído: '{ff_papeleta_raw}'")
                                 else:
                                     # AQUÍ LLAMAMOS A LA FUNCIÓN CON TODOS LOS DATOS
                                     papeleta_word = gen_papeleta_vac(ape_c, nom_p_c, dni_buscado, current_cargo, f_ingreso_val, p_papeleta, fi_papeleta, ff_papeleta, dg_papeleta)
@@ -1761,6 +1769,7 @@ else:
             )
         else:
             st.warning("⚠️ Faltan datos en Personal o Contratos para generar este reporte.")
+
 
 
 
