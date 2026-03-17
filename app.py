@@ -799,16 +799,21 @@ else:
                             st.markdown("---")
                         
                         if not es_lector:
-                            col_a, col_b = st.columns(2)
-                            cols_reales = [c for c in dfs[h_name].columns if c.lower() not in ["id", "dni", "apellidos y nombres", "apellidos", "nombres"]]
+                            # 1. Validamos que la hoja se haya cargado correctamente en 'dfs'
+                            if h_name not in dfs:
+                                st.error(f"⚠️ Error crítico: No se pudo cargar la pestaña '{h_name}'. Por favor, entra al Google Sheets y elimina las columnas duplicadas o vacías al final de la tabla.")
+                            else:
+                                # 2. Si la hoja existe, ejecutamos el código normalmente
+                                col_a, col_b = st.columns(2)
+                                cols_reales = [c for c in dfs[h_name].columns if c.lower() not in ["id", "dni", "apellidos y nombres", "apellidos", "nombres"]]
 
-                            with col_a:
-                                df_filtro = dfs[h_name][dfs[h_name]["dni"] == dni_buscado] if not dfs[h_name].empty else pd.DataFrame()
-                                if h_name == "DATOS GENERALES" and len(df_filtro) > 0:
-                                    st.info("📌 Los datos generales ya están registrados. Selecciona el registro en la tabla de arriba para editarlos.")
-                                else:
-                                    with st.expander("➕ Nuevo Registro"):
-                                        
+                                with col_a:
+                                    df_filtro = dfs[h_name][dfs[h_name]["dni"] == dni_buscado] if not dfs[h_name].empty else pd.DataFrame()
+                                    if h_name == "DATOS GENERALES" and len(df_filtro) > 0:
+                                        st.info("📌 Los datos generales ya están registrados. Selecciona el registro en la tabla de arriba para editarlos.")
+                                    else:
+                                        with st.expander("➕ Nuevo Registro"):
+                                                           
                                         # ==========================================
                                         # NUEVO REGISTRO REACTIVO DE VACACIONES
                                         # ==========================================
