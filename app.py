@@ -853,9 +853,9 @@ else:
                                 
                                 # Separar los datos por tipo
                                 if not vst.empty and col_tipo in vst.columns:
-                                    df_grados = vst[vst[col_tipo].str.contains("Grado|Título", case=False, na=False)]
-                                    df_estudios = vst[vst[col_tipo].str.contains("Estudios sin|Inconclusos", case=False, na=False)]
-                                    df_especi = vst[vst[col_tipo].str.contains("Especialización", case=False, na=False)]
+                                    df_grados = vst[vst[col_tipo].str.contains("Grado", case=False, na=False)]
+                                    df_estudios = vst[vst[col_tipo].str.contains("Terminados|Inconclusos", case=False, na=False)]
+                                    df_especi = vst[vst[col_tipo].str.contains("Especialización|Especializaciones", case=False, na=False)]
                                     df_diplo = vst[vst[col_tipo].str.contains("Diplomado", case=False, na=False)]
                                     df_cursos = vst[vst[col_tipo].str.contains("Curso", case=False, na=False)]
                                 else:
@@ -1189,47 +1189,73 @@ else:
                                                         st.success("✅ Experiencia guardada correctamente.")
                                                         st.rerun()
                                             # ==========================================
-                                            # NUEVO REGISTRO: FORMACIÓN ACADÉMICA
+                                            # NUEVO REGISTRO: FORMACIÓN ACADÉMICA (DINÁMICO)
                                             # ==========================================
                                             elif h_name == "FORM. ACADEMICA":
-                                                st.markdown("<div style='font-size: 1.5em; font-weight: bold; color: white; background-color: #004A80; padding: 10px; border-radius: 8px; margin-bottom: 15px;'>🎓 Registrar Nuevo Estudio</div>", unsafe_allow_html=True)
+                                                st.markdown("### 🎓 Registrar Nuevo Estudio")
+                                                st.markdown("Selecciona el tipo de estudio para ver los campos requeridos.")
                                                 
+                                                tipo_estudio = st.selectbox("📌 Tipo de Estudio", [
+                                                    "Grados y Títulos", 
+                                                    "Estudios Terminados (Sin grado) o Inconclusos", 
+                                                    "Especializaciones", 
+                                                    "Diplomados", 
+                                                    "Cursos"
+                                                ])
+
+                                                # Variables en blanco por defecto para evitar errores al guardar
+                                                grado = "N/A"
+                                                institucion = ""
+                                                mencion = ""
+                                                anio = ""
+                                                estado = "N/A"
+                                                horas = "N/A"
+
                                                 col_f1, col_f2 = st.columns(2)
-                                                with col_f1:
-                                                    tipo_estudio = st.selectbox("Tipo de Estudio", ["Grado o Título", "Estudios inconclusos", "Especialización", "Diplomado", "Curso"])
-                                                    institucion = st.text_input("Institución Educativa")
-                                                    mencion = st.text_input("Mención (Especialidad/Carrera)")
-                                                with col_f2:
-                                                    anio = st.text_input("Año (Ej. 2023)")
-                                                    
-                                                    # Dependiendo del tipo de estudio, mostramos campos adicionales
-                                                    if tipo_estudio == "Estudios inconclusos":
-                                                        estado_estudio = st.selectbox("Estado", ["En curso", "Inconcluso / Abandono"])
-                                                    else:
-                                                        estado_estudio = "Completado"
-                                                    
-                                                    if tipo_estudio in ["Especialización", "Diplomado", "Curso"]:
-                                                        horas_acad = st.text_input("Horas Académicas")
-                                                    else:
-                                                        horas_acad = "N/A"
-                                                    
+
+                                                # --- 1. GRADOS Y TÍTULOS ---
+                                                if tipo_estudio == "Grados y Títulos":
+                                                    with col_f1:
+                                                        grado = st.text_input("Grado o Título Obtenido (Ej. Bachiller, Título, Magíster)")
+                                                        institucion = st.text_input("Institución Educativa")
+                                                    with col_f2:
+                                                        mencion = st.text_input("Mención (Especialidad / Carrera)")
+                                                        anio = st.text_input("Año")
+
+                                                # --- 2. ESTUDIOS TERMINADOS O INCONCLUSOS ---
+                                                elif tipo_estudio == "Estudios Terminados (Sin grado) o Inconclusos":
+                                                    with col_f1:
+                                                        institucion = st.text_input("Institución Educativa")
+                                                        mencion = st.text_input("Mención (Especialidad / Carrera)")
+                                                    with col_f2:
+                                                        anio = st.text_input("Año")
+                                                        estado = st.selectbox("Estado", ["Concluido", "Estudiando", "En abandono"])
+
+                                                # --- 3. ESPECIALIZACIONES, DIPLOMADOS O CURSOS ---
+                                                elif tipo_estudio in ["Especializaciones", "Diplomados", "Cursos"]:
+                                                    with col_f1:
+                                                        institucion = st.text_input("Institución Educativa")
+                                                        mencion = st.text_input("Mención (Nombre del estudio)")
+                                                    with col_f2:
+                                                        horas = st.text_input("Horas Académicas")
+                                                        anio = st.text_input("Año")
+
+                                                # --- BOTÓN DE GUARDADO ---
                                                 if st.button("💾 Guardar Estudio", type="primary", use_container_width=False):
                                                     if not institucion or not mencion:
                                                         st.error("⚠️ La Institución y la Mención son campos obligatorios.")
                                                     else:
+                                                        # Mapeo exacto a los nombres de las columnas
                                                         new_row = {
                                                             "dni": str(dni_buscado), 
                                                             "tipo de estudio": tipo_estudio, 
+                                                            "grado o título obtenido": grado,
                                                             "institución educativa": institucion, 
                                                             "mención (especialidad / carrera / etc)": mencion, 
                                                             "año": anio, 
-                                                            "estado": estado_estudio, 
-                                                            "horas académicas": horas_acad
+                                                            "estado": estado, 
+                                                            "horas académicas": horas
                                                         }
-                                                        
-                                                        # Renombramos claves si el estudio es Grado para coincidir con tu formato de columnas anterior si existía
-                                                        if tipo_estudio == "Grado o Título":
-                                                            new_row["grado o título obtenido"] = mencion
                                                             
                                                         if not dfs[h_name].empty and "id" in dfs[h_name].columns:
                                                             new_row["id"] = dfs[h_name]["id"].max() + 1
