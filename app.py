@@ -813,46 +813,50 @@ else:
                                     if h_name == "DATOS GENERALES" and len(df_filtro) > 0:
                                         st.info("📌 Los datos generales ya están registrados. Selecciona el registro en la tabla de arriba para editarlos.")
                                     else:
+                                        # ¡AQUÍ ESTÁ EL CAMBIO IMPORTANTE!
                                         with st.expander("➕ Nuevo Registro"):
-                                                           
-                                        # ==========================================
-                                        # NUEVO REGISTRO REACTIVO DE VACACIONES
-                                        # ==========================================
-                                        if h_name == "VACACIONES":
-                                            st.markdown("<div style='font-size: 1.5em; font-weight: bold; color: white; background-color: #4A0000; padding: 10px; border-radius: 8px; margin-bottom: 15px;'>➕ Registrar Nuevas Vacaciones</div>", unsafe_allow_html=True)
                                             
-                                            if detalles:
-                                                opciones_periodo = [d["Periodo"] for d in detalles]
-                                                dict_generados = {d["Periodo"]: d["Días Generados"] for d in detalles}
-                                                dict_saldo_actual = {d["Periodo"]: d["Saldo"] for d in detalles}
-                                            else:
-                                                opciones_periodo = ["Sin periodo calculado"]
-                                                dict_generados = {"Sin periodo calculado": 0}
-                                                dict_saldo_actual = {"Sin periodo calculado": 0}
+                                            # ==========================================
+                                            # NUEVO REGISTRO REACTIVO DE VACACIONES
+                                            # ==========================================
+                                            if h_name == "VACACIONES":
+                                                st.markdown("<div style='font-size: 1.5em; font-weight: bold; color: white; background-color: #4A0000; padding: 10px; border-radius: 8px; margin-bottom: 15px;'>➕ Registrar Nuevas Vacaciones</div>", unsafe_allow_html=True)
+                                                
+                                                if detalles:
+                                                    opciones_periodo = [d["Periodo"] for d in detalles]
+                                                    dict_generados = {d["Periodo"]: d["Días Generados"] for d in detalles}
+                                                    dict_saldo_actual = {d["Periodo"]: d["Saldo"] for d in detalles}
+                                                else:
+                                                    opciones_periodo = ["Sin periodo calculado"]
+                                                    dict_generados = {"Sin periodo calculado": 0}
+                                                    dict_saldo_actual = {"Sin periodo calculado": 0}
 
-                                            sel_periodo = st.selectbox("Periodo Vacacional", options=opciones_periodo)
+                                                sel_periodo = st.selectbox("Periodo Vacacional", options=opciones_periodo)
+                                                
+                                                col_f1, col_f2 = st.columns(2)
+                                                with col_f1:
+                                                    f_ini_val = st.date_input("Fecha de Salida (Inicio)")
+                                                with col_f2:
+                                                    f_fin_val = st.date_input("Fecha de Retorno (Último día)")
+
+                                                dias_gozar_calc = 0
+                                                if f_fin_val >= f_ini_val:
+                                                    dias_gozar_calc = (f_fin_val - f_ini_val).days + 1
+                                                
+                                                gen_periodo = dict_generados.get(sel_periodo, 0)
+                                                saldo_previo = dict_saldo_actual.get(sel_periodo, 0)
+                                                nuevo_saldo = saldo_previo - dias_gozar_calc
+
+                                                # Lógica de colores para el saldo
+                                                if nuevo_saldo < 0:
+                                                    txt_saldo = f":red[{nuevo_saldo:.2f} (¡Saldo Negativo!)]"
+                                                elif nuevo_saldo == 0:
+                                                    txt_saldo = f"{nuevo_saldo:.2f}"
+                                                else:
+                                                    txt_saldo = f":green[{nuevo_saldo:.2f}]"
                                             
-                                            col_f1, col_f2 = st.columns(2)
-                                            with col_f1:
-                                                f_ini_val = st.date_input("Fecha de Salida (Inicio)")
-                                            with col_f2:
-                                                f_fin_val = st.date_input("Fecha de Retorno (Último día)")
-
-                                            dias_gozar_calc = 0
-                                            if f_fin_val >= f_ini_val:
-                                                dias_gozar_calc = (f_fin_val - f_ini_val).days + 1
-                                            
-                                            gen_periodo = dict_generados.get(sel_periodo, 0)
-                                            saldo_previo = dict_saldo_actual.get(sel_periodo, 0)
-                                            nuevo_saldo = saldo_previo - dias_gozar_calc
-
-                                            # Lógica de colores para el saldo
-                                            if nuevo_saldo < 0:
-                                                txt_saldo = f":red[{nuevo_saldo:.2f} (¡Saldo Negativo!)]"
-                                            elif nuevo_saldo == 0:
-                                                txt_saldo = f"{nuevo_saldo:.2f}"
-                                            else:
-                                                txt_saldo = f":green[{nuevo_saldo:.2f}]"
+                                            # AQUÍ CONTINÚA TU CÓDIGO (probablemente el botón de guardar y los inputs normales si NO es VACACIONES)
+                                            # ...
 
                                             st.info(f"""
                                             📊 **Resumen del Cálculo:**
