@@ -868,7 +868,7 @@ else:
                                     return "N/A"
 
                                 # --- 1. GRADOS Y TÍTULOS ---
-                                st.markdown("#### 📜 Grados y Títulos")
+                                st.markdown("<h4 style='color: #2C3E50; margin-top: 15px;'>📜 Grados y Títulos</h4>", unsafe_allow_html=True)
                                 if df_grados.empty:
                                     st.info("No hay grados o títulos registrados.")
                                 else:
@@ -892,7 +892,7 @@ else:
 
                                 with col_izq_acad:
                                     # --- 2. ESTUDIOS TERMINADOS O INCONCLUSOS ---
-                                    st.markdown("#### 🚧 Estudios Sin Grado / Inconclusos")
+                                    st.markdown("<h4 style='color: #2C3E50; margin-top: 15px;'>🚧 Estudios Sin Grado / Inconclusos</h4>", unsafe_allow_html=True)
                                     if df_estudios.empty:
                                         st.markdown("<p style='color:#888;'>No registrados.</p>", unsafe_allow_html=True)
                                     else:
@@ -911,7 +911,7 @@ else:
                                             """, unsafe_allow_html=True)
 
                                     # --- 3. ESPECIALIZACIONES ---
-                                    st.markdown("#### 🔬 Especializaciones")
+                                    st.markdown("<h4 style='color: #2C3E50; margin-top: 15px;'>🔬 Especializaciones</h4>", unsafe_allow_html=True)
                                     if df_especi.empty:
                                         st.markdown("<p style='color:#888;'>No registradas.</p>", unsafe_allow_html=True)
                                     else:
@@ -931,7 +931,7 @@ else:
 
                                 with col_der_acad:
                                     # --- 4. DIPLOMADOS ---
-                                    st.markdown("#### 🏅 Diplomados")
+                                    st.markdown("<h4 style='color: #2C3E50; margin-top: 15px;'>🏅 Diplomados</h4>", unsafe_allow_html=True)
                                     if df_diplo.empty:
                                         st.markdown("<p style='color:#888;'>No registrados.</p>", unsafe_allow_html=True)
                                     else:
@@ -950,7 +950,7 @@ else:
                                             """, unsafe_allow_html=True)
 
                                     # --- 5. CURSOS ---
-                                    st.markdown("#### 📚 Cursos")
+                                    st.markdown("<h4 style='color: #2C3E50; margin-top: 15px;'>📚 Cursos</h4>", unsafe_allow_html=True)
                                     if df_cursos.empty:
                                         st.markdown("<p style='color:#888;'>No registrados.</p>", unsafe_allow_html=True)
                                     else:
@@ -1192,8 +1192,8 @@ else:
                                             # NUEVO REGISTRO: FORMACIÓN ACADÉMICA (DINÁMICO)
                                             # ==========================================
                                             elif h_name == "FORM. ACADEMICA":
-                                                st.markdown("### 🎓 Registrar Nuevo Estudio")
-                                                st.markdown("Selecciona el tipo de estudio para ver los campos requeridos.")
+                                                st.markdown("<h3 style='color: #2C3E50; margin-top: 25px;'>🎓 Registrar Nuevo Estudio</h3>", unsafe_allow_html=True)
+                                                st.markdown("<p style='color: #555555; font-size: 1.1em; font-weight: 500;'>Selecciona el tipo de estudio para ver los campos requeridos.</p>", unsafe_allow_html=True)
                                                 
                                                 tipo_estudio = st.selectbox("📌 Tipo de Estudio", [
                                                     "Grados y Títulos", 
