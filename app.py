@@ -832,8 +832,15 @@ else:
 """
                                     st.markdown(html_resumen, unsafe_allow_html=True)
                                     
-                                # Ocultamos la tabla blanca para esta pestaña creando un sel vacío
-                                sel = pd.DataFrame()
+                                # ---------------------------------------
+                                # TABLA DESPLEGABLE PARA EDICIÓN
+                                # ---------------------------------------
+                                st.markdown("<br>", unsafe_allow_html=True)
+                                with st.expander("⚙️ Clic aquí para Editar o Eliminar Experiencia Externa"):
+                                    st.info("Activa la casilla **SEL** en la tabla de abajo para modificar o eliminar un registro.")
+                                    st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 10px !important; }</style>""", unsafe_allow_html=True)
+                                    ed = st.data_editor(vst, hide_index=True, use_container_width=True, column_config=col_conf, key=f"ed_{h_name}_oculta")
+                                    sel = ed[ed["SEL"] == True]
 
                             # ==========================================
                             # DIBUJO DE LA TABLA NORMAL PARA LAS OTRAS HOJAS
