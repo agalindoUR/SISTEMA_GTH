@@ -529,7 +529,7 @@ else:
                 for i, tab in enumerate(tabs):
                     h_name = h_keys[i]
                     with tab:
-                        if "dni" in dfs[h_name].columns:
+                        if h_name in dfs and "dni" in dfs[h_name].columns:
                             c_df = dfs[h_name][dfs[h_name]["dni"] == dni_buscado]
                         else:
                             c_df = pd.DataFrame(columns=COLUMNAS.get(h_name, []))
