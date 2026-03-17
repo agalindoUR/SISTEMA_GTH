@@ -32,7 +32,7 @@ COLUMNAS = {
     "DATOS GENERALES": ["dni", "sede", "sexo", "apellidos y nombres", "dirección", "estado civil", "fecha de nacimiento", "edad"], 
     "DATOS FAMILIARES": ["parentesco", "apellidos y nombres", "dni", "fecha de nacimiento", "edad", "estudios", "telefono"],
     "EXP. LABORAL": ["dni", "tipo de experiencia", "lugar", "puesto", "fecha de inicio", "fecha de fin", "motivo de cese"],
-    "FORM. ACADEMICA": ["grado, titulo o especialización", "descripcion", "universidad", "año"],
+    "FORM. ACADEMICA": ["dni", "tipo de estudio", "institución educativa", "mención (especialidad / carrera / etc)", "año", "estado", "horas académicas", "grado o título obtenido"],
     "INVESTIGACION": ["año publicación", "autor, coautor o asesor", "tipo de investigación publicada", "nivel de publicación", "lugar de publicación"],
     # NUEVAS COLUMNAS DE CONTRATOS APLICADAS:
     "CONTRATOS": ["dni", "cargo", "AREA", "f_inicio", "f_fin", "tipo de trabajador", "modalidad", "temporalidad", "tipo contrato", "estado", "LINK"],
@@ -851,7 +851,7 @@ else:
                                 # Función para evitar errores si la columna tiene otro nombre
                                 col_tipo = "TIPO DE ESTUDIO" if "TIPO DE ESTUDIO" in vst.columns else "tipo de estudio"
                                 
-                                # Separar los datos por tipo (si la tabla está vacía, creamos dataframes vacíos)
+                                # Separar los datos por tipo
                                 if not vst.empty and col_tipo in vst.columns:
                                     df_grados = vst[vst[col_tipo].str.contains("Grado|Título", case=False, na=False)]
                                     df_estudios = vst[vst[col_tipo].str.contains("Estudios sin|Inconclusos", case=False, na=False)]
@@ -861,7 +861,7 @@ else:
                                 else:
                                     df_grados = df_estudios = df_especi = df_diplo = df_cursos = pd.DataFrame()
 
-                                # Función auxiliar para obtener datos con nombres de columnas variables
+                                # Función auxiliar
                                 def get_val(r, opciones):
                                     for op in opciones:
                                         if op in r: return str(r[op])
@@ -879,15 +879,15 @@ else:
                                         anio = get_val(row, ['AÑO', 'año'])
                                         
                                         st.markdown(f"""
-                                        <div style='background-color: #262730; padding: 15px; border-radius: 10px; border-left: 5px solid #FFD700; margin-bottom: 10px; box-shadow: 2px 2px 5px rgba(0,0,0,0.2);'>
-                                            <h4 style='margin-bottom: 5px; color: #FFFFFF; font-size: 1.1em;'>{grado}</h4>
-                                            <p style='margin: 2px 0; color: #E0E0E0;'><strong>Institución:</strong> {inst}</p>
-                                            <p style='margin: 2px 0; color: #E0E0E0;'><strong>Mención:</strong> {mencion}</p>
-                                            <p style='margin: 2px 0; color: #E0E0E0;'><strong>Año:</strong> {anio}</p>
+                                        <div style='background-color: #FFFFFF; padding: 15px; border-radius: 8px; border: 1px solid #E0E0E0; border-left: 6px solid #FFC107; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);'>
+                                            <h4 style='margin-bottom: 5px; color: #333333; font-size: 1.1em;'>{grado}</h4>
+                                            <p style='margin: 2px 0; color: #555555;'><strong>Institución:</strong> {inst}</p>
+                                            <p style='margin: 2px 0; color: #555555;'><strong>Mención:</strong> {mencion}</p>
+                                            <p style='margin: 2px 0; color: #555555;'><strong>Año:</strong> {anio}</p>
                                         </div>
                                         """, unsafe_allow_html=True)
 
-                                # Usamos columnas para las siguientes secciones para optimizar espacio
+                                # Columnas para optimizar espacio
                                 col_izq_acad, col_der_acad = st.columns(2)
 
                                 with col_izq_acad:
@@ -903,10 +903,10 @@ else:
                                             estado = get_val(row, ['ESTADO', 'estado'])
                                             
                                             st.markdown(f"""
-                                            <div style='background-color: #262730; padding: 15px; border-radius: 10px; border-left: 5px solid #FF8C00; margin-bottom: 10px;'>
-                                                <h4 style='margin-bottom: 5px; color: #FFFFFF; font-size: 1em;'>{mencion}</h4>
-                                                <p style='margin: 2px 0; color: #E0E0E0;'><strong>Institución:</strong> {inst}</p>
-                                                <p style='margin: 2px 0; color: #E0E0E0;'><strong>Estado:</strong> <span style='color: #FF8C00;'>{estado}</span> | <strong>Año:</strong> {anio}</p>
+                                            <div style='background-color: #FFFFFF; padding: 15px; border-radius: 8px; border: 1px solid #E0E0E0; border-left: 6px solid #FF5722; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);'>
+                                                <h4 style='margin-bottom: 5px; color: #333333; font-size: 1em;'>{mencion}</h4>
+                                                <p style='margin: 2px 0; color: #555555;'><strong>Institución:</strong> {inst}</p>
+                                                <p style='margin: 2px 0; color: #555555;'><strong>Estado:</strong> <span style='color: #FF5722; font-weight: bold;'>{estado}</span> | <strong>Año:</strong> {anio}</p>
                                             </div>
                                             """, unsafe_allow_html=True)
 
@@ -922,10 +922,10 @@ else:
                                             horas = get_val(row, ['HORAS ACADÉMICAS', 'horas'])
                                             
                                             st.markdown(f"""
-                                            <div style='background-color: #262730; padding: 15px; border-radius: 10px; border-left: 5px solid #8A2BE2; margin-bottom: 10px;'>
-                                                <h4 style='margin-bottom: 5px; color: #FFFFFF; font-size: 1em;'>{mencion}</h4>
-                                                <p style='margin: 2px 0; color: #E0E0E0;'><strong>Institución:</strong> {inst}</p>
-                                                <p style='margin: 2px 0; color: #E0E0E0;'><strong>Horas Ac.:</strong> {horas} hrs | <strong>Año:</strong> {anio}</p>
+                                            <div style='background-color: #FFFFFF; padding: 15px; border-radius: 8px; border: 1px solid #E0E0E0; border-left: 6px solid #9C27B0; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);'>
+                                                <h4 style='margin-bottom: 5px; color: #333333; font-size: 1em;'>{mencion}</h4>
+                                                <p style='margin: 2px 0; color: #555555;'><strong>Institución:</strong> {inst}</p>
+                                                <p style='margin: 2px 0; color: #555555;'><strong>Horas Ac.:</strong> {horas} hrs | <strong>Año:</strong> {anio}</p>
                                             </div>
                                             """, unsafe_allow_html=True)
 
@@ -942,10 +942,10 @@ else:
                                             horas = get_val(row, ['HORAS ACADÉMICAS', 'horas'])
                                             
                                             st.markdown(f"""
-                                            <div style='background-color: #262730; padding: 15px; border-radius: 10px; border-left: 5px solid #00BFFF; margin-bottom: 10px;'>
-                                                <h4 style='margin-bottom: 5px; color: #FFFFFF; font-size: 1em;'>{mencion}</h4>
-                                                <p style='margin: 2px 0; color: #E0E0E0;'><strong>Institución:</strong> {inst}</p>
-                                                <p style='margin: 2px 0; color: #E0E0E0;'><strong>Horas Ac.:</strong> {horas} hrs | <strong>Año:</strong> {anio}</p>
+                                            <div style='background-color: #FFFFFF; padding: 15px; border-radius: 8px; border: 1px solid #E0E0E0; border-left: 6px solid #03A9F4; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);'>
+                                                <h4 style='margin-bottom: 5px; color: #333333; font-size: 1em;'>{mencion}</h4>
+                                                <p style='margin: 2px 0; color: #555555;'><strong>Institución:</strong> {inst}</p>
+                                                <p style='margin: 2px 0; color: #555555;'><strong>Horas Ac.:</strong> {horas} hrs | <strong>Año:</strong> {anio}</p>
                                             </div>
                                             """, unsafe_allow_html=True)
 
@@ -961,10 +961,10 @@ else:
                                             horas = get_val(row, ['HORAS ACADÉMICAS', 'horas'])
                                             
                                             st.markdown(f"""
-                                            <div style='background-color: #262730; padding: 15px; border-radius: 10px; border-left: 5px solid #32CD32; margin-bottom: 10px;'>
-                                                <h4 style='margin-bottom: 5px; color: #FFFFFF; font-size: 1em;'>{mencion}</h4>
-                                                <p style='margin: 2px 0; color: #E0E0E0;'><strong>Institución:</strong> {inst}</p>
-                                                <p style='margin: 2px 0; color: #E0E0E0;'><strong>Horas Ac.:</strong> {horas} hrs | <strong>Año:</strong> {anio}</p>
+                                            <div style='background-color: #FFFFFF; padding: 15px; border-radius: 8px; border: 1px solid #E0E0E0; border-left: 6px solid #4CAF50; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);'>
+                                                <h4 style='margin-bottom: 5px; color: #333333; font-size: 1em;'>{mencion}</h4>
+                                                <p style='margin: 2px 0; color: #555555;'><strong>Institución:</strong> {inst}</p>
+                                                <p style='margin: 2px 0; color: #555555;'><strong>Horas Ac.:</strong> {horas} hrs | <strong>Año:</strong> {anio}</p>
                                             </div>
                                             """, unsafe_allow_html=True)
 
@@ -1187,6 +1187,58 @@ else:
                                                         dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new_row])], ignore_index=True)
                                                         save_data(dfs)
                                                         st.success("✅ Experiencia guardada correctamente.")
+                                                        st.rerun()
+                                            # ==========================================
+                                            # NUEVO REGISTRO: FORMACIÓN ACADÉMICA
+                                            # ==========================================
+                                            elif h_name == "FORM. ACADEMICA":
+                                                st.markdown("<div style='font-size: 1.5em; font-weight: bold; color: white; background-color: #004A80; padding: 10px; border-radius: 8px; margin-bottom: 15px;'>🎓 Registrar Nuevo Estudio</div>", unsafe_allow_html=True)
+                                                
+                                                col_f1, col_f2 = st.columns(2)
+                                                with col_f1:
+                                                    tipo_estudio = st.selectbox("Tipo de Estudio", ["Grado o Título", "Estudios inconclusos", "Especialización", "Diplomado", "Curso"])
+                                                    institucion = st.text_input("Institución Educativa")
+                                                    mencion = st.text_input("Mención (Especialidad/Carrera)")
+                                                with col_f2:
+                                                    anio = st.text_input("Año (Ej. 2023)")
+                                                    
+                                                    # Dependiendo del tipo de estudio, mostramos campos adicionales
+                                                    if tipo_estudio == "Estudios inconclusos":
+                                                        estado_estudio = st.selectbox("Estado", ["En curso", "Inconcluso / Abandono"])
+                                                    else:
+                                                        estado_estudio = "Completado"
+                                                    
+                                                    if tipo_estudio in ["Especialización", "Diplomado", "Curso"]:
+                                                        horas_acad = st.text_input("Horas Académicas")
+                                                    else:
+                                                        horas_acad = "N/A"
+                                                    
+                                                if st.button("💾 Guardar Estudio", type="primary", use_container_width=False):
+                                                    if not institucion or not mencion:
+                                                        st.error("⚠️ La Institución y la Mención son campos obligatorios.")
+                                                    else:
+                                                        new_row = {
+                                                            "dni": str(dni_buscado), 
+                                                            "tipo de estudio": tipo_estudio, 
+                                                            "institución educativa": institucion, 
+                                                            "mención (especialidad / carrera / etc)": mencion, 
+                                                            "año": anio, 
+                                                            "estado": estado_estudio, 
+                                                            "horas académicas": horas_acad
+                                                        }
+                                                        
+                                                        # Renombramos claves si el estudio es Grado para coincidir con tu formato de columnas anterior si existía
+                                                        if tipo_estudio == "Grado o Título":
+                                                            new_row["grado o título obtenido"] = mencion
+                                                            
+                                                        if not dfs[h_name].empty and "id" in dfs[h_name].columns:
+                                                            new_row["id"] = dfs[h_name]["id"].max() + 1
+                                                        elif "id" in dfs[h_name].columns:
+                                                            new_row["id"] = 1
+                                                            
+                                                        dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new_row])], ignore_index=True)
+                                                        save_data(dfs)
+                                                        st.success("✅ Estudio guardado correctamente.")
                                                         st.rerun()
                                             else:
                                                 es_renovacion = False
