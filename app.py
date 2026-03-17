@@ -798,7 +798,7 @@ else:
                                             </div>
                                             """, unsafe_allow_html=True)
                                             
-                                # ---------------------------------------
+                              # ---------------------------------------
                                 # COLUMNA DERECHA: DASHBOARD DE TIEMPO
                                 # ---------------------------------------
                                 with col_der:
@@ -811,26 +811,26 @@ else:
                                         else: return "0 meses"
 
                                     st.markdown("### 📊 Resumen de Experiencia")
-                                    st.markdown(f"""
-                                    <div style='background-color: #1E1E1E; padding: 20px; border-radius: 10px; border: 1px solid #4A0000; box-shadow: 2px 2px 10px rgba(0,0,0,0.5); position: sticky; top: 50px;'>
-                                        <h5 style='color: #FFD700; margin-bottom: 15px; text-align: center; border-bottom: 1px solid #333; padding-bottom: 10px;'>Tiempo Total Calculado</h5>
-                                        
-                                        <div style='margin-bottom: 15px;'>
-                                            <p style='margin: 0; color: #A0A0A0; font-size: 0.9em;'>👨‍🏫 Como Docente</p>
-                                            <p style='margin: 0; color: #FFFFFF; font-size: 1.2em; font-weight: bold;'>{formato_tiempo(meses_docente)}</p>
-                                        </div>
-                                        
-                                        <div style='margin-bottom: 15px;'>
-                                            <p style='margin: 0; color: #A0A0A0; font-size: 0.9em;'>💼 Como Administrativo</p>
-                                            <p style='margin: 0; color: #FFFFFF; font-size: 1.2em; font-weight: bold;'>{formato_tiempo(meses_admin)}</p>
-                                        </div>
-                                        
-                                        <div style='margin-top: 15px; padding-top: 10px; border-top: 1px solid #333;'>
-                                            <p style='margin: 0; color: #A0A0A0; font-size: 0.9em;'>🌟 Experiencia General</p>
-                                            <p style='margin: 0; color: #00FF00; font-size: 1.4em; font-weight: bold;'>{formato_tiempo(meses_docente + meses_admin)}</p>
-                                        </div>
-                                    </div>
-                                    """, unsafe_allow_html=True)
+                                    
+                                    # HTML sin sangrías para evitar que Markdown lo tome como código
+                                    html_resumen = f"""
+<div style='background-color: #1E1E1E; padding: 20px; border-radius: 10px; border: 1px solid #4A0000; box-shadow: 2px 2px 10px rgba(0,0,0,0.5); position: sticky; top: 50px;'>
+    <h5 style='color: #FFD700; margin-bottom: 15px; text-align: center; border-bottom: 1px solid #333; padding-bottom: 10px;'>Tiempo Total Calculado</h5>
+    <div style='margin-bottom: 15px;'>
+        <p style='margin: 0; color: #A0A0A0; font-size: 0.9em;'>👨‍🏫 Como Docente</p>
+        <p style='margin: 0; color: #FFFFFF; font-size: 1.2em; font-weight: bold;'>{formato_tiempo(meses_docente)}</p>
+    </div>
+    <div style='margin-bottom: 15px;'>
+        <p style='margin: 0; color: #A0A0A0; font-size: 0.9em;'>💼 Como Administrativo</p>
+        <p style='margin: 0; color: #FFFFFF; font-size: 1.2em; font-weight: bold;'>{formato_tiempo(meses_admin)}</p>
+    </div>
+    <div style='margin-top: 15px; padding-top: 10px; border-top: 1px solid #333;'>
+        <p style='margin: 0; color: #A0A0A0; font-size: 0.9em;'>🌟 Experiencia General</p>
+        <p style='margin: 0; color: #00FF00; font-size: 1.4em; font-weight: bold;'>{formato_tiempo(meses_docente + meses_admin)}</p>
+    </div>
+</div>
+"""
+                                    st.markdown(html_resumen, unsafe_allow_html=True)
                                     
                                 # Ocultamos la tabla blanca para esta pestaña creando un sel vacío
                                 sel = pd.DataFrame()
