@@ -31,7 +31,7 @@ COLUMNAS = {
     "PERSONAL": ["dni", "apellidos y nombres", "link"],
     "DATOS GENERALES": ["dni", "sede", "sexo", "apellidos y nombres", "dirección", "estado civil", "fecha de nacimiento", "edad"], 
     "DATOS FAMILIARES": ["parentesco", "apellidos y nombres", "dni", "fecha de nacimiento", "edad", "estudios", "telefono"],
-    "EXP. LABORAL": ["tipo de experiencia", "lugar", "puesto", "fecha inicio", "fecha de fin", "motivo cese"],
+    "EXP. LABORAL": ["dni", "tipo de experiencia", "lugar", "puesto", "fecha de inicio", "fecha de fin", "motivo de cese"],
     "FORM. ACADEMICA": ["grado, titulo o especialización", "descripcion", "universidad", "año"],
     "INVESTIGACION": ["año publicación", "autor, coautor o asesor", "tipo de investigación publicada", "nivel de publicación", "lugar de publicación"],
     # NUEVAS COLUMNAS DE CONTRATOS APLICADAS:
@@ -711,9 +711,52 @@ else:
                                 
                             # TRUCO ANTIFALLOS: Eliminamos cualquier duplicado accidental en la lista final
                             cols_finales = list(dict.fromkeys(cols_finales))
-                                
                             vst = vst[cols_finales]
 
+                            # ==========================================
+                            # NUEVAS TARJETAS VISUALES DE EXPERIENCIA LABORAL
+                            # ==========================================
+                            if h_name == "EXP. LABORAL":
+                                df_contratos = dfs.get("CONTRATOS", pd.DataFrame())
+                                col_dni_contratos = "DNI" if "DNI" in df_contratos.columns else "dni"
+                                
+                                contratos_empleado = pd.DataFrame()
+                                if not df_contratos.empty and col_dni_contratos in df_contratos.columns:
+                                    contratos_empleado = df_contratos[df_contratos[col_dni_contratos] == str(dni_buscado)]
+                                
+                                st.markdown("### 🏢 Experiencia Interna (Contratos Roosevelt)")
+                                if contratos_empleado.empty:
+                                    st.info("No hay contratos registrados en la institución.")
+                                else:
+                                    for idx, row in contratos_empleado.iterrows():
+                                        st.markdown(f"""
+                                        <div style='background-color: #262730; padding: 15px; border-radius: 10px; border-left: 5px solid #4A0000; margin-bottom: 10px; box-shadow: 2px 2px 5px rgba(0,0,0,0.2);'>
+                                            <h4 style='margin-bottom: 5px; color: #FFFFFF; font-size: 1.1em;'>{row.get('cargo', row.get('CARGO', 'N/A'))} <span style='font-size: 0.8em; color: #A0A0A0;'>(Interno)</span></h4>
+                                            <p style='margin: 2px 0; color: #E0E0E0;'><strong>Lugar:</strong> Institución Roosevelt</p>
+                                            <p style='margin: 2px 0; color: #E0E0E0;'><strong>Periodo:</strong> {row.get('f_inicio', row.get('F_INICIO', 'N/A'))} hasta {row.get('f_fin', row.get('F_FIN', 'N/A'))}</p>
+                                            <p style='margin: 2px 0; color: #E0E0E0;'><strong>Tipo de Contrato:</strong> {row.get('tipo contrato', row.get('TIPO CONTRATO', 'N/A'))}</p>
+                                        </div>
+                                        """, unsafe_allow_html=True)
+                                
+                                st.markdown("### 💼 Experiencia Externa Registrada")
+                                if vst.empty:
+                                    st.info("No hay experiencia externa registrada.")
+                                else:
+                                    for idx, row in vst.iterrows():
+                                        st.markdown(f"""
+                                        <div style='background-color: #262730; padding: 15px; border-radius: 10px; border-left: 5px solid #004A80; margin-bottom: 10px; box-shadow: 2px 2px 5px rgba(0,0,0,0.2);'>
+                                            <h4 style='margin-bottom: 5px; color: #FFFFFF; font-size: 1.1em;'>{row.get('PUESTO', 'N/A')} <span style='font-size: 0.8em; color: #A0A0A0;'>({row.get('TIPO DE EXPERIENCIA', 'N/A')})</span></h4>
+                                            <p style='margin: 2px 0; color: #E0E0E0;'><strong>Lugar:</strong> {row.get('LUGAR', 'N/A')}</p>
+                                            <p style='margin: 2px 0; color: #E0E0E0;'><strong>Periodo:</strong> {row.get('FECHA DE INICIO', row.get('FECHA INICIO', 'N/A'))} hasta {row.get('FECHA DE FIN', row.get('FECHA FIN', 'N/A'))}</p>
+                                            <p style='margin: 2px 0; color: #E0E0E0;'><strong>Motivo de cese:</strong> {row.get('MOTIVO DE CESE', row.get('MOTIVO CESE', 'N/A'))}</p>
+                                        </div>
+                                        """, unsafe_allow_html=True)
+                                st.markdown("<hr style='border-top: 2px solid #FFD700;'>", unsafe_allow_html=True)
+                                st.markdown("#### ✏️ Tabla de Edición (Selecciona una fila para editarla)")
+
+                            # ==========================================
+                            # DIBUJO DE LA TABLA NORMAL PARA TODAS LAS HOJAS
+                            # ==========================================
                             st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 10px !important; }</style>""", unsafe_allow_html=True)
                             ed = st.data_editor(vst, hide_index=True, use_container_width=False, column_config=col_conf, key=f"ed_{h_name}")
                             sel = ed[ed["SEL"] == True]
@@ -880,6 +923,46 @@ else:
                                             # ==========================================
                                             # FORMULARIOS NORMALES PARA EL RESTO DE HOJAS
                                             # ==========================================
+                                            # ==========================================
+                                            # NUEVO REGISTRO: EXPERIENCIA LABORAL
+                                            # ==========================================
+                                            elif h_name == "EXP. LABORAL":
+                                                st.markdown("<div style='font-size: 1.5em; font-weight: bold; color: white; background-color: #004A80; padding: 10px; border-radius: 8px; margin-bottom: 15px;'>💼 Registrar Experiencia Externa</div>", unsafe_allow_html=True)
+                                                
+                                                col_e1, col_e2 = st.columns(2)
+                                                with col_e1:
+                                                    tipo_exp = st.selectbox("Tipo de Experiencia", ["Administrativo", "Docente"])
+                                                    lugar_exp = st.text_input("Lugar (Empresa/Institución)")
+                                                    puesto_exp = st.text_input("Puesto o Cargo ocupado")
+                                                with col_e2:
+                                                    f_ini_exp = st.date_input("Fecha de Inicio")
+                                                    f_fin_exp = st.date_input("Fecha de Fin")
+                                                    motivo_exp = st.selectbox("Motivo de Cese", MOTIVOS_CESE)
+                                                    
+                                                if st.button("💾 Guardar Experiencia", type="primary", use_container_width=False):
+                                                    if f_fin_exp < f_ini_exp:
+                                                        st.error("⚠️ La Fecha de Fin no puede ser anterior a la Fecha de Inicio.")
+                                                    elif not lugar_exp or not puesto_exp:
+                                                        st.error("⚠️ El Lugar y el Puesto son campos obligatorios.")
+                                                    else:
+                                                        new_row = {
+                                                            "dni": str(dni_buscado), 
+                                                            "tipo de experiencia": tipo_exp, 
+                                                            "lugar": lugar_exp, 
+                                                            "puesto": puesto_exp, 
+                                                            "fecha de inicio": f_ini_exp, 
+                                                            "fecha de fin": f_fin_exp, 
+                                                            "motivo de cese": motivo_exp
+                                                        }
+                                                        if not dfs[h_name].empty and "id" in dfs[h_name].columns:
+                                                            new_row["id"] = dfs[h_name]["id"].max() + 1
+                                                        elif "id" in dfs[h_name].columns:
+                                                            new_row["id"] = 1
+                                                            
+                                                        dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new_row])], ignore_index=True)
+                                                        save_data(dfs)
+                                                        st.success("✅ Experiencia guardada correctamente.")
+                                                        st.rerun()
                                             else:
                                                 es_renovacion = False
                                                 if h_name == "CONTRATOS" and not df_contratos.empty:
