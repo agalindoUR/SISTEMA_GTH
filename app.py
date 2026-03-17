@@ -859,7 +859,7 @@ else:
                                                 if dias_gozar_calc <= 0:
                                                     st.error("⚠️ La Fecha de Fin debe ser igual o posterior a la Fecha de Inicio.")
                                                 else:
-                                                    new_row = {"dni": dni_buscado, "periodo": sel_periodo, "f_inicio": f_ini_val, "f_fin": f_fin_val, "dias gozados": dias_gozar_calc}
+                                                    new_row = {"DNI": dni_buscado, "PERIODO": sel_periodo, "F_INICIO": f_ini_val,"F_FIN": f_fin_val, "DIAS GOZADOS": dias_gozar_calc}
                                                     if not dfs[h_name].empty and "id" in dfs[h_name].columns: new_row["id"] = dfs[h_name]["id"].max() + 1
                                                     elif "id" in dfs[h_name].columns: new_row["id"] = 1
                                                     dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new_row])], ignore_index=True)
