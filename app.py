@@ -854,37 +854,36 @@ else:
                                                     txt_saldo = f"{nuevo_saldo:.2f}"
                                                 else:
                                                     txt_saldo = f":green[{nuevo_saldo:.2f}]"
-                                            
-                                            # AQUÍ CONTINÚA TU CÓDIGO (probablemente el botón de guardar y los inputs normales si NO es VACACIONES)
-                                            # ...
+                                                
+                                                st.markdown(f"""
+                                                **Resumen:**
+                                                * **Días a Gozar (Calculado):** {dias_gozar_calc}
+                                                * **Saldo Restante:** {txt_saldo}
+                                                """)
+                                                
+                                                if st.button("💾 Guardar Registro de Vacaciones", type="primary", use_container_width=False):
+                                                    if dias_gozar_calc <= 0:
+                                                        st.error("⚠️ La Fecha de Fin debe ser igual o posterior a la Fecha de Inicio.")
+                                                    else:
+                                                        new_row = {"DNI": dni_buscado, "PERIODO": sel_periodo, "F_INICIO": f_ini_val, "F_FIN": f_fin_val, "DIAS GOZADOS": dias_gozar_calc}
+                                                        if not dfs[h_name].empty and "id" in dfs[h_name].columns:
+                                                            new_row["id"] = dfs[h_name]["id"].max() + 1
+                                                        elif "id" in dfs[h_name].columns:
+                                                            new_row["id"] = 1
+                                                        
+                                                        dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new_row])], ignore_index=True)
+                                                        save_data(dfs)
+                                                        st.session_state['just_saved_vacation'] = new_row
+                                                        st.success("✅ Registro guardado correctamente.")
+                                                        st.rerun()
 
-                                            st.info(f"""
-                                            📊 **Resumen del Cálculo:**
-                                            * **Días Generados (Periodo {sel_periodo}):** {gen_periodo:.2f}
-                                            * **Días a Gozar (Calculado):** {dias_gozar_calc}
-                                            * **Saldo Restante:** {txt_saldo}
-                                            """)
-
-                                            if st.button("💾 Guardar Registro de Vacaciones", type="primary", use_container_width=False):
-                                                if dias_gozar_calc <= 0:
-                                                    st.error("⚠️ La Fecha de Fin debe ser igual o posterior a la Fecha de Inicio.")
-                                                else:
-                                                    new_row = {"DNI": dni_buscado, "PERIODO": sel_periodo, "F_INICIO": f_ini_val,"F_FIN": f_fin_val, "DIAS GOZADOS": dias_gozar_calc}
-                                                    if not dfs[h_name].empty and "id" in dfs[h_name].columns: new_row["id"] = dfs[h_name]["id"].max() + 1
-                                                    elif "id" in dfs[h_name].columns: new_row["id"] = 1
-                                                    dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new_row])], ignore_index=True)
-                                                    save_data(dfs)
-                                                    st.session_state['just_saved_vacation'] = new_row
-                                                    st.success("✅ Registro guardado correctamente.")
-                                                    st.rerun()
-
-                                        # ==========================================
-                                        # FORMULARIOS NORMALES PARA EL RESTO DE HOJAS
-                                        # ==========================================
-                                        else:
-                                            es_renovacion = False
-                                            if h_name == "CONTRATOS" and not df_contratos.empty:
-                                                es_renovacion = st.checkbox("🔄 Es Renovación (Copiar datos del último contrato)")
+                                            # ==========================================
+                                            # FORMULARIOS NORMALES PARA EL RESTO DE HOJAS
+                                            # ==========================================
+                                            else:
+                                                es_renovacion = False
+                                                if h_name == "CONTRATOS" and not df_contratos.empty:
+                                                    es_renovacion = st.checkbox("🔄 Es Renovación (Copiar datos del último contrato)")
                                                 
                                             with st.form(f"f_add_{h_name}", clear_on_submit=True):
                                                 if h_name == "CONTRATOS":
