@@ -731,7 +731,7 @@ else:
                                 if not df_contratos.empty and col_dni_contratos in df_contratos.columns:
                                     contratos_empleado = df_contratos[df_contratos[col_dni_contratos] == str(dni_buscado)]
                                 
-                                # --- LÓGICA DE CÁLCULO DE TIEMPO ---
+                                # --- LÓGICA DE CÁLCULO DE TIEMPO Y FORMATO DE FECHAS ---
                                 meses_docente = 0
                                 meses_admin = 0
                                 
@@ -743,6 +743,15 @@ else:
                                         return max(0, int((fin - inicio).days / 30.44))
                                     except:
                                         return 0
+                                        
+                                def dar_formato_fecha(fecha_str):
+                                    """Convierte cualquier fecha al formato bonito DD/MM/YYYY"""
+                                    try:
+                                        if pd.isna(fecha_str) or str(fecha_str).strip() == "" or str(fecha_str) == "NaT": 
+                                            return "N/A"
+                                        return pd.to_datetime(fecha_str).strftime('%d/%m/%Y')
+                                    except:
+                                        return str(fecha_str)
 
                                 # ---------------------------------------
                                 # COLUMNA IZQUIERDA: TARJETAS VISUALES
@@ -755,8 +764,12 @@ else:
                                         for idx, row in contratos_empleado.iterrows():
                                             f_ini = row.get('f_inicio', row.get('F_INICIO', 'N/A'))
                                             f_fin = row.get('f_fin', row.get('F_FIN', 'N/A'))
-                                            puesto = row.get('cargo', row.get('CARGO', row.get('PUESTO', 'N/A')))
                                             
+                                            # Aplicamos formato bonito
+                                            f_ini_str = dar_formato_fecha(f_ini)
+                                            f_fin_str = dar_formato_fecha(f_fin)
+                                            
+                                            puesto = row.get('cargo', row.get('CARGO', row.get('PUESTO', 'N/A')))
                                             tipo_trabajador_raw = str(row.get('TIPO DE TRABAJADOR', row.get('tipo de trabajador', 'Administrativo')))
                                             tipo_exp = "Docente" if "docente" in tipo_trabajador_raw.lower() else "Administrativo"
                                             
@@ -764,12 +777,13 @@ else:
                                             if tipo_exp == "Docente": meses_docente += meses_calc
                                             else: meses_admin += meses_calc
 
+                                            # Fondo Blanco Hueso (#F9F6EE)
                                             st.markdown(f"""
-                                            <div style='background-color: #FFFFFF; padding: 15px; border-radius: 8px; border-left: 6px solid #4A0000; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #CCCCCC;'>
-                                                <div style='color: #000000; font-size: 1.1em; font-weight: bold; margin-bottom: 5px;'>{puesto} <span style='font-size: 0.85em; color: #666666;'>(Interno - {tipo_exp})</span></div>
-                                                <div style='color: #111111; font-size: 0.95em;'>
+                                            <div style='background-color: #F9F6EE; padding: 15px; border-radius: 8px; border-left: 6px solid #4A0000; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #CCCCCC;'>
+                                                <div style='color: #000000; font-size: 1.1em; font-weight: bold; margin-bottom: 5px;'>{puesto} <span style='font-size: 0.85em; color: #555555;'>(Interno - {tipo_exp})</span></div>
+                                                <div style='color: #222222; font-size: 0.95em;'>
                                                     <strong>Lugar:</strong> Universidad Roosevelt <br>
-                                                    <strong>Periodo:</strong> {f_ini} hasta {f_fin} <br>
+                                                    <strong>Periodo:</strong> {f_ini_str} hasta {f_fin_str} <br>
                                                     <strong>Tipo de Contrato:</strong> {row.get('tipo contrato', row.get('TIPO CONTRATO', 'N/A'))}
                                                 </div>
                                             </div>
@@ -783,6 +797,10 @@ else:
                                             f_ini = row.get('FECHA DE INICIO', row.get('fecha de inicio', 'N/A'))
                                             f_fin = row.get('FECHA DE FIN', row.get('fecha de fin', 'N/A'))
                                             
+                                            # Aplicamos formato bonito
+                                            f_ini_str = dar_formato_fecha(f_ini)
+                                            f_fin_str = dar_formato_fecha(f_fin)
+                                            
                                             tipo_exp_raw = str(row.get('TIPO DE EXPERIENCIA', row.get('tipo de experiencia', 'Administrativo')))
                                             tipo_exp = "Docente" if "docente" in tipo_exp_raw.lower() else "Administrativo"
                                             
@@ -794,12 +812,13 @@ else:
                                             lugar_ext = row.get('LUGAR', row.get('lugar', 'N/A'))
                                             motivo_ext = row.get('MOTIVO DE CESE', row.get('motivo de cese', 'N/A'))
 
+                                            # Fondo Blanco Hueso (#F9F6EE)
                                             st.markdown(f"""
-                                            <div style='background-color: #FFFFFF; padding: 15px; border-radius: 8px; border-left: 6px solid #004A80; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #CCCCCC;'>
-                                                <div style='color: #000000; font-size: 1.1em; font-weight: bold; margin-bottom: 5px;'>{puesto_ext} <span style='font-size: 0.85em; color: #666666;'>({tipo_exp.capitalize()})</span></div>
-                                                <div style='color: #111111; font-size: 0.95em;'>
+                                            <div style='background-color: #F9F6EE; padding: 15px; border-radius: 8px; border-left: 6px solid #004A80; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #CCCCCC;'>
+                                                <div style='color: #000000; font-size: 1.1em; font-weight: bold; margin-bottom: 5px;'>{puesto_ext} <span style='font-size: 0.85em; color: #555555;'>({tipo_exp.capitalize()})</span></div>
+                                                <div style='color: #222222; font-size: 0.95em;'>
                                                     <strong>Lugar:</strong> {lugar_ext} <br>
-                                                    <strong>Periodo:</strong> {f_ini} hasta {f_fin} <br>
+                                                    <strong>Periodo:</strong> {f_ini_str} hasta {f_fin_str} <br>
                                                     <strong>Motivo de cese:</strong> {motivo_ext}
                                                 </div>
                                             </div>
@@ -846,7 +865,6 @@ else:
                                     st.markdown("<p style='color:#DDDDDD;'>Activa la casilla <b>SEL</b> para modificar o eliminar un registro.</p>", unsafe_allow_html=True)
                                     st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 10px !important; }</style>""", unsafe_allow_html=True)
                                     
-                                    # REGLA CLAVE PARA QUE LAS FECHAS SEAN CALENDARIOS
                                     col_conf = {}
                                     for col in vst.columns:
                                         if "fecha" in col.lower() or "f_" in col.lower():
@@ -854,6 +872,13 @@ else:
                                             col_conf[str(col).upper()] = st.column_config.DateColumn(format="DD/MM/YYYY")
 
                                     ed = st.data_editor(vst, hide_index=True, use_container_width=True, column_config=col_conf, key=f"ed_{h_name}_oculta")
+                                    
+                                    # ¡LA SOLUCIÓN! Convertimos los calendarios de vuelta a texto antes de que pasen a SEL
+                                    for col in ed.columns:
+                                        if "fecha" in col.lower() or "f_" in col.lower():
+                                            ed[col] = ed[col].astype(str)
+                                            ed[col] = ed[col].replace(["NaT", "None"], "") # Limpiamos si el usuario dejó la fecha en blanco
+
                                     sel = ed[ed["SEL"] == True]
                             # ==========================================
                             # NUEVO DISEÑO: CONTRATOS
