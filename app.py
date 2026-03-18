@@ -1076,16 +1076,25 @@ else:
                                 # --- 2. MOSTRAR FAMILIARES REGISTRADOS (ARRIBA) ---
                                 st.markdown("<h4 style='color: #FFD700; border-bottom: 2px solid #FFD700; padding-bottom: 5px;'>📋 Familiares Registrados</h4>", unsafe_allow_html=True)
                                 
-                                if vst.empty:
+                                # Función inteligente para leer columnas sin importar mayúsculas/minúsculas
+                                def get_fam_val(r, col_name):
+                                    for col in r.index:
+                                        if str(col).strip().lower() == col_name.lower():
+                                            val = r[col]
+                                            if pd.notna(val) and str(val).strip() != "":
+                                                return str(val)
+                                    return "-"
+
+                                if len(vst) == 0:
                                     st.markdown("<p style='color:#DDDDDD;'>No hay familiares registrados aún.</p>", unsafe_allow_html=True)
                                 else:
                                     for idx, row in vst.iterrows():
-                                        f_parentesco = row.get("parentesco", "N/A")
-                                        f_nombres = row.get("nombres y apellidos", "N/A")
-                                        f_edad = row.get("edad", "-")
-                                        f_estado = row.get("estado", "N/A")
-                                        f_celular = row.get("celular", "-")
-                                        f_emergencia = str(row.get("contacto emergencia", "No")).lower()
+                                        f_parentesco = get_fam_val(row, "parentesco")
+                                        f_nombres = get_fam_val(row, "nombres y apellidos")
+                                        f_edad = get_fam_val(row, "edad")
+                                        f_estado = get_fam_val(row, "estado")
+                                        f_celular = get_fam_val(row, "celular")
+                                        f_emergencia = get_fam_val(row, "contacto emergencia").lower()
                                         
                                         # Etiqueta visual si es contacto de emergencia
                                         badge_emergencia = "<span style='color: #FF5252; font-size: 0.9em;'>🚨 <b>CONTACTO DE EMERGENCIA</b></span>" if f_emergencia in ["sí", "si", "true", "1"] else ""
