@@ -1180,9 +1180,9 @@ else:
                                                 
                                                 col_f1, col_f2 = st.columns(2)
                                                 with col_f1:
-                                                    f_ini_val = st.date_input("Fecha de Salida (Inicio)")
+                                                    f_ini_val = st.date_input("Fecha de Salida (Inicio)", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
                                                 with col_f2:
-                                                    f_fin_val = st.date_input("Fecha de Retorno (Último día)")
+                                                    f_fin_val = st.date_input("Fecha de Retorno (Último día)", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
 
                                                 dias_gozar_calc = 0
                                                 if f_fin_val >= f_ini_val:
@@ -1400,8 +1400,8 @@ else:
                                                     rem_b = st.number_input("Remuneración básica", value=d_rem)
                                                     bono = st.text_input("Bonificación", value=d_bon)
                                                     cond = st.text_input("Condición de trabajo", value=d_cond)
-                                                    ini = st.date_input("Inicio", value=d_ini, format="DD/MM/YYYY")
-                                                    fin = st.date_input("Fin", value=d_fin, format="DD/MM/YYYY")
+                                                    ini = st.date_input("Inicio", value=d_ini, format="DD/MM/YYYY", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
+                                                    fin = st.date_input("Fin", value=d_fin, format="DD/MM/YYYY", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
                                                     t_trab = st.selectbox("Tipo de trabajador", ["Administrativo", "Docente", "Externo"], index=["Administrativo", "Docente", "Externo"].index(d_ttrab))
                                                     mod = st.selectbox("Modalidad", ["Presencial", "Semipresencial", "Virtual"], index=["Presencial", "Semipresencial", "Virtual"].index(d_mod))
                                                     temp = st.selectbox("Temporalidad", ["Plazo fijo", "Plazo indeterminado", "Ordinarizado"], index=["Plazo fijo", "Plazo indeterminado", "Ordinarizado"].index(d_temp))
@@ -1461,14 +1461,14 @@ else:
                                                     ini_val = pd.to_datetime(val_ini).date() if pd.notnull(val_ini) else date.today()
                                                 except: 
                                                     ini_val = date.today()
-                                                n_ini = st.date_input("Inicio", value=ini_val, format="DD/MM/YYYY")
+                                                n_ini = st.date_input("Inicio", value=ini_val, format="DD/MM/YYYY", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
                                                 
                                                 try: 
                                                     val_fin = sel.iloc[0].get("F_FIN")
                                                     fin_val = pd.to_datetime(val_fin).date() if pd.notnull(val_fin) else date.today()
                                                 except: 
                                                     fin_val = date.today()
-                                                n_fin = st.date_input("Fin", value=fin_val, format="DD/MM/YYYY")
+                                                n_fin = st.date_input("Fin", value=fin_val, format="DD/MM/YYYY", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
                                                 
                                                 v_ttrab = str(sel.iloc[0].get("TIPO DE TRABAJADOR", "Administrativo"))
                                                 opts_tt = ["Administrativo", "Docente", "Externo"]
@@ -1549,7 +1549,7 @@ else:
                                                             try: d_val = pd.to_datetime(val).date()
                                                             except: d_val = date.today()
                                                         else: d_val = date.today()
-                                                        edit_row[col] = st.date_input(col.title(), value=d_val, format="DD/MM/YYYY", key=f"date_{h_name}_{col}_{idx}_{i}")
+                                                        edit_row[col] = st.date_input(col.title(), value=d_val, format="DD/MM/YYYY", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31), key=f"date_{h_name}_{col}_{idx}_{i}")
                                                         
                                                     elif col.lower() == "edad":
                                                         val_edad = int(val) if pd.notnull(val) and str(val).replace('.','',1).isdigit() else 0
