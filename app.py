@@ -1768,65 +1768,64 @@ else:
             else:
                 st.error("DNI no encontrado en la base de datos.")
 
-                                                # ==========================================
-                                                # NUEVA PESTAÑA: ESTRUCTURA Y PUESTOS (MOF)
-                                                # ==========================================
-                                                elif h_name == "ESTRUCTURA_PUESTOS":
-                                                    st.markdown("<h2 style='color: #FFD700;'>🏢 Estructura Organizacional y Perfiles</h2>", unsafe_allow_html=True)
-                                                    
-                                                    df_puestos = dfs["ESTRUCTURA_PUESTOS"].copy()
-                                                    
-                                                    if df_puestos.empty:
-                                                        st.warning("No hay datos en la hoja de Estructura de Puestos.")
-                                                    else:
-                                                        # Variables según tu limpieza de columnas (minúsculas y espacios)
-                                                        col_puesto = "puesto"
-                                                        col_area = "area"
-                                                        col_reporta = "reporta a"
-                                                        
-                                                        puesto_sel = st.selectbox("🔍 Selecciona un puesto para ver su perfil:", df_puestos[col_puesto].unique())
-                                                        datos_puesto = df_puestos[df_puestos[col_puesto] == puesto_sel].iloc[0]
-                                                        
-                                                        st.markdown(f"""
-                                                            <div style='background-color: #1E1E1E; padding: 20px; border-radius: 10px; border: 2px solid #FFD700;'>
-                                                                <h3 style='color: #FFD700; margin-top:0;'>📋 Perfil: {puesto_sel}</h3>
-                                                                <p style='color: white;'><b>Área:</b> {datos_puesto[col_area]} | <b>Reporta a:</b> {datos_puesto[col_reporta]}</p>
-                                                            </div>
-                                                        """, unsafe_allow_html=True)
-                                                        
-                                                        col1, col2 = st.columns(2)
-                                                        
-                                                        def mostrar_lista_limpia(texto):
-                                                            if pd.isna(texto) or str(texto).strip() == "": return "<li>No definido</li>"
-                                                            items = str(texto).split("|")
-                                                            return "".join([f"<li style='margin-bottom:5px;'>{i.strip()}</li>" for i in items])
+                                               # ==========================================
+                        # NUEVA PESTAÑA: ESTRUCTURA Y PUESTOS (MOF)
+                        # ==========================================
+                        elif h_name == "ESTRUCTURA_PUESTOS":
+                            st.markdown("<h2 style='color: #FFD700;'>🏢 Estructura Organizacional y Perfiles</h2>", unsafe_allow_html=True)
+                            
+                            df_puestos = dfs["ESTRUCTURA_PUESTOS"].copy()
+                            
+                            if df_puestos.empty:
+                                st.warning("No hay datos en la hoja de Estructura de Puestos.")
+                            else:
+                                col_puesto = "puesto"
+                                col_area = "area"
+                                col_reporta = "reporta a"
+                                
+                                puesto_sel = st.selectbox("🔍 Selecciona un puesto para ver su perfil:", df_puestos[col_puesto].unique())
+                                datos_puesto = df_puestos[df_puestos[col_puesto] == puesto_sel].iloc[0]
+                                
+                                st.markdown(f"""
+                                    <div style='background-color: #1E1E1E; padding: 20px; border-radius: 10px; border: 2px solid #FFD700;'>
+                                        <h3 style='color: #FFD700; margin-top:0;'>📋 Perfil: {puesto_sel}</h3>
+                                        <p style='color: white;'><b>Área:</b> {datos_puesto[col_area]} | <b>Reporta a:</b> {datos_puesto[col_reporta]}</p>
+                                    </div>
+                                """, unsafe_allow_html=True)
+                                
+                                col1, col2 = st.columns(2)
+                                
+                                def mostrar_lista_limpia(texto):
+                                    if pd.isna(texto) or str(texto).strip() == "": return "<li>No definido</li>"
+                                    items = str(texto).split("|")
+                                    return "".join([f"<li style='margin-bottom:5px;'>{i.strip()}</li>" for i in items])
 
-                                                        with col1:
-                                                            st.markdown("#### 🎯 Funciones")
-                                                            st.markdown(f"<ul style='color: #DDDDDD;'>{mostrar_lista_limpia(datos_puesto.get('funciones', ''))}</ul>", unsafe_allow_html=True)
-                                                            st.markdown("#### 📈 KPIs")
-                                                            st.markdown(f"<ul style='color: #00E5FF;'>{mostrar_lista_limpia(datos_puesto.get('kpis', ''))}</ul>", unsafe_allow_html=True)
+                                with col1:
+                                    st.markdown("#### 🎯 Funciones")
+                                    st.markdown(f"<ul style='color: #DDDDDD;'>{mostrar_lista_limpia(datos_puesto.get('funciones', ''))}</ul>", unsafe_allow_html=True)
+                                    st.markdown("#### 📈 KPIs")
+                                    st.markdown(f"<ul style='color: #00E5FF;'>{mostrar_lista_limpia(datos_puesto.get('kpis', ''))}</ul>", unsafe_allow_html=True)
 
-                                                        with col2:
-                                                            st.markdown("#### 🧠 Competencias Generales")
-                                                            st.markdown(f"<ul style='color: #FFD700;'>{mostrar_lista_limpia(datos_puesto.get('comp generales', ''))}</ul>", unsafe_allow_html=True)
-                                                            st.markdown("#### 🛠️ Competencias Específicas")
-                                                            st.markdown(f"<ul style='color: #FFA500;'>{mostrar_lista_limpia(datos_puesto.get('comp especificas', ''))}</ul>", unsafe_allow_html=True)
+                                with col2:
+                                    st.markdown("#### 🧠 Competencias Generales")
+                                    st.markdown(f"<ul style='color: #FFD700;'>{mostrar_lista_limpia(datos_puesto.get('comp generales', ''))}</ul>", unsafe_allow_html=True)
+                                    st.markdown("#### 🛠️ Competencias Específicas")
+                                    st.markdown(f"<ul style='color: #FFA500;'>{mostrar_lista_limpia(datos_puesto.get('comp especificas', ''))}</ul>", unsafe_allow_html=True)
 
-                                                        st.divider()
-                                                        
-                                                        st.markdown("#### 🌳 Relaciones Jerárquicas")
-                                                        jefe = datos_puesto[col_reporta]
-                                                        subordinados = df_puestos[df_puestos[col_reporta] == puesto_sel][col_puesto].tolist()
-                                                        
-                                                        c1, c2 = st.columns(2)
-                                                        with c1:
-                                                            st.info(f"⬆️ **Jefe Inmediato:** {jefe if jefe else 'Nivel Máximo'}")
-                                                        with c2:
-                                                            if subordinados:
-                                                                st.success(f"⬇️ **Personal a cargo:** {', '.join(subordinados)}")
-                                                            else:
-                                                                st.write("Solo (No tiene personal a cargo)")
+                                st.divider()
+                                
+                                st.markdown("#### 🌳 Relaciones Jerárquicas")
+                                jefe = datos_puesto[col_reporta]
+                                subordinados = df_puestos[df_puestos[col_reporta] == puesto_sel][col_puesto].tolist()
+                                
+                                c1, c2 = st.columns(2)
+                                with c1:
+                                    st.info(f"⬆️ **Jefe Inmediato:** {jefe if jefe else 'Nivel Máximo'}")
+                                with c2:
+                                    if subordinados:
+                                        st.success(f"⬇️ **Personal a cargo:** {', '.join(subordinados)}")
+                                    else:
+                                        st.write("Solo (No tiene personal a cargo)")
 
     # ==========================================
     # --- SECCIÓN REGISTRO Y NÓMINA ---
