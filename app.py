@@ -1059,7 +1059,31 @@ else:
                                                 <div style='margin: 2px 0; color: #000000;'><strong>Horas Ac.:</strong> {horas} hrs | <strong>Año:</strong> {anio}</div>
                                             </div>
                                             """, unsafe_allow_html=True)
-
+                                # --- TABLA DE SELECCIÓN PARA EDITAR/ELIMINAR ---
+                                st.markdown("<br>", unsafe_allow_html=True)
+                                with st.expander("⚙️ Clic aquí para Editar o Eliminar Formación Académica"):
+                                    st.markdown("<span style='color:#A0A0A0; font-size:14px;'>Activa la casilla <b>SEL</b> en la tabla de abajo para modificar o eliminar un registro.</span>", unsafe_allow_html=True)
+                                    
+                                    # Traemos los datos del trabajador para esta pestaña
+                                    df_fa = dfs[h_name][dfs[h_name]["dni"].astype(str) == str(dni_buscado)].copy()
+                                    
+                                    if not df_fa.empty:
+                                        # Agregamos la columna SEL al inicio
+                                        df_fa.insert(0, "SEL", False)
+                                        # Mostramos la tabla interactiva
+                                        ed = st.data_editor(
+                                            df_fa,
+                                            hide_index=True,
+                                            use_container_width=True,
+                                            disabled=[c for c in df_fa.columns if c != "SEL"],
+                                            key="editor_form_acad" # Llave única importante
+                                        )
+                                        # Capturamos la fila que el usuario seleccione para que el bloque de abajo la lea
+                                        sel = ed[ed["SEL"] == True]
+                                    else:
+                                        st.info("No hay registros para mostrar.")
+                                        sel = pd.DataFrame()
+                            
                             # ==========================================
                             # PESTAÑA: DATOS FAMILIARES
                             # ==========================================
