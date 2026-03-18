@@ -434,7 +434,7 @@ else:
                 st.session_state.menu_p = None # Apaga el menú principal
 
         st.markdown("### 🛠️ MENÚ PRINCIPAL")
-        st.radio("Menú Principal", ["🔍 Consulta", "➕ Registro", "📊 Nómina General", "🏢 Estructura"], key="menu_p", on_change=click_menu_p, label_visibility="collapsed")
+        st.radio("Menú Principal", ["🔍 Consulta", "➕ Registro", "📊 Nómina General", "🏢 Estructura", "📋 Evaluaciones", "📈 Dashboard Desempeño"], key="menu_p", on_change=click_menu_p, label_visibility="collapsed")
         
         st.markdown("<h3 style='color: #FFD700;'>📊 REPORTES</h3>", unsafe_allow_html=True)
         # Usamos index=None para que se pueda desmarcar sin textos extraños
