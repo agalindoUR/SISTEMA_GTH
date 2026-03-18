@@ -1060,7 +1060,7 @@ else:
                                             </div>
                                             """, unsafe_allow_html=True)
 
-                                             # ==========================================
+                            # ==========================================
                             # PESTAÑA: DATOS FAMILIARES
                             # ==========================================
                             elif h_name == "DATOS FAMILIARES":
@@ -1124,13 +1124,19 @@ else:
                                 # --- 3. TABLA DESPLEGABLE PARA EDICIÓN ---
                                 with st.expander("⚙️ Clic aquí para Editar o Eliminar un Familiar"):
                                     st.markdown("<p style='color:#DDDDDD;'>Activa la casilla <b>SEL</b> en la tabla de abajo para modificar o eliminar un registro.</p>", unsafe_allow_html=True)
+                                    
+                                    # ✅ AYUDA VISUAL PARA COPIAR Y PEGAR LA DIRECCIÓN
+                                    if dir_trabajador:
+                                        st.info(f"💡 **Tip para la edición:** Si el familiar vive con el trabajador, simplemente copia y pega esta dirección en la tabla:  \n**{dir_trabajador}**")
+                                        
                                     st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 8px !important; }</style>""", unsafe_allow_html=True)
                                     ed = st.data_editor(vst, hide_index=True, use_container_width=True, column_config=col_conf, key=f"ed_{h_name}_oculta")
-                                    sel = ed[ed["SEL"] == True]
+                                    sel = ed[ed["SEL"] == True]]
 
                                 # --- 4. FORMULARIO DENTRO DE "NUEVO REGISTRO" ---
                                 st.markdown("<br>", unsafe_allow_html=True)
                                 with st.expander("➕ NUEVO REGISTRO"):
+                                    
                                     st.markdown("<p style='color:#DDDDDD; font-style: italic;'>Rellena los datos para agregar un familiar.</p>", unsafe_allow_html=True)
                                     col_f1, col_f2 = st.columns(2)
                                     
@@ -1301,6 +1307,8 @@ else:
                                     
                                     if h_name == "DATOS GENERALES" and len(df_filtro) > 0:
                                         st.info("📌 Los datos generales ya están registrados. Selecciona el registro en la tabla de arriba para editarlos.")
+                                    elif h_name == "DATOS FAMILIARES":
+                                        pass # No dibujamos nada porque la pestaña de familiares ya tiene su propio formulario arriba
                                     else:
                                         # ¡AQUÍ ESTÁ EL CAMBIO IMPORTANTE!
                                         with st.expander("➕ Nuevo Registro"):
