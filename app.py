@@ -858,6 +858,7 @@ else:
                                     st.markdown(html_resumen, unsafe_allow_html=True)
                                     
                                 # ---------------------------------------
+                                # ---------------------------------------
                                 # TABLA DESPLEGABLE PARA EDICIÓN
                                 # ---------------------------------------
                                 st.markdown("<br>", unsafe_allow_html=True)
@@ -869,11 +870,16 @@ else:
                                     for col in vst.columns:
                                         if "fecha" in col.lower() or "f_" in col.lower():
                                             vst[col] = pd.to_datetime(vst[col], errors='coerce').dt.date
-                                            col_conf[str(col).upper()] = st.column_config.DateColumn(format="DD/MM/YYYY")
+                                            # ¡AQUÍ ESTÁ LA MAGIA DEL RANGO DE FECHAS!
+                                            col_conf[str(col).upper()] = st.column_config.DateColumn(
+                                                format="DD/MM/YYYY",
+                                                min_value=date(1950, 1, 1),
+                                                max_value=date(2100, 12, 31)
+                                            )
 
                                     ed = st.data_editor(vst, hide_index=True, use_container_width=True, column_config=col_conf, key=f"ed_{h_name}_oculta")
                                     
-                                    # ¡LA SOLUCIÓN! Convertimos los calendarios de vuelta a texto antes de que pasen a SEL
+                                    # Convertimos los calendarios de vuelta a texto antes de que pasen a SEL
                                     for col in ed.columns:
                                         if "fecha" in col.lower() or "f_" in col.lower():
                                             ed[col] = ed[col].astype(str)
