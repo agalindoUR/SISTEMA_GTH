@@ -1131,7 +1131,7 @@ else:
                                         
                                     st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 8px !important; }</style>""", unsafe_allow_html=True)
                                     ed = st.data_editor(vst, hide_index=True, use_container_width=True, column_config=col_conf, key=f"ed_{h_name}_oculta")
-                                    sel = ed[ed["SEL"] == True]]
+                                    sel = ed[ed["SEL"] == True]
 
                                 # --- 4. FORMULARIO DENTRO DE "NUEVO REGISTRO" ---
                                 st.markdown("<br>", unsafe_allow_html=True)
