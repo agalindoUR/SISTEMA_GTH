@@ -1836,61 +1836,67 @@ else:
 elif h_name == "ESTRUCTURA_PUESTOS":
     st.markdown("<h2 style='color: #FFD700;'>🏢 Estructura Organizacional y Perfiles</h2>", unsafe_allow_html=True)
     
-    # 1. Cargar datos de la pestaña nueva
+    # Cargamos los datos (ya vienen limpios por tu función load_data)
     df_puestos = dfs["ESTRUCTURA_PUESTOS"].copy()
     
     if df_puestos.empty:
         st.warning("No hay datos en la hoja de Estructura de Puestos.")
     else:
-        # Selector de Puesto para ver la "Ficha del Puesto"
-        puesto_sel = st.selectbox("🔍 Selecciona un puesto para ver su perfil detallado:", df_puestos["PUESTO"].unique())
+        # Nota: Usamos nombres en minúsculas y con espacios por tu limpieza agresiva
+        col_puesto = "puesto"
+        col_area = "area"
+        col_reporta = "reporta a"
         
-        datos_puesto = df_puestos[df_puestos["PUESTO"] == puesto_sel].iloc[0]
+        # Selector de Puesto
+        puesto_sel = st.selectbox("🔍 Selecciona un puesto para ver su perfil detallado:", df_puestos[col_puesto].unique())
+        datos_puesto = df_puestos[df_puestos[col_puesto] == puesto_sel].iloc[0]
         
-        # --- Diseño de la Ficha del Puesto ---
+        # --- Diseño de la Ficha ---
         st.markdown(f"""
             <div style='background-color: #1E1E1E; padding: 20px; border-radius: 10px; border: 2px solid #FFD700;'>
-                <h3 style='color: #FFD700; margin-top:0;'>📋 Perfil de Puesto: {puesto_sel}</h3>
-                <p style='color: white;'><b>Área:</b> {datos_puesto['AREA']} | <b>Reporta a:</b> {datos_puesto['REPORTA_A']}</p>
+                <h3 style='color: #FFD700; margin-top:0;'>📋 Perfil: {puesto_sel}</h3>
+                <p style='color: white;'><b>Área:</b> {datos_puesto[col_area]} | <b>Reporta a:</b> {datos_puesto[col_reporta]}</p>
             </div>
         """, unsafe_allow_html=True)
         
         col1, col2 = st.columns(2)
         
-        # Función para convertir el texto con '|' en una lista limpia
-        def mostrar_lista(texto):
-            if pd.isna(texto) or str(texto).strip() == "":
-                return "<li>No definido</li>"
+        def mostrar_lista_limpia(texto):
+            if pd.isna(texto) or str(texto).strip() == "": return "<li>No definido</li>"
+            # Separamos por tu delimitador '|'
             items = str(texto).split("|")
-            return "".join([f"<li>{i.strip()}</li>" for i in items])
+            return "".join([f"<li style='margin-bottom:5px;'>{i.strip()}</li>" for i in items])
 
         with col1:
-            st.markdown("#### 🎯 Funciones Principales")
-            st.markdown(f"<ul style='color: #DDDDDD;'>{mostrar_lista(datos_puesto['FUNCIONES'])}</ul>", unsafe_allow_html=True)
+            st.markdown("#### 🎯 Funciones")
+            # Usamos los nombres que genera tu función (minúsculas + espacios)
+            st.markdown(f"<ul style='color: #DDDDDD;'>{mostrar_lista_limpia(datos_puesto.get('funciones', ''))}</ul>", unsafe_allow_html=True)
             
-            st.markdown("#### 📈 Indicadores (KPIs)")
-            st.markdown(f"<ul style='color: #00E5FF;'>{mostrar_lista(datos_puesto['KPIS'])}</ul>", unsafe_allow_html=True)
+            st.markdown("#### 📈 KPIs")
+            st.markdown(f"<ul style='color: #00E5FF;'>{mostrar_lista_limpia(datos_puesto.get('kpis', ''))}</ul>", unsafe_allow_html=True)
 
         with col2:
             st.markdown("#### 🧠 Competencias Generales")
-            st.markdown(f"<ul style='color: #FFD700;'>{mostrar_lista(datos_puesto['COMP_GENERALES'])}</ul>", unsafe_allow_html=True)
+            st.markdown(f"<ul style='color: #FFD700;'>{mostrar_lista_limpia(datos_puesto.get('comp generales', ''))}</ul>", unsafe_allow_html=True)
             
             st.markdown("#### 🛠️ Competencias Específicas")
-            st.markdown(f"<ul style='color: #FFA500;'>{mostrar_lista(datos_puesto['COMP_SPECIFICAS'] if 'COMP_SPECIFICAS' in datos_puesto else datos_puesto['COMP_ESPECIFICAS'])}</ul>", unsafe_allow_html=True)
+            st.markdown(f"<ul style='color: #FFA500;'>{mostrar_lista_limpia(datos_puesto.get('comp especificas', ''))}</ul>", unsafe_allow_html=True)
 
         st.divider()
         
-        # --- BONUS: Visualización Simple de Jerarquía ---
-        st.markdown("#### 🌳 Jerarquía Directa")
-        jefe = datos_puesto['REPORTA_A']
-        subordinados = df_puestos[df_puestos["REPORTA_A"] == puesto_sel]["PUESTO"].tolist()
+        # --- Lógica de Jerarquía ---
+        st.markdown("#### 🌳 Relaciones Jerárquicas")
+        jefe = datos_puesto[col_reporta]
+        subordinados = df_puestos[df_puestos[col_reporta] == puesto_sel][col_puesto].tolist()
         
-        c_j, c_p, c_s = st.columns(3)
-        c_j.metric("Superior Directo", jefe if jefe else "N/A")
-        c_p.info(f"Puesto Actual: **{puesto_sel}**")
-        c_s.success(f"Personal a cargo: {len(subordinados)}")
-        if subordinados:
-            st.write(f"👉 **Subordinados:** {', '.join(subordinados)}")
+        c1, c2 = st.columns(2)
+        with c1:
+            st.info(f"⬆️ **Jefe Inmediato:** {jefe if jefe else 'Nivel Máximo'}")
+        with c2:
+            if subordinados:
+                st.success(f"⬇️ **Personal a cargo:** {', '.join(subordinados)}")
+            else:
+                st.write("Solo (No tiene personal a cargo)")
     
 # ==========================================
     # MÓDULO: REPORTE GENERAL
