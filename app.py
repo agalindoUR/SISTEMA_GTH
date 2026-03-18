@@ -626,6 +626,10 @@ else:
                             if "fecha" in col.lower() or "f_" in col.lower():
                                 vst[col] = pd.to_datetime(vst[col], errors='coerce').dt.date
                                 col_conf[str(col).upper()] = st.column_config.DateColumn(format="DD/MM/YYYY")
+                            # --- NUEVA REGLA PARA ARREGLAR EL PERIODO ---
+                            elif col.lower() == "periodo":
+                                vst[col] = vst[col].astype(str) # Forzamos a que sea texto
+                                col_conf[str(col).upper()] = st.column_config.TextColumn()
 
                         vst.columns = [str(col).upper() for col in vst.columns]
                             
