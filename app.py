@@ -720,7 +720,7 @@ else:
                            # ==========================================
                             # NUEVO DISEÑO: EXPERIENCIA LABORAL Y CÁLCULOS
                             # ==========================================
-                            elif h_name == "EXP. LABORAL":
+                            if h_name == "EXP. LABORAL":
                                 # Dividimos la pantalla: 2/3 para tarjetas, 1/3 para el resumen
                                 col_izq, col_der = st.columns([2, 1])
                                 
