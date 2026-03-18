@@ -843,6 +843,54 @@ else:
                                     sel = ed[ed["SEL"] == True]
 
                             # ==========================================
+                            # NUEVO DISEÑO: CONTRATOS
+                            # ==========================================
+                            elif h_name == "CONTRATOS":
+                                if vst.empty:
+                                    st.markdown("<p style='color:#DDDDDD;'>No hay contratos registrados para este colaborador.</p>", unsafe_allow_html=True)
+                                else:
+                                    # Generamos tarjetas estéticas para cada contrato (estilo claro)
+                                    for _, row in vst.iterrows():
+                                        f_inicio = row.get('F_INICIO', 'N/A')
+                                        f_fin = row.get('F_FIN', 'N/A')
+                                        cargo = row.get('CARGO', 'N/A')
+                                        tipo = row.get('TIPO CONTRATO', 'N/A')
+                                        estado = row.get('ESTADO', 'N/A')
+                                        
+                                        # Verde si es activo, Rojo si es cesado
+                                        color_borde = "#4CAF50" if str(estado).strip().upper() == "ACTIVO" else "#F44336"
+                                        
+                                        st.markdown(f"""
+                                        <div style='background-color: #FFFFFF; padding: 15px; border-radius: 8px; border-left: 6px solid {color_borde}; margin-bottom: 10px; border: 1px solid #CCCCCC;'>
+                                            <div style='color: #000000; font-size: 1.1em; font-weight: bold; margin-bottom: 5px;'>{cargo}</div>
+                                            <div style='color: #111111; font-size: 0.95em;'>
+                                                <strong>📅 Periodo:</strong> {f_inicio} hasta {f_fin} <br>
+                                                <strong>📝 Tipo de Contrato:</strong> {tipo} <br>
+                                                <strong>📌 Estado:</strong> <span style='color: {color_borde}; font-weight: bold;'>{estado}</span>
+                                            </div>
+                                        </div>
+                                        """, unsafe_allow_html=True)
+
+                                # TABLA DESPLEGABLE PARA EDICIÓN
+                                st.markdown("<br>", unsafe_allow_html=True)
+                                with st.expander("⚙️ Clic aquí para Editar o Eliminar Contratos"):
+                                    st.markdown("<p style='color:#DDDDDD;'>Activa la casilla <b>SEL</b> en la tabla de abajo para modificar o eliminar un registro.</p>", unsafe_allow_html=True)
+                                    st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 8px !important; }</style>""", unsafe_allow_html=True)
+                                    ed = st.data_editor(vst, hide_index=True, use_container_width=True, column_config=col_conf, key=f"ed_{h_name}_oculta")
+                                    sel = ed[ed["SEL"] == True]
+
+                            # ==========================================
+                            # NUEVO DISEÑO: VACACIONES
+                            # ==========================================
+                            elif h_name == "VACACIONES":
+                                # TABLA DESPLEGABLE PARA EDICIÓN (La parte visual ya se calculó más arriba)
+                                st.markdown("<br>", unsafe_allow_html=True)
+                                with st.expander("⚙️ Clic aquí para ver el Detalle Completo, Editar o Eliminar Vacaciones"):
+                                    st.markdown("<p style='color:#000000; background-color:#FFD700; padding:5px; border-radius:5px;'><b>Detalle de registros:</b> Activa la casilla <b>SEL</b> para modificar o eliminar.</p>", unsafe_allow_html=True)
+                                    st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 8px !important; }</style>""", unsafe_allow_html=True)
+                                    ed = st.data_editor(vst, hide_index=True, use_container_width=True, column_config=col_conf, key=f"ed_{h_name}_oculta")
+                                    sel = ed[ed["SEL"] == True]
+                            # ==========================================
                             # NUEVO DISEÑO: FORMACIÓN ACADÉMICA
                             # ==========================================
                             elif h_name == "FORM. ACADEMICA":
