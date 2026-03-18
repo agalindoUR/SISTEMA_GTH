@@ -625,11 +625,11 @@ else:
                         for col in vst.columns:
                             if "fecha" in col.lower() or "f_" in col.lower():
                                 vst[col] = pd.to_datetime(vst[col], errors='coerce').dt.date
-                                # ¡TRUCO: Usar texto ISO en lugar de date() para evitar el bug de Streamlit!
+                                # Volvemos a usar date() ahora que ya no hay reglas duplicadas
                                 col_conf[str(col).upper()] = st.column_config.DateColumn(
                                     format="DD/MM/YYYY",
-                                    min_value="1950-01-01",
-                                    max_value="2100-12-31"
+                                    min_value=date(1950, 1, 1),
+                                    max_value=date(2100, 12, 31)
                                 )
                             elif col.lower().strip() == "periodo":
                                 vst[col] = vst[col].astype(str)
