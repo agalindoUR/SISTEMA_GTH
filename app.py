@@ -17,6 +17,8 @@ from oauth2client.service_account import ServiceAccountCredentials
 import numpy as np
 import modulos.estructura as mod_estructura
 
+
+
 st.set_page_config(page_title="Gestión Roosevelt", page_icon="🎓", layout="wide")
 
 # ==========================================
