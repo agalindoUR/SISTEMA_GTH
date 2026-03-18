@@ -1836,7 +1836,7 @@ else:
     # MÓDULO: ESTRUCTURA Y PUESTOS (MOF)
     # ==========================================
     elif m == "🏢 Estructura":
-        st.markdown("<h2 style='color: #FFD700;'>🏢 Estructura Organizacional y Perfiles de Puesto (MOF)</h2>", unsafe_allow_html=True)
+        st.markdown("<h2 style='color: #FFD700; text-align: center; margin-bottom: 20px;'>🏢 Directorio de Perfiles y Puestos (MOF)</h2>", unsafe_allow_html=True)
         
         df_puestos = dfs.get("ESTRUCTURA_PUESTOS", pd.DataFrame())
         
@@ -1847,41 +1847,58 @@ else:
             col_area = "area"
             col_reporta = "reporta a"
             
-            puesto_sel = st.selectbox("🔍 Selecciona un puesto para ver su perfil detallado:", df_puestos[col_puesto].unique())
+            puesto_sel = st.selectbox("🔍 Selecciona el puesto que deseas consultar:", df_puestos[col_puesto].unique())
             datos_puesto = df_puestos[df_puestos[col_puesto] == puesto_sel].iloc[0]
             
+            # Encabezado principal del puesto
             st.markdown(f"""
-                <div style='background-color: #1E1E1E; padding: 20px; border-radius: 10px; border: 2px solid #FFD700; margin-bottom: 20px;'>
-                    <h3 style='color: #FFD700; margin-top:0;'>📋 Perfil: {puesto_sel}</h3>
-                    <p style='color: white; font-size:18px;'><b>Área:</b> {datos_puesto.get(col_area, '-')} | <b>Reporta a:</b> {datos_puesto.get(col_reporta, '-')}</p>
+                <div style='background: linear-gradient(90deg, #1A1A1A 0%, #2D2D2D 100%); padding: 25px; border-radius: 15px; border-left: 8px solid #FFD700; box-shadow: 0 4px 6px rgba(0,0,0,0.3); margin-bottom: 25px;'>
+                    <h2 style='color: #FFD700; margin-top:0; font-size: 28px;'>{puesto_sel}</h2>
+                    <div style='display: flex; gap: 20px; flex-wrap: wrap;'>
+                        <span style='background-color: #333; padding: 5px 15px; border-radius: 20px; color: white; border: 1px solid #555;'>🏢 <b>Área:</b> {datos_puesto.get(col_area, '-')}</span>
+                        <span style='background-color: #333; padding: 5px 15px; border-radius: 20px; color: white; border: 1px solid #555;'>👤 <b>Reporta a:</b> {datos_puesto.get(col_reporta, '-')}</span>
+                    </div>
                 </div>
             """, unsafe_allow_html=True)
             
-            col1, col2 = st.columns(2)
-            
-            def mostrar_lista_limpia(texto):
-                if pd.isna(texto) or str(texto).strip() == "": return "<li>No definido</li>"
+            # Función mágica para renderizar diferentes estilos
+            def render_items(texto, estilo):
+                if pd.isna(texto) or str(texto).strip() == "": return "<p style='color:#888;'><i>No definido</i></p>"
                 items = str(texto).split("|")
-                return "".join([f"<li style='margin-bottom:8px;'>{i.strip()}</li>" for i in items])
-
-            with col1:
-                st.markdown("#### 🎯 Funciones Principales")
-                st.markdown(f"<ul style='color: #DDDDDD; font-size:16px;'>{mostrar_lista_limpia(datos_puesto.get('funciones', ''))}</ul>", unsafe_allow_html=True)
                 
-                st.markdown("#### 📈 Indicadores de Éxito (KPIs)")
-                st.markdown(f"<ul style='color: #00E5FF; font-size:16px;'>{mostrar_lista_limpia(datos_puesto.get('kpis', ''))}</ul>", unsafe_allow_html=True)
+                if estilo == "funciones":
+                    return "".join([f"<div style='background-color: #262626; border-left: 4px solid #4CAF50; padding: 10px 15px; margin-bottom: 10px; border-radius: 4px; color: #EEE;'><span style='color:#4CAF50; margin-right: 8px;'>✔️</span>{i.strip()}</div>" for i in items])
+                elif estilo == "kpis":
+                    return "".join([f"<div style='background-color: #00222B; border: 1px solid #00E5FF; padding: 10px 15px; margin-bottom: 10px; border-radius: 4px; color: #FFF;'><span style='color:#00E5FF; margin-right: 8px;'>🎯</span>{i.strip()}</div>" for i in items])
+                elif estilo == "tag_gen": # Etiquetas amarillas
+                    tags = "".join([f"<span style='display: inline-block; background-color: #FFD700; color: #000; padding: 6px 15px; margin: 5px 5px 5px 0; border-radius: 20px; font-weight: bold; font-size: 14px; box-shadow: 1px 1px 3px rgba(0,0,0,0.5);'>{i.strip()}</span>" for i in items])
+                    return f"<div style='margin-bottom: 15px;'>{tags}</div>"
+                elif estilo == "tag_esp": # Etiquetas naranjas
+                    tags = "".join([f"<span style='display: inline-block; background-color: #FF8C00; color: #FFF; padding: 6px 15px; margin: 5px 5px 5px 0; border-radius: 20px; font-weight: bold; font-size: 14px; box-shadow: 1px 1px 3px rgba(0,0,0,0.5);'>{i.strip()}</span>" for i in items])
+                    return f"<div style='margin-bottom: 15px;'>{tags}</div>"
+
+            # Columnas principales
+            col1, col2 = st.columns([1.2, 1]) # La columna izquierda es un poquito más ancha
+            
+            with col1:
+                st.markdown("<h3 style='color: #DDDDDD;'>⚙️ Funciones Principales</h3>", unsafe_allow_html=True)
+                st.markdown(render_items(datos_puesto.get('funciones', ''), "funciones"), unsafe_allow_html=True)
+                
+                st.markdown("<h3 style='color: #00E5FF; margin-top: 25px;'>📈 Indicadores de Éxito (KPIs)</h3>", unsafe_allow_html=True)
+                st.markdown(render_items(datos_puesto.get('kpis', ''), "kpis"), unsafe_allow_html=True)
 
             with col2:
-                st.markdown("#### 🧠 Competencias Generales")
-                st.markdown(f"<ul style='color: #FFD700; font-size:16px;'>{mostrar_lista_limpia(datos_puesto.get('comp generales', ''))}</ul>", unsafe_allow_html=True)
+                st.markdown("<h3 style='color: #FFD700;'>🧠 Competencias Generales</h3>", unsafe_allow_html=True)
+                st.markdown(render_items(datos_puesto.get('comp generales', ''), "tag_gen"), unsafe_allow_html=True)
                 
-                st.markdown("#### 🛠️ Competencias Específicas")
-                st.markdown(f"<ul style='color: #FFA500; font-size:16px;'>{mostrar_lista_limpia(datos_puesto.get('comp especificas', ''))}</ul>", unsafe_allow_html=True)
+                st.markdown("<h3 style='color: #FF8C00; margin-top: 25px;'>🛠️ Competencias Específicas</h3>", unsafe_allow_html=True)
+                st.markdown(render_items(datos_puesto.get('comp especificas', ''), "tag_esp"), unsafe_allow_html=True)
 
+            st.markdown("<br>", unsafe_allow_html=True)
             st.divider()
             
             # Jerarquía
-            st.markdown("#### 🌳 Organigrama Directo")
+            st.markdown("<h3 style='text-align: center; color: #FFF;'>🌳 Organigrama Directo</h3>", unsafe_allow_html=True)
             jefe = datos_puesto.get(col_reporta, "")
             subordinados = df_puestos[df_puestos[col_reporta] == puesto_sel][col_puesto].tolist()
             
@@ -1892,7 +1909,7 @@ else:
                 if subordinados:
                     st.success(f"⬇️ **Personal a cargo ({len(subordinados)}):** {', '.join(subordinados)}")
                 else:
-                    st.write("Solo (No tiene personal a cargo)")
+                    st.warning("👤 Sin personal a cargo")
     
 # ==========================================
     # MÓDULO: REPORTE GENERAL
