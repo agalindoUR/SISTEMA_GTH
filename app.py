@@ -625,7 +625,12 @@ else:
                         for col in vst.columns:
                             if "fecha" in col.lower() or "f_" in col.lower():
                                 vst[col] = pd.to_datetime(vst[col], errors='coerce').dt.date
-                                col_conf[str(col).upper()] = st.column_config.DateColumn(format="DD/MM/YYYY")
+                                # REGLA MAESTRA PARA TODO EL SISTEMA
+                                col_conf[str(col).upper()] = st.column_config.DateColumn(
+                                    format="DD/MM/YYYY",
+                                    min_value=date(1950, 1, 1),
+                                    max_value=date(2100, 12, 31)
+                                )
                             # --- NUEVA REGLA PARA ARREGLAR EL PERIODO ---
                             elif col.lower() == "periodo":
                                 vst[col] = vst[col].astype(str) # Forzamos a que sea texto
