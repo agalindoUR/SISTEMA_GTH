@@ -1060,7 +1060,153 @@ else:
                                             </div>
                                             """, unsafe_allow_html=True)
 
-                                                                
+                                             # ==========================================
+                            # PESTAÑA: DATOS FAMILIARES
+                            # ==========================================
+                            elif h_name == "DATOS FAMILIARES":
+                                st.markdown("<h3 style='color: #FFD700; margin-bottom: 20px;'>👨‍👩‍👧‍👦 Datos Familiares</h3>", unsafe_allow_html=True)
+                                
+                                # --- 1. BUSCAR LA DIRECCIÓN DEL TRABAJADOR ---
+                                dir_trabajador = ""
+                                if not dfs["DATOS GENERALES"].empty:
+                                    datos_gen_trabajador = dfs["DATOS GENERALES"][dfs["DATOS GENERALES"]["dni"].astype(str) == str(dni_buscado)]
+                                    if not datos_gen_trabajador.empty and "dirección" in datos_gen_trabajador.columns:
+                                        dir_trabajador = str(datos_gen_trabajador.iloc[0]["dirección"])
+
+                                # --- 2. MOSTRAR FAMILIARES REGISTRADOS (CON TODOS LOS DATOS) ---
+                                st.markdown("<h4 style='color: #FFD700; border-bottom: 2px solid #FFD700; padding-bottom: 5px;'>📋 Familiares Registrados</h4>", unsafe_allow_html=True)
+                                
+                                def get_fam_val(r, col_name):
+                                    for col in r.index:
+                                        if str(col).strip().lower() == col_name.lower():
+                                            val = r[col]
+                                            if pd.notna(val) and str(val).strip() != "":
+                                                return str(val)
+                                    return "-"
+
+                                if len(vst) == 0:
+                                    st.markdown("<p style='color:#DDDDDD;'>No hay familiares registrados aún.</p>", unsafe_allow_html=True)
+                                else:
+                                    for idx, row in vst.iterrows():
+                                        f_dni = get_fam_val(row, "dni familiar")
+                                        if f_dni == "-": f_dni = get_fam_val(row, "dni_familiar") # Por si acaso
+                                        f_parentesco = get_fam_val(row, "parentesco")
+                                        f_nombres = get_fam_val(row, "nombres y apellidos")
+                                        f_edad = get_fam_val(row, "edad")
+                                        f_estado = get_fam_val(row, "estado")
+                                        f_celular = get_fam_val(row, "celular")
+                                        f_correo = get_fam_val(row, "correo")
+                                        f_domicilio = get_fam_val(row, "domicilio")
+                                        f_sit_acad = get_fam_val(row, "situacion academica")
+                                        f_emergencia = get_fam_val(row, "contacto emergencia").lower()
+                                        
+                                        badge_emergencia = "<span style='color: #FF5252; font-size: 0.9em;'>🚨 <b>CONTACTO DE EMERGENCIA</b></span>" if f_emergencia in ["sí", "si", "true", "1"] else ""
+                                        
+                                        st.markdown(f"""
+                                        <div style='background-color: #FFFFFF; padding: 15px; border-radius: 8px; border: 1px solid #CCCCCC; border-left: 6px solid #2196F3; margin-bottom: 10px; color: #000000;'>
+                                            <div style='margin-bottom: 10px; font-size: 1.1em; font-weight: bold; border-bottom: 1px solid #EEEEEE; padding-bottom: 5px;'>
+                                                {f_nombres} <span style='color: #666666; font-size: 0.9em;'>({f_parentesco})</span> {badge_emergencia}
+                                            </div>
+                                            <div style='display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.95em;'>
+                                                <div><strong>DNI:</strong> {f_dni}</div>
+                                                <div><strong>Edad:</strong> {f_edad} años</div>
+                                                <div><strong>Estado:</strong> {f_estado}</div>
+                                                <div><strong>Celular:</strong> {f_celular}</div>
+                                                <div><strong>Correo:</strong> {f_correo}</div>
+                                                <div><strong>Sit. Académica:</strong> {f_sit_acad}</div>
+                                                <div style='grid-column: span 2;'><strong>Domicilio:</strong> {f_domicilio}</div>
+                                            </div>
+                                        </div>
+                                        """, unsafe_allow_html=True)
+
+                                st.markdown("<br>", unsafe_allow_html=True)
+
+                                # --- 3. TABLA DESPLEGABLE PARA EDICIÓN ---
+                                with st.expander("⚙️ Clic aquí para Editar o Eliminar un Familiar"):
+                                    st.markdown("<p style='color:#DDDDDD;'>Activa la casilla <b>SEL</b> en la tabla de abajo para modificar o eliminar un registro.</p>", unsafe_allow_html=True)
+                                    st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 8px !important; }</style>""", unsafe_allow_html=True)
+                                    ed = st.data_editor(vst, hide_index=True, use_container_width=True, column_config=col_conf, key=f"ed_{h_name}_oculta")
+                                    sel = ed[ed["SEL"] == True]
+
+                                # --- 4. FORMULARIO DENTRO DE "NUEVO REGISTRO" ---
+                                st.markdown("<br>", unsafe_allow_html=True)
+                                with st.expander("➕ NUEVO REGISTRO"):
+                                    st.markdown("<p style='color:#DDDDDD; font-style: italic;'>Rellena los datos para agregar un familiar.</p>", unsafe_allow_html=True)
+                                    col_f1, col_f2 = st.columns(2)
+                                    
+                                    with col_f1:
+                                        parentesco = st.selectbox("Parentesco", ["Cónyuge / Conviviente", "Hijo(a)", "Madre", "Padre", "Hermano(a)", "Familiar Adicional (Otros)"])
+                                        dni_fam = st.text_input("DNI del Familiar", max_chars=8)
+                                        
+                                        if dni_fam and len(dni_fam) >= 8:
+                                            if not dfs["DATOS GENERALES"].empty:
+                                                es_trabajador = dfs["DATOS GENERALES"][dfs["DATOS GENERALES"]["dni"].astype(str) == str(dni_fam)]
+                                                if not es_trabajador.empty:
+                                                    nombre_vinculo = es_trabajador.iloc[0].get("apellidos y nombres", "Trabajador")
+                                                    st.success(f"🔗 ¡Vínculo detectado! Este familiar es trabajador activo: **{nombre_vinculo}**")
+                                        
+                                        nombres_fam = st.text_input("Apellidos y Nombres")
+                                        
+                                        f_nac_fam = st.date_input("Fecha de Nacimiento", min_value=date(1920, 1, 1), max_value=date.today())
+                                        hoy = date.today()
+                                        edad_fam = hoy.year - f_nac_fam.year - ((hoy.month, hoy.day) < (f_nac_fam.month, f_nac_fam.day))
+                                        st.info(f"🎂 Edad calculada: **{edad_fam} años**")
+
+                                    with col_f2:
+                                        estado_fam = st.selectbox("Estado", ["Vivo", "Fallecido", "Otra condición"])
+                                        
+                                        if estado_fam == "Vivo":
+                                            cel_fam = st.text_input("Celular")
+                                            correo_fam = st.text_input("Correo Electrónico")
+                                            
+                                            st.markdown("---")
+                                            vive_juntos = st.checkbox("🏠 Vive con el trabajador")
+                                            if vive_juntos:
+                                                domicilio_fam = st.text_input("Domicilio del familiar", value=dir_trabajador)
+                                            else:
+                                                domicilio_fam = st.text_input("Domicilio del familiar")
+                                        else:
+                                            cel_fam = "-"
+                                            correo_fam = "-"
+                                            domicilio_fam = "-"
+                                            vive_juntos = False
+
+                                        sit_acad_fam = st.selectbox("Situación Académica", [
+                                            "Ninguna / No aplica",
+                                            "Estudiando Primaria", "Estudiando Secundaria", "Estudiando Superior",
+                                            "Estudios Concluidos Primaria", "Estudios Concluidos Secundaria", "Estudios Concluidos Superior"
+                                        ])
+                                        
+                                        contacto_emergencia = st.checkbox("🚨 Es Contacto de Emergencia Principal")
+
+                                    if st.button("💾 Guardar Familiar", type="primary"):
+                                        if not dni_fam or not nombres_fam:
+                                            st.error("⚠️ El DNI y los Nombres son obligatorios.")
+                                        else:
+                                            new_row = {
+                                                "dni": str(dni_buscado),
+                                                "dni familiar": str(dni_fam),
+                                                "parentesco": parentesco,
+                                                "nombres y apellidos": nombres_fam,
+                                                "fecha de nacimiento": str(f_nac_fam),
+                                                "edad": edad_fam,
+                                                "domicilio": domicilio_fam,
+                                                "estado": estado_fam,
+                                                "celular": cel_fam,
+                                                "correo": correo_fam,
+                                                "situacion academica": sit_acad_fam,
+                                                "contacto emergencia": "Sí" if contacto_emergencia else "No"
+                                            }
+                                            
+                                            if not dfs[h_name].empty and "id" in dfs[h_name].columns:
+                                                new_row["id"] = dfs[h_name]["id"].max() + 1
+                                            elif "id" in dfs[h_name].columns:
+                                                new_row["id"] = 1
+                                                
+                                            dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new_row])], ignore_index=True)
+                                            save_data(dfs)
+                                            st.success("✅ Familiar guardado correctamente.")
+                                            st.rerun()                   
                         # ==========================================
                         # BOTÓN DE IMPRESIÓN DE PAPELETA (SOLO EN VACACIONES)
                         # ==========================================
