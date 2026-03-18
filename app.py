@@ -1249,8 +1249,10 @@ else:
                                                     lugar_exp = st.text_input("Lugar (Empresa/Institución)")
                                                     puesto_exp = st.text_input("Puesto o Cargo ocupado")
                                                 with col_e2:
-                                                    f_ini_exp = st.date_input("Fecha de Inicio")
-                                                    f_fin_exp = st.date_input("Fecha de Fin")
+                                                    # --- AQUÍ APLICAMOS LOS LÍMITES DE AÑOS ---
+                                                    f_ini_exp = st.date_input("Fecha de Inicio", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
+                                                    f_fin_exp = st.date_input("Fecha de Fin", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
+                                                    # ------------------------------------------
                                                     motivo_exp = st.selectbox("Motivo de Cese", MOTIVOS_CESE)
                                                     
                                                 if st.button("💾 Guardar Experiencia", type="primary", use_container_width=False):
