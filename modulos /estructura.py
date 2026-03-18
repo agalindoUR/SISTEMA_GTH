@@ -1,3 +1,6 @@
+# ==========================================
+# MÓDULO: ESTRUCTURA Y PUESTOS (MOF)
+# ==========================================
 import streamlit as st
 import pandas as pd
 
