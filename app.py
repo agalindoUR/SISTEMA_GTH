@@ -1861,20 +1861,20 @@ else:
                 </div>
             """, unsafe_allow_html=True)
             
-            # Función mágica para renderizar diferentes estilos
+            # Función mágica para renderizar diferentes estilos (VERSIÓN PREMIUM)
             def render_items(texto, estilo):
                 if pd.isna(texto) or str(texto).strip() == "": return "<p style='color:#888;'><i>No definido</i></p>"
                 items = str(texto).split("|")
                 
                 if estilo == "funciones":
-                    return "".join([f"<div style='background-color: #262626; border-left: 4px solid #4CAF50; padding: 10px 15px; margin-bottom: 10px; border-radius: 4px; color: #EEE;'><span style='color:#4CAF50; margin-right: 8px;'>✔️</span>{i.strip()}</div>" for i in items])
+                    return "".join([f"<div style='background-color: rgba(76, 175, 80, 0.05); border-left: 3px solid #4CAF50; padding: 10px 15px; margin-bottom: 8px; border-radius: 4px; color: #E0E0E0; font-size: 14px;'><span style='color:#4CAF50; margin-right: 8px;'>✔️</span>{i.strip()}</div>" for i in items])
                 elif estilo == "kpis":
-                    return "".join([f"<div style='background-color: #00222B; border: 1px solid #00E5FF; padding: 10px 15px; margin-bottom: 10px; border-radius: 4px; color: #FFF;'><span style='color:#00E5FF; margin-right: 8px;'>🎯</span>{i.strip()}</div>" for i in items])
-                elif estilo == "tag_gen": # Etiquetas amarillas
-                    tags = "".join([f"<span style='display: inline-block; background-color: #FFD700; color: #000; padding: 6px 15px; margin: 5px 5px 5px 0; border-radius: 20px; font-weight: bold; font-size: 14px; box-shadow: 1px 1px 3px rgba(0,0,0,0.5);'>{i.strip()}</span>" for i in items])
+                    return "".join([f"<div style='background-color: rgba(0, 229, 255, 0.05); border-left: 3px solid #00E5FF; padding: 10px 15px; margin-bottom: 8px; border-radius: 4px; color: #E0E0E0; font-size: 14px;'><span style='color:#00E5FF; margin-right: 8px;'>🎯</span>{i.strip()}</div>" for i in items])
+                elif estilo == "tag_gen": # Dorado sutil
+                    tags = "".join([f"<span style='display: inline-block; background-color: rgba(255, 215, 0, 0.1); border: 1px solid rgba(255, 215, 0, 0.5); color: #FFD700; padding: 5px 12px; margin: 4px 4px 4px 0; border-radius: 15px; font-weight: 500; font-size: 13px;'>{i.strip()}</span>" for i in items])
                     return f"<div style='margin-bottom: 15px;'>{tags}</div>"
-                elif estilo == "tag_esp": # Etiquetas naranjas
-                    tags = "".join([f"<span style='display: inline-block; background-color: #FF8C00; color: #FFF; padding: 6px 15px; margin: 5px 5px 5px 0; border-radius: 20px; font-weight: bold; font-size: 14px; box-shadow: 1px 1px 3px rgba(0,0,0,0.5);'>{i.strip()}</span>" for i in items])
+                elif estilo == "tag_esp": # Naranja/Coral muy sutil y elegante
+                    tags = "".join([f"<span style='display: inline-block; background-color: rgba(255, 111, 0, 0.1); border: 1px solid rgba(255, 111, 0, 0.5); color: #FFB300; padding: 5px 12px; margin: 4px 4px 4px 0; border-radius: 15px; font-weight: 500; font-size: 13px;'>{i.strip()}</span>" for i in items])
                     return f"<div style='margin-bottom: 15px;'>{tags}</div>"
 
             # Columnas principales
