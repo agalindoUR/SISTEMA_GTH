@@ -625,15 +625,14 @@ else:
                         for col in vst.columns:
                             if "fecha" in col.lower() or "f_" in col.lower():
                                 vst[col] = pd.to_datetime(vst[col], errors='coerce').dt.date
-                                # REGLA MAESTRA PARA TODO EL SISTEMA
+                                # ¡TRUCO: Usar texto ISO en lugar de date() para evitar el bug de Streamlit!
                                 col_conf[str(col).upper()] = st.column_config.DateColumn(
                                     format="DD/MM/YYYY",
-                                    min_value=date(1950, 1, 1),
-                                    max_value=date(2100, 12, 31)
+                                    min_value="1950-01-01",
+                                    max_value="2100-12-31"
                                 )
-                            # --- NUEVA REGLA PARA ARREGLAR EL PERIODO ---
-                            elif col.lower() == "periodo":
-                                vst[col] = vst[col].astype(str) # Forzamos a que sea texto
+                            elif col.lower().strip() == "periodo":
+                                vst[col] = vst[col].astype(str)
                                 col_conf[str(col).upper()] = st.column_config.TextColumn()
 
                         vst.columns = [str(col).upper() for col in vst.columns]
@@ -862,8 +861,7 @@ else:
                                     """
                                     st.markdown(html_resumen, unsafe_allow_html=True)
                                     
-                                # ---------------------------------------
-                                # ---------------------------------------
+                               # ---------------------------------------
                                 # TABLA DESPLEGABLE PARA EDICIÓN
                                 # ---------------------------------------
                                 st.markdown("<br>", unsafe_allow_html=True)
@@ -871,24 +869,14 @@ else:
                                     st.markdown("<p style='color:#DDDDDD;'>Activa la casilla <b>SEL</b> para modificar o eliminar un registro.</p>", unsafe_allow_html=True)
                                     st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 10px !important; }</style>""", unsafe_allow_html=True)
                                     
-                                    col_conf = {}
-                                    for col in vst.columns:
-                                        if "fecha" in col.lower() or "f_" in col.lower():
-                                            vst[col] = pd.to_datetime(vst[col], errors='coerce').dt.date
-                                            # ¡AQUÍ ESTÁ LA MAGIA DEL RANGO DE FECHAS!
-                                            col_conf[str(col).upper()] = st.column_config.DateColumn(
-                                                format="DD/MM/YYYY",
-                                                min_value=date(1950, 1, 1),
-                                                max_value=date(2100, 12, 31)
-                                            )
-
+                                    # Usamos directamente el col_conf global que ya arreglamos arriba
                                     ed = st.data_editor(vst, hide_index=True, use_container_width=True, column_config=col_conf, key=f"ed_{h_name}_oculta")
                                     
                                     # Convertimos los calendarios de vuelta a texto antes de que pasen a SEL
                                     for col in ed.columns:
                                         if "fecha" in col.lower() or "f_" in col.lower():
                                             ed[col] = ed[col].astype(str)
-                                            ed[col] = ed[col].replace(["NaT", "None"], "") # Limpiamos si el usuario dejó la fecha en blanco
+                                            ed[col] = ed[col].replace(["NaT", "None"], "") # Limpiamos vacíos
 
                                     sel = ed[ed["SEL"] == True]
                             # ==========================================
