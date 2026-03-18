@@ -1829,6 +1829,69 @@ else:
                 for h in dfs:
                     if 'dni' in dfs[h].columns: dfs[h] = dfs[h][~dfs[h]['dni'].astype(str).isin(dnis)]
                 save_data(dfs); st.success("Registros eliminados correctamente."); st.rerun()
+
+# ==========================================
+# NUEVA PESTAÑA: ESTRUCTURA Y PUESTOS (MOF)
+# ==========================================
+elif h_name == "ESTRUCTURA_PUESTOS":
+    st.markdown("<h2 style='color: #FFD700;'>🏢 Estructura Organizacional y Perfiles</h2>", unsafe_allow_html=True)
+    
+    # 1. Cargar datos de la pestaña nueva
+    df_puestos = dfs["ESTRUCTURA_PUESTOS"].copy()
+    
+    if df_puestos.empty:
+        st.warning("No hay datos en la hoja de Estructura de Puestos.")
+    else:
+        # Selector de Puesto para ver la "Ficha del Puesto"
+        puesto_sel = st.selectbox("🔍 Selecciona un puesto para ver su perfil detallado:", df_puestos["PUESTO"].unique())
+        
+        datos_puesto = df_puestos[df_puestos["PUESTO"] == puesto_sel].iloc[0]
+        
+        # --- Diseño de la Ficha del Puesto ---
+        st.markdown(f"""
+            <div style='background-color: #1E1E1E; padding: 20px; border-radius: 10px; border: 2px solid #FFD700;'>
+                <h3 style='color: #FFD700; margin-top:0;'>📋 Perfil de Puesto: {puesto_sel}</h3>
+                <p style='color: white;'><b>Área:</b> {datos_puesto['AREA']} | <b>Reporta a:</b> {datos_puesto['REPORTA_A']}</p>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        col1, col2 = st.columns(2)
+        
+        # Función para convertir el texto con '|' en una lista limpia
+        def mostrar_lista(texto):
+            if pd.isna(texto) or str(texto).strip() == "":
+                return "<li>No definido</li>"
+            items = str(texto).split("|")
+            return "".join([f"<li>{i.strip()}</li>" for i in items])
+
+        with col1:
+            st.markdown("#### 🎯 Funciones Principales")
+            st.markdown(f"<ul style='color: #DDDDDD;'>{mostrar_lista(datos_puesto['FUNCIONES'])}</ul>", unsafe_allow_html=True)
+            
+            st.markdown("#### 📈 Indicadores (KPIs)")
+            st.markdown(f"<ul style='color: #00E5FF;'>{mostrar_lista(datos_puesto['KPIS'])}</ul>", unsafe_allow_html=True)
+
+        with col2:
+            st.markdown("#### 🧠 Competencias Generales")
+            st.markdown(f"<ul style='color: #FFD700;'>{mostrar_lista(datos_puesto['COMP_GENERALES'])}</ul>", unsafe_allow_html=True)
+            
+            st.markdown("#### 🛠️ Competencias Específicas")
+            st.markdown(f"<ul style='color: #FFA500;'>{mostrar_lista(datos_puesto['COMP_SPECIFICAS'] if 'COMP_SPECIFICAS' in datos_puesto else datos_puesto['COMP_ESPECIFICAS'])}</ul>", unsafe_allow_html=True)
+
+        st.divider()
+        
+        # --- BONUS: Visualización Simple de Jerarquía ---
+        st.markdown("#### 🌳 Jerarquía Directa")
+        jefe = datos_puesto['REPORTA_A']
+        subordinados = df_puestos[df_puestos["REPORTA_A"] == puesto_sel]["PUESTO"].tolist()
+        
+        c_j, c_p, c_s = st.columns(3)
+        c_j.metric("Superior Directo", jefe if jefe else "N/A")
+        c_p.info(f"Puesto Actual: **{puesto_sel}**")
+        c_s.success(f"Personal a cargo: {len(subordinados)}")
+        if subordinados:
+            st.write(f"👉 **Subordinados:** {', '.join(subordinados)}")
+    
 # ==========================================
     # MÓDULO: REPORTE GENERAL
     # ==========================================
