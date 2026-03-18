@@ -936,8 +936,15 @@ else:
                                 col_tipo = "TIPO DE ESTUDIO" if "TIPO DE ESTUDIO" in vst.columns else "tipo de estudio"
                                 
                                 if not vst.empty and col_tipo in vst.columns:
-                                    df_grados = vst[vst[col_tipo].str.contains("Grado", case=False, na=False)]
-                                    df_estudios = vst[vst[col_tipo].str.contains("Terminados|Inconclusos", case=False, na=False)]
+                                    # 1. Filtramos primero los estudios sin grado, terminados o inconclusos
+                                    mask_estudios = vst[col_tipo].str.contains("Terminados|Inconclusos|Sin grado", case=False, na=False)
+                                    df_estudios = vst[mask_estudios]
+                                    
+                                    # 2. Filtramos los Grados/Títulos, pero EXCLUYENDO a los de arriba (usamos el símbolo ~ para negar)
+                                    mask_grados = vst[col_tipo].str.contains("Grado|Títul|Titul", case=False, na=False) & ~mask_estudios
+                                    df_grados = vst[mask_grados]
+                                    
+                                    # 3. Los demás se quedan igual
                                     df_especi = vst[vst[col_tipo].str.contains("Especialización|Especializaciones", case=False, na=False)]
                                     df_diplo = vst[vst[col_tipo].str.contains("Diplomado", case=False, na=False)]
                                     df_cursos = vst[vst[col_tipo].str.contains("Curso", case=False, na=False)]
