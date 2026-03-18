@@ -1836,7 +1836,7 @@ else:
 # ==========================================
     # MÓDULO: ESTRUCTURA Y PUESTOS (MOF)
     # ==========================================
-       elif m == "🏢 Estructura":
+    elif m == "🏢 Estructura":
         mod_estructura.mostrar(dfs)    
     
 # ==========================================
