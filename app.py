@@ -720,7 +720,7 @@ else:
                            # ==========================================
                             # NUEVO DISEÑO: EXPERIENCIA LABORAL Y CÁLCULOS
                             # ==========================================
-                            if h_name == "EXP. LABORAL":
+                            elif h_name == "EXP. LABORAL":
                                 # Dividimos la pantalla: 2/3 para tarjetas, 1/3 para el resumen
                                 col_izq, col_der = st.columns([2, 1])
                                 
@@ -740,7 +740,6 @@ else:
                                         inicio = pd.to_datetime(f_ini, errors='coerce')
                                         fin = pd.to_datetime(f_fin, errors='coerce')
                                         if pd.isna(inicio) or pd.isna(fin): return 0
-                                        # Calcula los días y los divide entre el promedio de días por mes
                                         return max(0, int((fin - inicio).days / 30.44))
                                     except:
                                         return 0
@@ -749,60 +748,64 @@ else:
                                 # COLUMNA IZQUIERDA: TARJETAS VISUALES
                                 # ---------------------------------------
                                 with col_izq:
-                                    st.markdown("### 🏢 Experiencia Interna (Universidad Roosevelt)")
+                                    st.markdown("<h3 style='color: #FFD700;'>🏢 Experiencia Interna (Universidad Roosevelt)</h3>", unsafe_allow_html=True)
                                     if contratos_empleado.empty:
-                                        st.info("No hay contratos registrados en la Universidad.")
+                                        st.markdown("<p style='color:#DDDDDD;'>No hay contratos internos registrados.</p>", unsafe_allow_html=True)
                                     else:
                                         for idx, row in contratos_empleado.iterrows():
                                             f_ini = row.get('f_inicio', row.get('F_INICIO', 'N/A'))
                                             f_fin = row.get('f_fin', row.get('F_FIN', 'N/A'))
                                             puesto = row.get('cargo', row.get('CARGO', row.get('PUESTO', 'N/A')))
                                             
-                                            # AHORA SÍ: Usamos TIPO DE TRABAJADOR de los contratos internos
                                             tipo_trabajador_raw = str(row.get('TIPO DE TRABAJADOR', row.get('tipo de trabajador', 'Administrativo')))
                                             tipo_exp = "Docente" if "docente" in tipo_trabajador_raw.lower() else "Administrativo"
                                             
-                                            # Sumar al cálculo
                                             meses_calc = calcular_meses(f_ini, f_fin)
                                             if tipo_exp == "Docente": meses_docente += meses_calc
                                             else: meses_admin += meses_calc
 
                                             st.markdown(f"""
-                                            <div style='background-color: #262730; padding: 15px; border-radius: 10px; border-left: 5px solid #4A0000; margin-bottom: 10px; box-shadow: 2px 2px 5px rgba(0,0,0,0.2);'>
-                                                <h4 style='margin-bottom: 5px; color: #FFFFFF; font-size: 1.1em;'>{puesto} <span style='font-size: 0.8em; color: #A0A0A0;'>(Interno - {tipo_exp})</span></h4>
-                                                <p style='margin: 2px 0; color: #E0E0E0;'><strong>Lugar:</strong> Universidad Roosevelt</p>
-                                                <p style='margin: 2px 0; color: #E0E0E0;'><strong>Periodo:</strong> {f_ini} hasta {f_fin}</p>
-                                                <p style='margin: 2px 0; color: #E0E0E0;'><strong>Tipo de Contrato:</strong> {row.get('tipo contrato', row.get('TIPO CONTRATO', 'N/A'))}</p>
+                                            <div style='background-color: #FFFFFF; padding: 15px; border-radius: 8px; border-left: 6px solid #4A0000; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #CCCCCC;'>
+                                                <div style='color: #000000; font-size: 1.1em; font-weight: bold; margin-bottom: 5px;'>{puesto} <span style='font-size: 0.85em; color: #666666;'>(Interno - {tipo_exp})</span></div>
+                                                <div style='color: #111111; font-size: 0.95em;'>
+                                                    <strong>Lugar:</strong> Universidad Roosevelt <br>
+                                                    <strong>Periodo:</strong> {f_ini} hasta {f_fin} <br>
+                                                    <strong>Tipo de Contrato:</strong> {row.get('tipo contrato', row.get('TIPO CONTRATO', 'N/A'))}
+                                                </div>
                                             </div>
                                             """, unsafe_allow_html=True)
                                     
-                                    st.markdown("### 💼 Experiencia Externa Registrada")
+                                    st.markdown("<h3 style='color: #FFD700; margin-top: 20px;'>💼 Experiencia Externa Registrada</h3>", unsafe_allow_html=True)
                                     if vst.empty:
-                                        st.info("No hay experiencia externa registrada.")
+                                        st.markdown("<p style='color:#DDDDDD;'>No hay experiencia externa registrada.</p>", unsafe_allow_html=True)
                                     else:
                                         for idx, row in vst.iterrows():
-                                            f_ini = row.get('FECHA DE INICIO', row.get('FECHA INICIO', row.get('fecha de inicio', 'N/A')))
-                                            f_fin = row.get('FECHA DE FIN', row.get('FECHA FIN', row.get('fecha de fin', 'N/A')))
+                                            f_ini = row.get('FECHA DE INICIO', row.get('fecha de inicio', 'N/A'))
+                                            f_fin = row.get('FECHA DE FIN', row.get('fecha de fin', 'N/A'))
                                             
-                                            # En la tabla externa, usamos "TIPO DE EXPERIENCIA" que guardamos en el formulario
                                             tipo_exp_raw = str(row.get('TIPO DE EXPERIENCIA', row.get('tipo de experiencia', 'Administrativo')))
                                             tipo_exp = "Docente" if "docente" in tipo_exp_raw.lower() else "Administrativo"
                                             
-                                            # Sumar al cálculo
                                             meses_calc = calcular_meses(f_ini, f_fin)
                                             if tipo_exp == "Docente": meses_docente += meses_calc
                                             else: meses_admin += meses_calc
 
+                                            puesto_ext = row.get('PUESTO', row.get('puesto', 'N/A'))
+                                            lugar_ext = row.get('LUGAR', row.get('lugar', 'N/A'))
+                                            motivo_ext = row.get('MOTIVO DE CESE', row.get('motivo de cese', 'N/A'))
+
                                             st.markdown(f"""
-                                            <div style='background-color: #262730; padding: 15px; border-radius: 10px; border-left: 5px solid #004A80; margin-bottom: 10px; box-shadow: 2px 2px 5px rgba(0,0,0,0.2);'>
-                                                <h4 style='margin-bottom: 5px; color: #FFFFFF; font-size: 1.1em;'>{row.get('PUESTO', row.get('puesto', 'N/A'))} <span style='font-size: 0.8em; color: #A0A0A0;'>({tipo_exp.capitalize()})</span></h4>
-                                                <p style='margin: 2px 0; color: #E0E0E0;'><strong>Lugar:</strong> {row.get('LUGAR', row.get('lugar', 'N/A'))}</p>
-                                                <p style='margin: 2px 0; color: #E0E0E0;'><strong>Periodo:</strong> {f_ini} hasta {f_fin}</p>
-                                                <p style='margin: 2px 0; color: #E0E0E0;'><strong>Motivo de cese:</strong> {row.get('MOTIVO DE CESE', row.get('MOTIVO CESE', row.get('motivo de cese', 'N/A')))}</p>
+                                            <div style='background-color: #FFFFFF; padding: 15px; border-radius: 8px; border-left: 6px solid #004A80; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #CCCCCC;'>
+                                                <div style='color: #000000; font-size: 1.1em; font-weight: bold; margin-bottom: 5px;'>{puesto_ext} <span style='font-size: 0.85em; color: #666666;'>({tipo_exp.capitalize()})</span></div>
+                                                <div style='color: #111111; font-size: 0.95em;'>
+                                                    <strong>Lugar:</strong> {lugar_ext} <br>
+                                                    <strong>Periodo:</strong> {f_ini} hasta {f_fin} <br>
+                                                    <strong>Motivo de cese:</strong> {motivo_ext}
+                                                </div>
                                             </div>
                                             """, unsafe_allow_html=True)
                                             
-                              # ---------------------------------------
+                                # ---------------------------------------
                                 # COLUMNA DERECHA: DASHBOARD DE TIEMPO
                                 # ---------------------------------------
                                 with col_der:
@@ -814,26 +817,25 @@ else:
                                         elif meses > 0: return f"{meses} meses"
                                         else: return "0 meses"
 
-                                    st.markdown("### 📊 Resumen de Experiencia")
+                                    st.markdown("<h3 style='color: #FFD700;'>📊 Resumen</h3>", unsafe_allow_html=True)
                                     
-                                    # HTML sin sangrías para evitar que Markdown lo tome como código
                                     html_resumen = f"""
-<div style='background-color: #1E1E1E; padding: 20px; border-radius: 10px; border: 1px solid #4A0000; box-shadow: 2px 2px 10px rgba(0,0,0,0.5); position: sticky; top: 50px;'>
-    <h5 style='color: #FFD700; margin-bottom: 15px; text-align: center; border-bottom: 1px solid #333; padding-bottom: 10px;'>Tiempo Total Calculado</h5>
-    <div style='margin-bottom: 15px;'>
-        <p style='margin: 0; color: #A0A0A0; font-size: 0.9em;'>👨‍🏫 Como Docente</p>
-        <p style='margin: 0; color: #FFFFFF; font-size: 1.2em; font-weight: bold;'>{formato_tiempo(meses_docente)}</p>
-    </div>
-    <div style='margin-bottom: 15px;'>
-        <p style='margin: 0; color: #A0A0A0; font-size: 0.9em;'>💼 Como Administrativo</p>
-        <p style='margin: 0; color: #FFFFFF; font-size: 1.2em; font-weight: bold;'>{formato_tiempo(meses_admin)}</p>
-    </div>
-    <div style='margin-top: 15px; padding-top: 10px; border-top: 1px solid #333;'>
-        <p style='margin: 0; color: #A0A0A0; font-size: 0.9em;'>🌟 Experiencia General</p>
-        <p style='margin: 0; color: #00FF00; font-size: 1.4em; font-weight: bold;'>{formato_tiempo(meses_docente + meses_admin)}</p>
-    </div>
-</div>
-"""
+                                    <div style='background-color: #4A0000; padding: 20px; border-radius: 10px; border: 2px solid #FFD700; box-shadow: 2px 2px 10px rgba(0,0,0,0.5); position: sticky; top: 50px;'>
+                                        <h4 style='color: #FFD700; margin-bottom: 15px; text-align: center; border-bottom: 1px solid #FFD700; padding-bottom: 10px;'>Tiempo Total Calculado</h4>
+                                        <div style='margin-bottom: 15px;'>
+                                            <p style='margin: 0; color: #FFFFFF; font-size: 0.9em;'>👨‍🏫 Como Docente</p>
+                                            <p style='margin: 0; color: #FFD700; font-size: 1.2em; font-weight: bold;'>{formato_tiempo(meses_docente)}</p>
+                                        </div>
+                                        <div style='margin-bottom: 15px;'>
+                                            <p style='margin: 0; color: #FFFFFF; font-size: 0.9em;'>💼 Como Administrativo</p>
+                                            <p style='margin: 0; color: #FFD700; font-size: 1.2em; font-weight: bold;'>{formato_tiempo(meses_admin)}</p>
+                                        </div>
+                                        <div style='margin-top: 15px; padding-top: 10px; border-top: 1px solid #FFD700;'>
+                                            <p style='margin: 0; color: #FFFFFF; font-size: 0.9em;'>🌟 Experiencia General</p>
+                                            <p style='margin: 0; color: #00FF00; font-size: 1.4em; font-weight: bold;'>{formato_tiempo(meses_docente + meses_admin)}</p>
+                                        </div>
+                                    </div>
+                                    """
                                     st.markdown(html_resumen, unsafe_allow_html=True)
                                     
                                 # ---------------------------------------
@@ -841,11 +843,18 @@ else:
                                 # ---------------------------------------
                                 st.markdown("<br>", unsafe_allow_html=True)
                                 with st.expander("⚙️ Clic aquí para Editar o Eliminar Experiencia Externa"):
-                                    st.info("Activa la casilla **SEL** en la tabla de abajo para modificar o eliminar un registro.")
+                                    st.markdown("<p style='color:#DDDDDD;'>Activa la casilla <b>SEL</b> para modificar o eliminar un registro.</p>", unsafe_allow_html=True)
                                     st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 10px !important; }</style>""", unsafe_allow_html=True)
+                                    
+                                    # REGLA CLAVE PARA QUE LAS FECHAS SEAN CALENDARIOS
+                                    col_conf = {}
+                                    for col in vst.columns:
+                                        if "fecha" in col.lower() or "f_" in col.lower():
+                                            vst[col] = pd.to_datetime(vst[col], errors='coerce').dt.date
+                                            col_conf[str(col).upper()] = st.column_config.DateColumn(format="DD/MM/YYYY")
+
                                     ed = st.data_editor(vst, hide_index=True, use_container_width=True, column_config=col_conf, key=f"ed_{h_name}_oculta")
                                     sel = ed[ed["SEL"] == True]
-
                             # ==========================================
                             # NUEVO DISEÑO: CONTRATOS
                             # ==========================================
