@@ -1060,20 +1060,46 @@ else:
                                             </div>
                                             """, unsafe_allow_html=True)
 
-                                # ==========================================
+                            # ==========================================
                             # PESTAÑA: DATOS FAMILIARES
                             # ==========================================
                             elif h_name == "DATOS FAMILIARES":
-                                st.markdown("<h3 style='color: #FFD700; margin-bottom: 20px;'>👨‍👩‍👧‍👦 Registro de Datos Familiares</h3>", unsafe_allow_html=True)
+                                st.markdown("<h3 style='color: #FFD700; margin-bottom: 20px;'>👨‍👩‍👧‍👦 Datos Familiares</h3>", unsafe_allow_html=True)
                                 
-                                # 1. BUSCAR LA DIRECCIÓN DEL TRABAJADOR (Para el autocompletado)
+                                # --- 1. BUSCAR LA DIRECCIÓN DEL TRABAJADOR ---
                                 dir_trabajador = ""
                                 if not dfs["DATOS GENERALES"].empty:
                                     datos_gen_trabajador = dfs["DATOS GENERALES"][dfs["DATOS GENERALES"]["dni"].astype(str) == str(dni_buscado)]
                                     if not datos_gen_trabajador.empty and "dirección" in datos_gen_trabajador.columns:
                                         dir_trabajador = str(datos_gen_trabajador.iloc[0]["dirección"])
 
-                                # 2. FORMULARIO DE REGISTRO
+                                # --- 2. MOSTRAR FAMILIARES REGISTRADOS (ARRIBA) ---
+                                st.markdown("<h4 style='color: #FFD700; border-bottom: 2px solid #FFD700; padding-bottom: 5px;'>📋 Familiares Registrados</h4>", unsafe_allow_html=True)
+                                
+                                if vst.empty:
+                                    st.markdown("<p style='color:#DDDDDD;'>No hay familiares registrados aún.</p>", unsafe_allow_html=True)
+                                else:
+                                    for idx, row in vst.iterrows():
+                                        f_parentesco = row.get("parentesco", "N/A")
+                                        f_nombres = row.get("nombres y apellidos", "N/A")
+                                        f_edad = row.get("edad", "-")
+                                        f_estado = row.get("estado", "N/A")
+                                        f_celular = row.get("celular", "-")
+                                        f_emergencia = str(row.get("contacto emergencia", "No")).lower()
+                                        
+                                        # Etiqueta visual si es contacto de emergencia
+                                        badge_emergencia = "<span style='color: #FF5252; font-size: 0.9em;'>🚨 <b>CONTACTO DE EMERGENCIA</b></span>" if f_emergencia in ["sí", "si", "true", "1"] else ""
+                                        
+                                        st.markdown(f"""
+                                        <div style='background-color: #FFFFFF; padding: 15px; border-radius: 8px; border: 1px solid #CCCCCC; border-left: 6px solid #2196F3; margin-bottom: 10px;'>
+                                            <div style='margin-bottom: 5px; color: #000000; font-size: 1.1em; font-weight: bold;'>{f_nombres} <span style='color: #666666; font-size: 0.9em;'>({f_parentesco})</span> {badge_emergencia}</div>
+                                            <div style='margin: 2px 0; color: #000000;'><strong>Edad:</strong> {f_edad} años | <strong>Estado:</strong> {f_estado} | <strong>Celular:</strong> {f_celular}</div>
+                                        </div>
+                                        """, unsafe_allow_html=True)
+
+                                st.markdown("<br>", unsafe_allow_html=True)
+
+                                # --- 3. FORMULARIO PARA AGREGAR NUEVO (ABAJO) ---
                                 st.markdown("<div style='font-size: 1.2em; font-weight: bold; color: white; background-color: #004A80; padding: 10px; border-radius: 8px; margin-bottom: 15px;'>➕ Agregar Nuevo Familiar</div>", unsafe_allow_html=True)
                                 
                                 col_f1, col_f2 = st.columns(2)
@@ -1082,7 +1108,7 @@ else:
                                     parentesco = st.selectbox("Parentesco", ["Cónyuge / Conviviente", "Hijo(a)", "Madre", "Padre", "Hermano(a)", "Familiar Adicional (Otros)"])
                                     dni_fam = st.text_input("DNI del Familiar", max_chars=8)
                                     
-                                    # --- MAGIA 1: DETECCIÓN DE TRABAJADOR INTERNO ---
+                                    # MAGIA 1: DETECCIÓN DE TRABAJADOR INTERNO
                                     if dni_fam and len(dni_fam) >= 8:
                                         if not dfs["DATOS GENERALES"].empty:
                                             es_trabajador = dfs["DATOS GENERALES"][dfs["DATOS GENERALES"]["dni"].astype(str) == str(dni_fam)]
@@ -1092,10 +1118,8 @@ else:
                                     
                                     nombres_fam = st.text_input("Apellidos y Nombres")
                                     
-                                    # --- MAGIA 2: CALCULO DE EDAD ---
+                                    # MAGIA 2: CALCULO DE EDAD
                                     f_nac_fam = st.date_input("Fecha de Nacimiento", min_value=date(1920, 1, 1), max_value=date.today())
-                                    
-                                    # Calculamos la edad al instante
                                     hoy = date.today()
                                     edad_fam = hoy.year - f_nac_fam.year - ((hoy.month, hoy.day) < (f_nac_fam.month, f_nac_fam.day))
                                     st.info(f"🎂 Edad calculada: **{edad_fam} años**")
@@ -1103,17 +1127,15 @@ else:
                                 with col_f2:
                                     estado_fam = st.selectbox("Estado", ["Vivo", "Fallecido", "Otra condición"])
                                     
-                                    # Solo pedimos datos de contacto si está vivo
                                     if estado_fam == "Vivo":
                                         cel_fam = st.text_input("Celular")
                                         correo_fam = st.text_input("Correo Electrónico")
                                         
-                                        # --- MAGIA 3: DIRECCIÓN AUTOMÁTICA ---
+                                        # MAGIA 3: DIRECCIÓN QUE SE AUTOCOMPLETA EN LA CAJA DE TEXTO
                                         st.markdown("---")
                                         vive_juntos = st.checkbox("🏠 Vive con el trabajador")
                                         if vive_juntos:
-                                            domicilio_fam = dir_trabajador
-                                            st.success(f"📍 Se registrará: {domicilio_fam}")
+                                            domicilio_fam = st.text_input("Domicilio del familiar", value=dir_trabajador)
                                         else:
                                             domicilio_fam = st.text_input("Domicilio del familiar")
                                     else:
@@ -1159,16 +1181,15 @@ else:
                                         save_data(dfs)
                                         st.success("✅ Familiar guardado correctamente.")
                                         st.rerun()
-                                # ---------------------------------------
-                                # TABLA DESPLEGABLE PARA EDICIÓN
-                                # ---------------------------------------
+
+                                # --- 4. TABLA DESPLEGABLE PARA EDICIÓN (TÍTULO CORREGIDO) ---
                                 st.markdown("<br>", unsafe_allow_html=True)
-                                with st.expander("⚙️ Clic aquí para Editar o Eliminar Formación Académica"):
+                                with st.expander("⚙️ Clic aquí para Editar o Eliminar un Familiar"):
                                     st.markdown("<p style='color:#DDDDDD;'>Activa la casilla <b>SEL</b> en la tabla de abajo para modificar o eliminar un registro.</p>", unsafe_allow_html=True)
                                     st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 8px !important; }</style>""", unsafe_allow_html=True)
                                     ed = st.data_editor(vst, hide_index=True, use_container_width=True, column_config=col_conf, key=f"ed_{h_name}_oculta")
                                     sel = ed[ed["SEL"] == True]
-
+                                    
                         # ==========================================
                         # BOTÓN DE IMPRESIÓN DE PAPELETA (SOLO EN VACACIONES)
                         # ==========================================
