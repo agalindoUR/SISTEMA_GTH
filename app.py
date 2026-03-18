@@ -18,7 +18,7 @@ from io import BytesIO
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import numpy as np
-import modulos.estructura as mod_estructura
+import estructura as mod_estructura
 
 
 
