@@ -1069,9 +1069,17 @@ else:
                                 # --- 1. BUSCAR LA DIRECCIÓN DEL TRABAJADOR ---
                                 dir_trabajador = ""
                                 if not dfs["DATOS GENERALES"].empty:
-                                    datos_gen_trabajador = dfs["DATOS GENERALES"][dfs["DATOS GENERALES"]["dni"].astype(str) == str(dni_buscado)]
-                                    if not datos_gen_trabajador.empty and "dirección" in datos_gen_trabajador.columns:
-                                        dir_trabajador = str(datos_gen_trabajador.iloc[0]["dirección"])
+                                    df_gen = dfs["DATOS GENERALES"]
+                                    # Buscamos la fila del trabajador por su DNI
+                                    datos_trabajador = df_gen[df_gen["dni"].astype(str) == str(dni_buscado)]
+                                    if not datos_trabajador.empty:
+                                        # Buscamos exactamente la columna sin importar si panda la lee en mayúscula o minúscula
+                                        for col in datos_trabajador.columns:
+                                            if str(col).strip().upper() == "DIRECCION":
+                                                val = datos_trabajador.iloc[0][col]
+                                                if pd.notna(val) and str(val).strip() != "":
+                                                    dir_trabajador = str(val)
+                                                break
 
                                 # --- 2. MOSTRAR FAMILIARES REGISTRADOS (CON TODOS LOS DATOS) ---
                                 st.markdown("<h4 style='color: #FFD700; border-bottom: 2px solid #FFD700; padding-bottom: 5px;'>📋 Familiares Registrados</h4>", unsafe_allow_html=True)
@@ -1165,12 +1173,16 @@ else:
                                             cel_fam = st.text_input("Celular")
                                             correo_fam = st.text_input("Correo Electrónico")
                                             
+                                            # --- CHECK DE VIVE CON EL TRABAJADOR ---
                                             st.markdown("---")
                                             vive_juntos = st.checkbox("🏠 Vive con el trabajador")
+                                            
                                             if vive_juntos:
-                                                domicilio_fam = st.text_input("Domicilio del familiar", value=dir_trabajador)
+                                                domicilio_fam = st.text_input("Domicilio del familiar", value=dir_trabajador, key="domicilio_juntos")
+                                                if not dir_trabajador:
+                                                    st.warning("⚠️ Ojo: El trabajador no tiene una dirección registrada en su pestaña de Datos Generales.")
                                             else:
-                                                domicilio_fam = st.text_input("Domicilio del familiar")
+                                                domicilio_fam = st.text_input("Domicilio del familiar", value="", key="domicilio_separado")
                                         else:
                                             cel_fam = "-"
                                             correo_fam = "-"
