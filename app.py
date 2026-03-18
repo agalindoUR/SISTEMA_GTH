@@ -1344,7 +1344,7 @@ else:
                                     if h_name == "DATOS GENERALES" and len(df_filtro) > 0:
                                         st.info("📌 Los datos generales ya están registrados. Selecciona el registro en la tabla de arriba para editarlos.")
                                     elif h_name == "DATOS FAMILIARES":
-                                        pass # No dibujamos nada porque la pestaña de familiares ya tiene su propio formulario arriba
+                                        pass # No dibujamos nada extra porque estas pestañas ya tienen su propio diseño arriba
                                     else:
                                         # ¡AQUÍ ESTÁ EL CAMBIO IMPORTANTE!
                                         with st.expander("➕ Nuevo Registro"):
