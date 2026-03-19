@@ -19,6 +19,7 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import numpy as np
 import estructura as mod_estructura
+import dashboard as mod_dashboard
 
 st.set_page_config(page_title="Gestión Roosevelt", page_icon="🎓", layout="wide")
 
