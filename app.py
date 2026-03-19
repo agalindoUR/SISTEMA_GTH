@@ -19,10 +19,10 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import numpy as np
 import estructura as mod_estructura
-import dashboard as mod_dashboard
-import vencimientos as mod_vencimientos
-import cumpleanos as mod_cumpleanos
-import vacacionesreporte as mod_vacaciones
+import repdashboard as mod_dashboard
+import repvencimientos as mod_vencimientos
+import repcumpleanos as mod_cumpleanos
+import repvacaciones as mod_vacaciones
 import reportegeneral as mod_reportegeneral
 
 st.set_page_config(page_title="Gestión Roosevelt", page_icon="🎓", layout="wide")
