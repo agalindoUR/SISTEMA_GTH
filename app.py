@@ -23,6 +23,7 @@ import dashboard as mod_dashboard
 import vencimientos as mod_vencimientos
 import cumpleanos as mod_cumpleanos
 import vacacionesreporte as mod_vacaciones
+import reportegeneral as mod_reportegeneral
 
 st.set_page_config(page_title="Gestión Roosevelt", page_icon="🎓", layout="wide")
 
@@ -1840,7 +1841,7 @@ else:
                     if 'dni' in dfs[h].columns: dfs[h] = dfs[h][~dfs[h]['dni'].astype(str).isin(dnis)]
                 save_data(dfs); st.success("Registros eliminados correctamente."); st.rerun()
 
-# ==========================================
+    # ==========================================
     # MÓDULO: ESTRUCTURA Y PUESTOS (MOF)
     # ==========================================
     elif m == "🏢 Estructura":
