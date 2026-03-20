@@ -103,12 +103,27 @@ def mostrar(dfs):
                                 "Notas Generales (Formato Mágico)": string_final
                             })
                             
-                        # Mostramos el resultado traducido
-                        df_traducido = pd.DataFrame(resultados)
-                        st.success("🎉 ¡Datos traducidos exitosamente!")
-                        st.dataframe(df_traducido)
+                        # Guardamos el resultado en la "memoria" de Streamlit
+                        st.session_state['tabla_temporal'] = pd.DataFrame(resultados)
                         
-                        st.info("💡 Siguiente paso: Crear el botón para guardar esta tabla directamente en tu base de datos de EVALUACIONES.")
+                # --- BOTÓN PARA GUARDAR DEFINITIVAMENTE ---
+                if 'tabla_temporal' in st.session_state:
+                    st.success("🎉 ¡Datos traducidos exitosamente! Revisa la vista previa y guárdalos.")
+                    st.dataframe(st.session_state['tabla_temporal'])
+                    
+                    if st.button("💾 Guardar Resultados en el Sistema", type="primary"):
+                        # Creamos la tabla EVALUACIONES si aún no existe en tu sistema
+                        if "EVALUACIONES" not in dfs:
+                            dfs["EVALUACIONES"] = pd.DataFrame()
+                            
+                        # Unimos los datos nuevos con los que ya existían
+                        dfs["EVALUACIONES"] = pd.concat([dfs["EVALUACIONES"], st.session_state['tabla_temporal']], ignore_index=True)
+                        
+                        st.balloons()
+                        st.success("✅ ¡Datos guardados exitosamente en la base de datos!")
+                        
+                        # Limpiamos la memoria
+                        del st.session_state['tabla_temporal']
             except Exception as e:
                 st.error(f"Hubo un error al procesar el archivo: {e}")
 
