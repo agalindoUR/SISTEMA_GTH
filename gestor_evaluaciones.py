@@ -25,9 +25,11 @@ def mostrar(dfs):
         with col2:
             tipo_eval_sel = st.selectbox("🏷️ Tipo de Evaluación:", ["Competencias Generales", "Competencias Específicas", "KPIs"])
             
-        archivo_subido = st.file_uploader("Sube el archivo CSV de Google Forms", type=["csv"])
+        archivo_subido = st.file_uploader("Sube el archivo CSV o Excel de Google Forms", type=["csv", "xlsx"])
         
-       # Detectamos si es CSV o Excel
+        if archivo_subido is not None:
+            try:
+                # Detectamos si es CSV o Excel
                 if archivo_subido.name.endswith('.csv'):
                     try:
                         # La magia: sep=None y engine='python' adivina automáticamente el separador
@@ -38,6 +40,7 @@ def mostrar(dfs):
                 elif archivo_subido.name.endswith('.xlsx'):
                     # Si subes el Excel directo, nos evitamos todos los problemas de comas
                     df_raw = pd.read_excel(archivo_subido)
+                
                 st.success("✅ Archivo leído correctamente. Vista previa de los datos crudos:")
                 st.dataframe(df_raw.head(3))
                 
@@ -107,7 +110,7 @@ def mostrar(dfs):
                         
                         st.info("💡 Siguiente paso: Crear el botón para guardar esta tabla directamente en tu base de datos de EVALUACIONES.")
             except Exception as e:
-                st.error(f"Hubo un error al leer el archivo: {e}")
+                st.error(f"Hubo un error al procesar el archivo: {e}")
 
     # ==========================================
     # PESTAÑA 2: EVALUACIÓN INTERNA (Y ENLACES)
