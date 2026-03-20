@@ -19,7 +19,7 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import numpy as np
 import estructura as mod_estructura
-import repdashboard as mod_dashboard
+import mod_reportes as mod_dashboard
 import repvencimientos as mod_vencimientos
 import repcumpleanos as mod_cumpleanos
 import repvacaciones as mod_vacaciones
