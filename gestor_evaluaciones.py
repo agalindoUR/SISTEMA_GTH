@@ -27,14 +27,16 @@ def mostrar(dfs):
             
         archivo_subido = st.file_uploader("Sube el archivo CSV de Google Forms", type=["csv"])
         
-        if archivo_subido is not None:
-            try:
-                # Leemos el CSV (Con trampa anti-tildes de Excel)
-                try:
-                    df_raw = pd.read_csv(archivo_subido, encoding='utf-8')
-                except UnicodeDecodeError:
-                    archivo_subido.seek(0) # Regresamos al inicio del archivo
-                    df_raw = pd.read_csv(archivo_subido, encoding='latin-1')
+        # Detectamos si es CSV o Excel
+                if archivo_subido.name.endswith('.csv'):
+                    try:
+                        # Agregamos sep=';' para que entienda el formato de Excel en español
+                        df_raw = pd.read_csv(archivo_subido, encoding='utf-8', sep=';')
+                    except UnicodeDecodeError:
+                        archivo_subido.seek(0)
+                        df_raw = pd.read_csv(archivo_subido, encoding='latin-1', sep=';')
+                elif archivo_subido.name.endswith('.xlsx'):
+                    df_raw = pd.read_excel(archivo_subido) # Lee el formato Excel directo
                 st.success("✅ Archivo leído correctamente. Vista previa de los datos crudos:")
                 st.dataframe(df_raw.head(3))
                 
