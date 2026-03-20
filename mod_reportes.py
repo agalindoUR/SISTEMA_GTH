@@ -1,78 +1,117 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 
 def mostrar(dfs):
-    st.title("📊 Dashboard de Desempeño y Reportes")
+    st.markdown("<h2 style='color: #4A0000;'>📊 Dashboard de Desempeño Consolidado</h2>", unsafe_allow_html=True)
 
-    # 1. Verificar si hay datos
+    # 1. Verificación de seguridad
     if "EVALUACIONES" not in dfs or dfs["EVALUACIONES"].empty:
-        st.warning("Aún no hay datos de evaluaciones guardados. Ve a 'Gestión de Evaluaciones' y procesa un archivo.")
+        st.warning("⚠️ No se encontraron datos en 'EVALUACIONES'. Por favor, procesa y guarda un archivo en la pestaña de Gestión.")
         return
 
     df = dfs["EVALUACIONES"]
 
-    # --- SECCIÓN DE FILTROS ---
-    st.sidebar.header("🔍 Filtros de Reporte")
-    periodos = st.sidebar.multiselect("Selecciona Periodos:", df["Periodo"].unique(), default=df["Periodo"].unique())
-    empleados = st.sidebar.multiselect("Filtrar por Empleado/Puesto:", df["Empleado"].unique(), default=df["Empleado"].unique())
+    # --- BARRA LATERAL DE FILTROS ---
+    st.sidebar.header("🔍 Filtros de Análisis")
+    
+    # Filtro de Periodo
+    lista_periodos = sorted(df["Periodo"].unique())
+    periodos_sel = st.sidebar.multiselect("Selecciona Periodos:", lista_periodos, default=lista_periodos)
+    
+    # Filtro de Empleados
+    lista_empleados = sorted(df["Empleado"].unique())
+    empleados_sel = st.sidebar.multiselect("Selecciona Colaboradores:", lista_empleados, default=lista_empleados)
 
-    df_filtrado = df[(df["Periodo"].isin(periodos)) & (df["Empleado"].isin(empleados))]
+    # Aplicar Filtros
+    df_filtrado = df[(df["Periodo"].isin(periodos_sel)) & (df["Empleado"].isin(empleados_sel))]
 
-    # --- INDICADORES CLAVE (METRICS) ---
-    col1, col2, col3 = st.columns(3)
-    promedio_era = df_filtrado["Promedio General"].mean()
-    col1.metric("Promedio General", f"{promedio_era:.2f}")
-    col2.metric("Total Evaluaciones", len(df_filtrado))
-    col3.metric("Periodos Comparados", len(periodos))
+    if df_filtrado.empty:
+        st.info("Selecciona al menos un periodo y un empleado para ver los resultados.")
+        return
+
+    # --- INDICADORES GENERALES (METRICS) ---
+    promedio_grupal = df_filtrado["Promedio General"].mean()
+    total_evals = len(df_filtrado)
+
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Promedio Grupal", f"{promedio_grupal:.2f} / 5")
+    c2.metric("Evaluaciones", total_evals)
+    c3.metric("Mejor Puntaje", f"{df_filtrado['Promedio General'].max():.2f}")
 
     st.divider()
 
-    # --- GRÁFICO 1: COMPARATIVO POR PERIODO (BARRAS AGRUPADAS) ---
-    st.subheader("📈 Comparativo de Desempeño por Periodo")
-    # Este gráfico es oro puro para ver quién subió o bajó su nota
-    fig_barras = px.bar(
+    # --- GRÁFICO 1: COMPARATIVO ENTRE PERIODOS ---
+    st.subheader("📈 Comparativa de Evolución")
+    fig_evolucion = px.bar(
         df_filtrado, 
         x="Empleado", 
         y="Promedio General", 
         color="Periodo", 
         barmode="group",
         text_auto='.2f',
-        title="Evolución de Notas por Trabajador",
-        color_discrete_sequence=px.colors.qualitative.Prism
+        color_discrete_sequence=px.colors.qualitative.Pastel
     )
-    st.plotly_chart(fig_barras, use_container_width=True)
+    st.plotly_chart(fig_evolucion, use_container_width=True)
 
-    # --- GRÁFICO 2: MAPA DE CALOR DE COMPETENCIAS ---
-    st.subheader("🧩 Análisis Detallado de Competencias")
+    # --- SECCIÓN INDIVIDUAL Y DIAGNÓSTICO ---
+    st.markdown("---")
+    st.subheader("🎯 Análisis Individual y Diagnóstico")
     
-    # Aquí expandimos el "Formato Mágico" para verlo en el gráfico
-    # Convertimos: "Responsabilidad: 4.5 | Trabajo: 4.0" en columnas reales
-    detalles = []
-    for _, fila in df_filtrado.iterrows():
-        notas_str = fila["Notas Generales (Formato Mágico)"].split(" | ")
-        d = {"Empleado": fila["Empleado"], "Periodo": fila["Periodo"]}
+    col_sel, col_diag = st.columns([1, 2])
+    
+    with col_sel:
+        emp_analisis = st.selectbox("Selecciona un colaborador para diagnóstico:", empleados_sel)
+        # Tomamos la evaluación más reciente del empleado seleccionado
+        df_individual = df_filtrado[df_filtrado["Empleado"] == emp_analisis].iloc[-1:]
+        nota_final = df_individual["Promedio General"].values[0]
+        periodo_actual = df_individual["Periodo"].values[0]
+
+        st.write(f"**Periodo analizado:** {periodo_actual}")
+        st.write(f"**Puntaje Final:**")
+        st.title(f"{nota_final:.2f}")
+
+    with col_diag:
+        # Lógica de Diagnóstico que te gustaba
+        if nota_final >= 4.5:
+            st.success("🌟 **Talento Sobresaliente:** Supera ampliamente las expectativas. Considerar para planes de sucesión o ascensos.")
+        elif nota_final >= 3.5:
+            st.info("✅ **Desempeño Sólido:** Cumple con las expectativas. Continuar fortaleciendo competencias específicas.")
+        elif nota_final >= 2.5:
+            st.warning("⚠️ **En Desarrollo:** Requiere acompañamiento y capacitación (Brecha identificada).")
+        else:
+            st.error("🚨 **Rendimiento Crítico:** No cumple con los requisitos. Requiere Plan de Acción Inmediato (PIP).")
+
+    # --- GRÁFICO 2: RADAR DE COMPETENCIAS ---
+    st.markdown("#### 🕸️ Mapa de Competencias")
+    
+    # Decodificar el "Formato Mágico" para el Radar
+    try:
+        notas_str = df_individual["Notas Generales (Formato Mágico)"].values[0].split(" | ")
+        categorias = []
+        valores = []
         for n in notas_str:
-            comp, nota = n.split(": ")
-            d[comp] = float(nota)
-        detalles.append(d)
-    
-    df_detallado = pd.DataFrame(detalles)
-    
-    # Gráfico de Radar o Barras para un empleado específico
-    emp_sel = st.selectbox("🎯 Ver detalle de competencias de:", empleados)
-    df_emp = df_detallado[df_detallado["Empleado"] == emp_sel]
-    
-    # Derretimos el dataframe para graficar
-    df_plot = df_emp.melt(id_vars=["Empleado", "Periodo"], var_name="Competencia", value_name="Nota")
-    
-    fig_radar = px.line_polar(
-        df_plot, r="Nota", theta="Competencia", color="Periodo",
-        line_close=True, range_r=[0,5],
-        title=f"Fortalezas y Oportunidades: {emp_sel}"
-    )
-    st.plotly_chart(fig_radar, use_container_width=True)
+            parts = n.split(": ")
+            categorias.append(parts[0])
+            valores.append(float(parts[1]))
 
-    # --- TABLA DE DATOS FINAL ---
-    with st.expander("📂 Ver Tabla de Datos Completa"):
-        st.dataframe(df_filtrado)
+        fig_radar = go.Figure()
+        fig_radar.add_trace(go.Scatterpolar(
+            r=valores,
+            theta=categorias,
+            fill='toself',
+            name=emp_analisis,
+            line_color='#4A0000'
+        ))
+        fig_radar.update_layout(
+            polar=dict(radialaxis=dict(visible=True, range=[0, 5])),
+            showlegend=False
+        )
+        st.plotly_chart(fig_radar, use_container_width=True)
+    except:
+        st.error("No se pudo generar el radar. Asegúrate de que los datos tengan el formato correcto.")
+
+    # --- TABLA DE DATOS ---
+    with st.expander("📂 Ver registros históricos filtrados"):
+        st.table(df_filtrado[["Empleado", "Periodo", "Promedio General"]])
