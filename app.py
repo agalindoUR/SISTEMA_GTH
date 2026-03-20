@@ -24,6 +24,8 @@ import repvencimientos as mod_vencimientos
 import repcumpleanos as mod_cumpleanos
 import repvacaciones as mod_vacaciones
 import reportegeneral as mod_reportegeneral
+import repdesempeno as mod_repdesempeno
+import gestor_evaluaciones as mod_gestor_evaluaciones
 
 st.set_page_config(page_title="Gestión Roosevelt", page_icon="🎓", layout="wide")
 
@@ -1876,3 +1878,9 @@ else:
     # ==========================================
     elif m == "📈 Dashboard Desempeño":
         mod_dashboard.mostrar(dfs)
+
+    # ==========================================
+    # MÓDULO: GESTOR DE EVALUACIONES
+    # ==========================================
+    elif m == "Evaluaciones": # <-- Asegúrate de que este nombre coincida con lo que dice tu menú lateral
+        mod_gestor_evaluaciones.mostrar(dfs)
