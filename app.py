@@ -1876,8 +1876,9 @@ else:
     # ==========================================
     # MÓDULO: DASHBOARD DE DESEMPEÑO
     # ==========================================
-    elif m == "📈 Dashboard Desempeño":
-        mod_dashboard.mostrar(dfs)
+    elif m == "📊 Dashboard de Desempeño":
+    import mod_reportes
+        mod_reportes.mostrar(dfs)
 
     # ==========================================
     # MÓDULO: GESTOR DE EVALUACIONES
