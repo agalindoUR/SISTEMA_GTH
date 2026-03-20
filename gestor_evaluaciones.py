@@ -29,8 +29,12 @@ def mostrar(dfs):
         
         if archivo_subido is not None:
             try:
-                # Leemos el CSV
-                df_raw = pd.read_csv(archivo_subido)
+                # Leemos el CSV (Con trampa anti-tildes de Excel)
+                try:
+                    df_raw = pd.read_csv(archivo_subido, encoding='utf-8')
+                except UnicodeDecodeError:
+                    archivo_subido.seek(0) # Regresamos al inicio del archivo
+                    df_raw = pd.read_csv(archivo_subido, encoding='latin-1')
                 st.success("✅ Archivo leído correctamente. Vista previa de los datos crudos:")
                 st.dataframe(df_raw.head(3))
                 
