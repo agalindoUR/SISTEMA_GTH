@@ -1882,5 +1882,5 @@ else:
     # ==========================================
     # MÓDULO: GESTOR DE EVALUACIONES
     # ==========================================
-    elif m == "Evaluaciones": # <-- Asegúrate de que este nombre coincida con lo que dice tu menú lateral
+    elif m == "📋 Evaluaciones": 
         mod_gestor_evaluaciones.mostrar(dfs)
