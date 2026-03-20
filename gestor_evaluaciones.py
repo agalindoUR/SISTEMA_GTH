@@ -27,16 +27,17 @@ def mostrar(dfs):
             
         archivo_subido = st.file_uploader("Sube el archivo CSV de Google Forms", type=["csv"])
         
-        # Detectamos si es CSV o Excel
+       # Detectamos si es CSV o Excel
                 if archivo_subido.name.endswith('.csv'):
                     try:
-                        # Agregamos sep=';' para que entienda el formato de Excel en español
-                        df_raw = pd.read_csv(archivo_subido, encoding='utf-8', sep=';')
+                        # La magia: sep=None y engine='python' adivina automáticamente el separador
+                        df_raw = pd.read_csv(archivo_subido, sep=None, engine='python', encoding='utf-8')
                     except UnicodeDecodeError:
                         archivo_subido.seek(0)
-                        df_raw = pd.read_csv(archivo_subido, encoding='latin-1', sep=';')
+                        df_raw = pd.read_csv(archivo_subido, sep=None, engine='python', encoding='latin-1')
                 elif archivo_subido.name.endswith('.xlsx'):
-                    df_raw = pd.read_excel(archivo_subido) # Lee el formato Excel directo
+                    # Si subes el Excel directo, nos evitamos todos los problemas de comas
+                    df_raw = pd.read_excel(archivo_subido)
                 st.success("✅ Archivo leído correctamente. Vista previa de los datos crudos:")
                 st.dataframe(df_raw.head(3))
                 
