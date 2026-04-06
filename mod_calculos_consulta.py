@@ -189,11 +189,15 @@ def mostrar_experiencia(vst, dfs, h_name, col_conf, dni_buscado):
         """
         st.markdown(html_resumen, unsafe_allow_html=True)
 
-    # TABLA DE EDICIÓN
+   # TABLA DE EDICIÓN
     st.markdown("<br>", unsafe_allow_html=True)
     with st.expander("⚙️ Clic aquí para Editar o Eliminar Experiencia Externa"):
         st.markdown("<p style='color:#DDDDDD;'>Activa la casilla <b>SEL</b> para modificar o eliminar un registro.</p>", unsafe_allow_html=True)
         st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 10px !important; }</style>""", unsafe_allow_html=True)
+        
+        # ---> AQUÍ ESTÁ LA LÍNEA QUE FALTA PARA QUE NO DE ERROR <---
+        if "SEL" not in vst.columns:
+            vst.insert(0, "SEL", False)
         
         ed = st.data_editor(vst, hide_index=True, use_container_width=True, column_config=col_conf, key=f"ed_{h_name}_oculta")
         
@@ -204,3 +208,4 @@ def mostrar_experiencia(vst, dfs, h_name, col_conf, dni_buscado):
         sel = ed[ed["SEL"] == True]
         
     return sel
+    
