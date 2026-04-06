@@ -628,6 +628,7 @@ else:
                                 st.markdown(div_table, unsafe_allow_html=True)
 
                         vst = c_df.copy()
+                        sel = pd.DataFrame() # <--- ✨ ¡AÑADE ESTA LÍNEA! ✨
                         
                         cols_ocultar = [c for c in vst.columns if c.lower() in ["apellidos y nombres", "apellidos", "nombres"]]
                         vst = vst.drop(columns=cols_ocultar)
