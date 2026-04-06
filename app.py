@@ -29,6 +29,8 @@ import gestor_evaluaciones as mod_gestor_evaluaciones
 import mod_registro
 import mod_nomina
 import mod_consulta
+import mod_documentos
+import mod_calculos_consulta
 
 
 st.set_page_config(page_title="Gestión Roosevelt", page_icon="🎓", layout="wide")
@@ -465,10 +467,10 @@ else:
     # ==========================================
     # --- SECCIÓN CONSULTA ---
     # ==========================================
-    elif m == "🔍 Consulta":
+    if m == "🔍 Consulta":   # <--- (¡OJO AQUÍ! Cambiamos 'elif' por 'if')
         import mod_consulta
-        # Le pasamos las variables globales que necesita
-        mod_consulta.mostrar(dfs, save_data, obtener_link_directo_drive, COLUMNAS)
+        # Le pasamos todas las variables, incluyendo gen_word al final:
+        mod_consulta.mostrar(dfs, save_data, obtener_link_directo_drive, COLUMNAS, gen_word)
 
     # ==========================================
     # --- SECCIÓN REGISTRO Y NÓMINA ---
@@ -476,6 +478,8 @@ else:
     elif m == "➕ Registro" and not es_lector:
         import mod_registro
         mod_registro.mostrar(dfs, save_data)
+        
+    # (El resto del código hacia abajo queda igualito)
 
     elif m == "📊 Nómina General":
         mod_nomina.mostrar(dfs, save_data)
