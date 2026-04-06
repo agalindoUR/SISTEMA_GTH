@@ -159,7 +159,7 @@ def mostrar(dfs, save_data, obtener_link_directo_drive, COLUMNAS, gen_word):
                         st.write("")
                         sel = vst.head(1)
 
-                    # =========================================================
+                  # =========================================================
                     # DISEÑO DE TABLA NORMAL Y EDICIÓN
                     # =========================================================
                     else:
