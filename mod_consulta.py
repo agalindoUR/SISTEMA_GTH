@@ -74,7 +74,7 @@ def mostrar(dfs, save_data, obtener_link_directo_drive, COLUMNAS, gen_word):
                     # --- DELEGAMOS LA CREACIÓN DE DOCUMENTOS (CONTRATOS) ---
                     if h_name == "CONTRATOS":
                         df_contratos = dfs["CONTRATOS"][dfs["CONTRATOS"]["dni"] == dni_buscado]
-                        mod_documentos.generar_boton_certificado(nom_c, dni_buscado, df_contratos)
+                        mod_documentos.generar_boton_certificado(nom_c, dni_buscado, df_contratos, gen_word)
 
                     # --- DELEGAMOS EL CÁLCULO COMPLEJO (VACACIONES Y EXPERIENCIA) ---
                     if h_name == "VACACIONES":
