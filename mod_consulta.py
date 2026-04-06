@@ -178,7 +178,7 @@ def mostrar(dfs, save_data, obtener_link_directo_drive, COLUMNAS, gen_word):
                         st.markdown("<br>", unsafe_allow_html=True)
                         with st.expander(f"⚙️ Clic aquí para Editar o Eliminar registros en {h_name.title()}"):
                             st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 10px !important; }</style>""", unsafe_allow_html=True)
-                            ed = st.data_editor(vst, hide_index=True, use_container_width=True, column_config=col_conf, key=f"ed_{h_name}_oculta")
+                            ed = st.data_editor(vst, hide_index=True, use_container_width=True, column_config=col_conf, key=f"editor_principal_{h_name}")
                             for col in ed.columns:
                                 if "fecha" in col.lower() or "f_" in col.lower():
                                     ed[col] = ed[col].astype(str).replace(["NaT", "None"], "")
