@@ -84,7 +84,7 @@ def mostrar(dfs, save_data, obtener_link_directo_drive, COLUMNAS, gen_word):
 
                     if h_name == "EXP. LABORAL":
                         df_contratos = dfs.get("CONTRATOS", pd.DataFrame())
-                        sel = mod_calculos_consulta.mostrar_experiencia(c_df, df_contratos, dni_buscado)
+                        sel = mod_calculos_consulta.mostrar_experiencia(vst, dfs, h_name, col_conf, dni_buscado)
                         
                     # --- CONFIGURACIÓN DE TABLAS ESTÁNDAR ---
                     vst = c_df.copy()
