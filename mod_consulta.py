@@ -7,101 +7,101 @@ import mod_documentos
 def mostrar(dfs, save_data, obtener_link_directo_drive, COLUMNAS, gen_word):
     st.markdown("<h2 style='color: #FFD700;'>Búsqueda de Colaborador</h2>", unsafe_allow_html=True)
 
-        df_per_consulta = dfs["PERSONAL"].copy()
-        
-        df_per_consulta["dni_str"] = df_per_consulta.get("dni", pd.Series([""]*len(df_per_consulta))).astype(str).str.strip()
-        apellidos_col = df_per_consulta.get("apellidos", pd.Series([""]*len(df_per_consulta))).fillna("").astype(str).str.strip()
-        nombres_col = df_per_consulta.get("nombres", pd.Series([""]*len(df_per_consulta))).fillna("").astype(str).str.strip()
-        
-        df_per_consulta["nom_str"] = (apellidos_col + " " + nombres_col).str.strip()
-        df_per_consulta["search_str"] = df_per_consulta["dni_str"] + " - " + df_per_consulta["nom_str"]
-        
-        opciones_buscador = [""] + [x for x in df_per_consulta["search_str"].tolist() if x != " - "]
+    df_per_consulta = dfs["PERSONAL"].copy()
+    
+    df_per_consulta["dni_str"] = df_per_consulta.get("dni", pd.Series([""]*len(df_per_consulta))).astype(str).str.strip()
+    apellidos_col = df_per_consulta.get("apellidos", pd.Series([""]*len(df_per_consulta))).fillna("").astype(str).str.strip()
+    nombres_col = df_per_consulta.get("nombres", pd.Series([""]*len(df_per_consulta))).fillna("").astype(str).str.strip()
+    
+    df_per_consulta["nom_str"] = (apellidos_col + " " + nombres_col).str.strip()
+    df_per_consulta["search_str"] = df_per_consulta["dni_str"] + " - " + df_per_consulta["nom_str"]
+    
+    opciones_buscador = [""] + [x for x in df_per_consulta["search_str"].tolist() if x != " - "]
 
-        selected_search = st.selectbox("🔍 Escriba el DNI o Apellidos y Nombres:", opciones_buscador)
+    selected_search = st.selectbox("🔍 Escriba el DNI o Apellidos y Nombres:", opciones_buscador)
 
-        if selected_search:
-            dni_buscado = selected_search.split(" - ")[0].strip()
+    if selected_search:
+        dni_buscado = selected_search.split(" - ")[0].strip()
+        
+        fila_pers = df_per_consulta[df_per_consulta["dni_str"] == dni_buscado]
+        if not fila_pers.empty:
+            nom_c = fila_pers.iloc[0]["nom_str"]
+            # --- AQUÍ ESTÁ LA SOLUCIÓN ---
+            ape_c = str(fila_pers.iloc[0].get("apellidos", "")).strip()
+            nom_p_c = str(fila_pers.iloc[0].get("nombres", "")).strip()
+            # -----------------------------
+
+            # --- NUEVA LÓGICA DE FOTO (Revisada para mayor tamaño y ajuste perfecto) ---
+            # Buscamos la columna "foto" (minúscula o mayúscula)
+            link_foto_raw = fila_pers.iloc[0].get("foto", fila_pers.iloc[0].get("FOTO", ""))
             
-            fila_pers = df_per_consulta[df_per_consulta["dni_str"] == dni_buscado]
-            if not fila_pers.empty:
-                nom_c = fila_pers.iloc[0]["nom_str"]
-                # --- AQUÍ ESTÁ LA SOLUCIÓN ---
-                ape_c = str(fila_pers.iloc[0].get("apellidos", "")).strip()
-                nom_p_c = str(fila_pers.iloc[0].get("nombres", "")).strip()
-                # -----------------------------
+            # Transformamos el link (si usas Postimages/Blogger, la función lo dejará igual)
+            if pd.notnull(link_foto_raw) and str(link_foto_raw).strip() != "":
+                foto_directa = obtener_link_directo_drive(str(link_foto_raw).strip())
+            else:
+                foto_directa = None
 
-               # --- NUEVA LÓGICA DE FOTO (Revisada para mayor tamaño y ajuste perfecto) ---
-                # Buscamos la columna "foto" (minúscula o mayúscula)
-                link_foto_raw = fila_pers.iloc[0].get("foto", fila_pers.iloc[0].get("FOTO", ""))
-                
-                # Transformamos el link (si usas Postimages/Blogger, la función lo dejará igual)
-                if pd.notnull(link_foto_raw) and str(link_foto_raw).strip() != "":
-                    foto_directa = obtener_link_directo_drive(str(link_foto_raw).strip())
-                else:
-                    foto_directa = None
+            # Renderizamos la cabecera con FOTO MÁS GRANDE y AJUSTE PERFECTO
+            if foto_directa:
+                st.markdown(f"""
+                    <style>
+                    /* Nueva clase para foto más grande que oculta los bordes guindos */
+                    .foto-perfil-large {{
+                        width: 110px;
+                        height: 110px;
+                        border-radius: 50%; 
+                        object-fit: cover; 
+                        object-position: center;
+                        border: 4px solid #FFD700;
+                        margin-right: 20px;
+                        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+                        transition: transform 0.2s ease-in-out;
+                    }}
+                    /* Efecto hover ligero, pero SIN clic y SIN abrir ventana */
+                    .foto-perfil-large:hover {{
+                        transform: scale(1.08);
+                    }}
+                    </style>
+                    <div style='border-bottom: 2px solid #FFD700; padding-bottom: 15px; margin-bottom: 25px; display: flex; align-items: center;'>
+                        <img src='{foto_directa}' class='foto-perfil-large' onerror="this.style.display='none'; document.getElementById('avatar-{dni_buscado}').style.display='block';">
+                        <h1 id='avatar-{dni_buscado}' style='color: white; margin: 0; margin-right: 15px; font-size: 3em; display: none;'>👤</h1>
+                        <h1 style='color: #FFD700; margin: 0; font-size: 2.5em;'>{nom_c}</h1>
+                    </div>
+                """, unsafe_allow_html=True)
+            else:
+                # Versión por defecto si no hay foto
+                st.markdown(f"""
+                    <div style='border-bottom: 2px solid #FFD700; padding-bottom: 10px; margin-bottom: 20px; display: flex; align-items: center;'>
+                        <h1 style='color: white; margin: 0; margin-right: 15px; font-size: 3em;'>👤</h1>
+                        <h1 style='color: #FFD700; margin: 0; font-size: 2.5em;'>{nom_c}</h1>
+                    </div>
+                """, unsafe_allow_html=True)
+                            
+            t_noms = ["Datos Generales", "Exp. Laboral", "Form. Académica", "Investigación", "Datos Familiares", "Contratos", "Vacaciones", "Otros Beneficios", "Méritos/Demer.", "Evaluación", "Liquidaciones"]
+            h_keys = ["DATOS GENERALES", "EXP. LABORAL", "FORM. ACADEMICA", "INVESTIGACION", "DATOS FAMILIARES", "CONTRATOS", "VACACIONES", "OTROS BENEFICIOS", "MERITOS Y DEMERITOS", "EVALUACION DEL DESEMPEÑO", "LIQUIDACIONES"]
 
-                # Renderizamos la cabecera con FOTO MÁS GRANDE y AJUSTE PERFECTO
-                if foto_directa:
-                    st.markdown(f"""
-                        <style>
-                        /* Nueva clase para foto más grande que oculta los bordes guindos */
-                        .foto-perfil-large {{
-                            width: 110px;
-                            height: 110px;
-                            border-radius: 50%; 
-                            object-fit: cover; 
-                            object-position: center;
-                            border: 4px solid #FFD700;
-                            margin-right: 20px;
-                            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-                            transition: transform 0.2s ease-in-out;
-                        }}
-                        /* Efecto hover ligero, pero SIN clic y SIN abrir ventana */
-                        .foto-perfil-large:hover {{
-                            transform: scale(1.08);
-                        }}
-                        </style>
-                        <div style='border-bottom: 2px solid #FFD700; padding-bottom: 15px; margin-bottom: 25px; display: flex; align-items: center;'>
-                            <img src='{foto_directa}' class='foto-perfil-large' onerror="this.style.display='none'; document.getElementById('avatar-{dni_buscado}').style.display='block';">
-                            <h1 id='avatar-{dni_buscado}' style='color: white; margin: 0; margin-right: 15px; font-size: 3em; display: none;'>👤</h1>
-                            <h1 style='color: #FFD700; margin: 0; font-size: 2.5em;'>{nom_c}</h1>
-                        </div>
-                    """, unsafe_allow_html=True)
-                else:
-                    # Versión por defecto si no hay foto
-                    st.markdown(f"""
-                        <div style='border-bottom: 2px solid #FFD700; padding-bottom: 10px; margin-bottom: 20px; display: flex; align-items: center;'>
-                            <h1 style='color: white; margin: 0; margin-right: 15px; font-size: 3em;'>👤</h1>
-                            <h1 style='color: #FFD700; margin: 0; font-size: 2.5em;'>{nom_c}</h1>
-                        </div>
-                    """, unsafe_allow_html=True)
-                                
-                t_noms = ["Datos Generales", "Exp. Laboral", "Form. Académica", "Investigación", "Datos Familiares", "Contratos", "Vacaciones", "Otros Beneficios", "Méritos/Demer.", "Evaluación", "Liquidaciones"]
-                h_keys = ["DATOS GENERALES", "EXP. LABORAL", "FORM. ACADEMICA", "INVESTIGACION", "DATOS FAMILIARES", "CONTRATOS", "VACACIONES", "OTROS BENEFICIOS", "MERITOS Y DEMERITOS", "EVALUACION DEL DESEMPEÑO", "LIQUIDACIONES"]
+            tabs = st.tabs(t_noms)
 
-                tabs = st.tabs(t_noms)
+            for i, tab in enumerate(tabs):
+                h_name = h_keys[i]
+                with tab:
+                    if h_name in dfs and "dni" in dfs[h_name].columns:
+                        c_df = dfs[h_name][dfs[h_name]["dni"] == dni_buscado]
+                    else:
+                        c_df = pd.DataFrame(columns=COLUMNAS.get(h_name, []))
 
-                for i, tab in enumerate(tabs):
-                    h_name = h_keys[i]
-                    with tab:
-                        if h_name in dfs and "dni" in dfs[h_name].columns:
-                            c_df = dfs[h_name][dfs[h_name]["dni"] == dni_buscado]
-                        else:
-                            c_df = pd.DataFrame(columns=COLUMNAS.get(h_name, []))
-
-                        if h_name == "CONTRATOS":
-                            df_contratos = dfs["CONTRATOS"][dfs["CONTRATOS"]["dni"] == dni_buscado]
-                            if not df_contratos.empty:
-                                st.markdown("""
-                                    <style>
-                                    [data-testid="stDownloadButton"] button { background-color: #FFD700 !important; border: 2px solid #4A0000 !important; }
-                                    [data-testid="stDownloadButton"] button p { color: #4A0000 !important; font-weight: bold !important; font-size: 16px !important; }
-                                    [data-testid="stDownloadButton"] button:hover { background-color: #ffffff !important; border: 2px solid #FFD700 !important; }
-                                    </style>
-                                """, unsafe_allow_html=True)
-                                mod_documentos.generar_boton_certificado(nom_c, dni_buscado, df_contratos, gen_word)
-                                st.markdown("<br>", unsafe_allow_html=True)
+                    if h_name == "CONTRATOS":
+                        df_contratos = dfs["CONTRATOS"][dfs["CONTRATOS"]["dni"] == dni_buscado]
+                        if not df_contratos.empty:
+                            st.markdown("""
+                                <style>
+                                [data-testid="stDownloadButton"] button { background-color: #FFD700 !important; border: 2px solid #4A0000 !important; }
+                                [data-testid="stDownloadButton"] button p { color: #4A0000 !important; font-weight: bold !important; font-size: 16px !important; }
+                                [data-testid="stDownloadButton"] button:hover { background-color: #ffffff !important; border: 2px solid #FFD700 !important; }
+                                </style>
+                            """, unsafe_allow_html=True)
+                            mod_documentos.generar_boton_certificado(nom_c, dni_buscado, df_contratos, gen_word)
+                            st.markdown("<br>", unsafe_allow_html=True)
 
                         if h_name == "VACACIONES":
                             df_tc = df_contratos[df_contratos["tipo contrato"].astype(str).str.lower().str.contains("planilla", na=False)] if "df_contratos" in locals() else pd.DataFrame()
