@@ -5,6 +5,7 @@ import mod_calculos_consulta
 import mod_documentos
 
 def mostrar(dfs, save_data, obtener_link_directo_drive, COLUMNAS, gen_word):
+    es_lector = st.session_state.get("rol") == "Lector"
     st.markdown("<h2 style='color: #FFD700;'>Búsqueda de Colaborador</h2>", unsafe_allow_html=True)
 
     df_per_consulta = dfs["PERSONAL"].copy()
