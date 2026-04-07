@@ -91,14 +91,20 @@ def mostrar(dfs, save_data, obtener_link_directo_drive, COLUMNAS, gen_word):
             for i, tab in enumerate(tabs):
                 h_name = h_keys[i]
                 with tab:
-                    if h_name in dfs and "dni" in dfs[h_name].columns:
-                        c_df = dfs[h_name][dfs[h_name]["dni"].astype(str).str.split('.').str[0].str.strip().str.zfill(8) == dni_buscado.zfill(8)]
+                    # 1. Buscamos la columna DNI sin importar mayúsculas, minúsculas o espacios
+                    col_dni = next((c for c in dfs[h_name].columns if str(c).strip().lower() == "dni"), None) if h_name in dfs else None
+
+                    # 2. Filtramos usando el nombre real de la columna encontrada
+                    if col_dni:
+                        c_df = dfs[h_name][dfs[h_name][col_dni].astype(str).str.split('.').str[0].str.strip().str.zfill(8) == dni_buscado.zfill(8)]
                     else:
                         c_df = pd.DataFrame(columns=COLUMNAS.get(h_name, []))
 
+                    # 3. Lógica para CONTRATOS
                     if h_name == "CONTRATOS":
-                        df_contratos = dfs["CONTRATOS"][dfs["CONTRATOS"]["dni"].astype(str).str.split('.').str[0].str.strip().str.zfill(8) == dni_buscado.zfill(8)]
-                        if not df_contratos.empty:
+                        if col_dni:
+                            df_contratos = dfs["CONTRATOS"][dfs["CONTRATOS"][col_dni].astype(str).str.split('.').str[0].str.strip().str.zfill(8) == dni_buscado.zfill(8)]
+                            if not df_contratos.empty:
                             st.markdown("""
                                 <style>
                                 [data-testid="stDownloadButton"] button { background-color: #FFD700 !important; border: 2px solid #4A0000 !important; }
