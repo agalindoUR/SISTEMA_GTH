@@ -10,7 +10,7 @@ def mostrar(dfs, save_data, obtener_link_directo_drive, COLUMNAS, gen_word):
 
     df_per_consulta = dfs["PERSONAL"].copy()
     
-    df_per_consulta["dni_str"] = df_per_consulta.get("dni", pd.Series([""]*len(df_per_consulta))).astype(str).str.strip()
+    df_per_consulta["dni_str"] = df_per_consulta.get("dni", pd.Series([""]*len(df_per_consulta))).astype(str).str.split('.').str[0].str.strip()
     apellidos_col = df_per_consulta.get("apellidos", pd.Series([""]*len(df_per_consulta))).fillna("").astype(str).str.strip()
     nombres_col = df_per_consulta.get("nombres", pd.Series([""]*len(df_per_consulta))).fillna("").astype(str).str.strip()
     
@@ -87,12 +87,12 @@ def mostrar(dfs, save_data, obtener_link_directo_drive, COLUMNAS, gen_word):
                 h_name = h_keys[i]
                 with tab:
                     if h_name in dfs and "dni" in dfs[h_name].columns:
-                        c_df = dfs[h_name][dfs[h_name]["dni"] == dni_buscado]
+                        c_df = dfs[h_name][dfs[h_name]["dni"].astype(str).str.split('.').str[0].str.strip() == dni_buscado]
                     else:
                         c_df = pd.DataFrame(columns=COLUMNAS.get(h_name, []))
 
                     if h_name == "CONTRATOS":
-                        df_contratos = dfs["CONTRATOS"][dfs["CONTRATOS"]["dni"] == dni_buscado]
+                        df_contratos = dfs["CONTRATOS"][dfs["CONTRATOS"]["dni"].astype(str).str.split('.').str[0].str.strip() == dni_buscado]
                         if not df_contratos.empty:
                             st.markdown("""
                                 <style>
