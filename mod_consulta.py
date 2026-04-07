@@ -24,6 +24,8 @@ def mostrar(dfs, save_data, obtener_link_directo_drive, COLUMNAS, gen_word):
     if selected_search:
         dni_buscado = selected_search.split(" - ")[0].strip()
         
+        match_per = dfs["PERSONAL"][dfs["PERSONAL"]["dni"].astype(str).str.split('.').str[0].str.strip() == dni_buscado]
+        
         fila_pers = df_per_consulta[df_per_consulta["dni_str"] == dni_buscado]
         if not fila_pers.empty:
             nom_c = fila_pers.iloc[0]["nom_str"]
