@@ -92,12 +92,12 @@ def mostrar(dfs, save_data, obtener_link_directo_drive, COLUMNAS, gen_word):
                 h_name = h_keys[i]
                 with tab:
                     if h_name in dfs and "dni" in dfs[h_name].columns:
-                        c_df = dfs[h_name][dfs[h_name]["dni"].astype(str).str.split('.').str[0].str.strip() == dni_buscado]
+                        c_df = dfs[h_name][dfs[h_name]["dni"].astype(str).str.split('.').str[0].str.strip().str.zfill(8) == dni_buscado.zfill(8)]
                     else:
                         c_df = pd.DataFrame(columns=COLUMNAS.get(h_name, []))
 
                     if h_name == "CONTRATOS":
-                        df_contratos = dfs["CONTRATOS"][dfs["CONTRATOS"]["dni"].astype(str).str.split('.').str[0].str.strip() == dni_buscado]
+                        df_contratos = dfs["CONTRATOS"][dfs["CONTRATOS"]["dni"].astype(str).str.split('.').str[0].str.strip().str.zfill(8) == dni_buscado.zfill(8)]
                         if not df_contratos.empty:
                             st.markdown("""
                                 <style>
@@ -1327,5 +1327,4 @@ def mostrar(dfs, save_data, obtener_link_directo_drive, COLUMNAS, gen_word):
                                                         st.rerun()
                                     else:
                                         st.info("Activa la casilla (SEL) en la tabla superior para editar o eliminar el registro.")
-            else:
-                st.error("DNI no encontrado en la base de datos.")
+           
