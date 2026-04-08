@@ -1833,5 +1833,6 @@ else:
     # ==========================================
     # MÓDULO: GESTOR DE EVALUACIONES
     # ==========================================
-    elif m == "📋 Evaluaciones": 
-        mod_gestor_evaluaciones.mostrar(dfs)
+    # ... dentro de tu menú en app.py ...
+    if m == "📋 Evaluaciones":  # (o como se llame tu opción en el menú)
+        mod_gestor_evaluaciones.mostrar(dfs, save_data)
