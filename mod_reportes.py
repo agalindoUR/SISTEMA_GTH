@@ -14,6 +14,8 @@ def mostrar(dfs):
     # Usamos una copia para no alterar el dataframe original
     df = dfs["EVALUACIONES"].copy()
 
+    # Esta línea elimina espacios en blanco al inicio y al final de los nombres de todas las columnas
+    df.columns = df.columns.str.strip()
     # Limpiamos los números por si Google Sheets los guardó con comas o espacios
     df["PROMEDIO GENERAL"] = df["PROMEDIO GENERAL"].astype(str).str.replace(',', '.').str.strip()
     df["PROMEDIO GENERAL"] = pd.to_numeric(df["PROMEDIO GENERAL"], errors='coerce')
