@@ -178,22 +178,32 @@ def mostrar(dfs, save_data): # Añadimos save_data aquí
     with tab_dashboard:
         st.markdown("### 📊 Dashboard de Desempeño")
         
-        df_eval = dfs.get("EVALUACIONES", pd.DataFrame())
+        df_eval = dfs.get("EVALUACIONES", pd.DataFrame()).copy()
         
-        if df_eval.empty:
-            st.warning("Aún no hay evaluaciones registradas en la base de datos para mostrar el Dashboard.")
+        # 🛡️ BLINDAJE DE COLUMNAS: Limpiamos espacios ocultos y forzamos mayúsculas
+        df_eval.columns = [str(c).strip().upper() for c in df_eval.columns]
+        
+        # Verificamos si la columna existe después de limpiarla
+        if df_eval.empty or "PROMEDIO GENERAL" not in df_eval.columns:
+            st.warning("Aún no hay evaluaciones registradas o no se encuentra la columna 'PROMEDIO GENERAL'. Ve a la pestaña 'Carga Masiva', procesa un archivo y guárdalo.")
         else:
-            # Aseguramos que el promedio sea numérico para los gráficos
+            # Limpiamos las comas por puntos y convertimos a número
+            df_eval["PROMEDIO GENERAL"] = df_eval["PROMEDIO GENERAL"].astype(str).str.replace(',', '.').str.strip()
             df_eval["PROMEDIO GENERAL"] = pd.to_numeric(df_eval["PROMEDIO GENERAL"], errors='coerce')
             
-            # Filtro por periodo
-            periodos_disp = ["Todos"] + df_eval["PERIODO"].dropna().unique().tolist()
-            filtro_periodo = st.selectbox("Filtrar Dashboard por Periodo:", periodos_disp)
-            
-            if filtro_periodo != "Todos":
-                df_filtrado = df_eval[df_eval["PERIODO"] == filtro_periodo]
+            # Filtro por periodo (si la columna PERIODO existe)
+            if "PERIODO" in df_eval.columns:
+                periodos_disp = ["Todos"] + df_eval["PERIODO"].dropna().unique().tolist()
+                filtro_periodo = st.selectbox("Filtrar Dashboard por Periodo:", periodos_disp)
+                if filtro_periodo != "Todos":
+                    df_filtrado = df_eval[df_eval["PERIODO"] == filtro_periodo]
+                else:
+                    df_filtrado = df_eval.copy()
             else:
                 df_filtrado = df_eval.copy()
+            
+            # Ocultamos filas sin nota válida
+            df_filtrado = df_filtrado.dropna(subset=["PROMEDIO GENERAL"])
             
             # KPIs Rápidos
             col_k1, col_k2, col_k3 = st.columns(3)
@@ -202,7 +212,11 @@ def mostrar(dfs, save_data): # Añadimos save_data aquí
             
             col_k1.metric("Promedio General Empresa", f"{promedio_empresa:.2f}" if pd.notnull(promedio_empresa) else "0.0")
             col_k2.metric("Total Evaluaciones", total_evaluados)
-            col_k3.metric("Áreas Evaluadas", df_filtrado["ÁREA"].nunique())
+            
+            if "ÁREA" in df_filtrado.columns:
+                col_k3.metric("Áreas Evaluadas", df_filtrado["ÁREA"].nunique())
+            else:
+                col_k3.metric("Áreas Evaluadas", 0)
             
             st.divider()
             
@@ -211,11 +225,16 @@ def mostrar(dfs, save_data): # Añadimos save_data aquí
             
             with col_g1:
                 st.markdown("**Promedio de Desempeño por Área**")
-                if "ÁREA" in df_filtrado.columns:
+                if "ÁREA" in df_filtrado.columns and not df_filtrado.empty:
                     promedio_area = df_filtrado.groupby("ÁREA")["PROMEDIO GENERAL"].mean().reset_index()
                     st.bar_chart(promedio_area.set_index("ÁREA"))
+                else:
+                    st.info("No hay datos de áreas para graficar.")
                     
             with col_g2:
                 st.markdown("**Top 5 Colaboradores**")
-                top_5 = df_filtrado.nlargest(5, "PROMEDIO GENERAL")[["NOMBRES Y APELLIDOS", "PROMEDIO GENERAL"]]
-                st.dataframe(top_5, hide_index=True, use_container_width=True)
+                if "NOMBRES Y APELLIDOS" in df_filtrado.columns and not df_filtrado.empty:
+                    top_5 = df_filtrado.nlargest(5, "PROMEDIO GENERAL")[["NOMBRES Y APELLIDOS", "PROMEDIO GENERAL"]]
+                    st.dataframe(top_5, hide_index=True, use_container_width=True)
+                else:
+                    st.info("No hay datos de colaboradores para mostrar.")
