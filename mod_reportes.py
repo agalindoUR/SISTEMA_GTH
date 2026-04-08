@@ -6,27 +6,31 @@ import plotly.graph_objects as go
 def mostrar(dfs):
     st.markdown("<h2 style='color: #4A0000;'>📊 Dashboard de Desempeño Consolidado</h2>", unsafe_allow_html=True)
 
-    # 1. Verificación de seguridad
+    # 1. Verificación de seguridad inicial
     if "EVALUACIONES" not in dfs or dfs["EVALUACIONES"].empty:
         st.warning("⚠️ No se encontraron datos en 'EVALUACIONES'. Por favor, procesa y guarda un archivo en la pestaña de Evaluación.")
         return
 
-    # Usamos .get() y una copia por seguridad para no alterar el dataframe original ni crashear si no existe
+    # Usamos una copia por seguridad para no alterar el dataframe original
     df = dfs.get("EVALUACIONES", pd.DataFrame()).copy()
 
-    if not df.empty:
-        # MAGIA AQUÍ: Elimina espacios en blanco Y fuerza a que todo sea MAYÚSCULAS
-        df.columns = df.columns.str.strip().str.upper()
-        
-        # Escudo protector: verificamos que la columna realmente exista antes de tocarla
-        if "PROMEDIO GENERAL" in df.columns:
-            # Limpiamos los números por si Google Sheets los guardó con comas o espacios
-            df["PROMEDIO GENERAL"] = df["PROMEDIO GENERAL"].astype(str).str.replace(',', '.').str.strip()
-            df["PROMEDIO GENERAL"] = pd.to_numeric(df["PROMEDIO GENERAL"], errors='coerce')
-            df = df.dropna(subset=["PROMEDIO GENERAL"]) # Oculta filas donde no haya nota
-        else:
-            st.error("⚠️ Error: No se encontró la columna 'PROMEDIO GENERAL' (revisa cómo está escrita en tu Excel/Sheets).")
-            return # Detiene la ejecución aquí para que no siga dando errores más abajo
+    # MAGIA AQUÍ: Elimina espacios en blanco Y fuerza a que todo sea MAYÚSCULAS
+    df.columns = df.columns.str.strip().str.upper()
+
+    # Escudo protector: verificamos que la columna PROMEDIO GENERAL exista
+    if "PROMEDIO GENERAL" in df.columns:
+        # Limpiamos los números por si Google Sheets los guardó con comas o espacios
+        df["PROMEDIO GENERAL"] = df["PROMEDIO GENERAL"].astype(str).str.replace(',', '.').str.strip()
+        df["PROMEDIO GENERAL"] = pd.to_numeric(df["PROMEDIO GENERAL"], errors='coerce')
+        df = df.dropna(subset=["PROMEDIO GENERAL"]) # Oculta filas donde no haya nota
+    else:
+        st.error("⚠️ Error: No se encontró la columna 'PROMEDIO GENERAL' (revisa cómo está escrita en tu Excel/Sheets).")
+        return # Detiene la ejecución aquí
+
+    # Escudo protector extra para los filtros
+    if "PERIODO" not in df.columns or "NOMBRES Y APELLIDOS" not in df.columns:
+        st.error("⚠️ Faltan las columnas 'PERIODO' o 'NOMBRES Y APELLIDOS' para poder filtrar los datos. Revisa los encabezados en tu hoja EVALUACIONES.")
+        return
 
     # --- BARRA LATERAL DE FILTROS ---
     st.sidebar.header("🔍 Filtros de Análisis")
@@ -107,7 +111,7 @@ def mostrar(dfs):
     # --- GRÁFICO 2: RADAR DE COMPETENCIAS ---
     st.markdown("#### 🕸️ Mapa de Competencias")
     
-    if not df_individual.empty:
+    if not df_individual.empty and "NOTAS GENERALES" in df_individual.columns:
         # Decodificar el texto para el Radar (Columna NOTAS GENERALES)
         try:
             notas_str = str(df_individual["NOTAS GENERALES"].values[0])
@@ -143,7 +147,9 @@ def mostrar(dfs):
             else:
                 st.info("No hay detalle de competencias registrado.")
         except Exception as e:
-            st.error(f"No se pudo generar el radar. Revisa el formato de los datos.")
+            st.error("No se pudo generar el radar. Revisa el formato de los datos en la columna NOTAS GENERALES.")
+    elif "NOTAS GENERALES" not in df_individual.columns:
+        st.info("La columna 'NOTAS GENERALES' no existe, no se puede generar el gráfico de radar.")
 
     # --- TABLA DE DATOS ---
     with st.expander("📂 Ver registros históricos filtrados"):
