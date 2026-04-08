@@ -162,13 +162,23 @@ def mostrar(dfs, save_data): # Añadimos save_data aquí
     with tab_interna:
         st.markdown("### 📝 Formulario de Evaluación Interna")
         st.write("Genera una evaluación manual en el sistema o copia el enlace para enviarlo a un evaluador.")
-        df_per = dfs.get("PERSONAL", pd.DataFrame())
+        
+        # Copiamos el dataframe por seguridad
+        df_per = dfs.get("PERSONAL", pd.DataFrame()).copy() 
+        
         if not df_per.empty:
-            lista_emp = df_per["dni"].astype(str) + " - " + df_per.get("nombres", "Empleado")
-            emp_a_evaluar = st.selectbox("Selecciona al trabajador a evaluar:", lista_emp)
-            st.markdown(f"**🔗 Enlace directo para el evaluador:**")
-            st.code(f"https://tu-sistema-gth.streamlit.app/?evaluar={emp_a_evaluar.split(' - ')[0]}&periodo=2025-I")
-            st.info("Función en desarrollo para próximas versiones.")
+            # Estandarizamos las columnas: quitamos espacios, pasamos a mayúsculas y quitamos tildes
+            df_per.columns = df_per.columns.str.strip().str.upper().str.replace('Á', 'A').str.replace('É', 'E').str.replace('Í', 'I').str.replace('Ó', 'O').str.replace('Ú', 'U')
+            
+            # Buscamos en MAYÚSCULAS
+            if "DNI" in df_per.columns:
+                lista_emp = df_per["DNI"].astype(str) + " - " + df_per.get("NOMBRES", "Empleado")
+                emp_a_evaluar = st.selectbox("Selecciona al trabajador a evaluar:", lista_emp)
+                st.markdown(f"**🔗 Enlace directo para el evaluador:**")
+                st.code(f"https://tu-sistema-gth.streamlit.app/?evaluar={emp_a_evaluar.split(' - ')[0]}&periodo=2025-I")
+                st.info("Función en desarrollo para próximas versiones.")
+            else:
+                st.warning("⚠️ La hoja de PERSONAL no tiene una columna llamada DNI.")
         else:
             st.warning("No hay datos de personal cargados.")
 
