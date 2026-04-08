@@ -70,10 +70,10 @@ def mostrar(dfs, save_data): # Añadimos save_data aquí
                             if not df_per.empty and "dni" in df_per.columns:
                                 match = df_per[df_per["dni"].astype(str).str.strip() == empleado_id]
                                 if not match.empty:
-                                    nombres_completos = f"{match.iloc[0].get('apellidos', '')} {match.iloc[0].get('nombres', '')}".strip()
-                                    cargo_final = match.iloc[0].get('cargo', 'No registrado')
-                                    area_final = match.iloc[0].get('area', 'No registrada')
-                                    dni_final = match.iloc[0].get('dni', empleado_id)
+                                    nombres_completos = f"{match.iloc[0].get('APELLIDOS', match.iloc[0].get('apellidos', ''))} {match.iloc[0].get('NOMBRES', match.iloc[0].get('nombres', ''))}".strip()
+                                    cargo_final = match.iloc[0].get('CARGO', match.iloc[0].get('cargo', 'No registrado'))
+                                    area_final = match.iloc[0].get('AREA', match.iloc[0].get('area', 'No registrada'))
+                                    dni_final = match.iloc[0].get('DNI', match.iloc[0].get('dni', empleado_id))
 
                             diccionario_notas = {}
                             
@@ -110,7 +110,7 @@ def mostrar(dfs, save_data): # Añadimos save_data aquí
                                 "NOMBRES Y APELLIDOS": nombres_completos,
                                 "PERIODO": periodo_sel,
                                 "CARGO": cargo_final,
-                                "ÁREA": area_final,
+                                "AREA": area_final,
                                 "PROMEDIO GENERAL": round(promedio_general, 2),
                                 "NOTAS GENERALES": string_final,
                                 "TIPO DE EVALUACIÓN": tipo_eval_sel
@@ -130,7 +130,7 @@ def mostrar(dfs, save_data): # Añadimos save_data aquí
                 # Si la pestaña EVALUACIONES no existe, la creamos con tus columnas
                 if "EVALUACIONES" not in dfs:
                     dfs["EVALUACIONES"] = pd.DataFrame(columns=[
-                        "DNI", "NOMBRES Y APELLIDOS", "PERIODO", "CARGO", "ÁREA", "PROMEDIO GENERAL", "NOTAS GENERALES", "TIPO DE EVALUACIÓN"
+                        "DNI", "NOMBRES Y APELLIDOS", "PERIODO", "CARGO", "AREA", "PROMEDIO GENERAL", "NOTAS GENERALES", "TIPO DE EVALUACIÓN"
                     ])
                     
                 # Unimos y Guardamos
@@ -215,15 +215,15 @@ def mostrar(dfs, save_data): # Añadimos save_data aquí
                         col_k1, col_k2, col_k3 = st.columns(3)
                         col_k1.metric("Promedio General", f"{df_filtrado['PROMEDIO GENERAL'].mean():.2f}")
                         col_k2.metric("Evaluaciones", len(df_filtrado))
-                        col_k3.metric("Áreas", df_filtrado["ÁREA"].nunique() if "ÁREA" in df_filtrado.columns else 0)
+                        col_k3.metric("Áreas", df_filtrado["AREA"].nunique() if "ÁREA" in df_filtrado.columns else 0)
                         
                         st.divider()
                         col_g1, col_g2 = st.columns(2)
                         
                         with col_g1:
                             st.markdown("**Desempeño por Área**")
-                            if "ÁREA" in df_filtrado.columns:
-                                st.bar_chart(df_filtrado.groupby("ÁREA")["PROMEDIO GENERAL"].mean())
+                            if "AREA" in df_filtrado.columns:
+                                st.bar_chart(df_filtrado.groupby("AREA")["PROMEDIO GENERAL"].mean())
                                 
                         with col_g2:
                             st.markdown("**Top Colaboradores**")
