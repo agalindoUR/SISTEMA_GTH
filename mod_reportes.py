@@ -8,12 +8,14 @@ def mostrar(dfs):
 
     # 1. Verificación de seguridad inicial
     if "EVALUACIONES" not in dfs or dfs["EVALUACIONES"].empty:
-        st.warning("⚠️ No se encontraron datos en 'EVALUACIONES'. Por favor, procesa y guarda un archivo en la pestaña de Evaluación.")
+        st.warning("⚠️ No se encontraron datos en 'EVALUACIONES'. Por favor, sube y procesa un archivo en la pestaña de Evaluaciones.")
         return
 
     # Usamos una copia por seguridad
     df = dfs.get("EVALUACIONES", pd.DataFrame()).copy()
-    df.columns = df.columns.str.strip().str.upper()
+    
+    # MAGIA BLINDADA: Forzamos a que todas las columnas sean texto, sin espacios y en mayúsculas
+    df.columns = [str(c).strip().upper() for c in df.columns]
 
     # Escudo protector principal
     if "PROMEDIO GENERAL" in df.columns:
@@ -21,7 +23,7 @@ def mostrar(dfs):
         df["PROMEDIO GENERAL"] = pd.to_numeric(df["PROMEDIO GENERAL"], errors='coerce')
         df = df.dropna(subset=["PROMEDIO GENERAL"])
     else:
-        st.error("⚠️ Error: No se encontró la columna 'PROMEDIO GENERAL'.")
+        st.error(f"⚠️ Error: No se encontró 'PROMEDIO GENERAL'. Columnas detectadas: {list(df.columns)}")
         return
 
     # Asegurar que existan columnas clave para evitar errores
@@ -74,12 +76,10 @@ def mostrar(dfs):
     # --- GRÁFICO 1: COMPARATIVO DINÁMICO ---
     st.subheader("📈 Análisis Comparativo y Evolución")
     
-    # Selector de tipo de comparación
     tipo_comparacion = st.radio("Agrupar métricas por:", ["Colaborador", "Área", "Cargo"], horizontal=True)
     
     col_agrupacion = "NOMBRES Y APELLIDOS" if tipo_comparacion == "Colaborador" else ("AREA" if tipo_comparacion == "Área" else "CARGO")
     
-    # Agrupamos y promediamos para que el gráfico sea exacto
     df_grafico = df_filtrado.groupby([col_agrupacion, "PERIODO"])["PROMEDIO GENERAL"].mean().reset_index()
     
     fig_evolucion = px.bar(
@@ -115,7 +115,7 @@ def mostrar(dfs):
         fig_area.update_layout(showlegend=False, margin=dict(l=0, r=0, t=0, b=0), height=250)
         st.plotly_chart(fig_area, use_container_width=True)
 
-    # --- SECCIÓN INDIVIDUAL Y DIAGNÓSTICO (MEJORADA) ---
+    # --- SECCIÓN INDIVIDUAL Y DIAGNÓSTICO ---
     st.markdown("---")
     st.subheader("🎯 Análisis Individual: Histórico Promediado")
     
@@ -123,7 +123,6 @@ def mostrar(dfs):
     
     with col_sel:
         emp_analisis = st.selectbox("Selecciona un colaborador para diagnóstico profundo:", empleados_sel)
-        # Obtenemos TODAS las evaluaciones del empleado seleccionado
         df_individual = df_filtrado[df_filtrado["NOMBRES Y APELLIDOS"] == emp_analisis]
         
         if not df_individual.empty:
@@ -143,17 +142,14 @@ def mostrar(dfs):
             elif nota_promedio_final >= 3.5:
                 st.info("✅ **Desempeño Sólido:** Cumple consistentemente con las expectativas. Mantener planes de fidelización.")
             elif nota_promedio_final >= 2.5:
-                st.warning("⚠️ **En Desarrollo / Fluctuante:** Requiere acompañamiento y capacitación (Identificar brechas en el mapa de competencias).")
+                st.warning("⚠️ **En Desarrollo / Fluctuante:** Requiere acompañamiento y capacitación.")
             else:
                 st.error("🚨 **Rendimiento Crítico:** Histórico por debajo de los requisitos. Requiere Plan de Acción Inmediato (PIP).")
 
-    # --- GRÁFICO 2: RADAR DE COMPETENCIAS PROMEDIADAS ---
+    # --- RADAR Y COMENTARIOS ---
     if not df_individual.empty and "NOTAS GENERALES" in df_individual.columns:
         st.markdown("#### 🕸️ Mapa de Competencias y Comentarios")
-        
-        # Diccionario para sumar y promediar las competencias de todas las evaluaciones
         dic_competencias = {}
-        
         for notas_str in df_individual["NOTAS GENERALES"].dropna():
             if str(notas_str) != "nan":
                 partes_notas = str(notas_str).split(" | ")
@@ -172,20 +168,15 @@ def mostrar(dfs):
         if dic_competencias:
             categorias = []
             valores = []
-            
-            # Promediamos cada competencia
             for cat, lista_vals in dic_competencias.items():
                 avg_val = sum(lista_vals) / len(lista_vals)
                 categorias.append(cat)
                 valores.append(avg_val)
                 
             col_radar, col_comentarios = st.columns([1.5, 1])
-            
             with col_radar:
                 fig_radar = go.Figure()
-                fig_radar.add_trace(go.Scatterpolar(
-                    r=valores, theta=categorias, fill='toself', name=emp_analisis, line_color='#4A0000'
-                ))
+                fig_radar.add_trace(go.Scatterpolar(r=valores, theta=categorias, fill='toself', name=emp_analisis, line_color='#4A0000'))
                 fig_radar.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 5])), showlegend=False, margin=dict(l=40, r=40, t=20, b=20))
                 st.plotly_chart(fig_radar, use_container_width=True)
                 
@@ -197,11 +188,10 @@ def mostrar(dfs):
                     else: estado = "🔴 A mejorar"
                     st.write(f"- **{cat}:** {val:.2f} ({estado})")
         else:
-            st.info("No hay detalle de competencias registrado para este colaborador.")
+            st.info("No hay detalle de competencias registrado.")
 
     # --- TABLA DE DATOS ---
     with st.expander("📂 Ver registros históricos detallados"):
         cols_mostrar = ["NOMBRES Y APELLIDOS", "PERIODO", "AREA", "CARGO", "PROMEDIO GENERAL", "TIPO DE EVALUACION"]
-        # Filtrar solo columnas que realmente existan en el df para no generar errores
         cols_finales = [c for c in cols_mostrar if c in df_filtrado.columns]
         st.dataframe(df_filtrado[cols_finales], hide_index=True, use_container_width=True)
