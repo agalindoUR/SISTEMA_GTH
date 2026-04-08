@@ -178,63 +178,58 @@ def mostrar(dfs, save_data): # Añadimos save_data aquí
     with tab_dashboard:
         st.markdown("### 📊 Dashboard de Desempeño")
         
-        df_eval = dfs.get("EVALUACIONES", pd.DataFrame()).copy()
-        
-        # 🛡️ BLINDAJE DE COLUMNAS: Limpiamos espacios ocultos y forzamos mayúsculas
-        df_eval.columns = [str(c).strip().upper() for c in df_eval.columns]
-        
-        # Verificamos si la columna existe después de limpiarla
-        if df_eval.empty or "PROMEDIO GENERAL" not in df_eval.columns:
-            st.warning("Aún no hay evaluaciones registradas o no se encuentra la columna 'PROMEDIO GENERAL'. Ve a la pestaña 'Carga Masiva', procesa un archivo y guárdalo.")
-        else:
-            # Limpiamos las comas por puntos y convertimos a número
-            df_eval["PROMEDIO GENERAL"] = df_eval["PROMEDIO GENERAL"].astype(str).str.replace(',', '.').str.strip()
-            df_eval["PROMEDIO GENERAL"] = pd.to_numeric(df_eval["PROMEDIO GENERAL"], errors='coerce')
+        try:
+            # 1. Intentamos obtener la base de datos de forma segura
+            df_eval = dfs.get("EVALUACIONES", pd.DataFrame()).copy()
             
-            # Filtro por periodo (si la columna PERIODO existe)
-            if "PERIODO" in df_eval.columns:
-                periodos_disp = ["Todos"] + df_eval["PERIODO"].dropna().unique().tolist()
-                filtro_periodo = st.selectbox("Filtrar Dashboard por Periodo:", periodos_disp)
-                if filtro_periodo != "Todos":
-                    df_filtrado = df_eval[df_eval["PERIODO"] == filtro_periodo]
-                else:
-                    df_filtrado = df_eval.copy()
+            # 2. Si está completamente vacía, paramos aquí
+            if df_eval.empty:
+                st.warning("⚠️ La base de datos está vacía. Ve a la pestaña 'Carga Masiva', procesa un archivo y haz clic en 'Guardar Resultados'.")
             else:
-                df_filtrado = df_eval.copy()
-            
-            # Ocultamos filas sin nota válida
-            df_filtrado = df_filtrado.dropna(subset=["PROMEDIO GENERAL"])
-            
-            # KPIs Rápidos
-            col_k1, col_k2, col_k3 = st.columns(3)
-            promedio_empresa = df_filtrado["PROMEDIO GENERAL"].mean()
-            total_evaluados = len(df_filtrado)
-            
-            col_k1.metric("Promedio General Empresa", f"{promedio_empresa:.2f}" if pd.notnull(promedio_empresa) else "0.0")
-            col_k2.metric("Total Evaluaciones", total_evaluados)
-            
-            if "ÁREA" in df_filtrado.columns:
-                col_k3.metric("Áreas Evaluadas", df_filtrado["ÁREA"].nunique())
-            else:
-                col_k3.metric("Áreas Evaluadas", 0)
-            
-            st.divider()
-            
-            # Gráficos de barra
-            col_g1, col_g2 = st.columns(2)
-            
-            with col_g1:
-                st.markdown("**Promedio de Desempeño por Área**")
-                if "ÁREA" in df_filtrado.columns and not df_filtrado.empty:
-                    promedio_area = df_filtrado.groupby("ÁREA")["PROMEDIO GENERAL"].mean().reset_index()
-                    st.bar_chart(promedio_area.set_index("ÁREA"))
+                # 3. Forzamos todas las columnas a mayúsculas y sin espacios
+                df_eval.columns = [str(c).strip().upper() for c in df_eval.columns]
+                
+                # 4. Verificamos si la columna existe de forma segura
+                if "PROMEDIO GENERAL" not in df_eval.columns:
+                    st.warning(f"⚠️ Faltan columnas en Google Sheets. Las columnas que Python está leyendo son: {', '.join(df_eval.columns)}")
                 else:
-                    st.info("No hay datos de áreas para graficar.")
+                    # Todo está bien, limpiamos y graficamos
+                    df_eval["PROMEDIO GENERAL"] = df_eval["PROMEDIO GENERAL"].astype(str).str.replace(',', '.').str.strip()
+                    df_eval["PROMEDIO GENERAL"] = pd.to_numeric(df_eval["PROMEDIO GENERAL"], errors='coerce')
                     
-            with col_g2:
-                st.markdown("**Top 5 Colaboradores**")
-                if "NOMBRES Y APELLIDOS" in df_filtrado.columns and not df_filtrado.empty:
-                    top_5 = df_filtrado.nlargest(5, "PROMEDIO GENERAL")[["NOMBRES Y APELLIDOS", "PROMEDIO GENERAL"]]
-                    st.dataframe(top_5, hide_index=True, use_container_width=True)
-                else:
-                    st.info("No hay datos de colaboradores para mostrar.")
+                    if "PERIODO" in df_eval.columns:
+                        periodos_disp = ["Todos"] + df_eval["PERIODO"].dropna().unique().tolist()
+                        filtro_periodo = st.selectbox("Filtrar Dashboard por Periodo:", periodos_disp)
+                        if filtro_periodo != "Todos":
+                            df_filtrado = df_eval[df_eval["PERIODO"] == filtro_periodo]
+                        else:
+                            df_filtrado = df_eval.copy()
+                    else:
+                        df_filtrado = df_eval.copy()
+                    
+                    df_filtrado = df_filtrado.dropna(subset=["PROMEDIO GENERAL"])
+                    
+                    if df_filtrado.empty:
+                        st.info("No hay datos numéricos válidos para mostrar.")
+                    else:
+                        col_k1, col_k2, col_k3 = st.columns(3)
+                        col_k1.metric("Promedio General", f"{df_filtrado['PROMEDIO GENERAL'].mean():.2f}")
+                        col_k2.metric("Evaluaciones", len(df_filtrado))
+                        col_k3.metric("Áreas", df_filtrado["ÁREA"].nunique() if "ÁREA" in df_filtrado.columns else 0)
+                        
+                        st.divider()
+                        col_g1, col_g2 = st.columns(2)
+                        
+                        with col_g1:
+                            st.markdown("**Desempeño por Área**")
+                            if "ÁREA" in df_filtrado.columns:
+                                st.bar_chart(df_filtrado.groupby("ÁREA")["PROMEDIO GENERAL"].mean())
+                                
+                        with col_g2:
+                            st.markdown("**Top Colaboradores**")
+                            if "NOMBRES Y APELLIDOS" in df_filtrado.columns:
+                                st.dataframe(df_filtrado.nlargest(5, "PROMEDIO GENERAL")[["NOMBRES Y APELLIDOS", "PROMEDIO GENERAL"]], hide_index=True)
+                                
+        except Exception as e:
+            # Si CUALQUIER COSA sale mal, el paracaídas se abre y muestra esto en lugar del error rojo:
+            st.error("Aún no hay datos configurados correctamente en la hoja de EVALUACIONES de Google Sheets.")
