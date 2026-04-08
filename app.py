@@ -24,7 +24,6 @@ import repvencimientos as mod_vencimientos
 import repcumpleanos as mod_cumpleanos
 import repvacaciones as mod_vacaciones
 import reportegeneral as mod_reportegeneral
-import repdesempeno as mod_repdesempeno
 import gestor_evaluaciones as mod_gestor_evaluaciones
 import mod_registro
 import mod_nomina
