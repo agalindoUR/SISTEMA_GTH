@@ -220,7 +220,7 @@ def mostrar(dfs, save_data): # Añadimos save_data aquí
                         col_k1, col_k2, col_k3 = st.columns(3)
                         col_k1.metric("Promedio General", f"{df_filtrado['PROMEDIO GENERAL'].mean():.2f}")
                         col_k2.metric("Evaluaciones", len(df_filtrado))
-                        col_k3.metric("Áreas", df_filtrado["AREA"].nunique() if "ÁREA" in df_filtrado.columns else 0)
+                        col_k3.metric("Áreas", df_filtrado["AREA"].nunique() if "AREA" in df_filtrado.columns else 0)
                         
                         st.divider()
                         col_g1, col_g2 = st.columns(2)
