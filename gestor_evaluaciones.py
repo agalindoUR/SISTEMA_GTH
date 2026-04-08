@@ -66,14 +66,19 @@ def mostrar(dfs, save_data): # Añadimos save_data aquí
                             cargo_final = "No registrado"
                             area_final = "No registrada"
 
-                            # Cruce mágico con la base de PERSONAL
-                            if not df_per.empty and "dni" in df_per.columns:
-                                match = df_per[df_per["dni"].astype(str).str.strip() == empleado_id]
+                            # --- INICIO DEL NUEVO CRUCE MÁGICO ---
+                            # Forzamos los encabezados de PERSONAL a mayúsculas para evitar errores
+                            if not df_per.empty:
+                                df_per.columns = [str(c).strip().upper() for c in df_per.columns]
+
+                            if not df_per.empty and "DNI" in df_per.columns:
+                                match = df_per[df_per["DNI"].astype(str).str.strip() == empleado_id]
                                 if not match.empty:
-                                    nombres_completos = f"{match.iloc[0].get('APELLIDOS', match.iloc[0].get('apellidos', ''))} {match.iloc[0].get('NOMBRES', match.iloc[0].get('nombres', ''))}".strip()
-                                    cargo_final = match.iloc[0].get('CARGO', match.iloc[0].get('cargo', 'No registrado'))
-                                    area_final = match.iloc[0].get('AREA', match.iloc[0].get('area', 'No registrada'))
-                                    dni_final = match.iloc[0].get('DNI', match.iloc[0].get('dni', empleado_id))
+                                    nombres_completos = f"{match.iloc[0].get('APELLIDOS', '')} {match.iloc[0].get('NOMBRES', '')}".strip()
+                                    cargo_final = match.iloc[0].get('CARGO', 'No registrado')
+                                    area_final = match.iloc[0].get('AREA', 'No registrada')
+                                    dni_final = match.iloc[0].get('DNI', empleado_id)
+                            # --- FIN DEL NUEVO CRUCE MÁGICO ---
 
                             diccionario_notas = {}
                             
