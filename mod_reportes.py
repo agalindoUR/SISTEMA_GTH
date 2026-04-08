@@ -21,11 +21,10 @@ def obtener_promedios_competencias(df_subset):
                             dic_competencias[cat].append(val)
                         except:
                             pass
-    # Retornar diccionario con promedios
     return {k: sum(v)/len(v) for k, v in dic_competencias.items()}
 
 def mostrar(dfs):
-    st.markdown("<h2 style='color: #4A0000;'>📊 Dashboard de Desempeño Consolidado</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='color: #FFD700;'>📊 Dashboard de Desempeño Consolidado</h2>", unsafe_allow_html=True)
 
     if "EVALUACIONES" not in dfs or dfs["EVALUACIONES"].empty:
         st.warning("⚠️ No se encontraron datos en 'EVALUACIONES'. Por favor, sube y procesa un archivo en la pestaña de Evaluaciones.")
@@ -89,7 +88,7 @@ def mostrar(dfs):
     fig_evolucion = px.bar(df_grafico, x=col_agrupacion, y="PROMEDIO GENERAL", color="PERIODO", barmode="group", text_auto='.2f', color_discrete_sequence=px.colors.qualitative.Bold)
     st.plotly_chart(fig_evolucion, use_container_width=True)
 
-    # --- NUEVO: COMPARATIVA DIRECTA (CARA A CARA) ---
+    # --- COMPARATIVA DIRECTA (CARA A CARA) ---
     st.markdown("---")
     st.subheader("⚖️ Comparativa Directa (Cara a Cara)")
     st.write("Selecciona entidades específicas para analizar sus diferencias en cada competencia.")
@@ -110,6 +109,7 @@ def mostrar(dfs):
         
         datos_radar = []
         dic_promedios_entidades = {}
+        todas_las_competencias = set()
 
         # Procesar datos de los seleccionados
         for entidad in seleccionados_vs:
@@ -119,40 +119,59 @@ def mostrar(dfs):
             
             for comp, val in promedios_comp.items():
                 datos_radar.append({"Entidad": entidad, "Competencia": comp, "Puntaje": val})
+                todas_las_competencias.add(comp)
 
         with col_graf_vs:
             if datos_radar:
                 df_radar = pd.DataFrame(datos_radar)
-                fig_vs = px.line_polar(df_radar, r="Puntaje", theta="Competencia", color="Entidad", line_close=True, markers=True, template="plotly_white")
-                fig_vs.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 5])), margin=dict(l=40, r=40, t=20, b=20))
+                fig_vs = px.line_polar(df_radar, r="Puntaje", theta="Competencia", color="Entidad", line_close=True, markers=True)
+                fig_vs.update_layout(
+                    polar=dict(radialaxis=dict(visible=True, range=[0, 5])), 
+                    margin=dict(l=40, r=40, t=20, b=20),
+                    paper_bgcolor="rgba(0,0,0,0)", # Fondo transparente
+                    plot_bgcolor="rgba(0,0,0,0)"
+                )
                 st.plotly_chart(fig_vs, use_container_width=True)
-            else:
-                st.info("No hay detalles de competencias para graficar.")
 
         with col_txt_vs:
-            st.markdown("#### 💡 Conclusión del Análisis")
-            if len(seleccionados_vs) == 2:
-                ent_A, ent_B = seleccionados_vs[0], seleccionados_vs[1]
-                comps_A = dic_promedios_entidades[ent_A]
-                comps_B = dic_promedios_entidades[ent_B]
+            # MAGIA VISUAL: Caja con fondo oscuro semi-transparente y texto claro
+            html_analisis = """
+            <div style='background-color: rgba(0, 0, 0, 0.4); padding: 20px; border-radius: 10px; border-left: 5px solid #FFD700; color: #FFFFFF;'>
+                <h4 style='color: #FFD700; margin-top: 0; font-family: sans-serif;'>💡 Conclusión Analítica</h4>
+            """
+            
+            # MAGIA ANALÍTICA: Evaluar competencia por competencia
+            for comp in sorted(list(todas_las_competencias)):
+                puntajes_comp = []
+                for entidad, promedios in dic_promedios_entidades.items():
+                    if comp in promedios:
+                        puntajes_comp.append({"entidad": entidad, "puntaje": promedios[comp]})
                 
-                comentarios = []
-                for comp in set(comps_A.keys()).intersection(set(comps_B.keys())):
-                    valA = comps_A[comp]
-                    valB = comps_B[comp]
-                    diff = valA - valB
+                if len(puntajes_comp) > 1:
+                    # Ordenar de mayor a menor
+                    puntajes_comp_ordenados = sorted(puntajes_comp, key=lambda x: x["puntaje"], reverse=True)
+                    ganador = puntajes_comp_ordenados[0]
+                    ultimo = puntajes_comp_ordenados[-1]
                     
-                    if diff >= 0.4:
-                        comentarios.append(f"🟢 **{ent_A}** supera claramente a {ent_B} en **{comp}** ({valA:.2f} vs {valB:.2f}).")
-                    elif diff <= -0.4:
-                        comentarios.append(f"🔴 **{ent_B}** es superior en **{comp}** ({valB:.2f} vs {valA:.2f}).")
+                    diferencia = ganador["puntaje"] - ultimo["puntaje"]
+                    
+                    html_analisis += f"<div style='margin-bottom: 12px;'><b style='color: #FFFFAA;'>{comp}:</b><br>"
+                    
+                    if diferencia <= 0.2:
+                        html_analisis += f"🤝 <i>Empate técnico.</i> Todas las partes promedian de forma muy similar (Aprox. {ganador['puntaje']:.2f})."
                     else:
-                        comentarios.append(f"⚪ Nivel muy parejo en **{comp}** (Aprox. {valA:.2f}).")
-                
-                for c in comentarios:
-                    st.write(c)
-            else:
-                st.write(f"Comparando {len(seleccionados_vs)} entidades. Revisa el gráfico de radar para identificar visualmente quién abarca mayor área en cada competencia.")
+                        html_analisis += f"🏆 <b>{ganador['entidad']}</b> lidera con <b>{ganador['puntaje']:.2f}</b>. "
+                        if len(puntajes_comp_ordenados) > 2:
+                            html_analisis += f"Por otro lado, <b>{ultimo['entidad']}</b> presenta la mayor oportunidad de mejora ({ultimo['puntaje']:.2f})."
+                        else:
+                            html_analisis += f"Superando a <b>{ultimo['entidad']}</b> ({ultimo['puntaje']:.2f})."
+                    
+                    html_analisis += "</div>"
+
+            html_analisis += "</div>"
+            
+            # Mostrar el HTML renderizado
+            st.markdown(html_analisis, unsafe_allow_html=True)
 
     elif len(seleccionados_vs) == 1:
         st.info("Selecciona al menos 2 opciones para iniciar la comparativa.")
@@ -165,13 +184,13 @@ def mostrar(dfs):
         st.markdown("**Top Mejores Colaboradores**")
         df_top_emp = df_filtrado.groupby("NOMBRES Y APELLIDOS")["PROMEDIO GENERAL"].mean().reset_index().sort_values(by="PROMEDIO GENERAL", ascending=False).head(5)
         fig_top = px.bar(df_top_emp, y="NOMBRES Y APELLIDOS", x="PROMEDIO GENERAL", orientation='h', text_auto='.2f', color="PROMEDIO GENERAL", color_continuous_scale="Reds")
-        fig_top.update_layout(yaxis={'categoryorder':'total ascending'}, coloraxis_showscale=False, margin=dict(l=0, r=0, t=0, b=0), height=250)
+        fig_top.update_layout(yaxis={'categoryorder':'total ascending'}, coloraxis_showscale=False, margin=dict(l=0, r=0, t=0, b=0), height=250, paper_bgcolor="rgba(0,0,0,0)")
         st.plotly_chart(fig_top, use_container_width=True)
     with r2:
         st.markdown("**Desempeño por Áreas**")
         df_top_area = df_filtrado.groupby("AREA")["PROMEDIO GENERAL"].mean().reset_index().sort_values(by="PROMEDIO GENERAL", ascending=False)
         fig_area = px.bar(df_top_area, x="AREA", y="PROMEDIO GENERAL", text_auto='.2f', color="AREA", color_discrete_sequence=px.colors.qualitative.Pastel)
-        fig_area.update_layout(showlegend=False, margin=dict(l=0, r=0, t=0, b=0), height=250)
+        fig_area.update_layout(showlegend=False, margin=dict(l=0, r=0, t=0, b=0), height=250, paper_bgcolor="rgba(0,0,0,0)")
         st.plotly_chart(fig_area, use_container_width=True)
 
     # --- ANÁLISIS INDIVIDUAL PROFUNDO ---
@@ -183,7 +202,7 @@ def mostrar(dfs):
         emp_analisis = st.selectbox("Selecciona un colaborador:", empleados_sel)
         df_individual = df_filtrado[df_filtrado["NOMBRES Y APELLIDOS"] == emp_analisis]
         if not df_individual.empty:
-            st.markdown(f"**Puntaje Promedio Histórico:** <h1 style='color: #4A0000;'>{df_individual['PROMEDIO GENERAL'].mean():.2f}</h1>", unsafe_allow_html=True)
+            st.markdown(f"**Puntaje Promedio Histórico:** <h1 style='color: #FFD700;'>{df_individual['PROMEDIO GENERAL'].mean():.2f}</h1>", unsafe_allow_html=True)
 
     with col_diag:
         if not df_individual.empty:
@@ -199,8 +218,8 @@ def mostrar(dfs):
             col_radar, col_comentarios = st.columns([1.5, 1])
             with col_radar:
                 fig_radar = go.Figure()
-                fig_radar.add_trace(go.Scatterpolar(r=list(promedios_ind.values()), theta=list(promedios_ind.keys()), fill='toself', name=emp_analisis, line_color='#4A0000'))
-                fig_radar.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 5])), showlegend=False, margin=dict(l=40, r=40, t=20, b=20))
+                fig_radar.add_trace(go.Scatterpolar(r=list(promedios_ind.values()), theta=list(promedios_ind.keys()), fill='toself', name=emp_analisis, line_color='#FFD700'))
+                fig_radar.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 5])), showlegend=False, margin=dict(l=40, r=40, t=20, b=20), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
                 st.plotly_chart(fig_radar, use_container_width=True)
             with col_comentarios:
                 st.markdown("**Desglose:**")
