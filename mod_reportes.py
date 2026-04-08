@@ -11,15 +11,23 @@ def mostrar(dfs):
         st.warning("⚠️ No se encontraron datos en 'EVALUACIONES'. Por favor, procesa y guarda un archivo en la pestaña de Evaluación.")
         return
 
-    # Usamos una copia para no alterar el dataframe original
-    df = dfs["EVALUACIONES"].copy()
+    # Usamos .get() y una copia por seguridad para no alterar el dataframe original ni crashear si no existe
+    df = dfs.get("EVALUACIONES", pd.DataFrame()).copy()
 
-    # Esta línea elimina espacios en blanco al inicio y al final de los nombres de todas las columnas
-    df.columns = df.columns.str.strip()
-    # Limpiamos los números por si Google Sheets los guardó con comas o espacios
-    df["PROMEDIO GENERAL"] = df["PROMEDIO GENERAL"].astype(str).str.replace(',', '.').str.strip()
-    df["PROMEDIO GENERAL"] = pd.to_numeric(df["PROMEDIO GENERAL"], errors='coerce')
-    df = df.dropna(subset=["PROMEDIO GENERAL"]) # Oculta filas donde no haya nota
+    if not df.empty:
+        # MAGIA AQUÍ: Elimina espacios en blanco Y fuerza a que todo sea MAYÚSCULAS
+        df.columns = df.columns.str.strip().str.upper()
+        
+        # Escudo protector: verificamos que la columna realmente exista antes de tocarla
+        if "PROMEDIO GENERAL" in df.columns:
+            # Limpiamos los números por si Google Sheets los guardó con comas o espacios
+            df["PROMEDIO GENERAL"] = df["PROMEDIO GENERAL"].astype(str).str.replace(',', '.').str.strip()
+            df["PROMEDIO GENERAL"] = pd.to_numeric(df["PROMEDIO GENERAL"], errors='coerce')
+            df = df.dropna(subset=["PROMEDIO GENERAL"]) # Oculta filas donde no haya nota
+        else:
+            import streamlit as st
+            st.error("⚠️ Error: No se encontró la columna 'PROMEDIO GENERAL' (revisa cómo está escrita en tu Excel/Sheets).")
+            return # Detiene la ejecución aquí para que no siga dando errores más abajo
 
     # --- BARRA LATERAL DE FILTROS ---
     st.sidebar.header("🔍 Filtros de Análisis")
