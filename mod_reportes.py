@@ -14,7 +14,8 @@ def mostrar(dfs):
     # Usamos una copia para no alterar el dataframe original
     df = dfs["EVALUACIONES"].copy()
 
-    # Asegurarnos de que el promedio sea numérico para evitar errores en los gráficos
+    # Limpiamos los números por si Google Sheets los guardó con comas o espacios
+    df["PROMEDIO GENERAL"] = df["PROMEDIO GENERAL"].astype(str).str.replace(',', '.').str.strip()
     df["PROMEDIO GENERAL"] = pd.to_numeric(df["PROMEDIO GENERAL"], errors='coerce')
     df = df.dropna(subset=["PROMEDIO GENERAL"]) # Oculta filas donde no haya nota
 
