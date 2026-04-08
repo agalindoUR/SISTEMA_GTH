@@ -25,7 +25,6 @@ def mostrar(dfs):
             df["PROMEDIO GENERAL"] = pd.to_numeric(df["PROMEDIO GENERAL"], errors='coerce')
             df = df.dropna(subset=["PROMEDIO GENERAL"]) # Oculta filas donde no haya nota
         else:
-            import streamlit as st
             st.error("⚠️ Error: No se encontró la columna 'PROMEDIO GENERAL' (revisa cómo está escrita en tu Excel/Sheets).")
             return # Detiene la ejecución aquí para que no siga dando errores más abajo
 
