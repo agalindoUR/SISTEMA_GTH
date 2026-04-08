@@ -142,7 +142,7 @@ def mostrar(dfs):
     with st.expander("📂 Ver registros históricos filtrados"):
         # Mostramos unas columnas clave si existen
         cols_mostrar = ["NOMBRES Y APELLIDOS", "PERIODO", "PROMEDIO GENERAL"]
-        if "ÁREA" in df_filtrado.columns and "CARGO" in df_filtrado.columns:
-            cols_mostrar = ["NOMBRES Y APELLIDOS", "PERIODO", "ÁREA", "CARGO", "PROMEDIO GENERAL"]
+        if "AREA" in df_filtrado.columns and "CARGO" in df_filtrado.columns:
+            cols_mostrar = ["NOMBRES Y APELLIDOS", "PERIODO", "AREA", "CARGO", "PROMEDIO GENERAL"]
             
         st.dataframe(df_filtrado[cols_mostrar], hide_index=True, use_container_width=True)
