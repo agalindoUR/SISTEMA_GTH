@@ -28,9 +28,6 @@ import repdesempeno as mod_repdesempeno
 import gestor_evaluaciones as mod_gestor_evaluaciones
 import mod_registro
 import mod_nomina
-import mod_consulta
-import mod_documentos
-import mod_calculos_consulta
 
 
 st.set_page_config(page_title="Gestión Roosevelt", page_icon="🎓", layout="wide")
