@@ -66,27 +66,35 @@ def mostrar(dfs, save_data): # Añadimos save_data aquí
                             cargo_final = "No registrado"
                             area_final = "No registrada"
 
-                            # --- INICIO DEL NUEVO CRUCE MÁGICO V2 ---
-                            # 1. Forzamos mayúsculas y QUITAMOS TILDES a las columnas de PERSONAL
+                            # --- INICIO DEL NUEVO CRUCE MÁGICO V3 ---
                             if not df_per.empty:
                                 df_per.columns = df_per.columns.str.strip().str.upper().str.replace('Á', 'A').str.replace('É', 'E').str.replace('Í', 'I').str.replace('Ó', 'O').str.replace('Ú', 'U')
 
                             if not df_per.empty and "DNI" in df_per.columns:
-                                # 2. Limpiamos el DNI del Excel (le quitamos el '.0' si Python lo puso)
+                                # Limpiamos el DNI del Excel
                                 empleado_id_clean = empleado_id.replace('.0', '')
                                 
-                                # 3. Limpiamos los DNIs de la hoja de PERSONAL
+                                # Limpiamos los DNIs de la hoja de PERSONAL
                                 df_per_dni_clean = df_per["DNI"].astype(str).str.strip().str.replace('.0', '')
                                 
-                                # 4. Buscamos el cruce exacto
+                                # Buscamos el cruce exacto
                                 match = df_per[df_per_dni_clean == empleado_id_clean]
                                 
                                 if not match.empty:
+                                    # Extraemos nombres y cargo
                                     nombres_completos = f"{match.iloc[0].get('APELLIDOS', '')} {match.iloc[0].get('NOMBRES', '')}".strip()
                                     cargo_final = match.iloc[0].get('CARGO', 'No registrado')
-                                    area_final = match.iloc[0].get('AREA', 'No registrada')
                                     dni_final = match.iloc[0].get('DNI', empleado_id_clean)
-                            # --- FIN DEL NUEVO CRUCE MÁGICO V2 ---
+                                    
+                                    # Extraemos el ÁREA con un buscador más agresivo
+                                    area_extraida = match.iloc[0].get('AREA', match.iloc[0].get('DEPARTAMENTO', match.iloc[0].get('GERENCIA', 'No registrada')))
+                                    
+                                    # Si por algún motivo la celda está en blanco (NaN), forzamos texto
+                                    if pd.isna(area_extraida) or str(area_extraida).strip() == "" or str(area_extraida).strip().lower() == "nan":
+                                        area_final = "No registrada"
+                                    else:
+                                        area_final = str(area_extraida).strip()
+                            # --- FIN DEL NUEVO CRUCE MÁGICO V3 ---
 
                             diccionario_notas = {}
                             
