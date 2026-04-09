@@ -176,22 +176,94 @@ def mostrar(dfs):
     elif len(seleccionados_vs) == 1:
         st.info("Selecciona al menos 2 opciones para iniciar la comparativa.")
 
-    # --- RANKINGS ---
+    # --- RANKINGS AVANZADOS (NUEVA SECCIÓN REEMPLAZADA) ---
     st.markdown("---")
-    st.subheader("🏆 Rankings Destacados")
-    r1, r2 = st.columns(2)
-    with r1:
-        st.markdown("**Top Mejores Colaboradores**")
-        df_top_emp = df_filtrado.groupby("NOMBRES Y APELLIDOS")["PROMEDIO GENERAL"].mean().reset_index().sort_values(by="PROMEDIO GENERAL", ascending=False).head(5)
-        fig_top = px.bar(df_top_emp, y="NOMBRES Y APELLIDOS", x="PROMEDIO GENERAL", orientation='h', text_auto='.2f', color="PROMEDIO GENERAL", color_continuous_scale="Reds")
-        fig_top.update_layout(yaxis={'categoryorder':'total ascending'}, coloraxis_showscale=False, margin=dict(l=0, r=0, t=0, b=0), height=250, paper_bgcolor="rgba(0,0,0,0)")
-        st.plotly_chart(fig_top, use_container_width=True)
-    with r2:
-        st.markdown("**Desempeño por Áreas**")
-        df_top_area = df_filtrado.groupby("AREA")["PROMEDIO GENERAL"].mean().reset_index().sort_values(by="PROMEDIO GENERAL", ascending=False)
-        fig_area = px.bar(df_top_area, x="AREA", y="PROMEDIO GENERAL", text_auto='.2f', color="AREA", color_discrete_sequence=px.colors.qualitative.Pastel)
-        fig_area.update_layout(showlegend=False, margin=dict(l=0, r=0, t=0, b=0), height=250, paper_bgcolor="rgba(0,0,0,0)")
+    st.subheader("🏆 Rankings de Desempeño")
+
+    # Filtros de Ranking
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        modo_orden = st.radio("Ordenar por puntaje:", ["Mayor a Menor (Top 🏆)", "Menor a Mayor (Mejora 📈)"], horizontal=True)
+        es_ascendente = True if "Menor" in modo_orden else False
+    
+    with col2:
+        col_tipo = "TIPO DE TRABAJADORA" if "TIPO DE TRABAJADORA" in df.columns else ("TIPO DE EVALUACION" if "TIPO DE EVALUACION" in df.columns else None)
+        filtro_tipo = ["Todos"]
+        if col_tipo:
+            filtro_tipo += sorted(df[col_tipo].dropna().unique().tolist())
+        tipo_sel = st.selectbox("Filtrar por tipo de colaborador:", filtro_tipo)
+
+    # Aplicar filtros al DF de ranking
+    df_rank = df_filtrado.copy()
+    if tipo_sel != "Todos" and col_tipo:
+        df_rank = df_rank[df_rank[col_tipo] == tipo_sel]
+
+    # Agrupar para tener un solo valor por persona/área
+    df_rank_emp = df_rank.groupby("NOMBRES Y APELLIDOS")["PROMEDIO GENERAL"].mean().reset_index()
+    df_rank_emp = df_rank_emp.sort_values(by="PROMEDIO GENERAL", ascending=es_ascendente)
+    
+    df_rank_area = df_rank.groupby("AREA")["PROMEDIO GENERAL"].mean().reset_index()
+    df_rank_area = df_rank_area.sort_values(by="PROMEDIO GENERAL", ascending=es_ascendente)
+
+    # Configuración de Colores (Semáforo 1 al 5)
+    color_scale = [
+        [0.0, "rgb(200, 0, 0)"],   # Rojo
+        [0.5, "rgb(255, 255, 0)"], # Amarillo
+        [1.0, "rgb(0, 150, 0)"]    # Verde
+    ]
+
+    tab1, tab2 = st.tabs(["👤 Ranking de Colaboradores", "🏢 Ranking por Áreas"])
+
+    with tab1:
+        st.write(f"Mostrando {len(df_rank_emp)} colaboradores. Si la lista es larga, usa la barra de desplazamiento a la derecha del gráfico.")
+        altura_dinamica = max(400, len(df_rank_emp) * 25)
+        
+        fig_emp = px.bar(
+            df_rank_emp, 
+            x="PROMEDIO GENERAL", 
+            y="NOMBRES Y APELLIDOS",
+            orientation='h',
+            text="PROMEDIO GENERAL",
+            color="PROMEDIO GENERAL",
+            color_continuous_scale=color_scale,
+            range_color=[1, 5], 
+            labels={"PROMEDIO GENERAL": "Puntaje", "NOMBRES Y APELLIDOS": "Colaborador"}
+        )
+        fig_emp.update_traces(texttemplate='%{text:.2f}', textposition='outside')
+        fig_emp.update_layout(
+            height=altura_dinamica, 
+            yaxis={'categoryorder':'total ascending' if es_ascendente else 'total descending'},
+            coloraxis_showscale=False,
+            margin=dict(l=200, r=40, t=20, b=20),
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)"
+        )
+        st.plotly_chart(fig_emp, use_container_width=True)
+
+    with tab2:
+        altura_area = max(400, len(df_rank_area) * 35)
+        fig_area = px.bar(
+            df_rank_area, 
+            x="PROMEDIO GENERAL", 
+            y="AREA",
+            orientation='h',
+            text="PROMEDIO GENERAL",
+            color="PROMEDIO GENERAL",
+            color_continuous_scale=color_scale,
+            range_color=[1, 5],
+            labels={"PROMEDIO GENERAL": "Puntaje", "AREA": "Área"}
+        )
+        fig_area.update_traces(texttemplate='%{text:.2f}', textposition='outside')
+        fig_area.update_layout(
+            height=altura_area, 
+            yaxis={'categoryorder':'total ascending' if es_ascendente else 'total descending'},
+            coloraxis_showscale=False,
+            margin=dict(l=200, r=40, t=20, b=20),
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)"
+        )
         st.plotly_chart(fig_area, use_container_width=True)
+
 
     # --- ANÁLISIS INDIVIDUAL PROFUNDO ---
     st.markdown("---")
@@ -199,7 +271,7 @@ def mostrar(dfs):
     col_sel, col_diag = st.columns([1, 2])
     
     with col_sel:
-        emp_analisis = st.selectbox("Selecciona un colaborador:", empleados_sel)
+        emp_analisis = st.selectbox("Selecciona un colaborador para diagnóstico:", empleados_sel)
         df_individual = df_filtrado[df_filtrado["NOMBRES Y APELLIDOS"] == emp_analisis]
         if not df_individual.empty:
             st.markdown(f"**Puntaje Promedio Histórico:** <h1 style='color: #FFD700;'>{df_individual['PROMEDIO GENERAL'].mean():.2f}</h1>", unsafe_allow_html=True)
@@ -228,5 +300,5 @@ def mostrar(dfs):
                     st.write(f"- **{cat}:** {val:.2f} ({estado})")
 
     with st.expander("📂 Ver registros históricos detallados"):
-        cols_mostrar = ["NOMBRES Y APELLIDOS", "PERIODO", "AREA", "CARGO", "PROMEDIO GENERAL", "TIPO DE EVALUACION"]
+        cols_mostrar = ["NOMBRES Y APELLIDOS", "PERIODO", "AREA", "CARGO", "PROMEDIO GENERAL", "TIPO DE EVALUACION", "TIPO DE TRABAJADORA"]
         st.dataframe(df_filtrado[[c for c in cols_mostrar if c in df_filtrado.columns]], hide_index=True, use_container_width=True)
