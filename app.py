@@ -1731,6 +1731,34 @@ else:
                                                             dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new])], ignore_index=True)
                                                             save_data(dfs)
                                                             st.rerun()
+                                                            # ==========================================
+                                        # PESTAÑA: INVESTIGACIÓN
+                                        # ==========================================
+                                        with tabs[12]:
+                                            st.header("Investigación")
+                                            
+                                            # --- CÓDIGO NUEVO: MOSTRAR EL HISTORIAL EN PANTALLA ---
+                                            st.subheader("📋 Historial de Registros de Investigación")
+                                            df_inv = dfs["INVESTIGACION"]
+                                            # Filtramos por el DNI del empleado actual
+                                            df_inv_emp = df_inv[df_inv["dni"].astype(str) == str(dni_buscado)]
+                                            
+                                            if not df_inv_emp.empty:
+                                                # Si hay datos, mostramos la tabla
+                                                st.dataframe(df_inv_emp, use_container_width=True)
+                                            else:
+                                                # Si no hay datos, mostramos este mensaje
+                                                st.info("No hay registros de investigación para este empleado.")
+                                                
+                                            st.markdown("---")
+                                            st.subheader("➕ Agregar Nuevo Registro")
+                                            # ------------------------------------------------------
+
+                                            # Selector del tipo de registro (Esto ya lo tienes)
+                                            tipo_registro = st.selectbox(
+                                                "Tipo de Registro",
+                                                ["Publicación Científica", "Proyectos de Investigación", "Semillero de Investigación"]
+                                            )
                                 
                                 with col_b:
                                         with st.expander("📝 Editar / Eliminar"):
