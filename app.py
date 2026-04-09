@@ -737,7 +737,7 @@ else:
                             # ==========================================
                             # NUEVO DISEÑO: INVESTIGACIÓN (TARJETAS VISUALES)
                             # ==========================================
-                            elif h_name == "INVESTIGACION":
+                            if h_name == "INVESTIGACION":
                                 col_izq, col_der = st.columns([2, 1])
                                 
                                 # --- LÓGICA DE LECTURA ---
