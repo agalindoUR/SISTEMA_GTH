@@ -142,7 +142,14 @@ def mostrar(dfs):
                     polar=dict(radialaxis=dict(visible=True, range=[0, 5])), 
                     margin=dict(l=40, r=40, t=20, b=20),
                     paper_bgcolor="rgba(0,0,0,0)",
-                    plot_bgcolor="rgba(0,0,0,0)"
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    # --- MEJORA DE LEYENDA AQUÍ ---
+                    legend=dict(
+                        bgcolor="rgba(20, 20, 20, 0.8)", 
+                        bordercolor="#FFD700",
+                        borderwidth=1,
+                        font=dict(color="white")
+                    )
                 )
                 st.plotly_chart(fig_vs, use_container_width=True)
 
@@ -153,28 +160,39 @@ def mostrar(dfs):
                 <h4 style='color: #FFD700; margin-top: 0; font-family: sans-serif;'>🧠 Análisis Profundo</h4>
             """
             
-            # 1. Calcular promedios generales y encontrar fortalezas
+            # 1. Calcular promedios generales, fortalezas y debilidades
             resumen_entidades = {}
             for entidad, promedios in dic_promedios_entidades.items():
                 if promedios:
                     promedio_total = sum(promedios.values()) / len(promedios)
                     mejor_comp = max(promedios, key=promedios.get)
-                    resumen_entidades[entidad] = {"promedio": promedio_total, "mejor": mejor_comp, "val_mejor": promedios[mejor_comp]}
+                    peor_comp = min(promedios, key=promedios.get)
+                    resumen_entidades[entidad] = {
+                        "promedio": promedio_total, 
+                        "mejor": mejor_comp, "val_mejor": promedios[mejor_comp],
+                        "peor": peor_comp, "val_peor": promedios[peor_comp]
+                    }
             
             # Ordenar para ver quién tiene el mejor promedio general
             entidades_ordenadas = sorted(resumen_entidades.items(), key=lambda x: x[1]["promedio"], reverse=True)
             
             html_analisis += f"<p><b>🏆 Desempeño Global:</b> <b>{entidades_ordenadas[0][0]}</b> lidera la comparativa con un promedio global de <b>{entidades_ordenadas[0][1]['promedio']:.2f}</b>.</p>"
             
+            # Bloque de Fortalezas
             html_analisis += "<p><b>🌟 Mayores Fortalezas:</b></p><ul>"
             for ent, datos in entidades_ordenadas:
                 html_analisis += f"<li><b>{ent}:</b> {datos['mejor']} ({datos['val_mejor']:.2f})</li>"
             html_analisis += "</ul>"
 
-            # 2. Encontrar la mayor brecha (donde hay más diferencia entre ellos)
+            # Bloque de Oportunidades de Mejora
+            html_analisis += "<p><b>🛠️ Oportunidades de Mejora:</b></p><ul>"
+            for ent, datos in entidades_ordenadas:
+                html_analisis += f"<li><b>{ent}:</b> {datos['peor']} ({datos['val_peor']:.2f})</li>"
+            html_analisis += "</ul>"
+
+            # 2. Encontrar la mayor brecha
             mayor_brecha = 0
             comp_mayor_brecha = ""
-            detalle_brecha = ""
 
             for comp in todas_las_competencias:
                 puntajes = [dic_promedios_entidades[ent].get(comp, 0) for ent in seleccionados_vs if comp in dic_promedios_entidades[ent]]
@@ -185,7 +203,7 @@ def mostrar(dfs):
                         comp_mayor_brecha = comp
             
             if mayor_brecha > 0.3:
-                html_analisis += f"<p style='color: #FFAA00;'><b>⚠️ Brecha Crítica Detectada:</b> La diferencia más drástica entre los evaluados se encuentra en <b>{comp_mayor_brecha}</b>, con una diferencia de <b>{mayor_brecha:.2f} puntos</b> entre el valor más alto y el más bajo. Es el punto clave a revisar.</p>"
+                html_analisis += f"<p style='color: #FFAA00;'><b>⚠️ Brecha Crítica Detectada:</b> La diferencia más drástica entre los evaluados se encuentra en <b>{comp_mayor_brecha}</b>, con una diferencia de <b>{mayor_brecha:.2f} puntos</b>. Es el punto clave a revisar.</p>"
             else:
                 html_analisis += f"<p style='color: #00FFaa;'><b>🤝 Perfiles Similares:</b> No se detectan brechas críticas mayores a 0.3 puntos. Los evaluados tienen competencias muy parejas.</p>"
 
@@ -246,21 +264,20 @@ def mostrar(dfs):
         )
         fig_emp.update_traces(texttemplate='%{text:.2f}', textposition='outside')
         
-        # --- AQUÍ AÑADIMOS LAS GUÍAS VISUALES (REJILLA Y NÚMEROS) ---
         fig_emp.update_layout(
             height=altura_dinamica, 
             yaxis={'categoryorder':'total ascending' if es_ascendente else 'total descending'},
             xaxis=dict(
-                showgrid=True, # Mostrar líneas de fondo
+                showgrid=True, 
                 gridwidth=1, 
-                gridcolor='rgba(255, 255, 255, 0.2)', # Color blanco semi transparente para que no moleste
-                tickvals=[1, 2, 3, 4, 5], # Forzar que muestre los números del 1 al 5
-                range=[0, 5.3] # Dar un poco de espacio extra a la derecha para el texto
+                gridcolor='rgba(255, 255, 255, 0.2)', 
+                tickvals=[1, 2, 3, 4, 5], 
+                range=[0, 5.3] 
             ),
             coloraxis_showscale=False,
             margin=dict(l=200, r=40, t=20, b=20),
             paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0.1)" # Un fondo ultra tenue para que se vean mejor las barras
+            plot_bgcolor="rgba(0,0,0,0.1)" 
         )
         st.plotly_chart(fig_emp, use_container_width=True)
 
@@ -279,7 +296,6 @@ def mostrar(dfs):
         )
         fig_area.update_traces(texttemplate='%{text:.2f}', textposition='outside')
         
-        # --- IGUAL PARA EL GRÁFICO DE ÁREAS ---
         fig_area.update_layout(
             height=altura_area, 
             yaxis={'categoryorder':'total ascending' if es_ascendente else 'total descending'},
@@ -324,7 +340,13 @@ def mostrar(dfs):
             with col_radar:
                 fig_radar = go.Figure()
                 fig_radar.add_trace(go.Scatterpolar(r=list(promedios_ind.values()), theta=list(promedios_ind.keys()), fill='toself', name=emp_analisis, line_color='#FFD700'))
-                fig_radar.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 5])), showlegend=False, margin=dict(l=40, r=40, t=20, b=20), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+                fig_radar.update_layout(
+                    polar=dict(radialaxis=dict(visible=True, range=[0, 5])), 
+                    showlegend=False, 
+                    margin=dict(l=40, r=40, t=20, b=20), 
+                    paper_bgcolor="rgba(0,0,0,0)", 
+                    plot_bgcolor="rgba(0,0,0,0)"
+                )
                 st.plotly_chart(fig_radar, use_container_width=True)
             with col_comentarios:
                 st.markdown("**Desglose:**")
