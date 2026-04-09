@@ -1606,7 +1606,14 @@ else:
                                                     submit_inv = st.form_submit_button("💾 Guardar Registro de Investigación")
                                                     
                                                     if submit_inv:
+                                                        # Generamos el ID automático
+                                                        if not dfs[h_name].empty and "id" in dfs[h_name].columns:
+                                                            nid = dfs[h_name]["id"].max() + 1
+                                                        else:
+                                                            nid = 1
+                                                            
                                                         nuevo_registro = {
+                                                            "id": nid,
                                                             "DNI": str(dni_buscado),
                                                             "TIPO DE REGISTRO": tipo_registro,
                                                             "ENLACE CTI VITAE": enlace_cti,
