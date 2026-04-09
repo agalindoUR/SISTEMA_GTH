@@ -1549,6 +1549,25 @@ else:
                                             # NUEVO REGISTRO: INVESTIGACIÓN
                                             # ==========================================
                                             elif h_name == "INVESTIGACION":
+                                                
+                                                # --- INICIO: FORZAR MOSTRAR TABLA DE INVESTIGACIÓN ---
+                                                st.subheader("📋 Historial de Investigación")
+                                                if "INVESTIGACION" in dfs and not dfs["INVESTIGACION"].empty:
+                                                    df_inv = dfs["INVESTIGACION"]
+                                                    if "dni" in df_inv.columns:
+                                                        df_inv_emp = df_inv[df_inv["dni"].astype(str) == str(dni_buscado)]
+                                                        if not df_inv_emp.empty:
+                                                            st.dataframe(df_inv_emp, use_container_width=True)
+                                                        else:
+                                                            st.info("Aún no hay registros de investigación para este empleado.")
+                                                    else:
+                                                        st.warning("Falta la columna 'dni' en la base de datos.")
+                                                else:
+                                                    st.info("La base de datos de investigación está vacía.")
+                                                
+                                                st.markdown("<br>", unsafe_allow_html=True)
+                                                # --- FIN: FORZAR MOSTRAR TABLA DE INVESTIGACIÓN ---
+
                                                 st.markdown("<div style='font-size: 1.5em; font-weight: bold; color: white; background-color: #4A0000; padding: 10px; border-radius: 8px; margin-bottom: 15px;'>🔬 Registrar Actividad de Investigación</div>", unsafe_allow_html=True)
 
                                                 # Menú para elegir qué queremos registrar
@@ -1640,7 +1659,6 @@ else:
                                                         save_data(dfs)
                                                         st.success("✅ ¡Registro de investigación guardado exitosamente!")
                                                         st.rerun()
-
                                             else:
                                                 es_renovacion = False
                                                 if h_name == "CONTRATOS" and not df_contratos.empty:
