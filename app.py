@@ -1786,9 +1786,7 @@ else:
                                                                 st.rerun()
                                             else:
                                                 st.info("Activa la casilla (SEL) en la tabla superior para editar o eliminar el registro. Si estás buscando a alguien que ingresaste a mano, verifica que su nombre en el Google Sheets no tenga espacios al final.")
-                else:
-                    st.error("DNI no encontrado en la base de datos.")
-
+                
     # ==========================================
     # --- SECCIÓN REGISTRO Y NÓMINA ---
     # ==========================================
