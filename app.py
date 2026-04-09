@@ -1468,7 +1468,7 @@ else:
                                                         save_data(dfs)
                                                         st.success("✅ Experiencia guardada correctamente.")
                                                         st.rerun()
-                                            # ==========================================
+                                           # ==========================================
                                             # NUEVO REGISTRO: FORMACIÓN ACADÉMICA (DINÁMICO)
                                             # ==========================================
                                             elif h_name == "FORM. ACADEMICA":
@@ -1524,8 +1524,6 @@ else:
                                                     if not institucion or not mencion:
                                                         st.error("⚠️ La Institución y la Mención son campos obligatorios.")
                                                     else:
-                                                        # AQUÍ ESTÁ LA MAGIA: Guardamos las columnas SIN tildes 
-                                                        # para que coincidan con la base de datos de Google Sheets
                                                         new_row = {
                                                             "dni": str(dni_buscado), 
                                                             "tipo de estudio": tipo_estudio, 
@@ -1536,7 +1534,7 @@ else:
                                                             "estado": estado, 
                                                             "horas academicas": horas
                                                         }
-                                                            
+                                                        
                                                         if not dfs[h_name].empty and "id" in dfs[h_name].columns:
                                                             new_row["id"] = dfs[h_name]["id"].max() + 1
                                                         elif "id" in dfs[h_name].columns:
@@ -1546,97 +1544,186 @@ else:
                                                         save_data(dfs)
                                                         st.success("✅ Estudio guardado correctamente.")
                                                         st.rerun()
+
+                                            # ==========================================
+                                            # NUEVO REGISTRO: INVESTIGACIÓN
+                                            # ==========================================
+                                            elif h_name == "INVESTIGACION":
+                                                st.markdown("<div style='font-size: 1.5em; font-weight: bold; color: white; background-color: #4A0000; padding: 10px; border-radius: 8px; margin-bottom: 15px;'>🔬 Registrar Actividad de Investigación</div>", unsafe_allow_html=True)
+
+                                                # Menú para elegir qué queremos registrar
+                                                tipo_registro = st.selectbox(
+                                                    "¿Qué tipo de registro deseas ingresar?",
+                                                    ["Datos Generales (CTI Vitae / RENACYT)", "Publicación Científica", "Fondo Concursable", "Semillero de Investigación"],
+                                                    key="sel_tipo_inv"
+                                                )
+
+                                                with st.form("form_nuevo_investigacion", clear_on_submit=True):
+                                                    # Inicializamos variables
+                                                    enlace_cti = codigo_renacyt = nivel_renacyt = ""
+                                                    titulo_pub = base_datos = nombre_revista = cuartil = doi_url = ""
+                                                    anio_pub = date.today().year
+                                                    nombre_proy = entidad_fin = rol_proy = estado_proy = ""
+                                                    monto_proy = 0.0
+                                                    nombre_semillero = resolucion = rol_semillero = estado_semillero = ""
+                                                    
+                                                    if tipo_registro == "Datos Generales (CTI Vitae / RENACYT)":
+                                                        col1, col2, col3 = st.columns(3)
+                                                        with col1: enlace_cti = st.text_input("Enlace CTI Vitae")
+                                                        with col2: codigo_renacyt = st.text_input("Código RENACYT")
+                                                        with col3: nivel_renacyt = st.selectbox("Nivel RENACYT", ["No tiene", "Nivel VII", "Nivel VI", "Nivel V", "Nivel IV", "Nivel III", "Nivel II", "Nivel I", "Investigador Distinguido"])
+                                                        
+                                                    elif tipo_registro == "Publicación Científica":
+                                                        titulo_pub = st.text_input("Título de la Publicación")
+                                                        col1, col2 = st.columns(2)
+                                                        with col1:
+                                                            base_datos = st.selectbox("Base de Datos", ["Scopus", "Web of Science (WoS)", "SciELO", "Latindex Catálogo", "Otro"])
+                                                            cuartil = st.selectbox("Cuartil", ["Q1", "Q2", "Q3", "Q4", "No aplica"])
+                                                            anio_pub = st.number_input("Año de Publicación", min_value=1950, max_value=2100, step=1, value=date.today().year)
+                                                        with col2:
+                                                            nombre_revista = st.text_input("Nombre de la Revista")
+                                                            doi_url = st.text_input("DOI / URL del artículo")
+                                                            
+                                                    elif tipo_registro == "Fondo Concursable":
+                                                        nombre_proy = st.text_input("Nombre del Proyecto")
+                                                        col1, col2 = st.columns(2)
+                                                        with col1:
+                                                            entidad_fin = st.text_input("Entidad Financiadora (Ej. PROCIENCIA, Concytec)")
+                                                            monto_proy = st.number_input("Monto Adjudicado (S/.)", min_value=0.0, step=100.0)
+                                                        with col2:
+                                                            rol_proy = st.selectbox("Rol en el Proyecto", ["Investigador Principal", "Co-Investigador", "Asesor/Mentor", "Tesista asociado"])
+                                                            estado_proy = st.selectbox("Estado del Proyecto", ["En postulación", "En ejecución", "Finalizado"])
+                                                            
+                                                    elif tipo_registro == "Semillero de Investigación":
+                                                        nombre_semillero = st.text_input("Nombre del Semillero")
+                                                        col1, col2 = st.columns(2)
+                                                        with col1:
+                                                            resolucion = st.text_input("Resolución de Creación")
+                                                            rol_semillero = st.selectbox("Rol en el Semillero", ["Coordinador/Asesor", "Miembro Investigador", "Apoyo"])
+                                                        with col2:
+                                                            estado_semillero = st.selectbox("Estado", ["Activo", "Inactivo"])
+                                                            
+                                                    submit_inv = st.form_submit_button("💾 Guardar Registro de Investigación")
+                                                    
+                                                    if submit_inv:
+                                                        nuevo_registro = {
+                                                            "DNI": str(dni_buscado),
+                                                            "TIPO DE REGISTRO": tipo_registro,
+                                                            "ENLACE CTI VITAE": enlace_cti,
+                                                            "CODIGO RENACYT": codigo_renacyt,
+                                                            "NIVEL RENACYT": nivel_renacyt,
+                                                            "TITULO DE PUBLICACION": titulo_pub,
+                                                            "BASE DE DATOS": base_datos,
+                                                            "NOMBRE DE REVISTA": nombre_revista,
+                                                            "CUARTIL": cuartil,
+                                                            "AÑO DE PUBLICACION": anio_pub,
+                                                            "DOI O URL": doi_url,
+                                                            "NOMBRE DEL PROYECTO": nombre_proy,
+                                                            "ENTIDAD FINANCIADORA": entidad_fin,
+                                                            "ROL EN EL PROYECTO": rol_proy,
+                                                            "MONTO ADJUDICADO": monto_proy,
+                                                            "ESTADO DEL PROYECTO": estado_proy,
+                                                            "NOMBRE DEL SEMILLERO": nombre_semillero,
+                                                            "RESOLUCION": resolucion,
+                                                            "ROL EN EL SEMILLERO": rol_semillero,
+                                                            "ESTADO DEL SEMILLERO": estado_semillero
+                                                        }
+                                                        
+                                                        dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([nuevo_registro])], ignore_index=True)
+                                                        save_data(dfs)
+                                                        st.success("✅ ¡Registro de investigación guardado exitosamente!")
+                                                        st.rerun()
+
                                             else:
                                                 es_renovacion = False
                                                 if h_name == "CONTRATOS" and not df_contratos.empty:
                                                     es_renovacion = st.checkbox("🔄 Es Renovación (Copiar datos del último contrato)")
                                                 
-                                            with st.form(f"f_add_{h_name}", clear_on_submit=True):
-                                                if h_name == "CONTRATOS":
-                                                    d_car = ""
-                                                    d_area = ""  # <-- INICIALIZAMOS EL ÁREA AQUÍ
-                                                    d_rem = 0.0
-                                                    d_bon = ""
-                                                    d_cond = ""
-                                                    d_ini = date.today()
-                                                    d_fin = date.today()
-                                                    d_ttrab = "Administrativo"
-                                                    d_mod = "Presencial"
-                                                    d_temp = "Plazo fijo"
-                                                    d_tcont = "Planilla completo"
-                                                    
-                                                    if es_renovacion and not df_contratos.empty:
-                                                        last_c = df_contratos.assign(f_fin_dt=pd.to_datetime(df_contratos['f_fin'], errors='coerce')).sort_values('f_fin_dt').iloc[-1]
-                                                        d_car = str(last_c.get("cargo", ""))
-                                                        d_area = str(last_c.get("area", ""))
-                                                        try: 
-                                                            d_rem = float(last_c.get("remuneracion basica", 0.0))
-                                                        except: 
-                                                            pass
-                                                        d_bon = str(last_c.get("bonificacion", ""))
-                                                        d_cond = str(last_c.get("condicion de trabajo", ""))
-                                                        try: 
-                                                            d_ini = pd.to_datetime(last_c["f_fin"]).date() + pd.Timedelta(days=1)
-                                                        except: 
-                                                            pass
+                                                with st.form(f"f_add_{h_name}", clear_on_submit=True):
+                                                    if h_name == "CONTRATOS":
+                                                        d_car = ""
+                                                        d_area = ""  
+                                                        d_rem = 0.0
+                                                        d_bon = ""
+                                                        d_cond = ""
+                                                        d_ini = date.today()
+                                                        d_fin = date.today()
+                                                        d_ttrab = "Administrativo"
+                                                        d_mod = "Presencial"
+                                                        d_temp = "Plazo fijo"
+                                                        d_tcont = "Planilla completo"
                                                         
-                                                        v_tt = str(last_c.get("tipo de trabajador", ""))
-                                                        if v_tt in ["Administrativo", "Docente", "Externo"]: 
-                                                            d_ttrab = v_tt
+                                                        if es_renovacion and not df_contratos.empty:
+                                                            last_c = df_contratos.assign(f_fin_dt=pd.to_datetime(df_contratos['f_fin'], errors='coerce')).sort_values('f_fin_dt').iloc[-1]
+                                                            d_car = str(last_c.get("cargo", ""))
+                                                            d_area = str(last_c.get("area", ""))
+                                                            try: 
+                                                                d_rem = float(last_c.get("remuneracion basica", 0.0))
+                                                            except: 
+                                                                pass
+                                                            d_bon = str(last_c.get("bonificacion", ""))
+                                                            d_cond = str(last_c.get("condicion de trabajo", ""))
+                                                            try: 
+                                                                d_ini = pd.to_datetime(last_c["f_fin"]).date() + pd.Timedelta(days=1)
+                                                            except: 
+                                                                pass
                                                             
-                                                        v_m = str(last_c.get("modalidad", ""))
-                                                        if v_m in ["Presencial", "Semipresencial", "Virtual"]: 
-                                                            d_mod = v_m
+                                                            v_tt = str(last_c.get("tipo de trabajador", ""))
+                                                            if v_tt in ["Administrativo", "Docente", "Externo"]: 
+                                                                d_ttrab = v_tt
                                                             
-                                                        v_te = str(last_c.get("temporalidad", ""))
-                                                        if v_te in ["Plazo fijo", "Plazo indeterminado", "Ordinarizado"]: 
-                                                            d_temp = v_te
+                                                            v_m = str(last_c.get("modalidad", ""))
+                                                            if v_m in ["Presencial", "Semipresencial", "Virtual"]: 
+                                                                d_mod = v_m
                                                             
-                                                        v_tc = str(last_c.get("tipo contrato", ""))
-                                                        if v_tc in ["Planilla completo", "Tiempo Parcial", "Recibo por Honorarios", "Otro"]: 
-                                                            d_tcont = v_tc
+                                                            v_te = str(last_c.get("temporalidad", ""))
+                                                            if v_te in ["Plazo fijo", "Plazo indeterminado", "Ordinarizado"]: 
+                                                                d_temp = v_te
+                                                            
+                                                            v_tc = str(last_c.get("tipo contrato", ""))
+                                                            if v_tc in ["Planilla completo", "Tiempo Parcial", "Recibo por Honorarios", "Otro"]: 
+                                                                d_tcont = v_tc
 
-                                                    car = st.text_input("Cargo", value=d_car)
-                                                    area_input = st.text_input("Área", value=d_area) 
-                                                    rem_b = st.number_input("Remuneración básica", value=d_rem)
-                                                    bono = st.text_input("Bonificación", value=d_bon)
-                                                    cond = st.text_input("Condición de trabajo", value=d_cond)
-                                                    ini = st.date_input("Inicio", value=d_ini, format="DD/MM/YYYY", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
-                                                    fin = st.date_input("Fin", value=d_fin, format="DD/MM/YYYY", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
-                                                    t_trab = st.selectbox("Tipo de trabajador", ["Administrativo", "Docente", "Externo"], index=["Administrativo", "Docente", "Externo"].index(d_ttrab))
-                                                    mod = st.selectbox("Modalidad", ["Presencial", "Semipresencial", "Virtual"], index=["Presencial", "Semipresencial", "Virtual"].index(d_mod))
-                                                    temp = st.selectbox("Temporalidad", ["Plazo fijo", "Plazo indeterminado", "Ordinarizado"], index=["Plazo fijo", "Plazo indeterminado", "Ordinarizado"].index(d_temp))
-                                                    lnk = st.text_input("Link")
-                                                    tcont = st.selectbox("Tipo Contrato", ["Planilla completo", "Tiempo Parcial", "Recibo por Honorarios", "Otro"], index=["Planilla completo", "Tiempo Parcial", "Recibo por Honorarios", "Otro"].index(d_tcont))
-                                                    
-                                                    est_a = "ACTIVO" if fin >= date.today() else "CESADO"
-                                                    mot_a = st.selectbox("Motivo Cese", ["Vigente"] + MOTIVOS_CESE) if est_a == "CESADO" else "Vigente"
-
-                                                    if st.form_submit_button("Guardar Contrato"):
-                                                        nid = dfs[h_name]["id"].max() + 1 if not dfs[h_name].empty else 1
+                                                        car = st.text_input("Cargo", value=d_car)
+                                                        area_input = st.text_input("Área", value=d_area) 
+                                                        rem_b = st.number_input("Remuneración básica", value=d_rem)
+                                                        bono = st.text_input("Bonificación", value=d_bon)
+                                                        cond = st.text_input("Condición de trabajo", value=d_cond)
+                                                        ini = st.date_input("Inicio", value=d_ini, format="DD/MM/YYYY", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
+                                                        fin = st.date_input("Fin", value=d_fin, format="DD/MM/YYYY", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
+                                                        t_trab = st.selectbox("Tipo de trabajador", ["Administrativo", "Docente", "Externo"], index=["Administrativo", "Docente", "Externo"].index(d_ttrab))
+                                                        mod = st.selectbox("Modalidad", ["Presencial", "Semipresencial", "Virtual"], index=["Presencial", "Semipresencial", "Virtual"].index(d_mod))
+                                                        temp = st.selectbox("Temporalidad", ["Plazo fijo", "Plazo indeterminado", "Ordinarizado"], index=["Plazo fijo", "Plazo indeterminado", "Ordinarizado"].index(d_temp))
+                                                        lnk = st.text_input("Link")
+                                                        tcont = st.selectbox("Tipo Contrato", ["Planilla completo", "Tiempo Parcial", "Recibo por Honorarios", "Otro"], index=["Planilla completo", "Tiempo Parcial", "Recibo por Honorarios", "Otro"].index(d_tcont))
                                                         
-                                                        # DICCIONARIO INTERNO: ¡SIN TILDES EN LAS CLAVES!
-                                                        new = {
-                                                            "id": nid, 
-                                                            "dni": dni_buscado, 
-                                                            "cargo": car,
-                                                            "area": area_input,
-                                                            "remuneracion basica": rem_b, 
-                                                            "bonificacion": bono,         
-                                                            "condicion de trabajo": cond, 
-                                                            "f_inicio": ini, 
-                                                            "f_fin": fin, 
-                                                            "tipo de trabajador": t_trab, 
-                                                            "modalidad": mod, 
-                                                            "temporalidad": temp, 
-                                                            "link": lnk, 
-                                                            "tipo contrato": tcont, 
-                                                            "estado": est_a, 
-                                                            "motivo cese": mot_a
-                                                        }
-                                                        dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new])], ignore_index=True)
-                                                        save_data(dfs)
-                                                        st.rerun()
+                                                        est_a = "ACTIVO" if fin >= date.today() else "CESADO"
+                                                        mot_a = st.selectbox("Motivo Cese", ["Vigente"] + MOTIVOS_CESE) if est_a == "CESADO" else "Vigente"
+
+                                                        if st.form_submit_button("Guardar Contrato"):
+                                                            nid = dfs[h_name]["id"].max() + 1 if not dfs[h_name].empty else 1
+                                                            
+                                                            new = {
+                                                                "id": nid, 
+                                                                "dni": dni_buscado, 
+                                                                "cargo": car,
+                                                                "area": area_input,
+                                                                "remuneracion basica": rem_b, 
+                                                                "bonificacion": bono,         
+                                                                "condicion de trabajo": cond, 
+                                                                "f_inicio": ini, 
+                                                                "f_fin": fin, 
+                                                                "tipo de trabajador": t_trab, 
+                                                                "modalidad": mod, 
+                                                                "temporalidad": temp, 
+                                                                "link": lnk, 
+                                                                "tipo contrato": tcont, 
+                                                                "estado": est_a, 
+                                                                "motivo cese": mot_a
+                                                            }
+                                                            dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new])], ignore_index=True)
+                                                            save_data(dfs)
+                                                            st.rerun()
                                 
                                 with col_b:
                                         with st.expander("📝 Editar / Eliminar"):
