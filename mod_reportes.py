@@ -3,6 +3,20 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
+# --- Función para limpiar tildes y mala codificación ---
+def limpiar_texto(texto):
+    texto = str(texto).strip()
+    # Diccionario de reemplazos manuales para errores comunes de codificación
+    reemplazos = {
+        "Ã³N": "ón", "Ã³n": "ón", "Ã³": "ó", 
+        "Ã¡": "á", "Ã©": "é", "Ã­": "í", "Ãº": "ú", "Ã±": "ñ",
+        "Ã“": "Ó", "Ã ": "Á", "Ã‰": "É", "Ã ": "Í", "Ãš": "Ú", "Ã‘": "Ñ",
+        "AtenciÃ³N": "Atención", "EjecuciÃ³N": "Ejecución"
+    }
+    for mal, bien in reemplazos.items():
+        texto = texto.replace(mal, bien)
+    return texto
+
 # --- Función auxiliar para procesar competencias ---
 def obtener_promedios_competencias(df_subset):
     dic_competencias = {}
@@ -14,7 +28,7 @@ def obtener_promedios_competencias(df_subset):
                     if ": " in n:
                         try:
                             cat, val = n.split(": ")
-                            cat = cat.strip()
+                            cat = limpiar_texto(cat) # Aplicamos la limpieza aquí
                             val = float(val.strip())
                             if cat not in dic_competencias:
                                 dic_competencias[cat] = []
@@ -111,7 +125,6 @@ def mostrar(dfs):
         dic_promedios_entidades = {}
         todas_las_competencias = set()
 
-        # Procesar datos de los seleccionados
         for entidad in seleccionados_vs:
             df_entidad = df_filtrado[df_filtrado[col_vs] == entidad]
             promedios_comp = obtener_promedios_competencias(df_entidad)
@@ -128,59 +141,64 @@ def mostrar(dfs):
                 fig_vs.update_layout(
                     polar=dict(radialaxis=dict(visible=True, range=[0, 5])), 
                     margin=dict(l=40, r=40, t=20, b=20),
-                    paper_bgcolor="rgba(0,0,0,0)", # Fondo transparente
+                    paper_bgcolor="rgba(0,0,0,0)",
                     plot_bgcolor="rgba(0,0,0,0)"
                 )
                 st.plotly_chart(fig_vs, use_container_width=True)
 
         with col_txt_vs:
-            # MAGIA VISUAL: Caja con fondo oscuro semi-transparente y texto claro
+            # MAGIA ANALÍTICA PROFUNDA
             html_analisis = """
-            <div style='background-color: rgba(0, 0, 0, 0.4); padding: 20px; border-radius: 10px; border-left: 5px solid #FFD700; color: #FFFFFF;'>
-                <h4 style='color: #FFD700; margin-top: 0; font-family: sans-serif;'>💡 Conclusión Analítica</h4>
+            <div style='background-color: rgba(0, 0, 0, 0.5); padding: 20px; border-radius: 10px; border-left: 5px solid #FFD700; color: #FFFFFF; font-size: 14px;'>
+                <h4 style='color: #FFD700; margin-top: 0; font-family: sans-serif;'>🧠 Análisis Profundo</h4>
             """
             
-            # MAGIA ANALÍTICA: Evaluar competencia por competencia
-            for comp in sorted(list(todas_las_competencias)):
-                puntajes_comp = []
-                for entidad, promedios in dic_promedios_entidades.items():
-                    if comp in promedios:
-                        puntajes_comp.append({"entidad": entidad, "puntaje": promedios[comp]})
-                
-                if len(puntajes_comp) > 1:
-                    # Ordenar de mayor a menor
-                    puntajes_comp_ordenados = sorted(puntajes_comp, key=lambda x: x["puntaje"], reverse=True)
-                    ganador = puntajes_comp_ordenados[0]
-                    ultimo = puntajes_comp_ordenados[-1]
-                    
-                    diferencia = ganador["puntaje"] - ultimo["puntaje"]
-                    
-                    html_analisis += f"<div style='margin-bottom: 12px;'><b style='color: #FFFFAA;'>{comp}:</b><br>"
-                    
-                    if diferencia <= 0.2:
-                        html_analisis += f"🤝 <i>Empate técnico.</i> Todas las partes promedian de forma muy similar (Aprox. {ganador['puntaje']:.2f})."
-                    else:
-                        html_analisis += f"🏆 <b>{ganador['entidad']}</b> lidera con <b>{ganador['puntaje']:.2f}</b>. "
-                        if len(puntajes_comp_ordenados) > 2:
-                            html_analisis += f"Por otro lado, <b>{ultimo['entidad']}</b> presenta la mayor oportunidad de mejora ({ultimo['puntaje']:.2f})."
-                        else:
-                            html_analisis += f"Superando a <b>{ultimo['entidad']}</b> ({ultimo['puntaje']:.2f})."
-                    
-                    html_analisis += "</div>"
+            # 1. Calcular promedios generales y encontrar fortalezas
+            resumen_entidades = {}
+            for entidad, promedios in dic_promedios_entidades.items():
+                if promedios:
+                    promedio_total = sum(promedios.values()) / len(promedios)
+                    mejor_comp = max(promedios, key=promedios.get)
+                    resumen_entidades[entidad] = {"promedio": promedio_total, "mejor": mejor_comp, "val_mejor": promedios[mejor_comp]}
+            
+            # Ordenar para ver quién tiene el mejor promedio general
+            entidades_ordenadas = sorted(resumen_entidades.items(), key=lambda x: x[1]["promedio"], reverse=True)
+            
+            html_analisis += f"<p><b>🏆 Desempeño Global:</b> <b>{entidades_ordenadas[0][0]}</b> lidera la comparativa con un promedio global de <b>{entidades_ordenadas[0][1]['promedio']:.2f}</b>.</p>"
+            
+            html_analisis += "<p><b>🌟 Mayores Fortalezas:</b></p><ul>"
+            for ent, datos in entidades_ordenadas:
+                html_analisis += f"<li><b>{ent}:</b> {datos['mejor']} ({datos['val_mejor']:.2f})</li>"
+            html_analisis += "</ul>"
+
+            # 2. Encontrar la mayor brecha (donde hay más diferencia entre ellos)
+            mayor_brecha = 0
+            comp_mayor_brecha = ""
+            detalle_brecha = ""
+
+            for comp in todas_las_competencias:
+                puntajes = [dic_promedios_entidades[ent].get(comp, 0) for ent in seleccionados_vs if comp in dic_promedios_entidades[ent]]
+                if len(puntajes) > 1:
+                    brecha = max(puntajes) - min(puntajes)
+                    if brecha > mayor_brecha:
+                        mayor_brecha = brecha
+                        comp_mayor_brecha = comp
+            
+            if mayor_brecha > 0.3:
+                html_analisis += f"<p style='color: #FFAA00;'><b>⚠️ Brecha Crítica Detectada:</b> La diferencia más drástica entre los evaluados se encuentra en <b>{comp_mayor_brecha}</b>, con una diferencia de <b>{mayor_brecha:.2f} puntos</b> entre el valor más alto y el más bajo. Es el punto clave a revisar.</p>"
+            else:
+                html_analisis += f"<p style='color: #00FFaa;'><b>🤝 Perfiles Similares:</b> No se detectan brechas críticas mayores a 0.3 puntos. Los evaluados tienen competencias muy parejas.</p>"
 
             html_analisis += "</div>"
-            
-            # Mostrar el HTML renderizado
             st.markdown(html_analisis, unsafe_allow_html=True)
 
     elif len(seleccionados_vs) == 1:
         st.info("Selecciona al menos 2 opciones para iniciar la comparativa.")
 
-    # --- RANKINGS AVANZADOS (NUEVA SECCIÓN REEMPLAZADA) ---
+    # --- RANKINGS AVANZADOS ---
     st.markdown("---")
     st.subheader("🏆 Rankings de Desempeño")
 
-    # Filtros de Ranking
     col1, col2 = st.columns([1, 1])
     with col1:
         modo_orden = st.radio("Ordenar por puntaje:", ["Mayor a Menor (Top 🏆)", "Menor a Mayor (Mejora 📈)"], horizontal=True)
@@ -193,19 +211,16 @@ def mostrar(dfs):
             filtro_tipo += sorted(df[col_tipo].dropna().unique().tolist())
         tipo_sel = st.selectbox("Filtrar por tipo de colaborador:", filtro_tipo)
 
-    # Aplicar filtros al DF de ranking
     df_rank = df_filtrado.copy()
     if tipo_sel != "Todos" and col_tipo:
         df_rank = df_rank[df_rank[col_tipo] == tipo_sel]
 
-    # Agrupar para tener un solo valor por persona/área
     df_rank_emp = df_rank.groupby("NOMBRES Y APELLIDOS")["PROMEDIO GENERAL"].mean().reset_index()
     df_rank_emp = df_rank_emp.sort_values(by="PROMEDIO GENERAL", ascending=es_ascendente)
     
     df_rank_area = df_rank.groupby("AREA")["PROMEDIO GENERAL"].mean().reset_index()
     df_rank_area = df_rank_area.sort_values(by="PROMEDIO GENERAL", ascending=es_ascendente)
 
-    # Configuración de Colores (Semáforo 1 al 5)
     color_scale = [
         [0.0, "rgb(200, 0, 0)"],   # Rojo
         [0.5, "rgb(255, 255, 0)"], # Amarillo
@@ -215,7 +230,7 @@ def mostrar(dfs):
     tab1, tab2 = st.tabs(["👤 Ranking de Colaboradores", "🏢 Ranking por Áreas"])
 
     with tab1:
-        st.write(f"Mostrando {len(df_rank_emp)} colaboradores. Si la lista es larga, usa la barra de desplazamiento a la derecha del gráfico.")
+        st.write(f"Mostrando {len(df_rank_emp)} colaboradores. Usa la barra lateral para desplazarte.")
         altura_dinamica = max(400, len(df_rank_emp) * 25)
         
         fig_emp = px.bar(
@@ -230,13 +245,22 @@ def mostrar(dfs):
             labels={"PROMEDIO GENERAL": "Puntaje", "NOMBRES Y APELLIDOS": "Colaborador"}
         )
         fig_emp.update_traces(texttemplate='%{text:.2f}', textposition='outside')
+        
+        # --- AQUÍ AÑADIMOS LAS GUÍAS VISUALES (REJILLA Y NÚMEROS) ---
         fig_emp.update_layout(
             height=altura_dinamica, 
             yaxis={'categoryorder':'total ascending' if es_ascendente else 'total descending'},
+            xaxis=dict(
+                showgrid=True, # Mostrar líneas de fondo
+                gridwidth=1, 
+                gridcolor='rgba(255, 255, 255, 0.2)', # Color blanco semi transparente para que no moleste
+                tickvals=[1, 2, 3, 4, 5], # Forzar que muestre los números del 1 al 5
+                range=[0, 5.3] # Dar un poco de espacio extra a la derecha para el texto
+            ),
             coloraxis_showscale=False,
             margin=dict(l=200, r=40, t=20, b=20),
             paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)"
+            plot_bgcolor="rgba(0,0,0,0.1)" # Un fondo ultra tenue para que se vean mejor las barras
         )
         st.plotly_chart(fig_emp, use_container_width=True)
 
@@ -254,13 +278,22 @@ def mostrar(dfs):
             labels={"PROMEDIO GENERAL": "Puntaje", "AREA": "Área"}
         )
         fig_area.update_traces(texttemplate='%{text:.2f}', textposition='outside')
+        
+        # --- IGUAL PARA EL GRÁFICO DE ÁREAS ---
         fig_area.update_layout(
             height=altura_area, 
             yaxis={'categoryorder':'total ascending' if es_ascendente else 'total descending'},
+            xaxis=dict(
+                showgrid=True,
+                gridwidth=1,
+                gridcolor='rgba(255, 255, 255, 0.2)',
+                tickvals=[1, 2, 3, 4, 5],
+                range=[0, 5.3]
+            ),
             coloraxis_showscale=False,
             margin=dict(l=200, r=40, t=20, b=20),
             paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)"
+            plot_bgcolor="rgba(0,0,0,0.1)"
         )
         st.plotly_chart(fig_area, use_container_width=True)
 
