@@ -1638,146 +1638,154 @@ else:
                                                         save_data(dfs)
                                                         st.rerun()
 
-                            with col_b:
-                                with st.expander("📝 Editar / Eliminar"):
-                                    if not sel.empty:
-                                        idx = sel.index[0]
-                                        with st.form(f"f_edit_{h_name}"):
-                                            if h_name == "CONTRATOS":
-                                                # LEEMOS DE 'sel' EN MAYÚSCULAS (porque así viene de la tabla visual)
-                                                n_car = st.text_input("Cargo", value=str(sel.iloc[0].get("CARGO", "")))
-                                                n_area = st.text_input("Área", value=str(sel.iloc[0].get("AREA", "")))
-                                                
-                                                try: 
-                                                    val_rem = float(sel.iloc[0].get("REMUNERACION BASICA", 0.0))
-                                                except: 
-                                                    val_rem = 0.0
-                                                n_rem = st.number_input("Remuneración básica", value=val_rem)
-                                                
-                                                n_bon = st.text_input("Bonificación", value=str(sel.iloc[0].get("BONIFICACION", "")))
-                                                n_cond = st.text_input("Condición de trabajo", value=str(sel.iloc[0].get("CONDICION DE TRABAJO", "")))
-                                                
-                                                try: 
-                                                    val_ini = sel.iloc[0].get("F_INICIO")
-                                                    ini_val = pd.to_datetime(val_ini).date() if pd.notnull(val_ini) else date.today()
-                                                except: 
-                                                    ini_val = date.today()
-                                                n_ini = st.date_input("Inicio", value=ini_val, format="DD/MM/YYYY", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
-                                                
-                                                try: 
-                                                    val_fin = sel.iloc[0].get("F_FIN")
-                                                    fin_val = pd.to_datetime(val_fin).date() if pd.notnull(val_fin) else date.today()
-                                                except: 
-                                                    fin_val = date.today()
-                                                n_fin = st.date_input("Fin", value=fin_val, format="DD/MM/YYYY", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
-                                                
-                                                v_ttrab = str(sel.iloc[0].get("TIPO DE TRABAJADOR", "Administrativo"))
-                                                opts_tt = ["Administrativo", "Docente", "Externo"]
-                                                if v_ttrab not in opts_tt: 
-                                                    opts_tt.append(v_ttrab)
-                                                n_ttrab = st.selectbox("Tipo de trabajador", opts_tt, index=opts_tt.index(v_ttrab))
-                                                
-                                                v_mod = str(sel.iloc[0].get("MODALIDAD", "Presencial"))
-                                                opts_mod = ["Presencial", "Semipresencial", "Virtual"]
-                                                if v_mod not in opts_mod: 
-                                                    opts_mod.append(v_mod)
-                                                n_mod = st.selectbox("Modalidad", opts_mod, index=opts_mod.index(v_mod))
-                                                
-                                                v_tem = str(sel.iloc[0].get("TEMPORALIDAD", "Plazo fijo"))
-                                                opts_tem = ["Plazo fijo", "Plazo indeterminado", "Ordinarizado"]
-                                                if v_tem not in opts_tem: 
-                                                    opts_tem.append(v_tem)
-                                                n_tem = st.selectbox("Temporalidad", opts_tem, index=opts_tem.index(v_tem))
-                                                
-                                                n_lnk = st.text_input("Link", value=str(sel.iloc[0].get("LINK", "")))
-                                                
-                                                v_tcont = str(sel.iloc[0].get("TIPO CONTRATO", "Planilla completo"))
-                                                opts_tcon = ["Planilla completo", "Tiempo Parcial", "Recibo por Honorarios", "Otro"]
-                                                if v_tcont not in opts_tcon: 
-                                                    opts_tcon.append(v_tcont)
-                                                n_tcont = st.selectbox("Tipo Contrato", opts_tcon, index=opts_tcon.index(v_tcont))
+                           with col_b:
+                                    with st.expander("📝 Editar / Eliminar"):
+                                        
+                                        # --- INICIO DE LA CORRECCIÓN (BLINDAJE CONTRA NAMEERROR) ---
+                                        try:
+                                            hay_seleccion = not sel.empty
+                                        except NameError:
+                                            hay_seleccion = False
+                                        # --- FIN DE LA CORRECCIÓN ---
 
-                                                est_e = "ACTIVO" if n_fin >= date.today() else "CESADO"
-                                                v_mot = str(sel.iloc[0].get("MOTIVO CESE", "Vigente"))
-                                                opts_mot = ["Vigente"] + MOTIVOS_CESE
-                                                if v_mot not in opts_mot: 
-                                                    opts_mot.append(v_mot)
-                                                mot_e = st.selectbox("Motivo Cese", opts_mot, index=opts_mot.index(v_mot)) if est_e == "CESADO" else "Vigente"
-
-                                                if st.form_submit_button("Actualizar"):
-                                                    # GUARDAMOS EN MINÚSCULAS (Para mantener tu Google Sheet sano y sin duplicados)
-                                                    update_vals = {
-                                                        "cargo": n_car, 
-                                                        "area": n_area,
-                                                        "remuneracion basica": n_rem, 
-                                                        "bonificacion": n_bon, 
-                                                        "condicion de trabajo": n_cond, 
-                                                        "f_inicio": n_ini, 
-                                                        "f_fin": n_fin, 
-                                                        "tipo de trabajador": n_ttrab, 
-                                                        "modalidad": n_mod, 
-                                                        "temporalidad": n_tem, 
-                                                        "link": n_lnk, 
-                                                        "tipo contrato": n_tcont, 
-                                                        "estado": est_e, 
-                                                        "motivo cese": mot_e
-                                                    }
-                                                    for k, v in update_vals.items(): 
-                                                        dfs[h_name].at[idx, k] = v
-                                                    save_data(dfs)
-                                                    st.rerun()
-                                            else:
-                                                edit_row = {}
-                                                row = sel.iloc[0] 
-                                                
-                                                # ---> NUEVO FILTRO: Eliminamos duplicados y la columna AREA <---
-                                                columnas_limpias = []
-                                                vistas = set()
-                                                for c in cols_reales:
-                                                    c_upper = str(c).upper().strip() # Quitamos espacios extra y pasamos a mayúsculas
-                                                    # Ignoramos la columna si ya la vimos o si es "AREA"
-                                                    if c_upper not in vistas and c_upper != "AREA":
-                                                        vistas.add(c_upper)
-                                                        columnas_limpias.append(c)
-                                                
-                                                # Ahora iteramos sobre la lista filtrada, no sobre cols_reales
-                                                for i, col in enumerate(columnas_limpias):
-                                                    val = row.get(str(col).upper(), "")
+                                        if hay_seleccion:
+                                            idx = sel.index[0]
+                                            with st.form(f"f_edit_{h_name}"):
+                                                if h_name == "CONTRATOS":
+                                                    # LEEMOS DE 'sel' EN MAYÚSCULAS (porque así viene de la tabla visual)
+                                                    n_car = st.text_input("Cargo", value=str(sel.iloc[0].get("CARGO", "")))
+                                                    n_area = st.text_input("Área", value=str(sel.iloc[0].get("AREA", "")))
                                                     
-                                                    if "fecha" in col.lower() or "f_" in col.lower(): 
-                                                        if pd.notnull(val) and isinstance(val, (date, datetime)): d_val = val
-                                                        elif pd.notnull(val) and isinstance(val, str):
-                                                            try: d_val = pd.to_datetime(val).date()
-                                                            except: d_val = date.today()
-                                                        else: d_val = date.today()
-                                                        edit_row[col] = st.date_input(col.title(), value=d_val, format="DD/MM/YYYY", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31), key=f"date_{h_name}_{col}_{idx}_{i}")
-                                                        
-                                                    elif col.lower() == "edad":
-                                                        val_edad = int(val) if pd.notnull(val) and str(val).replace('.','',1).isdigit() else 0
-                                                        edit_row[col] = st.number_input(col.title(), value=val_edad, disabled=True, key=f"edad_{h_name}_{col}_{idx}_{i}")
-                                                        
-                                                    elif col.lower() in ["remuneración", "bonificación", "sueldo", "días generados", "dias gozados", "saldo", "monto", "remuneracion basica", "bonificacion"]: 
-                                                        try: n_val = float(val) if pd.notnull(val) else 0.0
-                                                        except: n_val = 0.0
-                                                        edit_row[col] = st.number_input(col.title(), value=n_val, key=f"num_{h_name}_{col}_{idx}_{i}")
-                                                        
-                                                    else: 
-                                                        edit_row[col] = st.text_input(col.title(), value=str(val) if pd.notnull(val) else "", key=f"text_{h_name}_{col}_{idx}_{i}")
+                                                    try: 
+                                                        val_rem = float(sel.iloc[0].get("REMUNERACION BASICA", 0.0))
+                                                    except: 
+                                                        val_rem = 0.0
+                                                    n_rem = st.number_input("Remuneración básica", value=val_rem)
+                                                    
+                                                    n_bon = st.text_input("Bonificación", value=str(sel.iloc[0].get("BONIFICACION", "")))
+                                                    n_cond = st.text_input("Condición de trabajo", value=str(sel.iloc[0].get("CONDICION DE TRABAJO", "")))
+                                                    
+                                                    try: 
+                                                        val_ini = sel.iloc[0].get("F_INICIO")
+                                                        ini_val = pd.to_datetime(val_ini).date() if pd.notnull(val_ini) else date.today()
+                                                    except: 
+                                                        val_ini = date.today()
+                                                    n_ini = st.date_input("Inicio", value=ini_val, format="DD/MM/YYYY", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
+                                                    
+                                                    try: 
+                                                        val_fin = sel.iloc[0].get("F_FIN")
+                                                        fin_val = pd.to_datetime(val_fin).date() if pd.notnull(val_fin) else date.today()
+                                                    except: 
+                                                        fin_val = date.today()
+                                                    n_fin = st.date_input("Fin", value=fin_val, format="DD/MM/YYYY", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
+                                                    
+                                                    v_ttrab = str(sel.iloc[0].get("TIPO DE TRABAJADOR", "Administrativo"))
+                                                    opts_tt = ["Administrativo", "Docente", "Externo"]
+                                                    if v_ttrab not in opts_tt: 
+                                                        opts_tt.append(v_ttrab)
+                                                    n_ttrab = st.selectbox("Tipo de trabajador", opts_tt, index=opts_tt.index(v_ttrab))
+                                                    
+                                                    v_mod = str(sel.iloc[0].get("MODALIDAD", "Presencial"))
+                                                    opts_mod = ["Presencial", "Semipresencial", "Virtual"]
+                                                    if v_mod not in opts_mod: 
+                                                        opts_mod.append(v_mod)
+                                                    n_mod = st.selectbox("Modalidad", opts_mod, index=opts_mod.index(v_mod))
+                                                    
+                                                    v_tem = str(sel.iloc[0].get("TEMPORALIDAD", "Plazo fijo"))
+                                                    opts_tem = ["Plazo fijo", "Plazo indeterminado", "Ordinarizado"]
+                                                    if v_tem not in opts_tem: 
+                                                        opts_tem.append(v_tem)
+                                                    n_tem = st.selectbox("Temporalidad", opts_tem, index=opts_tem.index(v_tem))
+                                                    
+                                                    n_lnk = st.text_input("Link", value=str(sel.iloc[0].get("LINK", "")))
+                                                    
+                                                    v_tcont = str(sel.iloc[0].get("TIPO CONTRATO", "Planilla completo"))
+                                                    opts_tcon = ["Planilla completo", "Tiempo Parcial", "Recibo por Honorarios", "Otro"]
+                                                    if v_tcont not in opts_tcon: 
+                                                        opts_tcon.append(v_tcont)
+                                                    n_tcont = st.selectbox("Tipo Contrato", opts_tcon, index=opts_tcon.index(v_tcont))
 
-                                                col_btn1, col_btn2 = st.columns(2)
-                                                with col_btn1:
-                                                    if st.form_submit_button("Actualizar Registro"):
-                                                        for k, v in edit_row.items(): 
+                                                    est_e = "ACTIVO" if n_fin >= date.today() else "CESADO"
+                                                    v_mot = str(sel.iloc[0].get("MOTIVO CESE", "Vigente"))
+                                                    opts_mot = ["Vigente"] + MOTIVOS_CESE
+                                                    if v_mot not in opts_mot: 
+                                                        opts_mot.append(v_mot)
+                                                    mot_e = st.selectbox("Motivo Cese", opts_mot, index=opts_mot.index(v_mot)) if est_e == "CESADO" else "Vigente"
+
+                                                    if st.form_submit_button("Actualizar"):
+                                                        # GUARDAMOS EN MINÚSCULAS (Para mantener tu Google Sheet sano y sin duplicados)
+                                                        update_vals = {
+                                                            "cargo": n_car, 
+                                                            "area": n_area,
+                                                            "remuneracion basica": n_rem, 
+                                                            "bonificacion": n_bon, 
+                                                            "condicion de trabajo": n_cond, 
+                                                            "f_inicio": n_ini, 
+                                                            "f_fin": n_fin, 
+                                                            "tipo de trabajador": n_ttrab, 
+                                                            "modalidad": n_mod, 
+                                                            "temporalidad": n_tem, 
+                                                            "link": n_lnk, 
+                                                            "tipo contrato": n_tcont, 
+                                                            "estado": est_e, 
+                                                            "motivo cese": mot_e
+                                                        }
+                                                        for k, v in update_vals.items(): 
                                                             dfs[h_name].at[idx, k] = v
                                                         save_data(dfs)
                                                         st.rerun()
-                                                with col_btn2:
-                                                    if st.form_submit_button("🗑️ Eliminar Registro", type="primary"):
-                                                        dfs[h_name] = dfs[h_name].drop(idx)
-                                                        save_data(dfs)
-                                                        st.rerun()
-                                    else:
-                                        st.info("Activa la casilla (SEL) en la tabla superior para editar o eliminar el registro.")
+                                                else:
+                                                    edit_row = {}
+                                                    row = sel.iloc[0] 
+                                                    
+                                                    # ---> NUEVO FILTRO: Eliminamos duplicados y la columna AREA <---
+                                                    columnas_limpias = []
+                                                    vistas = set()
+                                                    for c in cols_reales:
+                                                        c_upper = str(c).upper().strip() # Quitamos espacios extra y pasamos a mayúsculas
+                                                        # Ignoramos la columna si ya la vimos o si es "AREA"
+                                                        if c_upper not in vistas and c_upper != "AREA":
+                                                            vistas.add(c_upper)
+                                                            columnas_limpias.append(c)
+                                                    
+                                                    # Ahora iteramos sobre la lista filtrada, no sobre cols_reales
+                                                    for i, col in enumerate(columnas_limpias):
+                                                        val = row.get(str(col).upper(), "")
+                                                        
+                                                        if "fecha" in col.lower() or "f_" in col.lower(): 
+                                                            if pd.notnull(val) and isinstance(val, (date, datetime)): d_val = val
+                                                            elif pd.notnull(val) and isinstance(val, str):
+                                                                try: d_val = pd.to_datetime(val).date()
+                                                                except: d_val = date.today()
+                                                            else: d_val = date.today()
+                                                            edit_row[col] = st.date_input(col.title(), value=d_val, format="DD/MM/YYYY", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31), key=f"date_{h_name}_{col}_{idx}_{i}")
+                                                            
+                                                        elif col.lower() == "edad":
+                                                            val_edad = int(val) if pd.notnull(val) and str(val).replace('.','',1).isdigit() else 0
+                                                            edit_row[col] = st.number_input(col.title(), value=val_edad, disabled=True, key=f"edad_{h_name}_{col}_{idx}_{i}")
+                                                            
+                                                        elif col.lower() in ["remuneración", "bonificación", "sueldo", "días generados", "dias gozados", "saldo", "monto", "remuneracion basica", "bonificacion"]: 
+                                                            try: n_val = float(val) if pd.notnull(val) else 0.0
+                                                            except: n_val = 0.0
+                                                            edit_row[col] = st.number_input(col.title(), value=n_val, key=f"num_{h_name}_{col}_{idx}_{i}")
+                                                            
+                                                        else: 
+                                                            edit_row[col] = st.text_input(col.title(), value=str(val) if pd.notnull(val) else "", key=f"text_{h_name}_{col}_{idx}_{i}")
+
+                                                    col_btn1, col_btn2 = st.columns(2)
+                                                    with col_btn1:
+                                                        if st.form_submit_button("Actualizar Registro"):
+                                                            for k, v in edit_row.items(): 
+                                                                dfs[h_name].at[idx, k] = v
+                                                            save_data(dfs)
+                                                            st.rerun()
+                                                    with col_btn2:
+                                                        if st.form_submit_button("🗑️ Eliminar Registro", type="primary"):
+                                                            dfs[h_name] = dfs[h_name].drop(idx)
+                                                            save_data(dfs)
+                                                            st.rerun()
+                                        else:
+                                            st.info("Activa la casilla (SEL) en la tabla superior para editar o eliminar el registro. Si estás buscando a alguien que ingresaste a mano, verifica que su nombre en el Google Sheets no tenga espacios al final.")
             else:
                 st.error("DNI no encontrado en la base de datos.")
 
