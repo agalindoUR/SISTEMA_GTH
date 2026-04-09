@@ -1638,7 +1638,7 @@ else:
                                                         save_data(dfs)
                                                         st.rerun()
                                 
-                                 with col_b:
+                                with col_b:
                                         with st.expander("📝 Editar / Eliminar"):
                                             
                                             # --- INICIO DE LA CORRECCIÓN (BLINDAJE CONTRA NAMEERROR) ---
