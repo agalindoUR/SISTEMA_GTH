@@ -4,9 +4,16 @@ import pandas as pd
 def mostrar(dfs, save_data):
     st.markdown("<h2 style='color: #FFD700;'>➕ Registro de Nuevo Colaborador</h2>", unsafe_allow_html=True)
     
-    # --- BLOQUE NUEVO: CARGA DE PARÁMETROS DINÁMICOS ---
-    # --- BLOQUE NUEVO: CARGA DE PARÁMETROS DINÁMICOS ---
+   # --- BLOQUE NUEVO: CARGA DE PARÁMETROS DINÁMICOS ---
     df_para = dfs.get("PARAMETROS", pd.DataFrame())
+    
+    # --- CÓDIGO CHISMOSO PARA DEBUG (BORRAREMOS ESTO DESPUÉS) ---
+    st.info(f"Hojas que el sistema está leyendo: {list(dfs.keys())}")
+    if df_para.empty:
+        st.error("🚨 ALERTA: La hoja PARAMETROS está vacía o no se encontró en Google Sheets.")
+    else:
+        st.success(f"✅ Hoja encontrada. Columnas leídas: {df_para.columns.tolist()}")
+    # -------------------------------------------------------------
     
     # TRUCO ANTIFALLOS: Quitamos espacios ocultos al inicio o final de los títulos en Excel
     if not df_para.empty:
