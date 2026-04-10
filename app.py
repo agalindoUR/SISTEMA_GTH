@@ -1701,12 +1701,10 @@ else:
                                                     lugar_exp = st.text_input("Lugar (Empresa/Institución)")
                                                     puesto_exp = st.text_input("Puesto o Cargo ocupado")
                                                 with col_e2:
-                                                    # --- AQUÍ APLICAMOS LOS LÍMITES DE AÑOS ---
                                                     f_ini_exp = st.date_input("Fecha de Inicio", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
                                                     f_fin_exp = st.date_input("Fecha de Fin", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
-                                                    # ------------------------------------------
                                                     motivo_exp = st.selectbox("Motivo de Cese", MOTIVOS_CESE)
-                                                    
+                                                
                                                 if st.button("💾 Guardar Experiencia", type="primary", use_container_width=False):
                                                     if f_fin_exp < f_ini_exp:
                                                         st.error("⚠️ La Fecha de Fin no puede ser anterior a la Fecha de Inicio.")
@@ -1726,25 +1724,13 @@ else:
                                                             new_row["id"] = dfs[h_name]["id"].max() + 1
                                                         elif "id" in dfs[h_name].columns:
                                                             new_row["id"] = 1
-                                                            
+                                                        
                                                         dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new_row])], ignore_index=True)
                                                         save_data(dfs)
                                                         st.success("✅ Experiencia guardada correctamente.")
                                                         st.rerun()
-                                           # --- CARGA MAESTRA DE PARÁMETROS PARA ESTAS PESTAÑAS ---
-                                            df_para = dfs.get("PARAMETROS", pd.DataFrame())
-                                            if not df_para.empty:
-                                                df_para.columns = df_para.columns.str.strip().str.replace(" ", "_").str.upper()
-                                            
-                                            def get_lista(columna, default):
-                                                if columna in df_para.columns:
-                                                    lista = df_para[columna].dropna().astype(str).str.strip().unique().tolist()
-                                                    lista = [i for i in lista if i and i.lower() != "nan"]
-                                                    return lista if lista else default
-                                                return default
-                                            # --------------------------------------------------------
 
-                                           # ==========================================
+                                            # ==========================================
                                             # NUEVO REGISTRO: FORMACIÓN ACADÉMICA (DINÁMICO)
                                             # ==========================================
                                             elif h_name == "FORM. ACADEMICA":
