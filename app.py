@@ -1073,9 +1073,58 @@ else:
                                             else:
                                                 st.warning("⚠️ **Docente Investigador:** EN PROCESO (Requiere obtener clasificación RENACYT).")
 
-                                            # Evaluación para DOCENTE DE PREGRADO (Ley 30220)
+                                            # Evaluación para DOCENTE DE PREGRADO y Match de Carreras
                                             if es_maestro or es_doctor:
                                                 st.success("✅ **Docente Universitario (Pregrado):** CUMPLE (Cuenta con Grado de Maestro o superior).")
+                                                
+                                                # --- MOTOR DE MATCH DE ESPECIALIDADES ---
+                                                st.markdown("<p style='color: #004A80; font-weight: bold; margin-top: 10px; margin-bottom: 5px;'>🔍 Análisis de Especialidad Docente:</p>", unsafe_allow_html=True)
+                                                
+                                                # 1. Recopilar texto a analizar (Grados y Puestos)
+                                                texto_perfil = ""
+                                                if not df_acad.empty and "dni" in df_acad.columns:
+                                                    for _, row in acad_emp.iterrows():
+                                                        texto_perfil += " " + str(row.get('grado o titulo obtenido', '')).upper()
+                                                        texto_perfil += " " + str(row.get('especialidad', '')).upper() # Si tienes esta columna
+                                                        
+                                                # Añadimos la experiencia externa al texto de análisis
+                                                if 'vst' in locals() and not vst.empty:
+                                                    for _, row in vst.iterrows():
+                                                        texto_perfil += " " + str(row.get('PUESTO', row.get('puesto', ''))).upper()
+                                                        texto_perfil += " " + str(row.get('LUGAR', row.get('lugar', ''))).upper()
+
+                                                # 2. Diccionario de Carreras UPHFR
+                                                diccionario_carreras = {
+                                                    "Enfermería": ["ENFERMER", "CUIDADO", "CLINIC"],
+                                                    "Medicina Humana": ["MEDICIN", "MEDICO", "CIRUJAN", "CLINIC", "HOSPITAL"],
+                                                    "Obstetricia": ["OBSTETR", "MATRON", "GINECOLOG"],
+                                                    "Farmacia y Bioquímica": ["FARMAC", "BIOQUIMIC", "LABORATORI", "QUIMIC"],
+                                                    "Psicología": ["PSICOLOG", "SALUD MENTAL", "TERAP"],
+                                                    "Estomatología": ["ESTOMATOLOG", "ODONTOLOG", "DENTIS"],
+                                                    "Derecho": ["DERECHO", "ABOGAD", "LEGAL", "JURIDIC", "LEY", "MAGISTRAD", "JUEZ", "FISCAL"],
+                                                    "Administración": ["ADMINISTRAC", "GERENCI", "NEGOCIO", "EMPRES", "CONTABILIDAD", "ECONOMI"]
+                                                }
+
+                                                # 3. Analizar coincidencias
+                                                match_salud = []
+                                                match_empresariales = []
+                                                
+                                                for carrera, palabras in diccionario_carreras.items():
+                                                    if any(palabra in texto_perfil for palabra in palabras):
+                                                        if carrera in ["Enfermería", "Medicina Humana", "Obstetricia", "Farmacia y Bioquímica", "Psicología", "Estomatología"]:
+                                                            match_salud.append(carrera)
+                                                        else:
+                                                            match_empresariales.append(carrera)
+
+                                                # 4. Mostrar Resultados
+                                                if not match_salud and not match_empresariales:
+                                                    st.info("ℹ️ Perfil multidisciplinario. Se requiere revisión manual para asignar cursos específicos.")
+                                                else:
+                                                    if match_salud:
+                                                        st.markdown(f"**🏥 C. de la Salud:** Apto para dictar en **{', '.join(match_salud)}**.")
+                                                    if match_empresariales:
+                                                        st.markdown(f"**🏢 C. Empresariales:** Apto para dictar en **{', '.join(match_empresariales)}**.")
+                                                        
                                             else:
                                                 st.error("❌ **Docente Universitario (Pregrado):** NO CUMPLE (La Ley exige mínimo Grado de Maestro).")
                                # ---------------------------------------
