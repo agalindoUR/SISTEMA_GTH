@@ -123,7 +123,6 @@ def load_data():
             st.error(f"Error en {worksheet.title}: {e}")
     return dfs
 
-dfs = load_data()
 def save_data(dfs):
     creds = obtener_credenciales()
     client = gspread.authorize(creds)
@@ -137,9 +136,20 @@ def save_data(dfs):
         # Si el sistema detecta columnas repetidas (como "area" o "AREA"), las borra y deja solo una
         df_s = df_s.loc[:, ~df_s.columns.duplicated()]
         
+        # --- BLINDAJE TOTAL CONTRA CELDAS VACÍAS (FIX PARA GOOGLE SHEETS) ---
+        # 1. Rellenamos los nulos nativos de Pandas
         df_s = df_s.fillna("")
-        df_s = df_s.astype(str).replace("nan", "")
-        df_s.columns = [c.upper() for c in df_s.columns]
+        
+        # 2. Convertimos todo a texto puro
+        df_s = df_s.astype(str)
+        
+        # 3. Limpiamos cualquier "fantasma" que Python haya dejado al convertir a texto
+        fantasmas = ["nan", "NaN", "NaT", "nat", "None", "<NA>"]
+        for fantasma in fantasmas:
+            df_s = df_s.replace(fantasma, "")
+            
+        # Homologamos las columnas a mayúsculas
+        df_s.columns = [str(c).upper() for c in df_s.columns]
         
         worksheet.clear()
         worksheet.update([df_s.columns.values.tolist()] + df_s.values.tolist())
