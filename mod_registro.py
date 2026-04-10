@@ -7,29 +7,20 @@ def mostrar(dfs, save_data):
    # --- BLOQUE NUEVO: CARGA DE PARÁMETROS DINÁMICOS ---
     df_para = dfs.get("PARAMETROS", pd.DataFrame())
     
-    # --- CÓDIGO CHISMOSO PARA DEBUG (BORRAREMOS ESTO DESPUÉS) ---
-    st.info(f"Hojas que el sistema está leyendo: {list(dfs.keys())}")
-    if df_para.empty:
-        st.error("🚨 ALERTA: La hoja PARAMETROS está vacía o no se encontró en Google Sheets.")
-    else:
-        st.success(f"✅ Hoja encontrada. Columnas leídas: {df_para.columns.tolist()}")
-    # -------------------------------------------------------------
-    
-    # TRUCO ANTIFALLOS: Quitamos espacios ocultos al inicio o final de los títulos en Excel
+    # TRUCO MAESTRO: Forzamos a que todas las columnas cambien espacios por guiones bajos.
+    # Así, no importa cómo lo escribas en Excel, Python siempre lo leerá igual.
     if not df_para.empty:
-        df_para.columns = df_para.columns.str.strip()
+        df_para.columns = df_para.columns.str.strip().str.replace(" ", "_").str.upper()
     
     # Extraemos las listas limpias (quitando vacíos)
     def obtener_lista(columna, default):
         if columna in df_para.columns:
-            # Dropna quita vacíos, astype(str) asegura que sea texto, y strip() quita espacios
             lista = df_para[columna].dropna().astype(str).str.strip().unique().tolist()
-            # Filtramos por si hay celdas que solo tenían espacios en blanco
             lista = [item for item in lista if item and item.lower() != "nan"]
             return lista if lista else default
         return default
 
-    # AHORA SÍ: Usamos los nombres exactos con GUION BAJO tal cual tu Excel
+    # AHORA SÍ, USAMOS GUIONES BAJOS CON CONFIANZA TOTAL
     lista_sexo = obtener_lista("SEXO", ["Masculino", "Femenino"])
     lista_estado = obtener_lista("ESTADO_CIVIL", ["Soltero(a)", "Casado(a)", "Divorciado(a)", "Conviviente", "Viudo(a)"])
     lista_sede = obtener_lista("SEDE_TRABAJO", ["Sede Central"]) 
