@@ -1748,6 +1748,19 @@ else:
                                             # NUEVO REGISTRO: FORMACIÓN ACADÉMICA (DINÁMICO)
                                             # ==========================================
                                             elif h_name == "FORM. ACADEMICA":
+                                                # --- CARGA MAESTRA DE PARÁMETROS ---
+                                                df_para = dfs.get("PARAMETROS", pd.DataFrame())
+                                                if not df_para.empty:
+                                                    df_para.columns = df_para.columns.str.strip().str.replace(" ", "_").str.upper()
+                                                
+                                                def get_lista(columna, default):
+                                                    if columna in df_para.columns:
+                                                        lista = df_para[columna].dropna().astype(str).str.strip().unique().tolist()
+                                                        lista = [i for i in lista if i and i.lower() != "nan"]
+                                                        return lista if lista else default
+                                                    return default
+                                                # -----------------------------------
+
                                                 # Listas dinámicas para Formación
                                                 lst_tipo_estudio = get_lista("TIPO_ESTUDIO", ["Grados y Títulos", "Estudios Terminados", "Especializaciones", "Diplomados", "Cursos"])
                                                 lst_grado = get_lista("GRADO_OBTENIDO", ["Bachiller", "Título Profesional", "Magíster", "Doctor"])
@@ -1769,7 +1782,7 @@ else:
 
                                                 col_f1, col_f2 = st.columns(2)
 
-                                                if tipo_estudio == "Grados y Títulos" or tipo_estudio == "Pregrado" or tipo_estudio == "Maestría" or tipo_estudio == "Doctorado":
+                                                if tipo_estudio in ["Grados y Títulos", "Pregrado", "Maestría", "Doctorado"]:
                                                     with col_f1:
                                                         grado = st.selectbox("Grado o Título Obtenido", lst_grado)
                                                         institucion = st.text_input("Institución Educativa")
@@ -1822,6 +1835,19 @@ else:
                                             # NUEVO REGISTRO: INVESTIGACIÓN
                                             # ==========================================
                                             elif h_name == "INVESTIGACION":
+                                                # --- CARGA MAESTRA DE PARÁMETROS ---
+                                                df_para = dfs.get("PARAMETROS", pd.DataFrame())
+                                                if not df_para.empty:
+                                                    df_para.columns = df_para.columns.str.strip().str.replace(" ", "_").str.upper()
+                                                
+                                                def get_lista(columna, default):
+                                                    if columna in df_para.columns:
+                                                        lista = df_para[columna].dropna().astype(str).str.strip().unique().tolist()
+                                                        lista = [i for i in lista if i and i.lower() != "nan"]
+                                                        return lista if lista else default
+                                                    return default
+                                                # -----------------------------------
+                                                
                                                 # Listas dinámicas para Investigación
                                                 lst_nivel_ren = get_lista("NIVEL_RENACYT", ["No tiene", "Nivel VII", "Nivel VI"])
                                                 lst_bd = get_lista("BASE_DATOS_INV", ["Scopus", "Web of Science (WoS)", "SciELO"])
@@ -1906,6 +1932,19 @@ else:
                                             # CONTRATOS Y CONDICIONES LABORALES
                                             # ==========================================
                                             else:
+                                                # --- CARGA MAESTRA DE PARÁMETROS ---
+                                                df_para = dfs.get("PARAMETROS", pd.DataFrame())
+                                                if not df_para.empty:
+                                                    df_para.columns = df_para.columns.str.strip().str.replace(" ", "_").str.upper()
+                                                
+                                                def get_lista(columna, default):
+                                                    if columna in df_para.columns:
+                                                        lista = df_para[columna].dropna().astype(str).str.strip().unique().tolist()
+                                                        lista = [i for i in lista if i and i.lower() != "nan"]
+                                                        return lista if lista else default
+                                                    return default
+                                                # -----------------------------------
+
                                                 # Listas dinámicas para Contratos
                                                 lst_cargo = get_lista("CARGO", ["Docente", "Administrativo"])
                                                 lst_area = get_lista("AREA", ["Recursos Humanos", "Dirección Académica"])
