@@ -5,19 +5,27 @@ def mostrar(dfs, save_data):
     st.markdown("<h2 style='color: #FFD700;'>➕ Registro de Nuevo Colaborador</h2>", unsafe_allow_html=True)
     
     # --- BLOQUE NUEVO: CARGA DE PARÁMETROS DINÁMICOS ---
+    # --- BLOQUE NUEVO: CARGA DE PARÁMETROS DINÁMICOS ---
     df_para = dfs.get("PARAMETROS", pd.DataFrame())
+    
+    # TRUCO ANTIFALLOS: Quitamos espacios ocultos al inicio o final de los títulos en Excel
+    if not df_para.empty:
+        df_para.columns = df_para.columns.str.strip()
     
     # Extraemos las listas limpias (quitando vacíos)
     def obtener_lista(columna, default):
         if columna in df_para.columns:
-            lista = df_para[columna].dropna().unique().tolist()
+            # Dropna quita vacíos, astype(str) asegura que sea texto, y strip() quita espacios
+            lista = df_para[columna].dropna().astype(str).str.strip().unique().tolist()
+            # Filtramos por si hay celdas que solo tenían espacios en blanco
+            lista = [item for item in lista if item and item.lower() != "nan"]
             return lista if lista else default
         return default
 
-    # Cargamos las listas desde el Excel
+    # AHORA SÍ: Usamos los nombres exactos con GUION BAJO tal cual tu Excel
     lista_sexo = obtener_lista("SEXO", ["Masculino", "Femenino"])
     lista_estado = obtener_lista("ESTADO_CIVIL", ["Soltero(a)", "Casado(a)", "Divorciado(a)", "Conviviente", "Viudo(a)"])
-    lista_sede = obtener_lista("SEDE_TRABAJO", ["Sede Central"]) # Usa el nombre de columna exacto del Excel
+    lista_sede = obtener_lista("SEDE_TRABAJO", ["Sede Central"]) 
     # --------------------------------------------------
 
     with st.form("reg_p", clear_on_submit=True):
