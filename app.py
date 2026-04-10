@@ -996,7 +996,88 @@ else:
                                     </div>
                                     """
                                     st.markdown(html_resumen, unsafe_allow_html=True)
+
+                                # ==========================================
+                                    # MÓDULO INTELIGENTE: ANÁLISIS DE PERFIL Y LÍNEA DE CARRERA
+                                    # ==========================================
+                                    st.markdown("<br>", unsafe_allow_html=True)
+                                    st.markdown("<h4 style='color: #4A0000;'>🎯 Plan de Carrera (Análisis SUNEDU/Estatuto)</h4>", unsafe_allow_html=True)
+
+                                    # 1. RECOLECCIÓN DE DATOS DEL TRABAJADOR
+                                    es_doctor = False
+                                    es_maestro = False
+                                    tiene_renacyt = False
+                                    total_publicaciones = 0
+                                    anios_docencia = meses_docente // 12
                                     
+                                    # Analizamos Formación Académica
+                                    df_acad = dfs.get("FORM. ACADEMICA", pd.DataFrame())
+                                    if not df_acad.empty and "dni" in df_acad.columns:
+                                        acad_emp = df_acad[df_acad["dni"].astype(str) == str(dni_buscado)]
+                                        for idx, row in acad_emp.iterrows():
+                                            grado = str(row.get('grado o titulo obtenido', '')).upper()
+                                            if "DOCTOR" in grado: es_doctor = True
+                                            if "MAGISTER" in grado or "MAESTRO" in grado or "MAESTRIA" in grado: es_maestro = True
+
+                                    # Analizamos Investigación
+                                    df_inv = dfs.get("INVESTIGACION", pd.DataFrame())
+                                    if not df_inv.empty and "dni" in df_inv.columns:
+                                        inv_emp = df_inv[df_inv["dni"].astype(str) == str(dni_buscado)]
+                                        for idx, row in inv_emp.iterrows():
+                                            tipo = str(row.get('tipo de registro', ''))
+                                            nivel_renacyt = str(row.get('nivel renacyt', 'No tiene'))
+                                            
+                                            if "Datos Generales" in tipo and nivel_renacyt != "No tiene":
+                                                tiene_renacyt = True
+                                            if "Publicación Científica" in tipo:
+                                                total_publicaciones += 1
+
+                                    # 2. SISTEMA DE PUNTUACIÓN AUTOMÁTICA (Baremo UPHFR)
+                                    puntos_formacion = 40 if es_doctor else (25 if es_maestro else 10)
+                                    puntos_investigacion = (15 if tiene_renacyt else 0) + (total_publicaciones * 5)
+                                    if puntos_investigacion > 30: puntos_investigacion = 30 # Tope máximo
+                                    puntos_experiencia = anios_docencia * 2
+                                    if puntos_experiencia > 30: puntos_experiencia = 30 # Tope máximo
+
+                                    puntaje_total = puntos_formacion + puntos_investigacion + puntos_experiencia
+
+                                    # Contenedor para el Plan de Carrera
+                                    with st.container():
+                                        st.markdown(f"""
+                                        <div style='background-color: #F9F6EE; padding: 15px; border-radius: 8px; border: 1px solid #CCCCCC;'>
+                                            <div style='color: #004A80; font-size: 1.1em; font-weight: bold; margin-bottom: 10px;'>📊 Nivel de Competitividad Institucional: {puntaje_total}/100 pts</div>
+                                            <div style='font-size: 0.85em; color: #555555; margin-bottom: 5px;'>🎓 Formación: {puntos_formacion}/40 | 💼 Exp: {puntos_experiencia}/30 | 🔬 Inv: {puntos_investigacion}/30</div>
+                                        </div>
+                                        """, unsafe_allow_html=True)
+                                        
+                                        st.progress(puntaje_total / 100)
+                                        st.markdown("<br>", unsafe_allow_html=True)
+
+                                        # Acordeón para ver los Match de Cargos
+                                        with st.expander("🏛️ Ver Idoneidad para Cargos UPHFR (Estatuto)"):
+                                            # Evaluación para RECTOR (Art. 64)
+                                            if es_doctor and anios_docencia >= 5: 
+                                                st.success("✅ **Rector / Vicerrector:** CUMPLE (Tiene Grado de Doctor y experiencia requerida según Art. 64).")
+                                            else:
+                                                st.error("❌ **Rector / Vicerrector:** NO CUMPLE (Requiere Grado de Doctor y 5+ años de experiencia docente).")
+                                                
+                                            # Evaluación para DIRECTOR DE POSGRADO (Art. 25 y 28)
+                                            if es_doctor:
+                                                st.success("✅ **Director de Escuela de Posgrado:** CUMPLE (Tiene el grado máximo que otorga la unidad).")
+                                            else:
+                                                st.error("❌ **Director de Escuela de Posgrado:** NO CUMPLE (Requiere Grado de Doctor).")
+
+                                            # Evaluación para DOCENTE INVESTIGADOR
+                                            if tiene_renacyt:
+                                                st.success("✅ **Docente Investigador:** CUMPLE (Cuenta con clasificación RENACYT activa).")
+                                            else:
+                                                st.warning("⚠️ **Docente Investigador:** EN PROCESO (Requiere obtener clasificación RENACYT).")
+
+                                            # Evaluación para DOCENTE DE PREGRADO (Ley 30220)
+                                            if es_maestro or es_doctor:
+                                                st.success("✅ **Docente Universitario (Pregrado):** CUMPLE (Cuenta con Grado de Maestro o superior).")
+                                            else:
+                                                st.error("❌ **Docente Universitario (Pregrado):** NO CUMPLE (La Ley exige mínimo Grado de Maestro).")
                                # ---------------------------------------
                                 # TABLA DESPLEGABLE PARA EDICIÓN
                                 # ---------------------------------------
