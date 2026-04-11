@@ -1811,11 +1811,13 @@ else:
                                                             new_row["id"] = dfs[h_name]["id"].max() + 1
                                                         elif "id" in dfs[h_name].columns:
                                                             new_row["id"] = 1
-                                                            
+                                                           
+                                                              
                                                         dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new_row])], ignore_index=True)
-                                                        save_data(dfs)
+                                                        save_data(dfs) # Aquí viaja a Google Sheets y lo guarda
+                                                        st.cache_data.clear() # 🧹 ¡LA ESCOBA MÁGICA! Borra la memoria vieja
                                                         st.success("✅ Estudio guardado correctamente.")
-                                                        st.rerun()
+                                                        st.rerun() # Recarga la página y descarga los datos frescos
 
                                             # ==========================================
                                             # NUEVO REGISTRO: INVESTIGACIÓN
