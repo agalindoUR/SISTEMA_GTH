@@ -47,7 +47,8 @@ def mostrar(dfs, save_data):
         if st.form_submit_button("Registrar"):
             if d_dni and ape_form and nom_form:
                 # Cálculo del ID para PERSONAL
-                next_id_personal = dfs["PERSONAL"]["id"].max() + 1 if not dfs["PERSONAL"].empty else 1
+                id_numerico = pd.to_numeric(dfs["PERSONAL"]["id"], errors='coerce').fillna(0)
+                next_id_personal = int(id_numerico.max() + 1)
                 
                 # A. Guardamos en PERSONAL
                 nuevo_personal = {
