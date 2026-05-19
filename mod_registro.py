@@ -4,7 +4,7 @@ import pandas as pd
 def mostrar(dfs, save_data):
     st.markdown("<h2 style='color: #FFD700;'>➕ Registro de Nuevo Colaborador</h2>", unsafe_allow_html=True)
     
-   # --- BLOQUE NUEVO: CARGA DE PARÁMETROS DINÁMICOS ---
+    # --- BLOQUE NUEVO: CARGA DE PARÁMETROS DINÁMICOS ---
     df_para = dfs.get("PARAMETROS", pd.DataFrame())
     
     # TRUCO MAESTRO: Forzamos a que todas las columnas cambien espacios por guiones bajos.
@@ -65,7 +65,16 @@ def mostrar(dfs, save_data):
                 dfs["PERSONAL"] = pd.concat([dfs["PERSONAL"], pd.DataFrame([nuevo_personal])], ignore_index=True)
                 
                 # B. Crear automáticamente entrada en DATOS GENERALES
-                nid_dg = dfs["DATOS GENERALES"]["id"].max() + 1 if not dfs["DATOS GENERALES"].empty else 1
+                # Detecta la columna 'id' ignorando mayúsculas, minúsculas y espacios invisibles
+                columnas_dg = [c for c in dfs["DATOS GENERALES"].columns if c.strip().lower() == 'id']
+
+                if columnas_dg and not dfs["DATOS GENERALES"].empty:
+                    nombre_columna_id = columnas_dg[0] # Toma el nombre real de la columna (sea ID, Id o id)
+                    id_numerico_dg = pd.to_numeric(dfs["DATOS GENERALES"][nombre_columna_id], errors='coerce').fillna(0)
+                    nid_dg = int(id_numerico_dg.max() + 1)
+                else:
+                    nid_dg = 1 # Si la tabla está vacía o no existe la columna, empieza en 1                
+                
                 nuevo_dg_basico = {
                     "id": nid_dg, 
                     "dni": d_dni, 
