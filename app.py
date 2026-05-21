@@ -2048,6 +2048,25 @@ else:
                                 
                                             if hay_seleccion:
                                                 idx = sel.index[0]
+                                                
+                                                # --- CARGA DINÁMICA HOMOGÉNEA DE PARÁMETROS DESDE EXCEL ---
+                                                df_para = dfs.get("PARAMETROS", pd.DataFrame())
+                                                temp_para = pd.DataFrame()
+                                                if not df_para.empty:
+                                                    temp_para = df_para.copy()
+                                                    temp_para.columns = temp_para.columns.str.strip().str.replace(" ", "_").str.upper()
+                                
+                                                # Función de búsqueda flexible y tolerante a guiones bajos o espacios
+                                                def obtener_lista(columna_name, default):
+                                                    target = columna_name.strip().replace(" ", "_").upper()
+                                                    if not temp_para.empty:
+                                                        for col in temp_para.columns:
+                                                            if col == target or col.replace("_", "") == target.replace("_", ""):
+                                                                lista = temp_para[col].dropna().astype(str).str.strip().unique().tolist()
+                                                                lista = [item for item in lista if item and item.lower() != "nan"]
+                                                                if lista: return lista
+                                                    return default
+                                
                                                 with st.form(f"f_edit_{h_name}"):
                                                     if h_name == "CONTRATOS":
                                                         # LEEMOS DE 'sel' EN MAYÚSCULAS (porque así viene de la tabla visual)
@@ -2067,7 +2086,7 @@ else:
                                                             val_ini = sel.iloc[0].get("F_INICIO")
                                                             ini_val = pd.to_datetime(val_ini).date() if pd.notnull(val_ini) else date.today()
                                                         except:
-                                                            val_ini = date.today()
+                                                            ini_val = date.today()
                                                         n_ini = st.date_input("Inicio", value=ini_val, format="DD/MM/YYYY", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
                                                         
                                                         try:
@@ -2077,38 +2096,49 @@ else:
                                                             fin_val = date.today()
                                                         n_fin = st.date_input("Fin", value=fin_val, format="DD/MM/YYYY", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
                                                         
-                                                        v_ttrab = str(sel.iloc[0].get("TIPO DE TRABAJADOR", "Administrativo"))
-                                                        opts_tt = ["Administrativo", "Docente", "Externo"]
-                                                        if v_ttrab not in opts_tt:
-                                                            opts_tt.append(v_ttrab)
-                                                        n_ttrab = st.selectbox("Tipo de trabajador", opts_tt, index=opts_tt.index(v_ttrab))
+                                                        # 1. Tipo de trabajador (Dinámico desde PARAMETROS)
+                                                        v_ttrab = str(sel.iloc[0].get("TIPO DE TRABAJADOR", "")).strip()
+                                                        lista_tt = obtener_lista("TIPO DE TRABAJADOR", ["Administrativo", "Docente", "Externo"])
+                                                        if v_ttrab and v_ttrab not in lista_tt: 
+                                                            lista_tt.append(v_ttrab)
+                                                        idx_tt = lista_tt.index(v_ttrab) if v_ttrab in lista_tt else 0
+                                                        n_ttrab = st.selectbox("Tipo de trabajador", lista_tt, index=idx_tt)
                                                         
-                                                        v_mod = str(sel.iloc[0].get("MODALIDAD", "Presencial"))
-                                                        opts_mod = ["Presencial", "Semipresencial", "Virtual"]
-                                                        if v_mod not in opts_mod:
-                                                            opts_mod.append(v_mod)
-                                                        n_mod = st.selectbox("Modalidad", opts_mod, index=opts_mod.index(v_mod))
+                                                        # 2. Modalidad (Dinámico desde PARAMETROS)
+                                                        v_mod = str(sel.iloc[0].get("MODALIDAD", "")).strip()
+                                                        lista_mod = obtener_lista("MODALIDAD", ["Presencial", "Semipresencial", "Virtual"])
+                                                        if v_mod and v_mod not in lista_mod: 
+                                                            lista_mod.append(v_mod)
+                                                        idx_mod = lista_mod.index(v_mod) if v_mod in lista_mod else 0
+                                                        n_mod = st.selectbox("Modalidad", lista_mod, index=idx_mod)
                                                         
-                                                        v_tem = str(sel.iloc[0].get("TEMPORALIDAD", "Plazo fijo"))
-                                                        opts_tem = ["Plazo fijo", "Plazo indeterminado", "Ordinarizado"]
-                                                        if v_tem not in opts_tem:
-                                                            opts_tem.append(v_tem)
-                                                        n_tem = st.selectbox("Temporalidad", opts_tem, index=opts_tem.index(v_tem))
+                                                        # 3. Temporalidad (Dinámico desde PARAMETROS)
+                                                        v_tem = str(sel.iloc[0].get("TEMPORALIDAD", "")).strip()
+                                                        lista_tem = obtener_lista("TEMPORALIDAD", ["Plazo fijo", "Plazo indeterminado", "Ordinarizado"])
+                                                        if v_tem and v_tem not in lista_tem: 
+                                                            lista_tem.append(v_tem)
+                                                        idx_tem = lista_tem.index(v_tem) if v_tem in lista_tem else 0
+                                                        n_tem = st.selectbox("Temporalidad", lista_tem, index=idx_tem)
                                                         
                                                         n_lnk = st.text_input("Link", value=str(sel.iloc[0].get("LINK", "")))
                                                         
-                                                        v_tcont = str(sel.iloc[0].get("TIPO CONTRATO", "Planilla completo"))
-                                                        opts_tcon = ["Planilla completo", "Tiempo Parcial", "Recibo por Honorarios", "Otro"]
-                                                        if v_tcont not in opts_tcon:
-                                                            opts_tcon.append(v_tcont)
-                                                        n_tcont = st.selectbox("Tipo Contrato", opts_tcon, index=opts_tcon.index(v_tcont))
+                                                        # 4. Tipo de Contrato (Dinámico desde PARAMETROS)
+                                                        v_tcont = str(sel.iloc[0].get("TIPO CONTRATO", "")).strip()
+                                                        lista_tcon = obtener_lista("TIPO CONTRATO", ["Planilla completo", "Tiempo Parcial", "Recibo por Honorarios", "Otro"])
+                                                        if v_tcont and v_tcont not in lista_tcon: 
+                                                            lista_tcon.append(v_tcont)
+                                                        idx_tcon = lista_tcon.index(v_tcont) if v_tcont in lista_tcon else 0
+                                                        n_tcont = st.selectbox("Tipo Contrato", lista_tcon, index=idx_tcon)
                                                         
+                                                        # 5. Estado y Motivo Cese (Dinámico desde PARAMETROS)
                                                         est_e = "ACTIVO" if n_fin >= date.today() else "CESADO"
-                                                        v_mot = str(sel.iloc[0].get("MOTIVO CESE", "Vigente"))
-                                                        opts_mot = ["Vigente"] + MOTIVOS_CESE
-                                                        if v_mot not in opts_mot:
-                                                            opts_mot.append(v_mot)
-                                                        mot_e = st.selectbox("Motivo Cese", opts_mot, index=opts_mot.index(v_mot)) if est_e == "CESADO" else "Vigente"
+                                                        v_mot = str(sel.iloc[0].get("MOTIVO CESE", "Vigente")).strip()
+                                                        base_motivos = MOTIVOS_CESE if 'MOTIVOS_CESE' in globals() else ["Renuncia", "Término de contrato", "Despido", "Mutuo disenso"]
+                                                        lista_mot = ["Vigente"] + obtener_lista("MOTIVO CESE", base_motivos)
+                                                        if v_mot and v_mot not in lista_mot: 
+                                                            lista_mot.append(v_mot)
+                                                        idx_mot = lista_mot.index(v_mot) if v_mot in lista_mot else 0
+                                                        mot_e = st.selectbox("Motivo Cese", lista_mot, index=idx_mot) if est_e == "CESADO" else "Vigente"
                                 
                                                         if st.form_submit_button("Actualizar"):
                                                             update_vals = {
@@ -2116,7 +2146,7 @@ else:
                                                                 "condicion de trabajo": n_cond, "f_inicio": n_ini, "f_fin": n_fin, "tipo de trabajador": n_ttrab,
                                                                 "modalidad": n_mod, "temporalidad": n_tem, "link": n_lnk, "tipo contrato": n_tcont, "estado": est_e, "motivo cese": mot_e
                                                             }
-                                                            # SOLUCIÓN TYPEERROR PYARROW: Relajamos el tipo de dato de la columna antes de inyectarle valores
+                                                            # SOLUCIÓN TYPEERROR PYARROW: Aseguramos el tipo 'object' dinámicamente antes de guardar
                                                             for k, v in update_vals.items():
                                                                 if k in dfs[h_name].columns:
                                                                     dfs[h_name][k] = dfs[h_name][k].astype(object)
@@ -2137,30 +2167,15 @@ else:
                                                                 vistas.add(c_upper)
                                                                 columnas_limpias.append(c)
                                 
-                                                        # --- NUEVO: EXTRAER PARÁMETROS PARA DATOS GENERALES ---
-                                                        df_para = dfs.get("PARAMETROS", pd.DataFrame())
-                                                        temp_para = pd.DataFrame()
-                                                        if not df_para.empty:
-                                                            temp_para = df_para.copy()
-                                                            temp_para.columns = temp_para.columns.str.strip().str.replace(" ", "_").str.upper()
-                                
-                                                        def obtener_lista(columna, default):
-                                                            if not temp_para.empty and columna in temp_para.columns:
-                                                                lista = temp_para[columna].dropna().astype(str).str.strip().unique().tolist()
-                                                                lista = [item for item in lista if item and item.lower() != "nan"]
-                                                                return lista if lista else default
-                                                            return default
-                                
                                                         lista_sexo = obtener_lista("SEXO", ["Masculino", "Femenino"])
-                                                        lista_estado = obtener_lista("ESTADO_CIVIL", ["Soltero(a)", "Casado(a)", "Divorciado(a)", "Conviviente", "Viudo(a)"])
-                                                        lista_sede = obtener_lista("SEDE_TRABAJO", ["Sede Central"])
+                                                        lista_estado = obtener_lista("ESTADO CIVIL", ["Soltero(a)", "Casado(a)", "Divorciado(a)", "Conviviente", "Viudo(a)"])
+                                                        lista_sede = obtener_lista("SEDE TRABAJO", ["Sede Central"])
                                 
-                                                        # Iteramos sobre la lista filtrada
+                                                        # Iteramos sobre la lista filtrada de Datos Generales y otras pestañas
                                                         for i, col in enumerate(columnas_limpias):
                                                             val = row.get(str(col).upper(), "")
                                                             col_lower = str(col).lower().strip()
                                 
-                                                            # 1. LISTAS DESPLEGABLES CONECTADAS AL EXCEL
                                                             if h_name == "DATOS GENERALES" and col_lower == "sexo":
                                                                 v_actual = str(val) if pd.notnull(val) and val else "Masculino"
                                                                 if v_actual not in lista_sexo: lista_sexo.append(v_actual)
@@ -2176,7 +2191,6 @@ else:
                                                                 if v_actual not in lista_sede: lista_sede.append(v_actual)
                                                                 edit_row[col] = st.selectbox(col.title(), lista_sede, index=lista_sede.index(v_actual), key=f"sel_{h_name}_{col}_{idx}_{i}")
                                 
-                                                            # 2. FECHAS
                                                             elif "fecha" in col_lower or "f_" in col_lower:
                                                                 if pd.notnull(val) and isinstance(val, (date, datetime)): d_val = val
                                                                 elif pd.notnull(val) and isinstance(val, str):
@@ -2185,25 +2199,21 @@ else:
                                                                 else: d_val = date.today()
                                                                 edit_row[col] = st.date_input(col.title(), value=d_val, format="DD/MM/YYYY", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31), key=f"date_{h_name}_{col}_{idx}_{i}")
                                 
-                                                            # 3. EDAD (Bloqueado, es automático)
                                                             elif col_lower == "edad":
                                                                 val_edad = int(val) if pd.notnull(val) and str(val).replace('.','',1).isdigit() else 0
                                                                 edit_row[col] = st.number_input(col.title(), value=val_edad, disabled=True, key=f"edad_{h_name}_{col}_{idx}_{i}")
                                 
-                                                            # 4. NÚMEROS
                                                             elif col_lower in ["remuneración", "bonificación", "sueldo", "días generados", "dias gozados", "saldo", "monto", "remuneracion basica", "bonificacion"]:
                                                                 try: n_val = float(val) if pd.notnull(val) else 0.0
                                                                 except: n_val = 0.0
                                                                 edit_row[col] = st.number_input(col.title(), value=n_val, key=f"num_{h_name}_{col}_{idx}_{i}")
                                 
-                                                            # 5. TEXTO REGULAR
                                                             else:
                                                                 edit_row[col] = st.text_input(col.title(), value=str(val) if pd.notnull(val) else "", key=f"text_{h_name}_{col}_{idx}_{i}")
                                 
                                                         col_btn1, col_btn2 = st.columns(2)
                                                         with col_btn1:
                                                             if st.form_submit_button("Actualizar Registro"):
-                                                                # SOLUCIÓN TYPEERROR PYARROW: Relajamos el tipo de dato de la columna antes de inyectarle valores
                                                                 for k, v in edit_row.items():
                                                                     if k in dfs[h_name].columns:
                                                                         dfs[h_name][k] = dfs[h_name][k].astype(object)
@@ -2217,7 +2227,6 @@ else:
                                                                 st.rerun()
                                             else:
                                                 st.info("Activa la casilla (SEL) en la tabla superior para editar o eliminar el registro. Si estás buscando a alguien que ingresaste a mano, verifica que su nombre en el Google Sheets no tenga espacios al final.")
-                
     # ==========================================
     # --- SECCIÓN REGISTRO Y NÓMINA ---
     # ==========================================
