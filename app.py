@@ -558,7 +558,11 @@ else:
                             c_df = pd.DataFrame(columns=COLUMNAS.get(h_name, []))
 
                         if h_name == "CONTRATOS":
-                            df_contratos = dfs["CONTRATOS"][dfs["CONTRATOS"]["dni"] == dni_buscado]
+                            df_contratos_base = dfs.get("CONTRATOS", pd.DataFrame())
+                            if not df_contratos_base.empty and "dni" in df_contratos_base.columns:
+                                df_contratos = df_contratos_base[df_contratos_base["dni"].astype(str) == str(dni_buscado)]
+                            else:
+                                df_contratos = pd.DataFrame()
                             if not df_contratos.empty:
                                 st.markdown("""
                                     <style>
