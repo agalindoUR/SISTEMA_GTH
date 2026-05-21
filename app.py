@@ -87,7 +87,9 @@ def obtener_credenciales():
     else:
         return ServiceAccountCredentials.from_json_keyfile_name("credenciales.json", SCOPE)
 
-@st.cache_data(ttl=600)
+import time  # <--- ¡IMPORTANTE! Agrega esta línea si no la tienes arriba
+
+@st.cache_data(ttl=240)  # <--- Guarda los datos en memoria por 4 minutos para no saturar a Google en cada clic
 def load_data():
     creds = obtener_credenciales()
     client = gspread.authorize(creds)
@@ -97,6 +99,10 @@ def load_data():
     dfs = {}
     for worksheet in worksheets:
         try:
+            # ---> PAUSA CLAVE: Esperamos 0.6 segundos antes de leer cada pestaña
+            # Esto hace que Google no detecte un ataque de peticiones masivas
+            time.sleep(0.6) 
+            
             data = worksheet.get_all_records()
             df = pd.DataFrame(data)
             if not df.empty:
@@ -118,9 +124,14 @@ def load_data():
                 if "dni" in df.columns:
                     df["dni"] = df["dni"].astype(str).str.strip().str.replace(r'\.0$', '', regex=True).str.zfill(8)
                 
-            dfs[worksheet.title] = df
+                dfs[worksheet.title] = df
+            else:
+                dfs[worksheet.title] = pd.DataFrame() # Si está vacía, evita crasheos futuros
         except Exception as e:
             st.error(f"Error en {worksheet.title}: {e}")
+            dfs[worksheet.title] = pd.DataFrame()
+            time.sleep(2) # Pausa extra de penalización si Google da error en una pestaña
+            
     return dfs
 
 def save_data(dfs):
