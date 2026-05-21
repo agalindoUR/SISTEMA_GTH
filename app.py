@@ -2038,14 +2038,14 @@ else:
                                 
                                 with col_b:
                                         with st.expander("📝 Editar / Eliminar"):
-                                            
+            
                                             # --- INICIO DE LA CORRECCIÓN (BLINDAJE CONTRA NAMEERROR) ---
                                             try:
                                                 hay_seleccion = not sel.empty
                                             except NameError:
                                                 hay_seleccion = False
                                             # --- FIN DE LA CORRECCIÓN ---
-    
+                                
                                             if hay_seleccion:
                                                 idx = sel.index[0]
                                                 with st.form(f"f_edit_{h_name}"):
@@ -2054,44 +2054,44 @@ else:
                                                         n_car = st.text_input("Cargo", value=str(sel.iloc[0].get("CARGO", "")))
                                                         n_area = st.text_input("Área", value=str(sel.iloc[0].get("AREA", "")))
                                                         
-                                                        try: 
+                                                        try:
                                                             val_rem = float(sel.iloc[0].get("REMUNERACION BASICA", 0.0))
-                                                        except: 
+                                                        except:
                                                             val_rem = 0.0
                                                         n_rem = st.number_input("Remuneración básica", value=val_rem)
                                                         
                                                         n_bon = st.text_input("Bonificación", value=str(sel.iloc[0].get("BONIFICACION", "")))
                                                         n_cond = st.text_input("Condición de trabajo", value=str(sel.iloc[0].get("CONDICION DE TRABAJO", "")))
                                                         
-                                                        try: 
+                                                        try:
                                                             val_ini = sel.iloc[0].get("F_INICIO")
                                                             ini_val = pd.to_datetime(val_ini).date() if pd.notnull(val_ini) else date.today()
-                                                        except: 
+                                                        except:
                                                             val_ini = date.today()
                                                         n_ini = st.date_input("Inicio", value=ini_val, format="DD/MM/YYYY", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
                                                         
-                                                        try: 
+                                                        try:
                                                             val_fin = sel.iloc[0].get("F_FIN")
                                                             fin_val = pd.to_datetime(val_fin).date() if pd.notnull(val_fin) else date.today()
-                                                        except: 
+                                                        except:
                                                             fin_val = date.today()
                                                         n_fin = st.date_input("Fin", value=fin_val, format="DD/MM/YYYY", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
                                                         
                                                         v_ttrab = str(sel.iloc[0].get("TIPO DE TRABAJADOR", "Administrativo"))
                                                         opts_tt = ["Administrativo", "Docente", "Externo"]
-                                                        if v_ttrab not in opts_tt: 
+                                                        if v_ttrab not in opts_tt:
                                                             opts_tt.append(v_ttrab)
                                                         n_ttrab = st.selectbox("Tipo de trabajador", opts_tt, index=opts_tt.index(v_ttrab))
                                                         
                                                         v_mod = str(sel.iloc[0].get("MODALIDAD", "Presencial"))
                                                         opts_mod = ["Presencial", "Semipresencial", "Virtual"]
-                                                        if v_mod not in opts_mod: 
+                                                        if v_mod not in opts_mod:
                                                             opts_mod.append(v_mod)
                                                         n_mod = st.selectbox("Modalidad", opts_mod, index=opts_mod.index(v_mod))
                                                         
                                                         v_tem = str(sel.iloc[0].get("TEMPORALIDAD", "Plazo fijo"))
                                                         opts_tem = ["Plazo fijo", "Plazo indeterminado", "Ordinarizado"]
-                                                        if v_tem not in opts_tem: 
+                                                        if v_tem not in opts_tem:
                                                             opts_tem.append(v_tem)
                                                         n_tem = st.selectbox("Temporalidad", opts_tem, index=opts_tem.index(v_tem))
                                                         
@@ -2099,81 +2099,114 @@ else:
                                                         
                                                         v_tcont = str(sel.iloc[0].get("TIPO CONTRATO", "Planilla completo"))
                                                         opts_tcon = ["Planilla completo", "Tiempo Parcial", "Recibo por Honorarios", "Otro"]
-                                                        if v_tcont not in opts_tcon: 
+                                                        if v_tcont not in opts_tcon:
                                                             opts_tcon.append(v_tcont)
                                                         n_tcont = st.selectbox("Tipo Contrato", opts_tcon, index=opts_tcon.index(v_tcont))
-    
+                                                        
                                                         est_e = "ACTIVO" if n_fin >= date.today() else "CESADO"
                                                         v_mot = str(sel.iloc[0].get("MOTIVO CESE", "Vigente"))
                                                         opts_mot = ["Vigente"] + MOTIVOS_CESE
-                                                        if v_mot not in opts_mot: 
+                                                        if v_mot not in opts_mot:
                                                             opts_mot.append(v_mot)
                                                         mot_e = st.selectbox("Motivo Cese", opts_mot, index=opts_mot.index(v_mot)) if est_e == "CESADO" else "Vigente"
-    
+                                
                                                         if st.form_submit_button("Actualizar"):
-                                                            # GUARDAMOS EN MINÚSCULAS (Para mantener tu Google Sheet sano y sin duplicados)
                                                             update_vals = {
-                                                                "cargo": n_car, 
-                                                                "area": n_area,
-                                                                "remuneracion basica": n_rem, 
-                                                                "bonificacion": n_bon, 
-                                                                "condicion de trabajo": n_cond, 
-                                                                "f_inicio": n_ini, 
-                                                                "f_fin": n_fin, 
-                                                                "tipo de trabajador": n_ttrab, 
-                                                                "modalidad": n_mod, 
-                                                                "temporalidad": n_tem, 
-                                                                "link": n_lnk, 
-                                                                "tipo contrato": n_tcont, 
-                                                                "estado": est_e, 
-                                                                "motivo cese": mot_e
+                                                                "cargo": n_car, "area": n_area, "remuneracion basica": n_rem, "bonificacion": n_bon,
+                                                                "condicion de trabajo": n_cond, "f_inicio": n_ini, "f_fin": n_fin, "tipo de trabajador": n_ttrab,
+                                                                "modalidad": n_mod, "temporalidad": n_tem, "link": n_lnk, "tipo contrato": n_tcont, "estado": est_e, "motivo cese": mot_e
                                                             }
-                                                            for k, v in update_vals.items(): 
+                                                            # SOLUCIÓN TYPEERROR PYARROW: Relajamos el tipo de dato de la columna antes de inyectarle valores
+                                                            for k, v in update_vals.items():
+                                                                if k in dfs[h_name].columns:
+                                                                    dfs[h_name][k] = dfs[h_name][k].astype(object)
                                                                 dfs[h_name].at[idx, k] = v
                                                             save_data(dfs)
                                                             st.rerun()
+                                
                                                     else:
                                                         edit_row = {}
-                                                        row = sel.iloc[0] 
-                                                        
-                                                        # ---> NUEVO FILTRO: Eliminamos duplicados y la columna AREA <---
+                                                        row = sel.iloc[0]
+                                
+                                                        # ---> FILTRO: Eliminamos duplicados y la columna AREA <---
                                                         columnas_limpias = []
                                                         vistas = set()
                                                         for c in cols_reales:
-                                                            c_upper = str(c).upper().strip() # Quitamos espacios extra y pasamos a mayúsculas
-                                                            # Ignoramos la columna si ya la vimos o si es "AREA"
+                                                            c_upper = str(c).upper().strip() 
                                                             if c_upper not in vistas and c_upper != "AREA":
                                                                 vistas.add(c_upper)
                                                                 columnas_limpias.append(c)
-                                                        
-                                                        # Ahora iteramos sobre la lista filtrada, no sobre cols_reales
+                                
+                                                        # --- NUEVO: EXTRAER PARÁMETROS PARA DATOS GENERALES ---
+                                                        df_para = dfs.get("PARAMETROS", pd.DataFrame())
+                                                        temp_para = pd.DataFrame()
+                                                        if not df_para.empty:
+                                                            temp_para = df_para.copy()
+                                                            temp_para.columns = temp_para.columns.str.strip().str.replace(" ", "_").str.upper()
+                                
+                                                        def obtener_lista(columna, default):
+                                                            if not temp_para.empty and columna in temp_para.columns:
+                                                                lista = temp_para[columna].dropna().astype(str).str.strip().unique().tolist()
+                                                                lista = [item for item in lista if item and item.lower() != "nan"]
+                                                                return lista if lista else default
+                                                            return default
+                                
+                                                        lista_sexo = obtener_lista("SEXO", ["Masculino", "Femenino"])
+                                                        lista_estado = obtener_lista("ESTADO_CIVIL", ["Soltero(a)", "Casado(a)", "Divorciado(a)", "Conviviente", "Viudo(a)"])
+                                                        lista_sede = obtener_lista("SEDE_TRABAJO", ["Sede Central"])
+                                
+                                                        # Iteramos sobre la lista filtrada
                                                         for i, col in enumerate(columnas_limpias):
                                                             val = row.get(str(col).upper(), "")
-                                                            
-                                                            if "fecha" in col.lower() or "f_" in col.lower(): 
+                                                            col_lower = str(col).lower().strip()
+                                
+                                                            # 1. LISTAS DESPLEGABLES CONECTADAS AL EXCEL
+                                                            if h_name == "DATOS GENERALES" and col_lower == "sexo":
+                                                                v_actual = str(val) if pd.notnull(val) and val else "Masculino"
+                                                                if v_actual not in lista_sexo: lista_sexo.append(v_actual)
+                                                                edit_row[col] = st.selectbox(col.title(), lista_sexo, index=lista_sexo.index(v_actual), key=f"sel_{h_name}_{col}_{idx}_{i}")
+                                
+                                                            elif h_name == "DATOS GENERALES" and col_lower == "estado civil":
+                                                                v_actual = str(val) if pd.notnull(val) and val else "Soltero(a)"
+                                                                if v_actual not in lista_estado: lista_estado.append(v_actual)
+                                                                edit_row[col] = st.selectbox(col.title(), lista_estado, index=lista_estado.index(v_actual), key=f"sel_{h_name}_{col}_{idx}_{i}")
+                                
+                                                            elif h_name == "DATOS GENERALES" and col_lower == "sede":
+                                                                v_actual = str(val) if pd.notnull(val) and val else "Sede Central"
+                                                                if v_actual not in lista_sede: lista_sede.append(v_actual)
+                                                                edit_row[col] = st.selectbox(col.title(), lista_sede, index=lista_sede.index(v_actual), key=f"sel_{h_name}_{col}_{idx}_{i}")
+                                
+                                                            # 2. FECHAS
+                                                            elif "fecha" in col_lower or "f_" in col_lower:
                                                                 if pd.notnull(val) and isinstance(val, (date, datetime)): d_val = val
                                                                 elif pd.notnull(val) and isinstance(val, str):
                                                                     try: d_val = pd.to_datetime(val).date()
                                                                     except: d_val = date.today()
                                                                 else: d_val = date.today()
                                                                 edit_row[col] = st.date_input(col.title(), value=d_val, format="DD/MM/YYYY", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31), key=f"date_{h_name}_{col}_{idx}_{i}")
-                                                                
-                                                            elif col.lower() == "edad":
+                                
+                                                            # 3. EDAD (Bloqueado, es automático)
+                                                            elif col_lower == "edad":
                                                                 val_edad = int(val) if pd.notnull(val) and str(val).replace('.','',1).isdigit() else 0
                                                                 edit_row[col] = st.number_input(col.title(), value=val_edad, disabled=True, key=f"edad_{h_name}_{col}_{idx}_{i}")
-                                                                
-                                                            elif col.lower() in ["remuneración", "bonificación", "sueldo", "días generados", "dias gozados", "saldo", "monto", "remuneracion basica", "bonificacion"]: 
+                                
+                                                            # 4. NÚMEROS
+                                                            elif col_lower in ["remuneración", "bonificación", "sueldo", "días generados", "dias gozados", "saldo", "monto", "remuneracion basica", "bonificacion"]:
                                                                 try: n_val = float(val) if pd.notnull(val) else 0.0
                                                                 except: n_val = 0.0
                                                                 edit_row[col] = st.number_input(col.title(), value=n_val, key=f"num_{h_name}_{col}_{idx}_{i}")
-                                                                
-                                                            else: 
+                                
+                                                            # 5. TEXTO REGULAR
+                                                            else:
                                                                 edit_row[col] = st.text_input(col.title(), value=str(val) if pd.notnull(val) else "", key=f"text_{h_name}_{col}_{idx}_{i}")
-    
+                                
                                                         col_btn1, col_btn2 = st.columns(2)
                                                         with col_btn1:
                                                             if st.form_submit_button("Actualizar Registro"):
-                                                                for k, v in edit_row.items(): 
+                                                                # SOLUCIÓN TYPEERROR PYARROW: Relajamos el tipo de dato de la columna antes de inyectarle valores
+                                                                for k, v in edit_row.items():
+                                                                    if k in dfs[h_name].columns:
+                                                                        dfs[h_name][k] = dfs[h_name][k].astype(object)
                                                                     dfs[h_name].at[idx, k] = v
                                                                 save_data(dfs)
                                                                 st.rerun()
