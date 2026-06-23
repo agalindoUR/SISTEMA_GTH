@@ -89,7 +89,7 @@ def obtener_credenciales():
 
 import time  # <--- ¡IMPORTANTE! Agrega esta línea si no la tienes arriba
 
-@st.cache_data(ttl=240)  # <--- Guarda los datos en memoria por 4 minutos para no saturar a Google en cada clic
+@st.cache_data(ttl=240)
 def load_data():
     creds = obtener_credenciales()
     client = gspread.authorize(creds)
@@ -113,6 +113,10 @@ def load_data():
                               .replace('ú', 'u').replace('_', ' ') 
                               for c in df.columns]
                 
+                # ---> 🛡️ AQUÍ VA LA LÍNEA NUEVA: ELIMINA COLUMNAS DUPLICADAS <---
+                df = df.loc[:, ~df.columns.duplicated()].copy()
+                # ---------------------------------------------------------------
+                
                 # Arreglo especial para CONTRATOS (Evita el error f_inicio)
                 if worksheet.title == "CONTRATOS":
                     # Mapeamos cualquier variante a 'f_inicio'
@@ -126,11 +130,11 @@ def load_data():
                 
                 dfs[worksheet.title] = df
             else:
-                dfs[worksheet.title] = pd.DataFrame() # Si está vacía, evita crasheos futuros
+                dfs[worksheet.title] = pd.DataFrame()
         except Exception as e:
             st.error(f"Error en {worksheet.title}: {e}")
             dfs[worksheet.title] = pd.DataFrame()
-            time.sleep(2) # Pausa extra de penalización si Google da error en una pestaña
+            time.sleep(2)
             
     return dfs
 
