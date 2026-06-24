@@ -424,6 +424,10 @@ st.markdown("""
 # 4. LÓGICA DE DATOS Y SESIÓN
 # ==========================================
 if "rol" not in st.session_state: st.session_state.rol = None
+if "usuario_actual" not in st.session_state: st.session_state.usuario_actual = None
+
+# ---> CARGAMOS LOS DATOS ANTES DEL LOGIN <---
+dfs = load_data()
 
 if st.session_state.rol is None:
     st.markdown("<h3 style='text-align: center; color: #FFD700;'>¡Tu talento es importante! :)</h3>", unsafe_allow_html=True)
@@ -439,15 +443,39 @@ if st.session_state.rol is None:
         st.markdown('<p style="color:white; text-align:center; font-weight:bold; margin-top:15px;">Bienvenido (a) al sistema de gestión de datos de los colaboradores</p>', unsafe_allow_html=True)
 
         if st.button("INGRESAR"):
-            if u == "admin": st.session_state.rol = "Admin"
-            elif u == "supervisor" and p == "123": st.session_state.rol = "Supervisor"
-            elif u == "lector" and p == "123": st.session_state.rol = "Lector"
-            else: st.error("Credenciales incorrectas")
-
-            if st.session_state.rol: st.rerun()
+            df_usuarios = dfs.get("USUARIOS", pd.DataFrame())
+            
+            # Buscamos en el dataframe de Google Sheets
+            if not df_usuarios.empty and "usuario" in df_usuarios.columns:
+                user_match = df_usuarios[(df_usuarios["usuario"].astype(str).str.lower() == u) & 
+                                         (df_usuarios["password"].astype(str) == p)]
+                
+                if not user_match.empty:
+                    estado = str(user_match.iloc[0].get("estado", "Activo")).title().strip()
+                    if estado == "Inactivo":
+                        st.error("⚠️ Tu cuenta está inactiva. Contacta al administrador.")
+                    else:
+                        st.session_state.rol = user_match.iloc[0].get("rol", "Lector").strip().capitalize()
+                        st.session_state.usuario_actual = u
+                        st.rerun()
+                else:
+                    # Backup de emergencia por si algo falla
+                    if u == "admin" and p == "12345": 
+                        st.session_state.rol = "Admin"
+                        st.session_state.usuario_actual = "admin"
+                        st.rerun()
+                    else:
+                        st.error("❌ Credenciales incorrectas.")
+            else:
+                # Si la pestaña USUARIOS está vacía o no existe
+                if u == "admin" and p == "12345": 
+                    st.session_state.rol = "Admin"
+                    st.session_state.usuario_actual = "admin"
+                    st.rerun()
+                else:
+                    st.error("❌ No hay base de usuarios. Usa admin / 12345.")
 
 else:
-    dfs = load_data()
     es_lector = st.session_state.rol == "Lector"
 
     with st.sidebar:
@@ -455,6 +483,10 @@ else:
         col_logo_1, col_logo_2, col_logo_3 = st.columns([1, 2, 1]) 
         with col_logo_2:
             if os.path.exists("Logo_guindo.png"): st.image("Logo_guindo.png", use_container_width=False)
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        # ---> MOSTRAMOS USUARIO LOGUEADO <---
+        st.markdown(f"<div style='text-align: center; color:#FFD700;'>Hola, <b>{st.session_state.usuario_actual}</b><br><small>Rol: {st.session_state.rol}</small></div>", unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
 
         # --- LÓGICA DE MENÚS INTELIGENTES ---
@@ -478,14 +510,23 @@ else:
         # Usamos index=None para que se pueda desmarcar sin textos extraños
         st.radio("Reportes", ["Reporte General", "Cumpleañeros", "Vacaciones", "Vencimientos"], key="menu_r", on_change=click_menu_r, index=None, label_visibility="collapsed")
         
+        # ---> MENÚ DE USUARIOS Y SEGURIDAD <---
+        st.markdown("---")
+        if st.button("🔐 Usuarios y Seguridad", use_container_width=True):
+            st.session_state.menu_activo = "🔐 Usuarios y Seguridad"
+            st.session_state.menu_p = None
+            st.session_state.menu_r = None
+
         m = st.session_state.menu_activo
 
         st.markdown("---")
         if st.button("🚪 Cerrar Sesión", key="btn_logout"):
             st.session_state.rol = None
+            st.session_state.usuario_actual = None
+            st.session_state.menu_activo = "🔍 Consulta"
             st.rerun()
 
-    # === SECCIÓN CONSULTA ===
+    # === SECCIÓN DE MÓDULOS ===
     if m == "🔍 Consulta":
         st.markdown("<h2 style='color: #FFD700;'>Búsqueda de Colaborador</h2>", unsafe_allow_html=True)
 
@@ -2312,3 +2353,9 @@ else:
     # ... dentro de tu menú en app.py ...
     if m == "📋 Evaluaciones":  # (o como se llame tu opción en el menú)
         mod_gestor_evaluaciones.mostrar(dfs, save_data)
+
+    # ==========================================
+    # MÓDULO: USUARIOS Y SEGURIDAD
+    # ==========================================
+    elif m == "🔐 Usuarios y Seguridad":
+        mod_usuarios.mostrar(dfs, save_data)
