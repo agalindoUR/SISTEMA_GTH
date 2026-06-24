@@ -27,7 +27,7 @@ import reportegeneral as mod_reportegeneral
 import gestor_evaluaciones as mod_gestor_evaluaciones
 import mod_registro
 import mod_nomina
-
+import mod_usuarios
 
 st.set_page_config(page_title="Gestión Roosevelt", page_icon="🎓", layout="wide")
 
