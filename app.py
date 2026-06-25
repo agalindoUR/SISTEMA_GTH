@@ -745,8 +745,40 @@ else:
                                     [data-testid="stDownloadButton"] button:hover { background-color: #ffffff !important; border: 2px solid #FFD700 !important; }
                                     </style>
                                 """, unsafe_allow_html=True)
-                                word_file = gen_word(nom_c, dni_buscado, df_contratos)
-                                st.download_button("📄 Generar Certificado de Trabajo", data=word_file, file_name=f"Certificado_{dni_buscado}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                                                              
+                                # =========================================================================
+                                # 🎯 INTERFAZ DE GENERACIÓN DE CERTIFICADO (REEMPLAZO)
+                                # =========================================================================
+                                st.markdown("### 📄 Opciones de Certificado")
+                                
+                                # 1. El usuario elige el tipo (o lo deja en automático)
+                                tipo_certificado = st.selectbox(
+                                    "Seleccione el tipo de documento a generar:",
+                                    [
+                                        "Automático (Detectar por historial)",
+                                        "Certificado de Trabajo - Planilla Administrativo",
+                                        "Constancia de Servicios - Locación Administrativo",
+                                        "Certificado de Trabajo - Planilla Docente",
+                                        "Constancia de Servicios - Locación Docente"
+                                    ],
+                                    key=f"selector_certificado_{dni_buscado}"
+                                )
+                                
+                                # 2. Generamos el archivo en vivo basado en lo que escogió arriba
+                                try:
+                                    word_file = gen_word(nom_c, dni_buscado, df_contratos, tipo_certificado)
+                                    
+                                    # 3. Mostramos el botón de descarga con el archivo actualizado
+                                    st.download_button(
+                                        label="📥 Descargar Documento Word",
+                                        data=word_file,
+                                        file_name=f"Certificado_{dni_buscado}.docx",
+                                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                                        key=f"btn_descargar_cert_{dni_buscado}"
+                                    )
+                                except Exception as e:
+                                    st.error(f"Error al generar el documento: {e}")
+                                
                                 st.markdown("<br>", unsafe_allow_html=True)
 
                         if h_name == "VACACIONES":
