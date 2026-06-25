@@ -258,7 +258,7 @@ def gen_word(nom, dni, df_c):
     
     if not df_merged.empty:
         # Convertimos toda la última fila a texto en minúsculas para buscar palabras clave
-        texto_ultima_fila = " ".join(df_merged.iloc[-1].astype(str).lower().values)
+        texto_ultima_fila = " ".join([str(val).lower() for val in df_merged.iloc[-1].values])
         
         # Detectar si es Docente
         if "docente" in texto_ultima_fila or "profesor" in texto_ultima_fila or "catedra" in texto_ultima_fila:
