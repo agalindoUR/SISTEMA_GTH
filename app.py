@@ -2282,7 +2282,7 @@ else:
                                                             else: d_val = date.today()
                                                             edit_row[col] = st.date_input(col.title(), value=d_val, format="DD/MM/YYYY", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31), key=f"date_{h_name}_{col}_{idx}_{i}")
                                                         
-                                                       elif col_lower == "edad":
+                                                        elif col_lower == "edad":
                                                             # Buscar la fecha de nacimiento en la fila actual para calcular la edad en vivo
                                                             fnac_val = row.get("FECHA DE NACIMIENTO", row.get("FECHA NACIMIENTO", None))
                                                             val_edad = 0
