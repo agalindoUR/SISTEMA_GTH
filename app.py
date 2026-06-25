@@ -2312,11 +2312,24 @@ else:
                                                     col_btn1, col_btn2 = st.columns(2)
                                                     with col_btn1:
                                                         if st.form_submit_button("Actualizar Registro"):
+                                                            # --- RECALCULAR EDAD AUTOMÁTICAMENTE ANTES DE GUARDAR ---
+                                                            llave_fecha = next((k for k in edit_row.keys() if "fecha de nacimiento" in str(k).lower()), None)
+                                                            llave_edad = next((k for k in edit_row.keys() if str(k).lower().strip() == "edad"), None)
+                                                            
+                                                            if llave_fecha and llave_edad:
+                                                                fnac_nueva = edit_row[llave_fecha]
+                                                                if isinstance(fnac_nueva, date):
+                                                                    hoy = date.today()
+                                                                    edad_nueva = hoy.year - fnac_nueva.year - ((hoy.month, hoy.day) < (fnac_nueva.month, fnac_nueva.day))
+                                                                    edit_row[llave_edad] = edad_nueva
+                                                            # --------------------------------------------------------
+                                                            
                                                             for k, v in edit_row.items():
                                                                 if k in dfs[h_name].columns:
                                                                     dfs[h_name][k] = dfs[h_name][k].astype(object)
                                                                 dfs[h_name].at[idx, k] = v
-                                                            save_data(dfs)
+                                                                
+                                                            save_data(dfs, pestana_especifica=h_name) # <- Añadido tu guardado optimizado
                                                             st.rerun()
                                                     with col_btn2:
                                                         if st.form_submit_button("🗑️ Eliminar Registro", type="primary"):
