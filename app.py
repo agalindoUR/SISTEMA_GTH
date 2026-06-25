@@ -855,40 +855,83 @@ else:
                                     </style>
                                 """, unsafe_allow_html=True)
                                                               
-                                # =========================================================================
-                                # 🎯 INTERFAZ DE GENERACIÓN DE CERTIFICADO (REEMPLAZO)
-                                # =========================================================================
-                                st.markdown("### 📄 Opciones de Certificado")
-                                
-                                # 1. El usuario elige el tipo (o lo deja en automático)
-                                tipo_certificado = st.selectbox(
-                                    "Seleccione el tipo de documento a generar:",
-                                    [
-                                        "Automático (Detectar por historial)",
-                                        "Certificado de Trabajo - Planilla Administrativo",
-                                        "Constancia de Servicios - Locación Administrativo",
-                                        "Certificado de Trabajo - Planilla Docente",
-                                        "Constancia de Servicios - Locación Docente"
-                                    ],
-                                    key=f"selector_certificado_{dni_buscado}"
-                                )
-                                
-                                # 2. Generamos el archivo en vivo basado en lo que escogió arriba
-                                try:
-                                    word_file = gen_word(nom_c, dni_buscado, df_contratos, tipo_certificado)
+                            # =========================================================================
+                            # 🎯 INTERFAZ DE GENERACIÓN DE CERTIFICADO (CON FILTROS DE SEGURIDAD)
+                            # =========================================================================
+                            st.markdown("### 📄 Opciones de Certificado")
+                            
+                            # 1. Analizar el historial completo para restringir las opciones incorrectas
+                            df_merged_para_filtro = get_consolidated_contracts(df_contratos)
+                            ha_sido_docente = False
+                            ha_sido_administrativo = False
+                            ha_tenido_planilla = False
+                            ha_tenido_locacion = False
+                            
+                            if not df_merged_para_filtro.empty:
+                                for _, fila in df_merged_para_filtro.iterrows():
+                                    # Convertimos toda la fila a texto en minúsculas para evaluar las palabras clave
+                                    texto_fila = " ".join([str(val).lower() for val in fila.values])
                                     
-                                    # 3. Mostramos el botón de descarga con el archivo actualizado
-                                    st.download_button(
-                                        label="📥 Descargar Documento Word",
-                                        data=word_file,
-                                        file_name=f"Certificado_{dni_buscado}.docx",
-                                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                                        key=f"btn_descargar_cert_{dni_buscado}"
-                                    )
-                                except Exception as e:
-                                    st.error(f"Error al generar el documento: {e}")
+                                    # Filtro por tipo de rol
+                                    if "docente" in texto_fila or "profesor" in texto_fila or "catedra" in texto_fila:
+                                        ha_sido_docente = True
+                                    else:
+                                        ha_sido_administrativo = True
+                                        
+                                    # Filtro por modalidad de pago/contrato
+                                    if "locacion" in texto_fila or "honorarios" in texto_fila or "servicios terceros" in texto_fila or "terceros" in texto_fila:
+                                        ha_tenido_locacion = True
+                                    else:
+                                        ha_tenido_planilla = True
+                            
+                            # 2. Construir dinámicamente la lista de opciones válidas para este trabajador
+                            opciones_permitidas = ["Automático (Detectar por último contrato)"]
+                            
+                            if ha_sido_administrativo and ha_tenido_planilla:
+                                opciones_permitidas.append("Certificado de Trabajo - Planilla Administrativo")
                                 
-                                st.markdown("<br>", unsafe_allow_html=True)
+                            if ha_sido_administrativo and ha_tenido_locacion:
+                                opciones_permitidas.append("Constancia de Servicios - Locación Administrativo")
+                                
+                            if ha_sido_docente and ha_tenido_planilla:
+                                opciones_permitidas.append("Certificado de Trabajo - Planilla Docente")
+                                
+                            if ha_sido_docente and ha_tenido_locacion:
+                                opciones_permitidas.append("Constancia de Servicios - Locación Docente")
+                            
+                            # Salvaguarda: Si el algoritmo no reconoce textos conocidos, muestra todas por defecto para no bloquear el flujo
+                            if len(opciones_permitidas) == 1:
+                                opciones_permitidas = [
+                                    "Automático (Detectar por último contrato)",
+                                    "Certificado de Trabajo - Planilla Administrativo",
+                                    "Constancia de Servicios - Locación Administrativo",
+                                    "Certificado de Trabajo - Planilla Docente",
+                                    "Constancia de Servicios - Locación Docente"
+                                ]
+                            
+                            # 3. El usuario elige solo sobre las opciones seguras y válidas
+                            tipo_certificado = st.selectbox(
+                                "Seleccione el tipo de documento a generar:",
+                                opciones_permitidas,
+                                key=f"selector_certificado_{dni_buscado}"
+                            )
+                            
+                            # 4. Generación del archivo en vivo pasando la selección final
+                            try:
+                                word_file = gen_word(nom_c, dni_buscado, df_contratos, tipo_certificado)
+                                
+                                # 5. Botón de descarga
+                                st.download_button(
+                                    label="📥 Descargar Documento Word",
+                                    data=word_file,
+                                    file_name=f"Certificado_{dni_buscado}.docx",
+                                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                                    key=f"btn_descargar_cert_{dni_buscado}"
+                                )
+                            except Exception as e:
+                                st.error(f"Error al generar el documento: {e}")
+                            
+                            st.markdown("<br>", unsafe_allow_html=True)
 
                         if h_name == "VACACIONES":
                             df_tc = df_contratos[df_contratos["tipo contrato"].astype(str).str.lower().str.contains("planilla", na=False)] if "df_contratos" in locals() else pd.DataFrame()
