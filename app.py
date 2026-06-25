@@ -2283,28 +2283,32 @@ else:
                                                             edit_row[col] = st.date_input(col.title(), value=d_val, format="DD/MM/YYYY", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31), key=f"date_{h_name}_{col}_{idx}_{i}")
                                                         
                                                         elif col_lower == "edad":
-                                                            # Buscar la fecha de nacimiento en la fila actual para calcular la edad en vivo
-                                                            fnac_val = row.get("FECHA DE NACIMIENTO", row.get("FECHA NACIMIENTO", None))
+                                                            # Búsqueda a prueba de errores: ignorar mayúsculas, minúsculas y espacios ocultos
+                                                            fnac_val = next((v for k, v in row.items() if "fecha de nacimiento" in str(k).lower()), None)
                                                             val_edad = 0
+                                                            
                                                             if pd.notnull(fnac_val) and str(fnac_val).strip() != "":
                                                                 try:
                                                                     if isinstance(fnac_val, str):
+                                                                        # Convierte el texto de Sheets a una fecha real
                                                                         fnac_date = pd.to_datetime(fnac_val, dayfirst=True).date()
                                                                     else:
-                                                                        fnac_date = fnac_val
+                                                                        # Si ya es fecha, asegurarnos de que sea formato 'date'
+                                                                        fnac_date = fnac_val.date() if isinstance(fnac_val, datetime) else fnac_val
+                                                                        
                                                                     hoy = date.today()
                                                                     val_edad = hoy.year - fnac_date.year - ((hoy.month, hoy.day) < (fnac_date.month, fnac_date.day))
                                                                 except:
+                                                                    pass
+                                                                    
+                                                            # Si por algún motivo falló, intenta rescatar la edad que ya venía de Sheets
+                                                            if val_edad == 0:
+                                                                try:
                                                                     val_edad = int(val) if pd.notnull(val) and str(val).replace('.','',1).isdigit() else 0
-                                                            else:
-                                                                val_edad = int(val) if pd.notnull(val) and str(val).replace('.','',1).isdigit() else 0
+                                                                except:
+                                                                    val_edad = 0
                                                                 
                                                             edit_row[col] = st.number_input(col.title(), value=val_edad, disabled=True, key=f"edad_{h_name}_{col}_{idx}_{i}")
-                                                        
-                                                        elif col_lower in ["remuneración", "bonificación", "sueldo", "días generados", "dias gozados", "saldo", "monto", "remuneracion basica", "bonificacion"]:
-                                                            try: n_val = float(val) if pd.notnull(val) else 0.0
-                                                            except: n_val = 0.0
-                                                            edit_row[col] = st.number_input(col.title(), value=n_val, key=f"num_{h_name}_{col}_{idx}_{i}")
                                                         
                                                         else:
                                                             edit_row[col] = st.text_input(col.title(), value=str(val) if pd.notnull(val) else "", key=f"text_{h_name}_{col}_{idx}_{i}")
@@ -2312,24 +2316,28 @@ else:
                                                     col_btn1, col_btn2 = st.columns(2)
                                                     with col_btn1:
                                                         if st.form_submit_button("Actualizar Registro"):
-                                                            # --- RECALCULAR EDAD AUTOMÁTICAMENTE ANTES DE GUARDAR ---
+                                                            # --- CÁLCULO INVISIBLE ANTES DE ENVIAR A SHEETS ---
                                                             llave_fecha = next((k for k in edit_row.keys() if "fecha de nacimiento" in str(k).lower()), None)
                                                             llave_edad = next((k for k in edit_row.keys() if str(k).lower().strip() == "edad"), None)
                                                             
                                                             if llave_fecha and llave_edad:
                                                                 fnac_nueva = edit_row[llave_fecha]
-                                                                if isinstance(fnac_nueva, date):
+                                                                if isinstance(fnac_nueva, (date, datetime)):
                                                                     hoy = date.today()
-                                                                    edad_nueva = hoy.year - fnac_nueva.year - ((hoy.month, hoy.day) < (fnac_nueva.month, fnac_nueva.day))
+                                                                    # Homologar a formato date simple
+                                                                    f_comparar = fnac_nueva.date() if isinstance(fnac_nueva, datetime) else fnac_nueva
+                                                                    edad_nueva = hoy.year - f_comparar.year - ((hoy.month, hoy.day) < (f_comparar.month, f_comparar.day))
+                                                                    
+                                                                    # Reemplazamos el valor que se va a guardar
                                                                     edit_row[llave_edad] = edad_nueva
-                                                            # --------------------------------------------------------
+                                                            # --------------------------------------------------
                                                             
                                                             for k, v in edit_row.items():
                                                                 if k in dfs[h_name].columns:
                                                                     dfs[h_name][k] = dfs[h_name][k].astype(object)
                                                                 dfs[h_name].at[idx, k] = v
                                                                 
-                                                            save_data(dfs, pestana_especifica=h_name) # <- Añadido tu guardado optimizado
+                                                            save_data(dfs, pestana_especifica=h_name)
                                                             st.rerun()
                                                     with col_btn2:
                                                         if st.form_submit_button("🗑️ Eliminar Registro", type="primary"):
