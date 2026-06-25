@@ -306,7 +306,7 @@ def gen_word(nom, dni, df_c):
     # Inyectar Título Dinámico
     p_tit = doc.add_paragraph()
     p_tit.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r_tit = p_tit.add_run(titulo_documento)
+    r_tit = p_tit.add_run(titulo_certificado)
     r_tit.bold, r_tit.font.name, r_tit.font.size = True, 'Arial', Pt(18)
 
     # Inyectar Introducción Dinámica
