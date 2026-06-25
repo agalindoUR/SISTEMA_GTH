@@ -2282,8 +2282,23 @@ else:
                                                             else: d_val = date.today()
                                                             edit_row[col] = st.date_input(col.title(), value=d_val, format="DD/MM/YYYY", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31), key=f"date_{h_name}_{col}_{idx}_{i}")
                                                         
-                                                        elif col_lower == "edad":
-                                                            val_edad = int(val) if pd.notnull(val) and str(val).replace('.','',1).isdigit() else 0
+                                                       elif col_lower == "edad":
+                                                            # Buscar la fecha de nacimiento en la fila actual para calcular la edad en vivo
+                                                            fnac_val = row.get("FECHA DE NACIMIENTO", row.get("FECHA NACIMIENTO", None))
+                                                            val_edad = 0
+                                                            if pd.notnull(fnac_val) and str(fnac_val).strip() != "":
+                                                                try:
+                                                                    if isinstance(fnac_val, str):
+                                                                        fnac_date = pd.to_datetime(fnac_val, dayfirst=True).date()
+                                                                    else:
+                                                                        fnac_date = fnac_val
+                                                                    hoy = date.today()
+                                                                    val_edad = hoy.year - fnac_date.year - ((hoy.month, hoy.day) < (fnac_date.month, fnac_date.day))
+                                                                except:
+                                                                    val_edad = int(val) if pd.notnull(val) and str(val).replace('.','',1).isdigit() else 0
+                                                            else:
+                                                                val_edad = int(val) if pd.notnull(val) and str(val).replace('.','',1).isdigit() else 0
+                                                                
                                                             edit_row[col] = st.number_input(col.title(), value=val_edad, disabled=True, key=f"edad_{h_name}_{col}_{idx}_{i}")
                                                         
                                                         elif col_lower in ["remuneración", "bonificación", "sueldo", "días generados", "dias gozados", "saldo", "monto", "remuneracion basica", "bonificacion"]:
