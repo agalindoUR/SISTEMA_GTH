@@ -124,9 +124,35 @@ def load_data():
                         if 'inicio' in col: df.rename(columns={col: 'f_inicio'}, inplace=True)
                         if 'termino' in col or 'fin' in col: df.rename(columns={col: 'f_fin'}, inplace=True)
                 
-                # Limpieza de DNI
+               # Limpieza de DNI
                 if "dni" in df.columns:
                     df["dni"] = df["dni"].astype(str).str.strip().str.replace(r'\.0$', '', regex=True).str.zfill(8)
+                
+                # =======================================================
+                # 🚀 NUEVO: CÁLCULO MÁGICO Y GLOBAL DE EDAD EN TIEMPO REAL
+                # =======================================================
+                # Buscamos si la pestaña actual tiene una columna de fecha de nacimiento
+                col_fecha = next((c for c in df.columns if "fecha de nacimiento" in c or "fecha nacimiento" in c), None)
+                
+                if col_fecha:
+                    def calcular_edad_viva(fecha_str):
+                        if pd.isna(fecha_str) or str(fecha_str).strip() == "": return 0
+                        try:
+                            # Parseamos la fecha venga como venga
+                            if isinstance(fecha_str, str):
+                                fnac_date = pd.to_datetime(fecha_str, dayfirst=True).date()
+                            else:
+                                fnac_date = fecha_str.date() if hasattr(fecha_str, 'date') else fecha_str
+                                
+                            hoy = date.today()
+                            # Magia: Resta el año y comprueba si ya pasó su cumpleaños este año
+                            return hoy.year - fnac_date.year - ((hoy.month, hoy.day) < (fnac_date.month, fnac_date.day))
+                        except:
+                            return 0
+                            
+                    # Sobreescribimos la columna 'edad' (o la creamos si no existe) con el cálculo exacto de hoy
+                    df["edad"] = df[col_fecha].apply(calcular_edad_viva)
+                # =======================================================
                 
                 dfs[worksheet.title] = df
             else:
