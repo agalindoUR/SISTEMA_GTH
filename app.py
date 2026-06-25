@@ -138,38 +138,46 @@ def load_data():
             
     return dfs
 
-def save_data(dfs):
+def save_data(dfs, pestana_especifica=None):
     creds = obtener_credenciales()
     client = gspread.authorize(creds)
     sheet = client.open(SHEET_NAME)
 
-    for h, df in dfs.items():
+    # 💡 OPTIMIZACIÓN CLAVE: 
+    # Si le decimos qué pestaña guardar, solo procesa esa. Si no, procesa todas.
+    listado_pestanas = [pestana_especifica] if pestana_especifica else dfs.keys()
+
+    for h in listado_pestanas:
+        if h not in dfs:
+            continue
+            
+        df = dfs[h]
+        if df.empty or len(df.columns) == 0:
+            continue
+
         worksheet = sheet.worksheet(h)
         df_s = df.copy()
         
-        # --- EL ESCUDO ANTI-CLONACIÓN ---
-        # Si el sistema detecta columnas repetidas (como "area" o "AREA"), las borra y deja solo una
+        # Escudo anti-duplicados y limpieza de fantasmas
         df_s = df_s.loc[:, ~df_s.columns.duplicated()]
-        
-        # --- BLINDAJE TOTAL CONTRA CELDAS VACÍAS (FIX PARA GOOGLE SHEETS) ---
-        # 1. Rellenamos los nulos nativos de Pandas
         df_s = df_s.fillna("")
-        
-        # 2. Convertimos todo a texto puro
         df_s = df_s.astype(str)
         
-        # 3. Limpiamos cualquier "fantasma" que Python haya dejado al convertir a texto
         fantasmas = ["nan", "NaN", "NaT", "nat", "None", "<NA>"]
         for fantasma in fantasmas:
             df_s = df_s.replace(fantasma, "")
             
-        # Homologamos las columnas a mayúsculas
         df_s.columns = [str(c).upper() for c in df_s.columns]
         
+        # Una pequeña pausa de seguridad (solo si guarda muchas, si es una sola no afectará)
+        if not pestana_especifica:
+            time.sleep(0.6)
+            
         worksheet.clear()
-        worksheet.update([df_s.columns.values.tolist()] + df_s.values.tolist())
+        datos_a_guardar = [df_s.columns.values.tolist()] + df_s.values.tolist()
+        worksheet.update(datos_a_guardar)
     
-    # Limpia la memoria automáticamente para que no tengas que darle F5 a cada rato
+    # Limpiamos caché para ver los cambios inmediatamente
     st.cache_data.clear()
 
 def get_consolidated_contracts(df_c):
