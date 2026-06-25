@@ -246,44 +246,124 @@ def gen_word(nom, dni, df_c):
         p_f.paragraph_format.left_indent = Inches(-1.0)
         p_f.add_run().add_picture("footer.png", width=Inches(8.27))
 
-    p_tit = doc.add_paragraph()
-    p_tit.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r_tit = p_tit.add_run("CERTIFICADO DE TRABAJO")
-    r_tit.bold, r_tit.font.name, r_tit.font.size = True, 'Arial', Pt(18)
-
-    doc.add_paragraph("\nLa oficina de Gestión de Talento Humano De La Universidad Privada De Huancayo “Franklin Roosevelt”, certifica que:").alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-
-    p_inf = doc.add_paragraph()
-    p_inf.add_run("El(la) TRABAJADOR(A) ").bold = False
-    p_inf.add_run(nom).bold = True
-    p_inf.add_run(f", identificado(a) con DNI N° {dni}, laboró bajo el siguiente detalle:")
-
+    # =========================================================================
+    # 🎯 FILTRO AUTOMÁTICO DE TIPO DE TRABAJADOR Y MODALIDAD (PLANILLA / LOCACIÓN)
+    # =========================================================================
     # Obtenemos los contratos fusionados automáticamente
     df_merged = get_consolidated_contracts(df_c)
+    
+    # Por seguridad jurídica, analizamos el contrato más reciente (la última fila)
+    es_docente = False
+    es_locacion = False
+    
+    if not df_merged.empty:
+        # Convertimos toda la última fila a texto en minúsculas para buscar palabras clave
+        texto_ultima_fila = " ".join(df_merged.iloc[-1].astype(str).lower().values)
+        
+        # Detectar si es Docente
+        if "docente" in texto_ultima_fila or "profesor" in texto_ultima_fila or "catedra" in texto_ultima_fila:
+            es_docente = True
+            
+        # Detectar si es Locación de Servicios (Civil)
+        if "locacion" in texto_ultima_fila or "honorarios" in texto_ultima_fila or "servicios terceros" in texto_ultima_fila:
+            es_locacion = True
 
+    # =========================================================================
+    # 📝 REDACCIÓN DINÁMICA SEGÚN LOS 4 TIPOS DE CERTIFICADO
+    # =========================================================================
+    titulo_certificado = "CERTIFICADO DE TRABAJO"
+    texto_introduccion = "La oficina de Gestión de Talento Humano De La Universidad Privada De Huancayo “Franklin Roosevelt”, certifica que:"
+    texto_cuerpo_identificacion = ""
+    columna_tabla_cargo = "CARGO / FUNCIÓN"
+
+    # CASO 1: Planilla Administrativo
+    if not es_docente and not es_locacion:
+        titulo_certificado = "CERTIFICADO DE TRABAJO"
+        texto_cuerpo_identificacion = f"El(la) ex-servidor(a) administrativo(a) {nom.upper()}, identificado(a) con DNI N° {dni}, ha laborado en nuestra institución bajo el régimen laboral de la actividad privada, desempeñando funciones de manera subordinada de acuerdo al siguiente detalle:"
+
+    # CASO 2: Locación Administrativo (Constancia de Servicios)
+    elif not es_docente and es_locacion:
+        titulo_certificado = "CONSTANCIA DE PRESTACIÓN DE SERVICIOS"
+        texto_introduccion = "La oficina de Gestión de Talento Humano De La Universidad Privada De Huancayo “Franklin Roosevelt”, hace constar que:"
+        texto_cuerpo_identificacion = f"El(la) señor(a) {nom.upper()}, identificado(a) con DNI N° {dni}, ha prestado servicios autónomos e independientes de naturaleza civil bajo la modalidad de Locación de Servicios, realizando actividades de índole administrativa según el siguiente detalle:"
+        columna_tabla_cargo = "ACTIVIDAD / SERVICIO"
+
+    # CASO 3: Planilla Docente
+    elif es_docente and not es_locacion:
+        titulo_certificado = "CERTIFICADO DE TRABAJO"
+        texto_cuerpo_identificacion = f"El(la) docente {nom.upper()}, identificado(a) con DNI N° {dni}, ha laborado en nuestra casa de estudios superiores ejerciendo funciones pedagógicas y de cátedra universitaria, bajo el régimen laboral correspondiente, de acuerdo al siguiente detalle:"
+
+    # CASO 4: Locación Docente (Constancia de Servicios Docentes)
+    elif es_docente and es_locacion:
+        titulo_certificado = "CONSTANCIA DE LOCACIÓN DE SERVICIOS DOCENTES"
+        texto_introduccion = "La oficina de Gestión de Talento Humano De La Universidad Privada De Huancayo “Franklin Roosevelt”, hace constar que:"
+        texto_cuerpo_identificacion = f"El(la) profesional {nom.upper()}, identificado(a) con DNI N° {dni}, ha prestado servicios profesionales independientes de docencia universitaria bajo el régimen civil de Locación de Servicios, dictando asignaturas académicas de acuerdo al siguiente detalle:"
+        columna_tabla_cargo = "CÁTEDRA / ASIGNATURA"
+
+    # =========================================================================
+    # 🏢 CONSTRUCCIÓN DEL DOCUMENTO WORD
+    # =========================================================================
+    # Inyectar Título Dinámico
+    p_tit = doc.add_paragraph()
+    p_tit.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    r_tit = p_tit.add_run(titulo_documento)
+    r_tit.bold, r_tit.font.name, r_tit.font.size = True, 'Arial', Pt(18)
+
+    # Inyectar Introducción Dinámica
+    p_intro = doc.add_paragraph(f"\n{texto_introduccion}")
+    p_intro.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    p_intro.paragraph_format.line_spacing = 1.15
+
+    # Inyectar Identificación Dinámica
+    p_inf = doc.add_paragraph()
+    p_inf.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    p_inf.paragraph_format.line_spacing = 1.15
+    p_inf.add_run(texto_cuerpo_identificacion)
+
+    # Construcción de la Tabla de Historial de Contratos
     t = doc.add_table(rows=1, cols=3)
     t.style = 'Table Grid'
-    for i, h in enumerate(["CARGO", "FECHA INICIO", "FECHA FIN"]):
+    
+    # Cabecera adaptable (Cambia 'CARGO' por 'ACTIVIDAD' si es locador)
+    for i, h in enumerate([columna_tabla_cargo, "FECHA INICIO", "FECHA FIN"]):
         celda = t.rows[0].cells[i]
         celda.text = h
         celda.paragraphs[0].runs[0].font.bold = True
+        celda.paragraphs[0].runs[0].font.name = 'Arial'
 
+    # Rellenar filas con el historial
     for _, fila in df_merged.iterrows():
         celdas = t.add_row().cells
-        celdas[0].text = str(fila.get('cargo', ''))
+        celdas[0].text = str(fila.get('cargo', fila.get('puesto', ''))).upper()
         celdas[1].text = pd.to_datetime(fila['f_inicio']).strftime('%d/%m/%Y') if pd.notnull(fila['f_inicio']) else ""
-        celdas[2].text = pd.to_datetime(fila['f_fin']).strftime('%d/%m/%Y') if pd.notnull(fila['f_fin']) else ""
+        celdas[2].text = pd.to_datetime(fila['f_fin']).strftime('%d/%m/%Y') if pd.notnull(fila['f_fin']) else "AL ACTUALIDAD"
+        
+        # Aplicar formato Arial a las celdas de la tabla
+        for celda in celdas:
+            if celda.paragraphs[0].runs:
+                celda.paragraphs[0].runs[0].font.name = 'Arial'
+                celda.paragraphs[0].runs[0].font.size = Pt(10)
 
-    doc.add_paragraph("\nSe expide el presente a solicitud del interesado para los fines que considere convenientes.").alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-    doc.add_paragraph(f"\nHuancayo, {date.today().strftime('%d/%m/%Y')}").alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    # Cierre del Documento
+    p_cierre = doc.add_paragraph("\nSe expide el presente a solicitud del interesado para los fines que considere convenientes.")
+    p_cierre.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    
+    p_fecha = doc.add_paragraph(f"\nHuancayo, {date.today().strftime('%d/%m/%Y')}")
+    p_fecha.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    p_fecha.runs[0].font.name = 'Arial'
+    
+    # Firmas automáticas
     f = doc.add_paragraph()
     f.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    f.add_run("\n\n__________________________\n" + F_N + "\n" + F_C).bold = True
+    f_run = f.add_run("\n\n__________________________\n" + F_N + "\n" + F_C)
+    f_run.bold = True
+    f_run.font.name = 'Arial'
 
     buf = BytesIO()
     doc.save(buf)
     buf.seek(0)
     return buf
+    
 # ==============================================================================
 # FUNCIÓN 2: GENERAR PAPELETA DE VACACIONES INDIVIDUAL (Word Duplicado A4)
 # ==============================================================================
