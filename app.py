@@ -504,18 +504,22 @@ else:
                 st.session_state.menu_p = None # Apaga el menú principal
 
         st.markdown("### 🛠️ MENÚ PRINCIPAL")
-        st.radio("Menú Principal", ["🔍 Consulta", "➕ Registro", "📊 Nómina General", "🏢 Estructura", "📋 Evaluaciones", "📈 Dashboard Desempeño"], key="menu_p", on_change=click_menu_p, label_visibility="collapsed")
+        # AGREGADO: index=None para permitir que este menú se pueda desmarcar desde el código
+        st.radio("Menú Principal", ["🔍 Consulta", "➕ Registro", "📊 Nómina General", "🏢 Estructura", "📋 Evaluaciones", "📈 Dashboard Desempeño"], key="menu_p", on_change=click_menu_p, index=None, label_visibility="collapsed")
         
         st.markdown("<h3 style='color: #FFD700;'>📊 REPORTES</h3>", unsafe_allow_html=True)
-        # Usamos index=None para que se pueda desmarcar sin textos extraños
+        # Este ya lo tenías bien con index=None
         st.radio("Reportes", ["Reporte General", "Cumpleañeros", "Vacaciones", "Vencimientos"], key="menu_r", on_change=click_menu_r, index=None, label_visibility="collapsed")
         
-        # ---> MENÚ DE USUARIOS Y SEGURIDAD <---
-        st.markdown("---")
-        if st.button("🔐 Usuarios y Seguridad", use_container_width=True):
+        # ---> CALLBACK PARA EL MENÚ DE USUARIOS <---
+        def click_usuarios():
             st.session_state.menu_activo = "🔐 Usuarios y Seguridad"
             st.session_state.menu_p = None
             st.session_state.menu_r = None
+
+        st.markdown("---")
+        # Usamos on_click para ejecutar la función antes de redibujar
+        st.button("🔐 Usuarios y Seguridad", use_container_width=True, on_click=click_usuarios)
 
         m = st.session_state.menu_activo
 
