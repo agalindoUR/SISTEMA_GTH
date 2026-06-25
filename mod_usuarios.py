@@ -40,7 +40,11 @@ def mostrar(dfs, save_data):
                         dfs["USUARIOS"].at[idx[0], "password"] = nueva_clave
                         
                         log_auditoria("UPDATE", "USUARIOS", f"El usuario {st.session_state.usuario_actual} cambió su propia contraseña.")
-                        save_data(dfs)
+                        
+                        # 🎯 CAMBIO: Guardado inteligente y selectivo de las pestañas afectadas
+                        save_data(dfs, pestana_especifica="USUARIOS")
+                        save_data(dfs, pestana_especifica="AUDITORIA")
+                        
                         st.success("✅ Contraseña actualizada exitosamente.")
                 else:
                     st.error("⚠️ Las contraseñas no coinciden o están vacías.")
@@ -97,7 +101,9 @@ def mostrar(dfs, save_data):
                             log_auditoria("CREATE", "USUARIOS", f"Admin creó el usuario: {u_nom} (Rol: {u_rol})")
                             st.success(f"✅ Usuario '{u_nom}' creado exitosamente.")
                         
-                        save_data(dfs)
+                        # 🎯 CAMBIO: Guardado inteligente y selectivo de las pestañas afectadas
+                        save_data(dfs, pestana_especifica="USUARIOS")
+                        save_data(dfs, pestana_especifica="AUDITORIA")
                         st.rerun()
 
     # -------------------------------------------------------------
