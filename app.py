@@ -2365,11 +2365,23 @@ else:
                                                         rem_b = st.number_input("Remuneración básica", value=d_rem)
                                                         bono = st.text_input("Bonificación", value=d_bon)
                                                         cond = st.text_input("Condición de trabajo", value=d_cond)
+                                                       # 1. Ponemos la Temporalidad ANTES de las fechas para que el sistema sepa qué eligió el usuario
+                                                        temp = st.selectbox("Temporalidad", ["Plazo fijo", "Plazo indeterminado", "Ordinarizado"], index=["Plazo fijo", "Plazo indeterminado", "Ordinarizado"].index(d_temp))
+                                                        
+                                                        # 2. Mostramos la Fecha de Inicio (esta siempre va)
                                                         ini = st.date_input("Inicio", value=d_ini, format="DD/MM/YYYY", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
-                                                        fin = st.date_input("Fin", value=d_fin, format="DD/MM/YYYY", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
+                                                        
+                                                        # 3. Condicionamos la Fecha de Fin
+                                                        if temp == "Plazo indeterminado":
+                                                            st.info("ℹ️ Contrato a plazo indeterminado. No requiere fecha de fin.")
+                                                            fin = None  # Esto guardará el espacio en blanco en tu Excel para este contrato
+                                                        else:
+                                                            fin = st.date_input("Fin", value=d_fin, format="DD/MM/YYYY", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
+                                                        
+                                                        # 4. Los demás campos continúan normalmente
                                                         t_trab = st.selectbox("Tipo de trabajador", ["Administrativo", "Docente", "Externo"], index=["Administrativo", "Docente", "Externo"].index(d_ttrab))
                                                         mod = st.selectbox("Modalidad", ["Presencial", "Semipresencial", "Virtual"], index=["Presencial", "Semipresencial", "Virtual"].index(d_mod))
-                                                        temp = st.selectbox("Temporalidad", ["Plazo fijo", "Plazo indeterminado", "Ordinarizado"], index=["Plazo fijo", "Plazo indeterminado", "Ordinarizado"].index(d_temp))
+                                                        # ¡ELIMINAMOS LA LÍNEA DUPLICADA DE "temp" QUE ESTABA AQUÍ!
                                                         lnk = st.text_input("Link")
                                                         tcont = st.selectbox("Tipo Contrato", ["Planilla completo", "Tiempo Parcial", "Recibo por Honorarios", "Otro"], index=["Planilla completo", "Tiempo Parcial", "Recibo por Honorarios", "Otro"].index(d_tcont))
                                                         
