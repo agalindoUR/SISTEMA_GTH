@@ -2385,9 +2385,14 @@ else:
                                                         lnk = st.text_input("Link")
                                                         tcont = st.selectbox("Tipo Contrato", ["Planilla completo", "Tiempo Parcial", "Recibo por Honorarios", "Otro"], index=["Planilla completo", "Tiempo Parcial", "Recibo por Honorarios", "Otro"].index(d_tcont))
                                                         
-                                                        est_a = "ACTIVO" if fin >= date.today() else "CESADO"
+                                                        # Lógica de estado corregida para soportar contratos indeterminados (sin fecha de fin)
+                                                        if fin is None:
+                                                            est_a = "ACTIVO"  # Si es indeterminado y no tiene fecha de fin, por defecto sigue activo
+                                                        else:
+                                                            est_a = "ACTIVO" if fin >= date.today() else "CESADO"
+                                                        
+                                                        # El motivo de cese se mantiene igual, pero ahora funciona seguro sin errores
                                                         mot_a = st.selectbox("Motivo Cese", ["Vigente"] + MOTIVOS_CESE) if est_a == "CESADO" else "Vigente"
-
                                                         if st.form_submit_button("Guardar Contrato"):
                                                             nid = dfs[h_name]["id"].max() + 1 if not dfs[h_name].empty else 1
                                                             
