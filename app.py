@@ -267,9 +267,8 @@ def gen_word(nom, dni, df_c, tipo_seleccionado="Automático (Detectar por histor
             es_locacion = True
 
     # =========================================================================
-    # 🛑 FILTRAR DATOS IGNORANDO MAYÚSCULAS, MINÚSCULAS O ESPACIOS
+    # 🛑 FILTRAR DATOS USANDO PALABRAS CLAVE (MÁS SEGURO)
     # =========================================================================
-    # 1. Buscamos el nombre exacto que tiene la columna ahora mismo
     col_tipo = None
     for col in df_c.columns:
         if str(col).strip().lower() in ['tipo contrato', 'tipo_contrato', 'tipocontrato']:
@@ -277,17 +276,17 @@ def gen_word(nom, dni, df_c, tipo_seleccionado="Automático (Detectar por histor
             break
             
     if col_tipo is not None:
-        # 2. Convertimos los valores a minúsculas temporalmente para comparar exacto
-        valores_limpios = df_c[col_tipo].astype(str).str.strip().str.lower()
+        # Convertimos los valores a minúsculas
+        valores_limpios = df_c[col_tipo].astype(str).str.lower()
         
         if es_locacion:
-            # Filtra recibos por honorarios
-            df_c_filtrado = df_c[valores_limpios.isin(['recibo por honorarios', 'otro'])]
+            # Filtra cualquier fila que contenga la palabra 'honorario', 'otro' o 'locaci'
+            df_c_filtrado = df_c[valores_limpios.str.contains('honorario|otro|locaci', na=False)]
         else:
-            # Filtra planillas
-            df_c_filtrado = df_c[valores_limpios.isin(['planilla completo', 'tiempo parcial'])]
+            # Filtra cualquier fila que contenga 'planilla' o 'parcial'
+            df_c_filtrado = df_c[valores_limpios.str.contains('planilla|parcial', na=False)]
     else:
-        df_c_filtrado = df_c 
+        df_c_filtrado = df_c
 
     # =========================================================================
     # 🔄 CONSOLIDAR SOLO LOS DATOS FILTRADOS
