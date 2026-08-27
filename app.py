@@ -270,21 +270,28 @@ def gen_word(nom, dni, df_c, tipo_seleccionado="Automático (Detectar por histor
             es_locacion = True
 
     # =========================================================================
-    # 🛑 FILTRAR DATOS MODO "RADAR" (SIN IMPORTAR EL NOMBRE DE LA COLUMNA)
+    # 🛑 FILTRAR DATOS MODO "RADAR" (SEPARACIÓN ESTRICTA PLANILLA / LOCACIÓN)
     # =========================================================================
-    # Busca la palabra clave en toda la fila, ignorando mayúsculas/minúsculas
-    mask_locacion = df_c.astype(str).apply(lambda x: x.str.contains('honorario|otro|locaci', case=False, na=False)).any(axis=1)
-    mask_planilla = df_c.astype(str).apply(lambda x: x.str.contains('planilla|parcial', case=False, na=False)).any(axis=1)
+    
+    # 1. Convertimos toda la fila a texto en minúsculas para buscar fácilmente
+    filas_texto = df_c.astype(str).agg(' '.join, axis=1).str.lower()
+    
+    # 2. Identificamos estrictamente qué filas son de Locación/Honorarios
+    mask_locacion = filas_texto.str.contains('honorario|locaci|tercero', na=False)
 
+    # 3. Aplicamos el filtro según el tipo de documento que eligió el usuario
     if es_locacion:
+        # Si el usuario pide CONSTANCIA (Locación), jalamos SOLAMENTE filas que coincidan
         df_c_filtrado = df_c[mask_locacion]
     else:
-        df_c_filtrado = df_c[mask_planilla]
+        # Si el usuario pide CERTIFICADO (Planilla), jalamos todo lo que NO es locación
+        # El símbolo ~ (virgulilla) invierte el filtro. ¡Es mucho más seguro!
+        df_c_filtrado = df_c[~mask_locacion]
 
-    # Respaldo de seguridad por si el filtro queda vacío
-    if df_c_filtrado.empty and not df_c.empty:
-        df_c_filtrado = df_c 
-
+    # NOTA: Hemos ELIMINADO el "Respaldo de seguridad" que igualaba df_c_filtrado a df_c.
+    # Ahora, si alguien de Planilla intenta sacar un recibo por honorarios que no tiene, 
+    # el documento simplemente saldrá con la tabla vacía en vez de mentir mezclando datos.
+    
     # =========================================================================
     # 🔄 CONSOLIDAR SOLO LOS DATOS FILTRADOS
     # =========================================================================
