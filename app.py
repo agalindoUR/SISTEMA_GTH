@@ -246,47 +246,44 @@ def gen_word(nom, dni, df_c, tipo_seleccionado="Automático (Detectar por histor
         p_f.paragraph_format.left_indent = Inches(-1.0)
         p_f.add_run().add_picture("footer.png", width=Inches(8.27))
 
-    # =========================================================================
-    # 🎯 FILTRO A PRUEBA DE BALAS (DETECTA INTENCIÓN SIN IMPORTAR TILDES)
+   # =========================================================================
+    # 🎯 FILTRO A PRUEBA DE BALAS (DETECTA INTENCIÓN Y BUSCA EN TODAS LAS CELDAS)
     # =========================================================================
     es_docente = False
     es_locacion = False
     tipo_upper = tipo_seleccionado.upper()
     
-    if "AUTOMÁTICO" in tipo_upper or "AUTOMATICO" in tipo_upper:
+    # 1. Detectar intención incluso si el menú dice "Contrato de Servicios"
+    if "AUTOM" in tipo_upper:
         if not df_c.empty:
-            texto_ultima_fila = " ".join([str(val).lower() for val in df_c.iloc[-1].values])
-            if "docente" in texto_ultima_fila or "profesor" in texto_ultima_fila or "catedra" in texto_ultima_fila:
+            # Escaneamos todo el historial para ver qué régimen predomina
+            texto_historial = " ".join(df_c.astype(str).agg(' '.join, axis=1).str.lower().tolist())
+            if "docente" in texto_historial or "catedra" in texto_historial:
                 es_docente = True
-            if "locacion" in texto_ultima_fila or "honorarios" in texto_ultima_fila or "servicios terceros" in texto_ultima_fila:
+            if "honorario" in texto_historial or "locaci" in texto_historial:
                 es_locacion = True
     else:
         if "DOCENTE" in tipo_upper:
             es_docente = True
-        if "LOCACIÓN" in tipo_upper or "LOCACION" in tipo_upper:
+        # ¡AQUÍ ESTÁ LA MAGIA! Ahora detecta "SERVICIOS" de tu menú desplegable
+        if "LOCACI" in tipo_upper or "SERVICIO" in tipo_upper or "HONORARIO" in tipo_upper:
             es_locacion = True
 
     # =========================================================================
-    # 🛑 FILTRAR DATOS USANDO PALABRAS CLAVE (MÁS SEGURO)
+    # 🛑 FILTRAR DATOS MODO "RADAR" (SIN IMPORTAR EL NOMBRE DE LA COLUMNA)
     # =========================================================================
-    col_tipo = None
-    for col in df_c.columns:
-        if str(col).strip().lower() in ['tipo contrato', 'tipo_contrato', 'tipocontrato']:
-            col_tipo = col
-            break
-            
-    if col_tipo is not None:
-        # Convertimos los valores a minúsculas
-        valores_limpios = df_c[col_tipo].astype(str).str.lower()
-        
-        if es_locacion:
-            # Filtra cualquier fila que contenga la palabra 'honorario', 'otro' o 'locaci'
-            df_c_filtrado = df_c[valores_limpios.str.contains('honorario|otro|locaci', na=False)]
-        else:
-            # Filtra cualquier fila que contenga 'planilla' o 'parcial'
-            df_c_filtrado = df_c[valores_limpios.str.contains('planilla|parcial', na=False)]
+    # Busca la palabra clave en toda la fila, ignorando mayúsculas/minúsculas
+    mask_locacion = df_c.astype(str).apply(lambda x: x.str.contains('honorario|otro|locaci', case=False, na=False)).any(axis=1)
+    mask_planilla = df_c.astype(str).apply(lambda x: x.str.contains('planilla|parcial', case=False, na=False)).any(axis=1)
+
+    if es_locacion:
+        df_c_filtrado = df_c[mask_locacion]
     else:
-        df_c_filtrado = df_c
+        df_c_filtrado = df_c[mask_planilla]
+
+    # Respaldo de seguridad por si el filtro queda vacío
+    if df_c_filtrado.empty and not df_c.empty:
+        df_c_filtrado = df_c 
 
     # =========================================================================
     # 🔄 CONSOLIDAR SOLO LOS DATOS FILTRADOS
