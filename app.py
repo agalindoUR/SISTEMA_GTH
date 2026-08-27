@@ -247,46 +247,51 @@ def gen_word(nom, dni, df_c, tipo_seleccionado="Automático (Detectar por histor
         p_f.add_run().add_picture("footer.png", width=Inches(8.27))
 
     # =========================================================================
-    # 🎯 FILTRO DE TIPO DE TRABAJADOR Y MODALIDAD (PLANILLA / LOCACIÓN)
+    # 🎯 FILTRO A PRUEBA DE BALAS (DETECTA INTENCIÓN SIN IMPORTAR TILDES)
     # =========================================================================
     es_docente = False
     es_locacion = False
+    tipo_upper = tipo_seleccionado.upper()
     
-    # 1. Detectar intención del usuario basándonos en el texto de la UI
-    if "Automático" in tipo_seleccionado:
+    if "AUTOMÁTICO" in tipo_upper or "AUTOMATICO" in tipo_upper:
         if not df_c.empty:
-            # Buscamos en la última fila del historial crudo (df_c)
             texto_ultima_fila = " ".join([str(val).lower() for val in df_c.iloc[-1].values])
-            
             if "docente" in texto_ultima_fila or "profesor" in texto_ultima_fila or "catedra" in texto_ultima_fila:
                 es_docente = True
             if "locacion" in texto_ultima_fila or "honorarios" in texto_ultima_fila or "servicios terceros" in texto_ultima_fila:
                 es_locacion = True
-                
-    # 2. ¿El usuario forzó una opción específica en el menú?
     else:
-        if "Docente" in tipo_seleccionado:
+        if "DOCENTE" in tipo_upper:
             es_docente = True
-        if "Locación" in tipo_seleccionado:
+        if "LOCACIÓN" in tipo_upper or "LOCACION" in tipo_upper:
             es_locacion = True
 
     # =========================================================================
-    # 🛑 NUEVO: FILTRAR DATOS CRUDOS ANTES DE CONSOLIDAR
+    # 🛑 FILTRAR DATOS IGNORANDO MAYÚSCULAS, MINÚSCULAS O ESPACIOS
     # =========================================================================
-    if 'TIPO CONTRATO' in df_c.columns:
+    # 1. Buscamos el nombre exacto que tiene la columna ahora mismo
+    col_tipo = None
+    for col in df_c.columns:
+        if str(col).strip().lower() in ['tipo contrato', 'tipo_contrato', 'tipocontrato']:
+            col_tipo = col
+            break
+            
+    if col_tipo is not None:
+        # 2. Convertimos los valores a minúsculas temporalmente para comparar exacto
+        valores_limpios = df_c[col_tipo].astype(str).str.strip().str.lower()
+        
         if es_locacion:
-            # Filtra solo recibos por honorarios u otros para constancias
-            df_c_filtrado = df_c[df_c['TIPO CONTRATO'].isin(['Recibo por Honorarios', 'Otro'])]
+            # Filtra recibos por honorarios
+            df_c_filtrado = df_c[valores_limpios.isin(['recibo por honorarios', 'otro'])]
         else:
-            # Filtra solo planilla para certificados de trabajo
-            df_c_filtrado = df_c[df_c['TIPO CONTRATO'].isin(['Planilla completo', 'Tiempo Parcial'])]
+            # Filtra planillas
+            df_c_filtrado = df_c[valores_limpios.isin(['planilla completo', 'tiempo parcial'])]
     else:
         df_c_filtrado = df_c 
 
     # =========================================================================
     # 🔄 CONSOLIDAR SOLO LOS DATOS FILTRADOS
     # =========================================================================
-    # Ahora enviamos a consolidar solo lo que sobrevivió al filtro
     df_merged = get_consolidated_contracts(df_c_filtrado)
     df_tabla = df_merged
 
@@ -344,7 +349,6 @@ def gen_word(nom, dni, df_c, tipo_seleccionado="Automático (Detectar por histor
         celda.paragraphs[0].runs[0].font.bold = True
         celda.paragraphs[0].runs[0].font.name = 'Arial'
 
-    # ITERAMOS SOBRE df_tabla (EL HISTORIAL FILTRADO), NO SOBRE EL GENERAL
     for _, fila in df_tabla.iterrows():
         celdas = t.add_row().cells
         celdas[0].text = str(fila.get('cargo', fila.get('puesto', ''))).upper()
@@ -365,6 +369,7 @@ def gen_word(nom, dni, df_c, tipo_seleccionado="Automático (Detectar por histor
     
     f = doc.add_paragraph()
     f.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    # OJO: Asegúrate de que F_N y F_C estén definidos globalmente o pasados como argumentos
     f_run = f.add_run("\n\n__________________________\n" + F_N + "\n" + F_C)
     f_run.bold = True
     f_run.font.name = 'Arial'
