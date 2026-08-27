@@ -271,20 +271,18 @@ def gen_word(nom, dni, df_c, tipo_seleccionado="Automático (Detectar por histor
         if "Locación" in tipo_seleccionado:
             es_locacion = True
 
-    # =========================================================================
+   # =========================================================================
     # 🛑 NUEVO: FILTRAR DATOS PARA LA TABLA SEGÚN EL RÉGIMEN
     # =========================================================================
-    # Si la columna en tu dataframe base (Excel/BD) tiene otro nombre exacto 
-    # (ej. 'tipo_contrato' en minúsculas), cámbialo en los corchetes de abajo.
-    if 'Tipo Contrato' in df_merged.columns:
+    # Ahora busca exactamente 'TIPO CONTRATO' en mayúsculas como está en tu Excel
+    if 'TIPO CONTRATO' in df_merged.columns:
         if es_locacion:
             # Filtra solo recibos por honorarios u otros para constancias
-            df_tabla = df_merged[df_merged['Tipo Contrato'].isin(['Recibo por Honorarios', 'Otro'])]
+            df_tabla = df_merged[df_merged['TIPO CONTRATO'].isin(['Recibo por Honorarios', 'Otro'])]
         else:
             # Filtra solo planilla para certificados de trabajo
-            df_tabla = df_merged[df_merged['Tipo Contrato'].isin(['Planilla completo', 'Tiempo Parcial'])]
+            df_tabla = df_merged[df_merged['TIPO CONTRATO'].isin(['Planilla completo', 'Tiempo Parcial'])]
     else:
-        # Fallback de seguridad por si la columna no se encuentra
         df_tabla = df_merged 
 
     # =========================================================================
