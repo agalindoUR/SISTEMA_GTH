@@ -249,15 +249,14 @@ def gen_word(nom, dni, df_c, tipo_seleccionado="Automático (Detectar por histor
     # =========================================================================
     # 🎯 FILTRO DE TIPO DE TRABAJADOR Y MODALIDAD (PLANILLA / LOCACIÓN)
     # =========================================================================
-    df_merged = get_consolidated_contracts(df_c)
-    
     es_docente = False
     es_locacion = False
     
-    # 1. ¿El usuario pidió detección automática?
-    if tipo_seleccionado == "Automático (Detectar por historial)":
-        if not df_merged.empty:
-            texto_ultima_fila = " ".join([str(val).lower() for val in df_merged.iloc[-1].values])
+    # 1. Detectar intención del usuario basándonos en el texto de la UI
+    if "Automático" in tipo_seleccionado:
+        if not df_c.empty:
+            # Buscamos en la última fila del historial crudo (df_c)
+            texto_ultima_fila = " ".join([str(val).lower() for val in df_c.iloc[-1].values])
             
             if "docente" in texto_ultima_fila or "profesor" in texto_ultima_fila or "catedra" in texto_ultima_fila:
                 es_docente = True
@@ -271,19 +270,25 @@ def gen_word(nom, dni, df_c, tipo_seleccionado="Automático (Detectar por histor
         if "Locación" in tipo_seleccionado:
             es_locacion = True
 
-   # =========================================================================
-    # 🛑 NUEVO: FILTRAR DATOS PARA LA TABLA SEGÚN EL RÉGIMEN
     # =========================================================================
-    # Ahora busca exactamente 'TIPO CONTRATO' en mayúsculas como está en tu Excel
-    if 'TIPO CONTRATO' in df_merged.columns:
+    # 🛑 NUEVO: FILTRAR DATOS CRUDOS ANTES DE CONSOLIDAR
+    # =========================================================================
+    if 'TIPO CONTRATO' in df_c.columns:
         if es_locacion:
             # Filtra solo recibos por honorarios u otros para constancias
-            df_tabla = df_merged[df_merged['TIPO CONTRATO'].isin(['Recibo por Honorarios', 'Otro'])]
+            df_c_filtrado = df_c[df_c['TIPO CONTRATO'].isin(['Recibo por Honorarios', 'Otro'])]
         else:
             # Filtra solo planilla para certificados de trabajo
-            df_tabla = df_merged[df_merged['TIPO CONTRATO'].isin(['Planilla completo', 'Tiempo Parcial'])]
+            df_c_filtrado = df_c[df_c['TIPO CONTRATO'].isin(['Planilla completo', 'Tiempo Parcial'])]
     else:
-        df_tabla = df_merged 
+        df_c_filtrado = df_c 
+
+    # =========================================================================
+    # 🔄 CONSOLIDAR SOLO LOS DATOS FILTRADOS
+    # =========================================================================
+    # Ahora enviamos a consolidar solo lo que sobrevivió al filtro
+    df_merged = get_consolidated_contracts(df_c_filtrado)
+    df_tabla = df_merged
 
     # =========================================================================
     # 📝 REDACCIÓN DINÁMICA SEGÚN LOS 4 TIPOS DE CERTIFICADO
