@@ -53,13 +53,20 @@ def mostrar(dfs, save_data=None):
     else:
         df_activos['NOMBRES_COMPLETOS'] = ""
 
-    # Crear lista desplegable de búsqueda incluyendo el nombre
-    df_activos['DISPLAY'] = (
-        df_activos['DNI'].astype(str) + " - " + 
-        (df_activos['NOMBRES_COMPLETOS'] + " - " if df_activos['NOMBRES_COMPLETOS'].any() else "") +
-        df_activos['AREA'].astype(str) + " (" + 
-        df_activos['CARGO'].astype(str) + ")"
-    )
+    # 5. Crear lista desplegable de búsqueda incluyendo el nombre de forma segura
+    if (df_activos['NOMBRES_COMPLETOS'] != "").any():
+        df_activos['DISPLAY'] = (
+            df_activos['DNI'].astype(str) + " - " + 
+            df_activos['NOMBRES_COMPLETOS'] + " - " +
+            df_activos['AREA'].astype(str) + " (" + 
+            df_activos['CARGO'].astype(str) + ")"
+        )
+    else:
+        df_activos['DISPLAY'] = (
+            df_activos['DNI'].astype(str) + " - " + 
+            df_activos['AREA'].astype(str) + " (" + 
+            df_activos['CARGO'].astype(str) + ")"
+        )
     
     colaborador_sel = st.selectbox("Seleccione Colaborador Activo:", df_activos['DISPLAY'].unique())
     
@@ -120,7 +127,5 @@ def mostrar(dfs, save_data=None):
                 st.error("No se ha definido la función de guardado (save_data). Verifica la llamada en app.py.")
         except Exception as err:
             st.error(f"Error al guardar los datos: {err}")
-
-render_mod_horarios_admin = mostrarardar los datos: {err}")
 
 render_mod_horarios_admin = mostrar
