@@ -28,6 +28,7 @@ import gestor_evaluaciones as mod_gestor_evaluaciones
 import mod_registro
 import mod_nomina
 import mod_usuarios
+import mod_horarios_admin as mod_horarios_admin
 
 st.set_page_config(page_title="Gestión Roosevelt", page_icon="🎓", layout="wide")
 
@@ -637,7 +638,7 @@ else:
 
         st.markdown("### 🛠️ MENÚ PRINCIPAL")
         # AGREGADO: index=None para permitir que este menú se pueda desmarcar desde el código
-        st.radio("Menú Principal", ["🔍 Consulta", "➕ Registro", "📊 Nómina General", "🏢 Estructura", "📋 Evaluaciones", "📈 Dashboard Desempeño"], key="menu_p", on_change=click_menu_p, index=None, label_visibility="collapsed")
+        st.radio("Menú Principal", ["🔍 Consulta", "➕ Registro", "⏰ Horarios Administrativos", "📊 Nómina General", "🏢 Estructura", "📋 Evaluaciones", "📈 Dashboard Desempeño"], key="menu_p", on_change=click_menu_p, index=None, label_visibility="collapsed")
         
         st.markdown("<h3 style='color: #FFD700;'>📊 REPORTES</h3>", unsafe_allow_html=True)
         # Este ya lo tenías bien con index=None
@@ -2623,3 +2624,10 @@ else:
     # ==========================================
     elif m == "🔐 Usuarios y Seguridad":
         mod_usuarios.mostrar(dfs, save_data)
+
+    # ==========================================
+    # MÓDULO: HORARIOS ADMINISTRATIVOS
+    # ==========================================
+    elif m == "⏰ Horarios Administrativos":
+        import mod_horarios_admin
+        mod_horarios_admin.mostrar(dfs, client)
