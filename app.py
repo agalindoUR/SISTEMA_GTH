@@ -2632,4 +2632,4 @@ else:
         import importlib
         import mod_horarios_admin
         importlib.reload(mod_horarios_admin)  # Fuerza la lectura del código actualizado
-        mod_horarios_admin.mostrar(dfs, client)
+        mod_horarios_admin.mostrar(dfs)
