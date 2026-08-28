@@ -140,3 +140,6 @@ def mostrar(dfs, client=None):
                 st.error("No se tiene una conexión activa con Google Sheets.")
         except Exception as err:
             st.error(f"Error al guardar en Google Sheets: {err}")
+
+# Alias para garantizar compatibilidad tanto si app.py invoca mostrar(...) o render_mod_horarios_admin(...)
+render_mod_horarios_admin = mostrar
