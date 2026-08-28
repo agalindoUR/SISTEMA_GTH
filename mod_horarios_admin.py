@@ -11,48 +11,48 @@ def mostrar(dfs, save_data=None):
         return
 
     df_contratos = dfs["CONTRATOS"].copy()
-    
-    # Normalizar columnas y eliminar duplicadas
     df_contratos.columns = df_contratos.columns.astype(str).str.strip().str.upper()
     df_contratos = df_contratos.loc[:, ~df_contratos.columns.duplicated()]
 
-    # 2. Búsqueda flexible de la columna de Estado
-    col_estado = [c for c in df_contratos.columns if "ESTADO" in c]
-
-    if col_estado:
-        nombre_col_estado = col_estado[0]
-        df_activos = df_contratos[
-            df_contratos[nombre_col_estado].astype(str).str.upper().str.contains('ACT')
-        ].copy()
+    # 2. BÚSQUEDA Y CRUCE DE NOMBRES (ESTILO "BUSCARV")
+    # Buscamos la tabla que contiene los datos personales
+    nombre_tabla_personal = next((k for k in dfs.keys() if k.upper() in ["DATOS GENERALES", "DATOS_GENERALES", "PERSONAL", "EMPLEADOS", "TRABAJADORES"]), None)
+    
+    if nombre_tabla_personal:
+        df_personal = dfs[nombre_tabla_personal].copy()
+        df_personal.columns = df_personal.columns.astype(str).str.strip().str.upper()
+        df_personal = df_personal.loc[:, ~df_personal.columns.duplicated()]
+        
+        # Encontrar columnas DNI en ambas tablas para cruzarlas
+        col_dni_con = next((c for c in df_contratos.columns if 'DNI' in c or 'DOC' in c), None)
+        col_dni_per = next((c for c in df_personal.columns if 'DNI' in c or 'DOC' in c), None)
+        
+        if col_dni_con and col_dni_per:
+            # Cruzar datos: Traemos los nombres de la tabla personal hacia contratos
+            df_contratos = pd.merge(df_contratos, df_personal, left_on=col_dni_con, right_on=col_dni_per, how='left')
+        else:
+            st.warning("No se pudo cruzar los nombres porque no se encontró la columna DNI en alguna de las tablas.")
     else:
-        st.warning("⚠️ No se detectó una columna 'ESTADO'. Se mostrarán todos los registros.")
+        st.warning("⚠️ No se encontró la tabla de 'Datos Generales' para extraer los nombres.")
+
+    # 3. Filtro de contratos activos
+    col_estado = [c for c in df_contratos.columns if "ESTADO" in c]
+    if col_estado:
+        df_activos = df_contratos[df_contratos[col_estado[0]].astype(str).str.upper().str.contains('ACT')].copy()
+    else:
         df_activos = df_contratos.copy()
 
     if df_activos.empty:
         st.warning("No se encontraron colaboradores con contratos activos.")
         return
 
-    # 3. Identificación precisa de Nombres y Apellidos
+    # 4. Identificación de Nombres y Apellidos en la tabla cruzada
     cols = df_activos.columns.tolist()
-    
-    # Búsqueda EXACTA para evitar errores con columnas como "TIPO_ADMINISTRATIVO"
-    posibles_nom = ['NOMBRES', 'NOMBRE', 'NOMBRES Y APELLIDOS', 'APELLIDOS Y NOMBRES', 'TRABAJADOR', 'COLABORADOR', 'EMPLEADO']
+    posibles_nom = ['NOMBRES', 'NOMBRE', 'NOMBRES Y APELLIDOS', 'APELLIDOS Y NOMBRES', 'TRABAJADOR', 'COLABORADOR']
     posibles_ape = ['APELLIDOS', 'APELLIDO']
     
     col_nom = next((c for c in cols if c in posibles_nom), None)
     col_ape = next((c for c in cols if c in posibles_ape), None)
-
-    # UI de Respaldo por si el Excel tiene nombres de columna muy raros
-    with st.expander("⚙️ ¿No sale el nombre? Configurar columnas manualmente"):
-        st.caption("Usa esto solo si en la lista desplegable de abajo no aparecen los nombres.")
-        c_m1, c_m2 = st.columns(2)
-        col_nom_manual = c_m1.selectbox("Columna principal (Nombres):", ["Automático"] + cols)
-        col_ape_manual = c_m2.selectbox("Columna secundaria (Apellidos):", ["Automático", "Ninguna"] + cols)
-
-    if col_nom_manual != "Automático":
-        col_nom = col_nom_manual
-    if col_ape_manual != "Automático":
-        col_ape = None if col_ape_manual == "Ninguna" else col_ape_manual
 
     def format_name(row):
         n = str(row[col_nom]) if col_nom and pd.notna(row[col_nom]) else ""
@@ -61,45 +61,43 @@ def mostrar(dfs, save_data=None):
         if n and a and (a in n or n in a):
             res = n if len(n) > len(a) else a
         else:
-            res = f"{n} {a}".strip()
+            res = f"{a} {n}".strip() if a else n.strip()
             
         return res if res else "NOMBRE NO DETECTADO"
 
     df_activos['NOMBRES_COMPLETOS'] = df_activos.apply(format_name, axis=1)
 
-    # Crear lista desplegable de búsqueda
+    # Crear lista desplegable
+    col_dni = next((c for c in cols if 'DNI' in c or 'DOC' in c), 'DNI')
+    col_cargo = next((c for c in cols if 'CARGO' in c or 'PUESTO' in c), 'CARGO')
+    
     df_activos['DISPLAY'] = (
-        df_activos.get('DNI', pd.Series(dtype=str)).astype(str) + " - " + 
-        df_activos['NOMBRES_COMPLETOS'] + " - " +
-        df_activos.get('AREA', pd.Series(dtype=str)).astype(str) + " (" + 
-        df_activos.get('CARGO', pd.Series(dtype=str)).astype(str) + ")"
+        df_activos[col_dni].astype(str) + " - " + 
+        df_activos['NOMBRES_COMPLETOS'] + " (" + 
+        df_activos[col_cargo].astype(str).fillna('Sin cargo') + ")"
     )
     
     colaborador_sel = st.selectbox("Seleccione Colaborador Activo:", df_activos['DISPLAY'].unique())
     
     contrato_row = df_activos[df_activos['DISPLAY'] == colaborador_sel].iloc[0]
-    dni_sel = str(contrato_row.get('DNI', ''))
+    dni_sel = str(contrato_row.get(col_dni, ''))
     f_inicio_contrato = str(contrato_row.get('F_INICIO', '-'))
     f_fin_contrato = str(contrato_row.get('F_FIN', '-'))
 
     st.success(f"📋 **Vigencia de Contrato Detectada:** Del `{f_inicio_contrato}` al `{f_fin_contrato}`")
     st.markdown("---")
     
-    # ESPACIO RESERVADO PARA EL TOTAL DE HORAS
     marcador_horas = st.empty()
-    
     st.subheader("🗓️ Configuración de Jornada Semanal")
 
-    # --- LÓGICA DE COPIA (Debe ir antes de renderizar los inputs) ---
+    # Botón de copia mágica
     if st.button("🔄 Copiar horario del Lunes a Martes-Viernes", type="secondary"):
         for d in ["Martes", "Miércoles", "Jueves", "Viernes"]:
-            st.session_state[f"check_{d}"] = st.session_state.get("check_Lunes", True)
-            st.session_state[f"tm_{d}"] = st.session_state.get("tm_Lunes", True)
-            st.session_state[f"tt_{d}"] = st.session_state.get("tt_Lunes", True)
-            if "e1_Lunes" in st.session_state: st.session_state[f"e1_{d}"] = st.session_state["e1_Lunes"]
-            if "s1_Lunes" in st.session_state: st.session_state[f"s1_{d}"] = st.session_state["s1_Lunes"]
-            if "e2_Lunes" in st.session_state: st.session_state[f"e2_{d}"] = st.session_state["e2_Lunes"]
-            if "s2_Lunes" in st.session_state: st.session_state[f"s2_{d}"] = st.session_state["s2_Lunes"]
+            for key in ["check", "tm", "tt", "e1", "s1", "e2", "s2"]:
+                origen = f"{key}_Lunes"
+                destino = f"{key}_{d}"
+                if origen in st.session_state:
+                    st.session_state[destino] = st.session_state[origen]
 
     dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
     horarios_config = {}
@@ -160,7 +158,6 @@ def mostrar(dfs, save_data=None):
                         horarios_config[dia]["S2"] = str(s2)
                         total_horas_semanales += calcular_diferencia_horas(e2, s2)
 
-    # Imprimir el total de horas
     marcador_horas.metric("⏱️ TOTAL HORAS SEMANALES ASIGNADAS", f"{total_horas_semanales:.2f} hrs")
 
     st.markdown("---")
@@ -182,32 +179,15 @@ def mostrar(dfs, save_data=None):
 
         if callable(save_data):
             try:
-                # Intento 1: Guardado normal como DataFrame
+                # Se envía como un DataFrame limpio y directo para evitar conflictos en app.py
                 df_guardar = pd.DataFrame([nuevo_registro])
                 save_data("HORARIOS_ADMIN", df_guardar)
                 st.balloons()
                 st.success(f"¡Horario asignado con éxito a DNI {dni_sel}! (Total: {total_horas_semanales:.2f} hrs)")
-            except ValueError as e:
-                # Si el app.py tiene un error lógico (el del ambiguous truth value) lo atrapamos aquí
-                if "truth value" in str(e).lower() or "ambiguous" in str(e).lower():
-                    try:
-                        # Intento 2: Como lista de diccionarios (A prueba de validaciones booleanas)
-                        save_data("HORARIOS_ADMIN", [nuevo_registro])
-                        st.balloons()
-                        st.success(f"¡Horario asignado con éxito a DNI {dni_sel}! (Total: {total_horas_semanales:.2f} hrs)")
-                    except:
-                        try:
-                            # Intento 3: Como diccionario simple
-                            save_data("HORARIOS_ADMIN", nuevo_registro)
-                            st.balloons()
-                            st.success(f"¡Horario asignado con éxito a DNI {dni_sel}! (Total: {total_horas_semanales:.2f} hrs)")
-                        except Exception as e3:
-                            st.error(f"Error persistente al guardar: {e3}")
-                else:
-                    st.error(f"Error al guardar los datos: {e}")
             except Exception as e:
-                st.error(f"Error inesperado: {e}")
+                st.error(f"Ocurrió un error al intentar guardar en la base de datos: {e}")
+                st.info("💡 Consejo Técnico: El error proviene del archivo 'app.py' en la función 'save_data'. Asegúrate de que esa función procese DataFrames correctamente.")
         else:
-            st.error("No se ha definido la función de guardado (save_data). Verifica la llamada en app.py.")
+            st.error("No se ha definido la función de guardado (save_data).")
 
 render_mod_horarios_admin = mostrar
