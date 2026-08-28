@@ -1,9 +1,9 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, date, timedelta
 
 def mostrar(dfs, save_data=None):
-    st.title("⏰ Gestión de Horarios Administrativos (2 Turnos por Día)")
+    st.title("⏰ Gestión de Horarios Administrativos")
 
     # 1. Validación de la tabla CONTRATOS
     if not isinstance(dfs, dict) or "CONTRATOS" not in dfs:
@@ -12,8 +12,9 @@ def mostrar(dfs, save_data=None):
 
     df_contratos = dfs["CONTRATOS"].copy()
     
-    # Normalizar columnas: eliminar espacios y convertir a mayúsculas
+    # Normalizar columnas y eliminar duplicadas (Evita el error 'ambiguous truth value')
     df_contratos.columns = df_contratos.columns.astype(str).str.strip().str.upper()
+    df_contratos = df_contratos.loc[:, ~df_contratos.columns.duplicated()]
 
     # 2. Búsqueda flexible de la columna de Estado
     col_estado = [c for c in df_contratos.columns if "ESTADO" in c]
@@ -31,77 +32,96 @@ def mostrar(dfs, save_data=None):
         st.warning("No se encontraron colaboradores con contratos activos.")
         return
 
-    # 3. Validación de columnas obligatorias
-    columnas_requeridas = ['DNI', 'AREA', 'CARGO', 'F_INICIO', 'F_FIN']
-    columnas_faltantes = [col for col in columnas_requeridas if col not in df_activos.columns]
+    # 3. Búsqueda dinámica de nombres y apellidos
+    cols = df_activos.columns.tolist()
+    col_nom = next((c for c in cols if c in ['NOMBRES', 'NOMBRE', 'TRABAJADOR', 'COLABORADOR', 'NOMBRES Y APELLIDOS']), None)
+    col_ape = next((c for c in cols if c in ['APELLIDOS', 'APELLIDO']), None)
 
-    if columnas_faltantes:
-        st.error(f"❌ La tabla CONTRATOS no contiene las siguientes columnas requeridas: {columnas_faltantes}")
-        st.info(f"💡 Columnas disponibles en tu tabla: {list(df_activos.columns)}")
-        return
+    def format_name(row):
+        n = str(row[col_nom]) if col_nom and pd.notna(row[col_nom]) else ""
+        a = str(row[col_ape]) if col_ape and pd.notna(row[col_ape]) else ""
+        res = f"{n} {a}".strip()
+        return res if res else "NOMBRE NO DETECTADO"
 
-    # 4. Búsqueda dinámica de nombres y apellidos
-    col_nombres = next((c for c in df_activos.columns if c in ['NOMBRES', 'NOMBRE', 'TRABAJADOR', 'COLABORADOR']), "")
-    col_apellidos = next((c for c in df_activos.columns if c in ['APELLIDOS', 'APELLIDO']), "")
-    
-    if col_nombres and col_apellidos:
-        df_activos['NOMBRES_COMPLETOS'] = df_activos[col_nombres].astype(str) + " " + df_activos[col_apellidos].astype(str)
-    elif col_nombres:
-        df_activos['NOMBRES_COMPLETOS'] = df_activos[col_nombres].astype(str)
-    elif col_apellidos:
-        df_activos['NOMBRES_COMPLETOS'] = df_activos[col_apellidos].astype(str)
-    else:
-        df_activos['NOMBRES_COMPLETOS'] = ""
+    df_activos['NOMBRES_COMPLETOS'] = df_activos.apply(format_name, axis=1)
 
-    # 5. Crear lista desplegable de búsqueda incluyendo el nombre de forma segura
-    if (df_activos['NOMBRES_COMPLETOS'] != "").any():
-        df_activos['DISPLAY'] = (
-            df_activos['DNI'].astype(str) + " - " + 
-            df_activos['NOMBRES_COMPLETOS'] + " - " +
-            df_activos['AREA'].astype(str) + " (" + 
-            df_activos['CARGO'].astype(str) + ")"
-        )
-    else:
-        df_activos['DISPLAY'] = (
-            df_activos['DNI'].astype(str) + " - " + 
-            df_activos['AREA'].astype(str) + " (" + 
-            df_activos['CARGO'].astype(str) + ")"
-        )
+    # Crear lista desplegable de búsqueda
+    df_activos['DISPLAY'] = (
+        df_activos.get('DNI', pd.Series(dtype=str)).astype(str) + " - " + 
+        df_activos['NOMBRES_COMPLETOS'] + " - " +
+        df_activos.get('AREA', pd.Series(dtype=str)).astype(str) + " (" + 
+        df_activos.get('CARGO', pd.Series(dtype=str)).astype(str) + ")"
+    )
     
     colaborador_sel = st.selectbox("Seleccione Colaborador Activo:", df_activos['DISPLAY'].unique())
     
     # Filtrar fila elegida
     contrato_row = df_activos[df_activos['DISPLAY'] == colaborador_sel].iloc[0]
-    dni_sel = str(contrato_row['DNI'])
-    f_inicio_contrato = str(contrato_row['F_INICIO'])
-    f_fin_contrato = str(contrato_row['F_FIN'])
+    dni_sel = str(contrato_row.get('DNI', ''))
+    f_inicio_contrato = str(contrato_row.get('F_INICIO', '-'))
+    f_fin_contrato = str(contrato_row.get('F_FIN', '-'))
 
     st.success(f"📋 **Vigencia de Contrato Detectada:** Del `{f_inicio_contrato}` al `{f_fin_contrato}`")
     st.markdown("---")
-    st.subheader("🗓️ Configuración de Jornada Semanal (Doble Turno)")
+    
+    # ESPACIO RESERVADO PARA EL TOTAL DE HORAS (Se calcula más abajo y se muestra aquí)
+    marcador_horas = st.empty()
+    
+    st.subheader("🗓️ Configuración de Jornada Semanal")
 
     dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
     horarios_config = {}
+    total_horas_semanales = 0.0
+
+    # Función para calcular horas entre dos tiempos
+    def calcular_diferencia_horas(inicio, fin):
+        dt_inicio = datetime.combine(date.today(), inicio)
+        dt_fin = datetime.combine(date.today(), fin)
+        if dt_fin < dt_inicio:  # Por si el turno cruza la medianoche
+            dt_fin += timedelta(days=1)
+        return (dt_fin - dt_inicio).total_seconds() / 3600.0
 
     for dia in dias_semana:
         with st.expander(f"📌 Configurar {dia}", expanded=(dia in ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"])):
             asiste = st.checkbox(f"¿Labora el {dia}?", value=(dia in ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"]), key=f"check_{dia}")
             
+            horarios_config[dia] = {"LABORA": "NO", "E1": "-", "S1": "-", "E2": "-", "S2": "-"}
+            
             if asiste:
-                c1, c2, c3, c4 = st.columns(4)
-                with c1:
-                    e1 = st.time_input(f"Entrada Mañana ({dia})", value=datetime.strptime("08:00", "%H:%M").time(), key=f"e1_{dia}")
-                with c2:
-                    s1 = st.time_input(f"Salida Mañana ({dia})", value=datetime.strptime("13:00", "%H:%M").time(), key=f"s1_{dia}")
-                with c3:
-                    e2 = st.time_input(f"Entrada Tarde ({dia})", value=datetime.strptime("14:00", "%H:%M").time(), key=f"e2_{dia}")
-                with c4:
-                    s2 = st.time_input(f"Salida Tarde ({dia})", value=datetime.strptime("17:00", "%H:%M").time(), key=f"s2_{dia}")
+                horarios_config[dia]["LABORA"] = "SI"
+                col_m, col_t = st.columns(2)
                 
-                horarios_config[dia] = {"LABORA": "SI", "E1": str(e1), "S1": str(s1), "E2": str(e2), "S2": str(s2)}
-            else:
-                horarios_config[dia] = {"LABORA": "NO", "E1": "-", "S1": "-", "E2": "-", "S2": "-"}
+                with col_m:
+                    turno_manana = st.checkbox("☀️ Habilitar Turno Mañana", value=True, key=f"tm_{dia}")
+                    if turno_manana:
+                        sub_c1, sub_c2 = st.columns(2)
+                        with sub_c1:
+                            e1 = st.time_input("Entrada", value=datetime.strptime("08:00", "%H:%M").time(), key=f"e1_{dia}")
+                        with sub_c2:
+                            s1 = st.time_input("Salida", value=datetime.strptime("13:00", "%H:%M").time(), key=f"s1_{dia}")
+                        
+                        horarios_config[dia]["E1"] = str(e1)
+                        horarios_config[dia]["S1"] = str(s1)
+                        total_horas_semanales += calcular_diferencia_horas(e1, s1)
+                
+                with col_t:
+                    # Si el trabajador solo tiene un turno, simplemente se desmarca esta casilla en la app
+                    turno_tarde = st.checkbox("🌙 Habilitar Turno Tarde", value=True, key=f"tt_{dia}")
+                    if turno_tarde:
+                        sub_c3, sub_c4 = st.columns(2)
+                        with sub_c3:
+                            e2 = st.time_input("Entrada", value=datetime.strptime("16:00", "%H:%M").time(), key=f"e2_{dia}")
+                        with sub_c4:
+                            s2 = st.time_input("Salida", value=datetime.strptime("19:00", "%H:%M").time(), key=f"s2_{dia}")
+                        
+                        horarios_config[dia]["E2"] = str(e2)
+                        horarios_config[dia]["S2"] = str(s2)
+                        total_horas_semanales += calcular_diferencia_horas(e2, s2)
 
+    # Imprimir el total de horas en la parte superior (en el marcador reservado)
+    marcador_horas.metric("⏱️ TOTAL HORAS SEMANALES ASIGNADAS", f"{total_horas_semanales:.2f} hrs")
+
+    st.markdown("---")
     if st.button("💾 Guardar Horario en Base de Datos", type="primary"):
         nuevo_registro = {
             "FECHA_REGISTRO": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -122,7 +142,7 @@ def mostrar(dfs, save_data=None):
             if callable(save_data):
                 save_data("HORARIOS_ADMIN", pd.DataFrame([nuevo_registro]))
                 st.balloons()
-                st.success(f"¡Horario asignado con éxito a DNI {dni_sel}!")
+                st.success(f"¡Horario asignado con éxito a DNI {dni_sel}! (Total: {total_horas_semanales:.2f} hrs)")
             else:
                 st.error("No se ha definido la función de guardado (save_data). Verifica la llamada en app.py.")
         except Exception as err:
