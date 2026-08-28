@@ -2625,9 +2625,11 @@ else:
     elif m == "🔐 Usuarios y Seguridad":
         mod_usuarios.mostrar(dfs, save_data)
 
-    # ==========================================
+   # ==========================================
     # MÓDULO: HORARIOS ADMINISTRATIVOS
     # ==========================================
     elif m == "⏰ Horarios Administrativos":
+        import importlib
         import mod_horarios_admin
+        importlib.reload(mod_horarios_admin)  # Fuerza la lectura del código actualizado
         mod_horarios_admin.mostrar(dfs, client)
