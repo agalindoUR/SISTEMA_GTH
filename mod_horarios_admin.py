@@ -179,14 +179,22 @@ def mostrar(dfs, save_data=None):
 
         if callable(save_data):
             try:
-                # Se envía como un DataFrame limpio y directo para evitar conflictos en app.py
-                df_guardar = pd.DataFrame([nuevo_registro])
-                save_data("HORARIOS_ADMIN", df_guardar)
+                # 1. Convertimos el registro nuevo en una tabla
+                df_nuevo = pd.DataFrame([nuevo_registro])
+                
+                # 2. Anexamos este registro al diccionario global 'dfs'
+                if "HORARIOS_ADMIN" in dfs:
+                    dfs["HORARIOS_ADMIN"] = pd.concat([dfs["HORARIOS_ADMIN"], df_nuevo], ignore_index=True)
+                else:
+                    dfs["HORARIOS_ADMIN"] = df_nuevo
+                
+                # 3. Llamamos a tu función con el ORDEN CORRECTO: (diccionario_completo, "NOMBRE_PESTAÑA")
+                save_data(dfs, "HORARIOS_ADMIN")
+                
                 st.balloons()
                 st.success(f"¡Horario asignado con éxito a DNI {dni_sel}! (Total: {total_horas_semanales:.2f} hrs)")
             except Exception as e:
-                st.error(f"Ocurrió un error al intentar guardar en la base de datos: {e}")
-                st.info("💡 Consejo Técnico: El error proviene del archivo 'app.py' en la función 'save_data'. Asegúrate de que esa función procese DataFrames correctamente.")
+                st.error(f"Ocurrió un error al intentar guardar: {e}")
         else:
             st.error("No se ha definido la función de guardado (save_data).")
 
