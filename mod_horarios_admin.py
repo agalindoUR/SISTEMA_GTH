@@ -32,10 +32,27 @@ def mostrar(dfs, save_data=None):
         st.warning("No se encontraron colaboradores con contratos activos.")
         return
 
-    # 3. Búsqueda dinámica de nombres y apellidos (Mejorada)
+    # 3. Identificación precisa de Nombres y Apellidos
     cols = df_activos.columns.tolist()
-    col_nom = next((c for c in cols if any(k in c for k in ['NOMBRE', 'TRABAJADOR', 'COLABORADOR', 'EMPLEADO', 'PERSONAL'])), None)
-    col_ape = next((c for c in cols if 'APELLIDO' in c and c != col_nom), None)
+    
+    # Búsqueda EXACTA para evitar errores con columnas como "TIPO_ADMINISTRATIVO"
+    posibles_nom = ['NOMBRES', 'NOMBRE', 'NOMBRES Y APELLIDOS', 'APELLIDOS Y NOMBRES', 'TRABAJADOR', 'COLABORADOR', 'EMPLEADO']
+    posibles_ape = ['APELLIDOS', 'APELLIDO']
+    
+    col_nom = next((c for c in cols if c in posibles_nom), None)
+    col_ape = next((c for c in cols if c in posibles_ape), None)
+
+    # UI de Respaldo por si el Excel tiene nombres de columna muy raros
+    with st.expander("⚙️ ¿No sale el nombre? Configurar columnas manualmente"):
+        st.caption("Usa esto solo si en la lista desplegable de abajo no aparecen los nombres.")
+        c_m1, c_m2 = st.columns(2)
+        col_nom_manual = c_m1.selectbox("Columna principal (Nombres):", ["Automático"] + cols)
+        col_ape_manual = c_m2.selectbox("Columna secundaria (Apellidos):", ["Automático", "Ninguna"] + cols)
+
+    if col_nom_manual != "Automático":
+        col_nom = col_nom_manual
+    if col_ape_manual != "Automático":
+        col_ape = None if col_ape_manual == "Ninguna" else col_ape_manual
 
     def format_name(row):
         n = str(row[col_nom]) if col_nom and pd.notna(row[col_nom]) else ""
@@ -49,9 +66,6 @@ def mostrar(dfs, save_data=None):
         return res if res else "NOMBRE NO DETECTADO"
 
     df_activos['NOMBRES_COMPLETOS'] = df_activos.apply(format_name, axis=1)
-
-    if (df_activos['NOMBRES_COMPLETOS'] == "NOMBRE NO DETECTADO").all():
-        st.warning(f"⚠️ Revisa el Excel de Contratos. Las columnas actuales son: {cols}")
 
     # Crear lista desplegable de búsqueda
     df_activos['DISPLAY'] = (
@@ -98,7 +112,6 @@ def mostrar(dfs, save_data=None):
             dt_fin += timedelta(days=1)
         return (dt_fin - dt_inicio).total_seconds() / 3600.0
 
-    # Función auxiliar para inicializar valores de tiempo de forma segura
     def get_time(key, default_str):
         if key not in st.session_state:
             st.session_state[key] = datetime.strptime(default_str, "%H:%M").time()
@@ -107,7 +120,6 @@ def mostrar(dfs, save_data=None):
     for dia in dias_semana:
         with st.expander(f"📌 Configurar {dia}", expanded=(dia in ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"])):
             
-            # Inicializar check del día
             if f"check_{dia}" not in st.session_state:
                 st.session_state[f"check_{dia}"] = (dia in ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"])
             
@@ -148,7 +160,7 @@ def mostrar(dfs, save_data=None):
                         horarios_config[dia]["S2"] = str(s2)
                         total_horas_semanales += calcular_diferencia_horas(e2, s2)
 
-    # Imprimir el total de horas en la parte superior
+    # Imprimir el total de horas
     marcador_horas.metric("⏱️ TOTAL HORAS SEMANALES ASIGNADAS", f"{total_horas_semanales:.2f} hrs")
 
     st.markdown("---")
@@ -168,14 +180,34 @@ def mostrar(dfs, save_data=None):
             "TOLERANCIA_MIN": 5
         }
 
-        try:
-            if callable(save_data):
-                save_data("HORARIOS_ADMIN", pd.DataFrame([nuevo_registro]))
+        if callable(save_data):
+            try:
+                # Intento 1: Guardado normal como DataFrame
+                df_guardar = pd.DataFrame([nuevo_registro])
+                save_data("HORARIOS_ADMIN", df_guardar)
                 st.balloons()
                 st.success(f"¡Horario asignado con éxito a DNI {dni_sel}! (Total: {total_horas_semanales:.2f} hrs)")
-            else:
-                st.error("No se ha definido la función de guardado (save_data). Verifica la llamada en app.py.")
-        except Exception as err:
-            st.error(f"Error al guardar los datos: {err}")
+            except ValueError as e:
+                # Si el app.py tiene un error lógico (el del ambiguous truth value) lo atrapamos aquí
+                if "truth value" in str(e).lower() or "ambiguous" in str(e).lower():
+                    try:
+                        # Intento 2: Como lista de diccionarios (A prueba de validaciones booleanas)
+                        save_data("HORARIOS_ADMIN", [nuevo_registro])
+                        st.balloons()
+                        st.success(f"¡Horario asignado con éxito a DNI {dni_sel}! (Total: {total_horas_semanales:.2f} hrs)")
+                    except:
+                        try:
+                            # Intento 3: Como diccionario simple
+                            save_data("HORARIOS_ADMIN", nuevo_registro)
+                            st.balloons()
+                            st.success(f"¡Horario asignado con éxito a DNI {dni_sel}! (Total: {total_horas_semanales:.2f} hrs)")
+                        except Exception as e3:
+                            st.error(f"Error persistente al guardar: {e3}")
+                else:
+                    st.error(f"Error al guardar los datos: {e}")
+            except Exception as e:
+                st.error(f"Error inesperado: {e}")
+        else:
+            st.error("No se ha definido la función de guardado (save_data). Verifica la llamada en app.py.")
 
 render_mod_horarios_admin = mostrar
