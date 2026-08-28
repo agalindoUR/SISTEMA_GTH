@@ -23,14 +23,22 @@ def guardar_horario_gsheet(_client, registro_dict, sheet_name="DB_SISTEMA_GTH"):
     st.cache_data.clear()
 
 # --- VISTA PRINCIPAL DEL MÓDULO ---
-def render_mod_horarios_admin(client):
+def mostrar(dfs, client=None):
     st.title("⏰ Gestión de Horarios Administrativos (2 Turnos por Día)")
 
-    # 1. Carga de contratos desde caché
-    try:
-        df_contratos = obtener_contratos_cached(client)
-    except Exception as e:
-        st.error(f"Error al conectar con la base de datos de contratos: {e}")
+    # 1. Carga de contratos desde caché o diccionario dfs
+    df_contratos = pd.DataFrame()
+    if client is not None:
+        try:
+            df_contratos = obtener_contratos_cached(client)
+        except Exception as e:
+            st.error(f"Error al conectar con la base de datos de contratos: {e}")
+            return
+    elif isinstance(dfs, dict) and "CONTRATOS" in dfs:
+        df_contratos = dfs["CONTRATOS"].copy()
+        df_contratos.columns = df_contratos.columns.str.strip()
+    else:
+        st.error("No se pudieron obtener los datos de contratos.")
         return
 
     # Filtrar solo colaboradores con contratos o registros activos
@@ -124,8 +132,11 @@ def render_mod_horarios_admin(client):
         }
 
         try:
-            guardar_horario_gsheet(client, nuevo_registro)
-            st.balloons()
-            st.success(f"¡Horario asignado con éxito a DNI {dni_sel} para el periodo {f_inicio_contrato} a {f_fin_contrato}!")
+            if client is not None:
+                guardar_horario_gsheet(client, nuevo_registro)
+                st.balloons()
+                st.success(f"¡Horario asignado con éxito a DNI {dni_sel} para el periodo {f_inicio_contrato} a {f_fin_contrato}!")
+            else:
+                st.error("No se tiene una conexión activa con Google Sheets.")
         except Exception as err:
             st.error(f"Error al guardar en Google Sheets: {err}")
