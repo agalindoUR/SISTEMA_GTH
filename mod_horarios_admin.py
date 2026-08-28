@@ -31,7 +31,7 @@ def mostrar(dfs, save_data=None):
         st.warning("No se encontraron colaboradores con contratos activos.")
         return
 
-    # 3. Validación de columnas obligatorias (DNI, AREA, CARGO, etc.)
+    # 3. Validación de columnas obligatorias
     columnas_requeridas = ['DNI', 'AREA', 'CARGO', 'F_INICIO', 'F_FIN']
     columnas_faltantes = [col for col in columnas_requeridas if col not in df_activos.columns]
 
@@ -40,9 +40,23 @@ def mostrar(dfs, save_data=None):
         st.info(f"💡 Columnas disponibles en tu tabla: {list(df_activos.columns)}")
         return
 
-    # Crear lista desplegable de búsqueda
+    # 4. Búsqueda dinámica de nombres y apellidos
+    col_nombres = next((c for c in df_activos.columns if c in ['NOMBRES', 'NOMBRE', 'TRABAJADOR', 'COLABORADOR']), "")
+    col_apellidos = next((c for c in df_activos.columns if c in ['APELLIDOS', 'APELLIDO']), "")
+    
+    if col_nombres and col_apellidos:
+        df_activos['NOMBRES_COMPLETOS'] = df_activos[col_nombres].astype(str) + " " + df_activos[col_apellidos].astype(str)
+    elif col_nombres:
+        df_activos['NOMBRES_COMPLETOS'] = df_activos[col_nombres].astype(str)
+    elif col_apellidos:
+        df_activos['NOMBRES_COMPLETOS'] = df_activos[col_apellidos].astype(str)
+    else:
+        df_activos['NOMBRES_COMPLETOS'] = ""
+
+    # Crear lista desplegable de búsqueda incluyendo el nombre
     df_activos['DISPLAY'] = (
         df_activos['DNI'].astype(str) + " - " + 
+        (df_activos['NOMBRES_COMPLETOS'] + " - " if df_activos['NOMBRES_COMPLETOS'].any() else "") +
         df_activos['AREA'].astype(str) + " (" + 
         df_activos['CARGO'].astype(str) + ")"
     )
@@ -103,8 +117,10 @@ def mostrar(dfs, save_data=None):
                 st.balloons()
                 st.success(f"¡Horario asignado con éxito a DNI {dni_sel}!")
             else:
-                st.error("No se ha definido la función de guardado (save_data).")
+                st.error("No se ha definido la función de guardado (save_data). Verifica la llamada en app.py.")
         except Exception as err:
             st.error(f"Error al guardar los datos: {err}")
+
+render_mod_horarios_admin = mostrarardar los datos: {err}")
 
 render_mod_horarios_admin = mostrar
