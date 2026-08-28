@@ -12,7 +12,7 @@ def mostrar(dfs, save_data=None):
 
     df_contratos = dfs["CONTRATOS"].copy()
     
-    # Normalizar columnas y eliminar duplicadas (Evita el error 'ambiguous truth value')
+    # Normalizar columnas y eliminar duplicadas
     df_contratos.columns = df_contratos.columns.astype(str).str.strip().str.upper()
     df_contratos = df_contratos.loc[:, ~df_contratos.columns.duplicated()]
 
@@ -32,18 +32,26 @@ def mostrar(dfs, save_data=None):
         st.warning("No se encontraron colaboradores con contratos activos.")
         return
 
-    # 3. Búsqueda dinámica de nombres y apellidos
+    # 3. Búsqueda dinámica de nombres y apellidos (Mejorada)
     cols = df_activos.columns.tolist()
-    col_nom = next((c for c in cols if c in ['NOMBRES', 'NOMBRE', 'TRABAJADOR', 'COLABORADOR', 'NOMBRES Y APELLIDOS']), None)
-    col_ape = next((c for c in cols if c in ['APELLIDOS', 'APELLIDO']), None)
+    col_nom = next((c for c in cols if any(k in c for k in ['NOMBRE', 'TRABAJADOR', 'COLABORADOR', 'EMPLEADO', 'PERSONAL'])), None)
+    col_ape = next((c for c in cols if 'APELLIDO' in c and c != col_nom), None)
 
     def format_name(row):
         n = str(row[col_nom]) if col_nom and pd.notna(row[col_nom]) else ""
         a = str(row[col_ape]) if col_ape and pd.notna(row[col_ape]) else ""
-        res = f"{n} {a}".strip()
+        
+        if n and a and (a in n or n in a):
+            res = n if len(n) > len(a) else a
+        else:
+            res = f"{n} {a}".strip()
+            
         return res if res else "NOMBRE NO DETECTADO"
 
     df_activos['NOMBRES_COMPLETOS'] = df_activos.apply(format_name, axis=1)
+
+    if (df_activos['NOMBRES_COMPLETOS'] == "NOMBRE NO DETECTADO").all():
+        st.warning(f"⚠️ Revisa el Excel de Contratos. Las columnas actuales son: {cols}")
 
     # Crear lista desplegable de búsqueda
     df_activos['DISPLAY'] = (
@@ -55,7 +63,6 @@ def mostrar(dfs, save_data=None):
     
     colaborador_sel = st.selectbox("Seleccione Colaborador Activo:", df_activos['DISPLAY'].unique())
     
-    # Filtrar fila elegida
     contrato_row = df_activos[df_activos['DISPLAY'] == colaborador_sel].iloc[0]
     dni_sel = str(contrato_row.get('DNI', ''))
     f_inicio_contrato = str(contrato_row.get('F_INICIO', '-'))
@@ -64,27 +71,47 @@ def mostrar(dfs, save_data=None):
     st.success(f"📋 **Vigencia de Contrato Detectada:** Del `{f_inicio_contrato}` al `{f_fin_contrato}`")
     st.markdown("---")
     
-    # ESPACIO RESERVADO PARA EL TOTAL DE HORAS (Se calcula más abajo y se muestra aquí)
+    # ESPACIO RESERVADO PARA EL TOTAL DE HORAS
     marcador_horas = st.empty()
     
     st.subheader("🗓️ Configuración de Jornada Semanal")
+
+    # --- LÓGICA DE COPIA (Debe ir antes de renderizar los inputs) ---
+    if st.button("🔄 Copiar horario del Lunes a Martes-Viernes", type="secondary"):
+        for d in ["Martes", "Miércoles", "Jueves", "Viernes"]:
+            st.session_state[f"check_{d}"] = st.session_state.get("check_Lunes", True)
+            st.session_state[f"tm_{d}"] = st.session_state.get("tm_Lunes", True)
+            st.session_state[f"tt_{d}"] = st.session_state.get("tt_Lunes", True)
+            if "e1_Lunes" in st.session_state: st.session_state[f"e1_{d}"] = st.session_state["e1_Lunes"]
+            if "s1_Lunes" in st.session_state: st.session_state[f"s1_{d}"] = st.session_state["s1_Lunes"]
+            if "e2_Lunes" in st.session_state: st.session_state[f"e2_{d}"] = st.session_state["e2_Lunes"]
+            if "s2_Lunes" in st.session_state: st.session_state[f"s2_{d}"] = st.session_state["s2_Lunes"]
 
     dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
     horarios_config = {}
     total_horas_semanales = 0.0
 
-    # Función para calcular horas entre dos tiempos
     def calcular_diferencia_horas(inicio, fin):
         dt_inicio = datetime.combine(date.today(), inicio)
         dt_fin = datetime.combine(date.today(), fin)
-        if dt_fin < dt_inicio:  # Por si el turno cruza la medianoche
+        if dt_fin < dt_inicio:
             dt_fin += timedelta(days=1)
         return (dt_fin - dt_inicio).total_seconds() / 3600.0
 
+    # Función auxiliar para inicializar valores de tiempo de forma segura
+    def get_time(key, default_str):
+        if key not in st.session_state:
+            st.session_state[key] = datetime.strptime(default_str, "%H:%M").time()
+        return st.session_state[key]
+
     for dia in dias_semana:
         with st.expander(f"📌 Configurar {dia}", expanded=(dia in ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"])):
-            asiste = st.checkbox(f"¿Labora el {dia}?", value=(dia in ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"]), key=f"check_{dia}")
             
+            # Inicializar check del día
+            if f"check_{dia}" not in st.session_state:
+                st.session_state[f"check_{dia}"] = (dia in ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"])
+            
+            asiste = st.checkbox(f"¿Labora el {dia}?", key=f"check_{dia}")
             horarios_config[dia] = {"LABORA": "NO", "E1": "-", "S1": "-", "E2": "-", "S2": "-"}
             
             if asiste:
@@ -92,33 +119,36 @@ def mostrar(dfs, save_data=None):
                 col_m, col_t = st.columns(2)
                 
                 with col_m:
-                    turno_manana = st.checkbox("☀️ Habilitar Turno Mañana", value=True, key=f"tm_{dia}")
+                    if f"tm_{dia}" not in st.session_state: st.session_state[f"tm_{dia}"] = True
+                    turno_manana = st.checkbox("☀️ Habilitar Turno Mañana", key=f"tm_{dia}")
+                    
                     if turno_manana:
                         sub_c1, sub_c2 = st.columns(2)
                         with sub_c1:
-                            e1 = st.time_input("Entrada", value=datetime.strptime("08:00", "%H:%M").time(), key=f"e1_{dia}")
+                            e1 = st.time_input("Entrada", value=get_time(f"e1_{dia}", "08:00"), key=f"e1_{dia}")
                         with sub_c2:
-                            s1 = st.time_input("Salida", value=datetime.strptime("13:00", "%H:%M").time(), key=f"s1_{dia}")
+                            s1 = st.time_input("Salida", value=get_time(f"s1_{dia}", "13:00"), key=f"s1_{dia}")
                         
                         horarios_config[dia]["E1"] = str(e1)
                         horarios_config[dia]["S1"] = str(s1)
                         total_horas_semanales += calcular_diferencia_horas(e1, s1)
                 
                 with col_t:
-                    # Si el trabajador solo tiene un turno, simplemente se desmarca esta casilla en la app
-                    turno_tarde = st.checkbox("🌙 Habilitar Turno Tarde", value=True, key=f"tt_{dia}")
+                    if f"tt_{dia}" not in st.session_state: st.session_state[f"tt_{dia}"] = True
+                    turno_tarde = st.checkbox("🌙 Habilitar Turno Tarde", key=f"tt_{dia}")
+                    
                     if turno_tarde:
                         sub_c3, sub_c4 = st.columns(2)
                         with sub_c3:
-                            e2 = st.time_input("Entrada", value=datetime.strptime("16:00", "%H:%M").time(), key=f"e2_{dia}")
+                            e2 = st.time_input("Entrada", value=get_time(f"e2_{dia}", "16:00"), key=f"e2_{dia}")
                         with sub_c4:
-                            s2 = st.time_input("Salida", value=datetime.strptime("19:00", "%H:%M").time(), key=f"s2_{dia}")
+                            s2 = st.time_input("Salida", value=get_time(f"s2_{dia}", "19:00"), key=f"s2_{dia}")
                         
                         horarios_config[dia]["E2"] = str(e2)
                         horarios_config[dia]["S2"] = str(s2)
                         total_horas_semanales += calcular_diferencia_horas(e2, s2)
 
-    # Imprimir el total de horas en la parte superior (en el marcador reservado)
+    # Imprimir el total de horas en la parte superior
     marcador_horas.metric("⏱️ TOTAL HORAS SEMANALES ASIGNADAS", f"{total_horas_semanales:.2f} hrs")
 
     st.markdown("---")
