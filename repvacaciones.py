@@ -25,7 +25,6 @@ def mostrar(dfs):
     st.markdown("<h2 style='color: #4A0000;'>🏖️ Reporte de Saldo de Vacaciones</h2>", unsafe_allow_html=True)
     
     df_per = dfs.get("PERSONAL", pd.DataFrame())
-    df_gen = dfs.get("DATOS GENERALES", pd.DataFrame())
     df_cont = dfs.get("CONTRATOS", pd.DataFrame())
     df_vac = dfs.get("VACACIONES", pd.DataFrame())
     
@@ -34,15 +33,43 @@ def mostrar(dfs):
         return
 
     # ==========================================
-    # 1. PREPARAR CONTRATOS Y FILTRAR VIGENTES
+    # 1. PREPARAR PERSONAL (NOMBRES Y DNI)
+    # ==========================================
+    df_per_calc = df_per.copy()
+    df_per_calc.columns = [str(c).upper().strip() for c in df_per_calc.columns]
+    
+    col_dni_per = next((c for c in df_per_calc.columns if "DNI" in c or "DOC" in c), "DNI")
+    
+    # Limpieza estricta de DNI (elimina .0 decimal sin afectar ceros a la izquierda)
+    df_per_calc["DNI"] = df_per_calc[col_dni_per].astype(str).str.replace(r'\.0$', '', regex=True).str.strip().str.zfill(8)
+    
+    col_ape = next((c for c in df_per_calc.columns if c in ['APELLIDOS', 'APELLIDO']), None)
+    col_nom = next((c for c in df_per_calc.columns if c in ['NOMBRES', 'NOMBRE']), None)
+    
+    def obtener_nombre(row):
+        a = str(row[col_ape]).strip() if col_ape else ""
+        n = str(row[col_nom]).strip() if col_nom else ""
+        a = "" if a.lower() == 'nan' else a
+        n = "" if n.lower() == 'nan' else n
+        return f"{a} {n}".strip()
+
+    df_per_calc["TRABAJADOR"] = df_per_calc.apply(obtener_nombre, axis=1)
+    
+    cols_base = ["DNI", "TRABAJADOR"]
+    if "SEDE" in df_per_calc.columns:
+        cols_base.append("SEDE")
+        
+    df_rep = df_per_calc[cols_base].copy()
+
+    # ==========================================
+    # 2. PREPARAR CONTRATOS
     # ==========================================
     df_c_calc = df_cont.copy()
     df_c_calc.columns = [str(c).upper().strip().replace("Á", "A") for c in df_c_calc.columns]
     col_dni_cont = next((c for c in df_c_calc.columns if "DNI" in c or "DOC" in c), "DNI")
     
-    df_c_calc["DNI"] = df_c_calc[col_dni_cont].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
+    df_c_calc["DNI"] = df_c_calc[col_dni_cont].astype(str).str.replace(r'\.0$', '', regex=True).str.strip().str.zfill(8)
     
-    # Identificar columnas clave en contratos
     col_cargo = next((c for c in df_c_calc.columns if "CARGO" in c or "PUESTO" in c), "CARGO")
     col_area = next((c for c in df_c_calc.columns if "AREA" in c), "AREA")
     col_estado = next((c for c in df_c_calc.columns if "ESTADO" in c or "EST" in c), "ESTADO")
@@ -50,67 +77,40 @@ def mostrar(dfs):
     col_finic = next((c for c in df_c_calc.columns if "INICIO" in c or "F_INICIO" in c), "F_INICIO")
     col_ffin = next((c for c in df_c_calc.columns if "FIN" in c or "F_FIN" in c), "F_FIN")
     
-    # Estandarizar estado y obtener SOLO LOS ACTIVOS para el listado principal
-    if col_estado in df_c_calc.columns:
-        df_c_calc[col_estado] = df_c_calc[col_estado].astype(str).str.upper()
-        df_activos = df_c_calc[df_c_calc[col_estado].str.contains("ACT", na=False)]
-    else:
-        df_activos = df_c_calc.copy()
-
-    # Obtener el registro del contrato activo (para jalar Cargo y Área actual)
-    df_latest_cont = df_activos.drop_duplicates("DNI", keep="last")
+    # Ordenar por fecha de inicio (descendente) para que el primer registro sea el contrato más actual
+    if col_finic in df_c_calc.columns:
+        df_c_calc['FECHA_TEMP'] = pd.to_datetime(df_c_calc[col_finic], errors='coerce')
+        df_c_calc = df_c_calc.sort_values(by=['DNI', 'FECHA_TEMP'], ascending=[True, False])
+    
+    # Extraer únicamente el contrato más reciente por DNI
+    df_latest_cont = df_c_calc.drop_duplicates("DNI", keep="first")
     
     # ==========================================
-    # 2. PREPARAR PERSONAL (NOMBRES EXACTOS)
+    # 3. CRUZAR DATOS Y FILTRAR VIGENTES
     # ==========================================
-    df_per_calc = df_per.copy()
-    df_per_calc.columns = [str(c).upper().strip() for c in df_per_calc.columns]
-    
-    col_dni_per = next((c for c in df_per_calc.columns if "DNI" in c or "DOC" in c), "DNI")
-    df_per_calc["DNI"] = df_per_calc[col_dni_per].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
-    
-    # FORZAR NOMBRES COMPLETOS: Apellidos + Nombres
-    if "APELLIDOS Y NOMBRES" in df_per_calc.columns:
-        df_per_calc["TRABAJADOR"] = df_per_calc["APELLIDOS Y NOMBRES"].astype(str).str.replace("nan", "", case=False)
-    else:
-        col_a = next((c for c in df_per_calc.columns if c in ['APELLIDOS', 'APELLIDO']), None)
-        col_n = next((c for c in df_per_calc.columns if c in ['NOMBRES', 'NOMBRE']), None)
-        
-        apellidos = df_per_calc[col_a].astype(str).str.replace("nan", "", case=False) if col_a else ""
-        nombres = df_per_calc[col_n].astype(str).str.replace("nan", "", case=False) if col_n else ""
-        
-        df_per_calc["TRABAJADOR"] = (apellidos + " " + nombres).str.strip()
-
-    # ==========================================
-    # 3. CRUZAR DATOS (SOLO VIGENTES)
-    # ==========================================
-    cols_base = ["DNI", "TRABAJADOR"]
-    if "SEDE" in df_per_calc.columns:
-        cols_base.append("SEDE")
-        
-    df_rep = df_per_calc[cols_base].copy()
-    
-    # Inner join con contratos activos: Esto ELIMINA automáticamente a los cesados
     cols_to_merge = ["DNI"]
     if col_cargo in df_latest_cont.columns: cols_to_merge.append(col_cargo)
     if col_area in df_latest_cont.columns: cols_to_merge.append(col_area)
+    if col_estado in df_latest_cont.columns: cols_to_merge.append(col_estado)
     
-    df_rep = df_rep.merge(df_latest_cont[cols_to_merge], on="DNI", how="inner")
+    # Cruce seguro (Left Join asegura que no se pierdan DNIs por formato)
+    df_rep = df_rep.merge(df_latest_cont[cols_to_merge], on="DNI", how="left")
     
-    # Renombrar para asegurar estándar en pantalla
-    df_rep = df_rep.rename(columns={col_cargo: "CARGO", col_area: "AREA"})
-
+    df_rep = df_rep.rename(columns={col_cargo: "CARGO", col_area: "AREA", col_estado: "ESTADO"})
+    
     # Limpieza de nulos
-    for col in ["SEDE", "AREA", "CARGO"]:
+    for col in ["SEDE", "AREA", "CARGO", "ESTADO"]:
         if col not in df_rep.columns: 
             df_rep[col] = "NO REGISTRADO"
         df_rep[col] = df_rep[col].fillna("NO REGISTRADO").astype(str).str.upper()
 
+    # FILTRO: Mostrar SÓLO TRABAJADORES VIGENTES (Estado contiene 'ACT')
+    df_rep = df_rep[df_rep["ESTADO"].str.contains("ACT", na=False)]
+
     # ==========================================
-    # 4. FILTROS VISUALES
+    # 4. FILTROS VISUALES EN PANTALLA
     # ==========================================
     st.markdown("### 🔍 Filtros")
-    
     c1, c2 = st.columns(2)
     with c1:
         sedes = ["TODAS"] + sorted([str(x) for x in df_rep["SEDE"].unique() if str(x) != "NAN"])
@@ -133,13 +133,13 @@ def mostrar(dfs):
         dias_generados_totales = 0.0
         dias_gozados_totales = 0.0
 
-        # A. Días Gozados (Pestaña Vacaciones)
+        # A. Días Gozados (Suma lo registrado en Pestaña Vacaciones)
         if not df_vac.empty:
             v_df = df_vac.copy()
             v_df.columns = [str(c).upper().strip() for c in v_df.columns]
             col_dni_v = next((c for c in v_df.columns if "DNI" in c or "DOC" in c), "DNI")
             if col_dni_v in v_df.columns:
-                v_df["DNI"] = v_df[col_dni_v].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
+                v_df["DNI"] = v_df[col_dni_v].astype(str).str.replace(r'\.0$', '', regex=True).str.strip().str.zfill(8)
                 v_df_filtro = v_df[v_df["DNI"] == dni_str]
                 
                 if not v_df_filtro.empty:
@@ -147,7 +147,7 @@ def mostrar(dfs):
                     if col_goz:
                         dias_gozados_totales = pd.to_numeric(v_df_filtro[col_goz], errors='coerce').sum()
 
-        # B. Días Generados (Todos los contratos acumulados del trabajador)
+        # B. Días Generados (Analiza todo el historial de contratos de la persona)
         c_df_filtro = df_c_calc[df_c_calc["DNI"] == dni_str].copy()
         
         if not c_df_filtro.empty and col_finic in c_df_filtro.columns:
@@ -174,9 +174,8 @@ def mostrar(dfs):
     # ==========================================
     df_rep["SALDO DE VACACIONES"] = saldos_finales
     
-    st.success(f"📋 **Resultados:** {len(df_rep)} trabajadores vigentes procesados.")
+    st.success(f"📋 **Resultados:** {len(df_rep)} trabajadores vigentes calculados.")
     
-    # Se añade la columna CARGO que faltaba visualizar
     columnas_mostrar = ["DNI", "TRABAJADOR", "CARGO", "SEDE", "AREA", "SALDO DE VACACIONES"]
     st.dataframe(df_rep[columnas_mostrar], hide_index=True, use_container_width=True)
     
@@ -189,6 +188,6 @@ def mostrar(dfs):
         data=output_vac.getvalue(), 
         file_name="Reporte_Saldos_Vacaciones.xlsx", 
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        key="btn_exp_vac_v3",
+        key="btn_exp_vac_v4",
         type="primary"
     )
