@@ -33,14 +33,12 @@ def mostrar(dfs):
         return
 
     # ==========================================
-    # 1. PREPARAR PERSONAL (NOMBRES Y DNI)
+    # 1. PREPARAR PERSONAL
     # ==========================================
     df_per_calc = df_per.copy()
     df_per_calc.columns = [str(c).upper().strip() for c in df_per_calc.columns]
     
     col_dni_per = next((c for c in df_per_calc.columns if "DNI" in c or "DOC" in c), "DNI")
-    
-    # Limpieza estricta de DNI (elimina .0 decimal sin afectar ceros a la izquierda)
     df_per_calc["DNI"] = df_per_calc[col_dni_per].astype(str).str.replace(r'\.0$', '', regex=True).str.strip().str.zfill(8)
     
     col_ape = next((c for c in df_per_calc.columns if c in ['APELLIDOS', 'APELLIDO']), None)
@@ -62,7 +60,7 @@ def mostrar(dfs):
     df_rep = df_per_calc[cols_base].copy()
 
     # ==========================================
-    # 2. PREPARAR CONTRATOS
+    # 2. PREPARAR CONTRATOS Y FILTRAR VIGENTES
     # ==========================================
     df_c_calc = df_cont.copy()
     df_c_calc.columns = [str(c).upper().strip().replace("Á", "A") for c in df_c_calc.columns]
@@ -77,35 +75,38 @@ def mostrar(dfs):
     col_finic = next((c for c in df_c_calc.columns if "INICIO" in c or "F_INICIO" in c), "F_INICIO")
     col_ffin = next((c for c in df_c_calc.columns if "FIN" in c or "F_FIN" in c), "F_FIN")
     
-    # Ordenar por fecha de inicio (descendente) para que el primer registro sea el contrato más actual
+    # Asegurar que el estado sea un string limpio en mayúsculas
+    if col_estado in df_c_calc.columns:
+        df_c_calc[col_estado] = df_c_calc[col_estado].astype(str).str.upper().str.strip()
+    
+    # ORDENAR POR FECHA DE INICIO PARA SACAR EL ÚLTIMO CONTRATO
     if col_finic in df_c_calc.columns:
         df_c_calc['FECHA_TEMP'] = pd.to_datetime(df_c_calc[col_finic], errors='coerce')
         df_c_calc = df_c_calc.sort_values(by=['DNI', 'FECHA_TEMP'], ascending=[True, False])
     
-    # Extraer únicamente el contrato más reciente por DNI
-    df_latest_cont = df_c_calc.drop_duplicates("DNI", keep="first")
+    # EXTRAER EL ÚLTIMO CONTRATO DE CADA PERSONA
+    df_latest_cont = df_c_calc.drop_duplicates("DNI", keep="first").copy()
     
+    # FILTRAR SOLO LOS ACTIVOS (Buscamos que contenga "ACT")
+    if col_estado in df_latest_cont.columns:
+        df_latest_cont = df_latest_cont[df_latest_cont[col_estado].str.contains("ACT", na=False)]
+
     # ==========================================
-    # 3. CRUZAR DATOS Y FILTRAR VIGENTES
+    # 3. CRUZAR DATOS (INNER JOIN PARA SOLO VIGENTES)
     # ==========================================
     cols_to_merge = ["DNI"]
     if col_cargo in df_latest_cont.columns: cols_to_merge.append(col_cargo)
     if col_area in df_latest_cont.columns: cols_to_merge.append(col_area)
-    if col_estado in df_latest_cont.columns: cols_to_merge.append(col_estado)
     
-    # Cruce seguro (Left Join asegura que no se pierdan DNIs por formato)
-    df_rep = df_rep.merge(df_latest_cont[cols_to_merge], on="DNI", how="left")
+    # Inner join: solo cruza DNIs que están en personal Y que tienen un contrato activo
+    df_rep = df_rep.merge(df_latest_cont[cols_to_merge], on="DNI", how="inner")
     
-    df_rep = df_rep.rename(columns={col_cargo: "CARGO", col_area: "AREA", col_estado: "ESTADO"})
+    df_rep = df_rep.rename(columns={col_cargo: "CARGO", col_area: "AREA"})
     
-    # Limpieza de nulos
-    for col in ["SEDE", "AREA", "CARGO", "ESTADO"]:
+    for col in ["SEDE", "AREA", "CARGO"]:
         if col not in df_rep.columns: 
             df_rep[col] = "NO REGISTRADO"
         df_rep[col] = df_rep[col].fillna("NO REGISTRADO").astype(str).str.upper()
-
-    # FILTRO: Mostrar SÓLO TRABAJADORES VIGENTES (Estado contiene 'ACT')
-    df_rep = df_rep[df_rep["ESTADO"].str.contains("ACT", na=False)]
 
     # ==========================================
     # 4. FILTROS VISUALES EN PANTALLA
@@ -123,7 +124,7 @@ def mostrar(dfs):
     if sel_area != "TODAS": df_rep = df_rep[df_rep["AREA"] == sel_area]
     
     # ==========================================
-    # 5. CÁLCULO INTEGRADO DE VACACIONES
+    # 5. CÁLCULO DE VACACIONES
     # ==========================================
     saldos_finales = []
     hoy = date.today()
@@ -133,7 +134,7 @@ def mostrar(dfs):
         dias_generados_totales = 0.0
         dias_gozados_totales = 0.0
 
-        # A. Días Gozados (Suma lo registrado en Pestaña Vacaciones)
+        # A. Días Gozados
         if not df_vac.empty:
             v_df = df_vac.copy()
             v_df.columns = [str(c).upper().strip() for c in v_df.columns]
@@ -141,17 +142,15 @@ def mostrar(dfs):
             if col_dni_v in v_df.columns:
                 v_df["DNI"] = v_df[col_dni_v].astype(str).str.replace(r'\.0$', '', regex=True).str.strip().str.zfill(8)
                 v_df_filtro = v_df[v_df["DNI"] == dni_str]
-                
                 if not v_df_filtro.empty:
                     col_goz = next((c for c in v_df_filtro.columns if "GOZADO" in c or "DIAS" in c or "TOMADO" in c), None)
                     if col_goz:
                         dias_gozados_totales = pd.to_numeric(v_df_filtro[col_goz], errors='coerce').sum()
 
-        # B. Días Generados (Analiza todo el historial de contratos de la persona)
+        # B. Días Generados
         c_df_filtro = df_c_calc[df_c_calc["DNI"] == dni_str].copy()
         
         if not c_df_filtro.empty and col_finic in c_df_filtro.columns:
-            # Excluir Recibos por Honorarios
             if col_tipo in c_df_filtro.columns:
                 c_df_filtro = c_df_filtro[~c_df_filtro[col_tipo].astype(str).str.upper().str.contains("HONORARIO|RXH", na=False)]
             
@@ -179,7 +178,6 @@ def mostrar(dfs):
     columnas_mostrar = ["DNI", "TRABAJADOR", "CARGO", "SEDE", "AREA", "SALDO DE VACACIONES"]
     st.dataframe(df_rep[columnas_mostrar], hide_index=True, use_container_width=True)
     
-    # EXPORTACIÓN
     output_vac = BytesIO()
     with pd.ExcelWriter(output_vac, engine='openpyxl') as writer:
         df_rep[columnas_mostrar].to_excel(writer, index=False, sheet_name='Saldos_Vacaciones')
@@ -188,6 +186,6 @@ def mostrar(dfs):
         data=output_vac.getvalue(), 
         file_name="Reporte_Saldos_Vacaciones.xlsx", 
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        key="btn_exp_vac_v4",
+        key="btn_exp_vac_v5",
         type="primary"
     )
