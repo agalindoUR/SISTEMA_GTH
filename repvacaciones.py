@@ -33,7 +33,7 @@ def mostrar(dfs):
         st.warning("⚠️ Faltan datos en Personal para generar este reporte.")
         return
 
-    # 1. Preparar la base (DNI y Nombres Completos)
+    # 1. Preparar la base desde PERSONAL (DNI, Nombres completos y Sede)
     df_per_calc = df_per.copy()
     df_per_calc.columns = [str(c).upper().strip() for c in df_per_calc.columns]
     
@@ -44,39 +44,38 @@ def mostrar(dfs):
 
     df_per_calc["DNI"] = df_per_calc[col_dni_per].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
     
-    # --- CONSTRUCCIÓN DE NOMBRES Y APELLIDOS COMBINADOS ---
-    cols_per = df_per_calc.columns.tolist()
-    col_nom = next((c for c in cols_per if c in ['NOMBRES', 'NOMBRE']), None)
-    col_ape = next((c for c in cols_per if c in ['APELLIDOS', 'APELLIDO']), None)
-    col_full = next((c for c in cols_per if c in ['TRABAJADOR', 'NOMBRES Y APELLIDOS', 'APELLIDOS Y NOMBRES', 'COLABORADOR', 'EMPLEADO']), None)
+    # --- CONSTRUCCIÓN DE APELLIDOS Y NOMBRES ---
+    col_ape = next((c for c in df_per_calc.columns if c in ['APELLIDOS', 'APELLIDO']), None)
+    col_nom = next((c for c in df_per_calc.columns if c in ['NOMBRES', 'NOMBRE']), None)
+    col_full = next((c for c in df_per_calc.columns if 'APELLIDOS Y NOMBRES' in c or 'TRABAJADOR' in c), None)
 
     def obtener_nombre_completo(row):
         a = str(row[col_ape]).strip() if col_ape and pd.notna(row[col_ape]) and str(row[col_ape]).lower() != 'nan' else ""
         n = str(row[col_nom]).strip() if col_nom and pd.notna(row[col_nom]) and str(row[col_nom]).lower() != 'nan' else ""
-        
         if a and n:
-            if a.upper() in n.upper(): return n
-            if n.upper() in a.upper(): return a
-            return f"{a} {n}".strip()
-        if a: return a
-        if n: return n
-        if col_full and pd.notna(row[col_full]): return str(row[col_full]).strip()
-        return "SIN NOMBRE"
+            return f"{a}, {n}"
+        if col_full and pd.notna(row[col_full]):
+            return str(row[col_full]).strip()
+        return a or n or "SIN NOMBRE"
 
     df_per_calc["TRABAJADOR"] = df_per_calc.apply(obtener_nombre_completo, axis=1)
-    df_rep = df_per_calc[["DNI", "TRABAJADOR"]].copy()
     
-    # 2. Obtener SEDE (De Datos Generales)
-    if not df_gen.empty:
+    cols_base = ["DNI", "TRABAJADOR"]
+    if "SEDE" in df_per_calc.columns:
+        cols_base.append("SEDE")
+        
+    df_rep = df_per_calc[cols_base].copy()
+    
+    # Si SEDE no estaba en Personal, buscar en Datos Generales
+    if "SEDE" not in df_rep.columns and not df_gen.empty:
         df_g_calc = df_gen.copy()
         df_g_calc.columns = [str(c).upper().strip() for c in df_g_calc.columns]
         col_dni_gen = next((c for c in df_g_calc.columns if "DNI" in c or "DOC" in c), "DNI")
-        if col_dni_gen in df_g_calc.columns:
+        if col_dni_gen in df_g_calc.columns and "SEDE" in df_g_calc.columns:
             df_g_calc["DNI"] = df_g_calc[col_dni_gen].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
-            if "SEDE" in df_g_calc.columns:
-                df_rep = df_rep.merge(df_g_calc[["DNI", "SEDE"]].drop_duplicates("DNI"), on="DNI", how="left")
-    
-    # 3. Obtener AREA, CARGO y ESTADO (De Contratos - Tomando el más reciente)
+            df_rep = df_rep.merge(df_g_calc[["DNI", "SEDE"]].drop_duplicates("DNI"), on="DNI", how="left")
+
+    # 2. Obtener CARGO, AREA y ESTADO desde CONTRATOS (Último contrato activo)
     if not df_cont.empty:
         df_c_calc = df_cont.copy()
         df_c_calc.columns = [str(c).upper().strip().replace("Á", "A") for c in df_c_calc.columns]
@@ -85,32 +84,33 @@ def mostrar(dfs):
         if col_dni_cont in df_c_calc.columns:
             df_c_calc["DNI"] = df_c_calc[col_dni_cont].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
             
-            col_area = next((c for c in df_c_calc.columns if "AREA" in c), None)
             col_cargo = next((c for c in df_c_calc.columns if "CARGO" in c or "PUESTO" in c), None)
-            col_estado = next((c for c in df_c_calc.columns if "ESTADO" in c), None)
+            col_area = next((c for c in df_c_calc.columns if "AREA" in c), None)
+            col_estado = next((c for c in df_c_calc.columns if "ESTADO" in c or "EST" in c), None)
             
+            # Tomar el contrato más reciente por DNI
             df_latest_cont = df_c_calc.sort_index(ascending=False).drop_duplicates("DNI")
             
             cols_to_merge = ["DNI"]
-            if col_area: 
-                df_latest_cont = df_latest_cont.rename(columns={col_area: "AREA"})
-                cols_to_merge.append("AREA")
             if col_cargo: 
                 df_latest_cont = df_latest_cont.rename(columns={col_cargo: "CARGO"})
                 cols_to_merge.append("CARGO")
+            if col_area: 
+                df_latest_cont = df_latest_cont.rename(columns={col_area: "AREA"})
+                cols_to_merge.append("AREA")
             if col_estado: 
                 df_latest_cont = df_latest_cont.rename(columns={col_estado: "ESTADO"})
                 cols_to_merge.append("ESTADO")
                 
             df_rep = df_rep.merge(df_latest_cont[cols_to_merge], on="DNI", how="left")
-    
-    # Limpiar columnas y forzar mayúsculas
+
+    # Limpiar textos de las columnas agregadas
     for col in ["SEDE", "AREA", "CARGO", "ESTADO"]:
         if col not in df_rep.columns: 
             df_rep[col] = "NO REGISTRADO"
         df_rep[col] = df_rep[col].fillna("NO REGISTRADO").astype(str).str.upper()
-    
-    # 4. FILTROS VISUALES
+
+    # 3. FILTROS EN INTERFAZ
     st.markdown("### 🔍 Filtros")
     
     solo_activos = st.checkbox("✅ Mostrar solo trabajadores vigentes (Contrato Activo)", value=True)
@@ -123,58 +123,79 @@ def mostrar(dfs):
         areas = ["TODAS"] + sorted([str(x) for x in df_rep["AREA"].unique() if str(x) != "NAN"])
         sel_area = st.selectbox("ÁREA", areas)
 
+    # Aplicar Filtros
     if solo_activos:
-        df_rep = df_rep[df_rep["ESTADO"].str.contains("ACTIVO|VIGENTE", na=False)]
-    if sel_sede != "TODAS": df_rep = df_rep[df_rep["SEDE"] == sel_sede]
-    if sel_area != "TODAS": df_rep = df_rep[df_rep["AREA"] == sel_area]
+        df_rep = df_rep[df_rep["ESTADO"].str.contains("ACT", na=False)]
+    if sel_sede != "TODAS": 
+        df_rep = df_rep[df_rep["SEDE"] == sel_sede]
+    if sel_area != "TODAS": 
+        df_rep = df_rep[df_rep["AREA"] == sel_area]
     
     saldos_finales = []
-    
-    # 5. Obtener Saldo de Vacaciones desde la ventana/tabla "VACACIONES"
+    hoy = date.today()
+
+    # 4. CÁLCULO DINÁMICO DE DÍAS GENERADOS Y GOZADOS
     for dni in df_rep["DNI"]:
         dni_str = str(dni).strip()
-        saldo_final = 0.0
-        
+        dias_generados_totales = 0.0
+        dias_gozados_totales = 0.0
+
+        # A. Días Gozados (si en algún momento se llena la tabla Vacaciones)
         if not df_vac.empty:
             v_df = df_vac.copy()
             v_df.columns = [str(c).upper().strip() for c in v_df.columns]
             col_dni_v = next((c for c in v_df.columns if "DNI" in c or "DOC" in c), "DNI")
-            
             if col_dni_v in v_df.columns:
                 v_df["DNI"] = v_df[col_dni_v].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
                 v_df_filtro = v_df[v_df["DNI"] == dni_str]
-                
                 if not v_df_filtro.empty:
-                    # CASO A: Si la tabla ya tiene una columna de 'SALDO' o 'PENDIENTE'
-                    col_saldo = next((c for c in v_df_filtro.columns if "SALDO" in c or "PENDIENTE" in c or "RESTANTE" in c), None)
-                    
-                    if col_saldo:
-                        # Extrae el último saldo registrado para ese trabajador
-                        saldos_num = pd.to_numeric(v_df_filtro[col_saldo], errors='coerce').dropna()
-                        if not saldos_num.empty:
-                            saldo_final = float(saldos_num.iloc[-1])
-                    
-                    # CASO B: Si la tabla tiene columnas separadas de Generados y Gozados
-                    else:
-                        col_gen = next((c for c in v_df_filtro.columns if "GENERADO" in c or "GANADO" in c), None)
-                        col_goz = next((c for c in v_df_filtro.columns if "GOZADO" in c or "TOMADO" in c or "DIAS" in c), None)
-                        
-                        dias_gen = pd.to_numeric(v_df_filtro[col_gen], errors='coerce').sum() if col_gen else 0.0
-                        dias_goz = pd.to_numeric(v_df_filtro[col_goz], errors='coerce').sum() if col_goz else 0.0
-                        
-                        saldo_final = dias_gen - dias_goz
+                    col_goz = next((c for c in v_df_filtro.columns if "GOZADO" in c or "DIAS" in c or "TOMADO" in c), None)
+                    if col_goz:
+                        dias_gozados_totales = pd.to_numeric(v_df_filtro[col_goz], errors='coerce').sum()
 
-        saldos_finales.append(round(saldo_final, 2))
-    
-    # 6. Agregar resultados y mostrar tabla
+        # B. Días Generados acumulados desde la tabla CONTRATOS
+        if not df_cont.empty:
+            c_df = df_cont.copy()
+            c_df.columns = [str(c).upper().strip() for c in c_df.columns]
+            col_dni_c = next((c for c in c_df.columns if "DNI" in c or "DOC" in c), "DNI")
+            
+            if col_dni_c in c_df.columns:
+                c_df["DNI"] = c_df[col_dni_c].astype(str).str.strip().str.replace(".0", "", regex=False).str.zfill(8)
+                c_df_filtro = c_df[c_df["DNI"] == dni_str].copy()
+                
+                col_tipo = next((c for c in c_df_filtro.columns if "TIPO CONTRATO" in c or "TIPO" in c), None)
+                col_finic = next((c for c in c_df_filtro.columns if "F_INICIO" in c or "INICIO" in c), None)
+                col_ffin = next((c for c in c_df_filtro.columns if "F_FIN" in c or "FIN" in c), None)
+                
+                if not c_df_filtro.empty and col_finic:
+                    # Se excluyen los contratos por Recibo por Honorarios / RXH
+                    if col_tipo:
+                        c_df_filtro = c_df_filtro[~c_df_filtro[col_tipo].astype(str).str.upper().str.contains("HONORARIO|RXH", na=False)]
+                    
+                    for _, r in c_df_filtro.iterrows():
+                        f_inicio = limpiar_fecha(r[col_finic], None)
+                        f_fin_val = r.get(col_ffin) if col_ffin else None
+                        f_fin = limpiar_fecha(f_fin_val, fecha_defecto=hoy)
+                        
+                        if f_inicio:
+                            f_corte = min(f_fin, hoy)
+                            if f_inicio <= f_corte:
+                                dias_trabajados = (f_corte - f_inicio).days + 1
+                                # Proporcional sobre 30 días al año (365 días)
+                                dias_generados_totales += (dias_trabajados / 365.0) * 30.0
+
+        saldo = round(dias_generados_totales - dias_gozados_totales, 2)
+        saldos_finales.append(max(0.0, saldo))
+
+    # 5. RESULTADOS
     df_rep["SALDO DE VACACIONES"] = saldos_finales
     
-    st.success(f"📋 **Resultados:** {len(df_rep)} registros calculados con éxito.")
+    st.success(f"📋 **Resultados:** {len(df_rep)} registros procesados.")
     
     columnas_mostrar = ["DNI", "TRABAJADOR", "CARGO", "SEDE", "AREA", "ESTADO", "SALDO DE VACACIONES"]
     st.dataframe(df_rep[columnas_mostrar], hide_index=True, use_container_width=True)
     
-    # 7. Exportar a Excel
+    # 6. EXPORTAR A EXCEL
     output_vac = BytesIO()
     with pd.ExcelWriter(output_vac, engine='openpyxl') as writer:
         df_rep[columnas_mostrar].to_excel(writer, index=False, sheet_name='Saldos_Vacaciones')
@@ -183,6 +204,6 @@ def mostrar(dfs):
         data=output_vac.getvalue(), 
         file_name="Reporte_Saldos_Vacaciones.xlsx", 
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        key="btn_exp_vac_nuevo",
+        key="btn_exp_vac_final",
         type="primary"
     )
