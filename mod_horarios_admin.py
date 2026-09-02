@@ -55,19 +55,24 @@ def mostrar(dfs, save_data=None):
     f_inicio_contrato = str(contrato_row.get('F_INICIO', '-'))
     f_fin_contrato = str(contrato_row.get('F_FIN', '-'))
 
-    # Limpiar caché temporal de la interfaz si el usuario elige otro trabajador
+    # Limpiar caché temporal de la interfaz
     if st.session_state.get('ultimo_dni_seleccionado') != dni_sel:
         for k in list(st.session_state.keys()):
             if k.startswith(('check_', 'tm_', 'tt_', 'e1_', 's1_', 'e2_', 's2_')):
                 del st.session_state[k]
         st.session_state['ultimo_dni_seleccionado'] = dni_sel
 
+    # --- PROTECCIÓN CONTRA KEYERROR AL LEER ---
     horario_bd = None
     if "HORARIOS_ADMIN" in dfs and not dfs["HORARIOS_ADMIN"].empty:
         df_horarios = dfs["HORARIOS_ADMIN"]
-        df_filtro = df_horarios[df_horarios['DNI'].astype(str) == dni_sel]
-        if not df_filtro.empty:
-            horario_bd = df_filtro.iloc[-1] 
+        # Buscar la columna DNI sin importar espacios o mayúsculas
+        col_dni_horario = next((c for c in df_horarios.columns if 'DNI' in str(c).upper() or 'DOC' in str(c).upper()), None)
+        
+        if col_dni_horario:
+            df_filtro = df_horarios[df_horarios[col_dni_horario].astype(str) == dni_sel]
+            if not df_filtro.empty:
+                horario_bd = df_filtro.iloc[-1] 
 
     def parse_time(time_str, default):
         if pd.isna(time_str) or str(time_str).strip() in ["", "-", "nan", "None"]:
@@ -193,26 +198,31 @@ def mostrar(dfs, save_data=None):
             try:
                 df_nuevo = pd.DataFrame([nuevo_registro])
                 
-                # OPTIMIZACIÓN: Actualizar si existe, anexar si es nuevo
+                # --- PROTECCIÓN CONTRA KEYERROR AL GUARDAR ---
                 if "HORARIOS_ADMIN" in dfs and not dfs["HORARIOS_ADMIN"].empty:
-                    mask = dfs["HORARIOS_ADMIN"]['DNI'].astype(str) == dni_sel
-                    if mask.any():
-                        # Si ya existe, encontramos la fila y la actualizamos (mantiene el archivo ligero)
-                        idx_to_update = dfs["HORARIOS_ADMIN"][mask].index[-1]
-                        for col in df_nuevo.columns:
-                            dfs["HORARIOS_ADMIN"].at[idx_to_update, col] = df_nuevo.iloc[0][col]
+                    col_dni_bd = next((c for c in dfs["HORARIOS_ADMIN"].columns if 'DNI' in str(c).upper() or 'DOC' in str(c).upper()), None)
+                    
+                    if col_dni_bd:
+                        mask = dfs["HORARIOS_ADMIN"][col_dni_bd].astype(str) == dni_sel
+                        if mask.any():
+                            # Actualizar existente
+                            idx_to_update = dfs["HORARIOS_ADMIN"][mask].index[-1]
+                            for col in df_nuevo.columns:
+                                dfs["HORARIOS_ADMIN"].at[idx_to_update, col] = df_nuevo.iloc[0][col]
+                        else:
+                            # Anexar nuevo
+                            dfs["HORARIOS_ADMIN"] = pd.concat([dfs["HORARIOS_ADMIN"], df_nuevo], ignore_index=True)
                     else:
-                        # Si no existe en la base de datos, lo añadimos
+                        # Si existe la hoja pero no hay columna DNI, anexamos asumiendo que está mal estructurada
                         dfs["HORARIOS_ADMIN"] = pd.concat([dfs["HORARIOS_ADMIN"], df_nuevo], ignore_index=True)
                 else:
-                    # Si la pestaña está completamente vacía
+                    # Hoja completamente vacía
                     dfs["HORARIOS_ADMIN"] = df_nuevo
                 
-                # Enviamos el dataframe modificado a app.py para que ejecute el guardado único
                 save_data(dfs, "HORARIOS_ADMIN")
                 
                 st.balloons()
-                st.success(f"¡Horario guardado con éxito y base de datos optimizada! (DNI {dni_sel} - Total: {total_horas_semanales:.2f} hrs)")
+                st.success(f"¡Horario guardado con éxito! (DNI {dni_sel} - Total: {total_horas_semanales:.2f} hrs)")
             except Exception as e:
                 st.error(f"Ocurrió un error al intentar guardar: {e}")
         else:
