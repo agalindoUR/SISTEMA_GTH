@@ -29,6 +29,7 @@ import mod_registro
 import mod_nomina
 import mod_usuarios
 import mod_horarios_admin as mod_horarios_admin
+import mod_editor
 
 st.set_page_config(page_title="Gestión Roosevelt", page_icon="🎓", layout="wide")
 
