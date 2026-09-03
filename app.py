@@ -2402,7 +2402,12 @@ else:
     elif m == "⏰ Horarios Administrativos":
         import importlib
         import mod_horarios_admin
-        importlib.reload(mod_horarios_admin)  # Fuerza la lectura del código actualizado
+        
+        try:
+            importlib.reload(mod_horarios_admin)  # Fuerza la lectura del código actualizado
+        except Exception as e:
+            st.warning(f"Aviso: No se pudo recargar el módulo dinámicamente ({e}). Se ejecutará la versión en memoria.")
+            
         mod_horarios_admin.mostrar(dfs, save_data)
 
 
