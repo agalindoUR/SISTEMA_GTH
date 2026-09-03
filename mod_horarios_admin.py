@@ -3,6 +3,18 @@ import pandas as pd
 from datetime import datetime, date, timedelta
 
 
+def get_bd_val(row_data, key_name, default_val="-"):
+    """Busca un valor en la fila ignorando espacios, guiones bajos y mayúsculas/minúsculas."""
+    if row_data is None:
+        return default_val
+    target = str(key_name).replace("_", "").replace(" ", "").upper()
+    for k, v in row_data.items():
+        if str(k).replace("_", "").replace(" ", "").upper() == target:
+            if pd.notna(v) and str(v).strip() not in ["", "nan", "None"]:
+                return str(v).strip()
+    return default_val
+
+
 def mostrar(dfs, save_data=None):
     st.title("⏰ Gestión de Horarios Administrativos")
 
@@ -12,37 +24,24 @@ def mostrar(dfs, save_data=None):
 
     # Normalización de Tabla CONTRATOS
     df_contratos = dfs["CONTRATOS"].copy()
-    df_contratos.columns = df_contratos.columns.astype(str).str.strip().str.upper()
-    df_contratos = df_contratos.loc[:, ~df_contratos.columns.duplicated()]
 
     # Normalización de Tabla Personal (si existe)
     nombre_tabla_personal = next(
         (
             k
             for k in dfs.keys()
-            if k.upper()
-            in [
-                "DATOS GENERALES",
-                "DATOS_GENERALES",
-                "PERSONAL",
-                "EMPLEADOS",
-                "TRABAJADORES",
-            ]
+            if str(k).replace("_", "").replace(" ", "").upper()
+            in ["DATOSGENERALES", "PERSONAL", "EMPLEADOS", "TRABAJADORES"]
         ),
         None,
     )
     if nombre_tabla_personal:
         df_personal = dfs[nombre_tabla_personal].copy()
-        df_personal.columns = (
-            df_personal.columns.astype(str).str.strip().str.upper()
-        )
-        df_personal = df_personal.loc[:, ~df_personal.columns.duplicated()]
-
         col_dni_con = next(
-            (c for c in df_contratos.columns if "DNI" in c or "DOC" in c), None
+            (c for c in df_contratos.columns if "DNI" in str(c).upper() or "DOC" in str(c).upper()), None
         )
         col_dni_per = next(
-            (c for c in df_personal.columns if "DNI" in c or "DOC" in c), None
+            (c for c in df_personal.columns if "DNI" in str(c).upper() or "DOC" in str(c).upper()), None
         )
 
         if col_dni_con and col_dni_per:
@@ -54,7 +53,7 @@ def mostrar(dfs, save_data=None):
                 how="left",
             )
 
-    col_estado = [c for c in df_contratos.columns if "ESTADO" in c]
+    col_estado = [c for c in df_contratos.columns if "ESTADO" in str(c).upper()]
     df_activos = (
         df_contratos[
             df_contratos[col_estado[0]]
@@ -75,18 +74,12 @@ def mostrar(dfs, save_data=None):
         (
             c
             for c in cols
-            if c
-            in [
-                "NOMBRES",
-                "NOMBRE",
-                "NOMBRES Y APELLIDOS",
-                "APELLIDOS Y NOMBRES",
-                "TRABAJADOR",
-            ]
+            if str(c).replace("_", "").replace(" ", "").upper()
+            in ["NOMBRES", "NOMBRE", "NOMBRESYAPELLIDOS", "APELLIDOSYNOMBRES", "TRABAJADOR"]
         ),
         None,
     )
-    col_ape = next((c for c in cols if c in ["APELLIDOS", "APELLIDO"]), None)
+    col_ape = next((c for c in cols if str(c).replace("_", "").replace(" ", "").upper() in ["APELLIDOS", "APELLIDO"]), None)
 
     def format_name(row):
         n = str(row[col_nom]) if col_nom and pd.notna(row[col_nom]) else ""
@@ -97,8 +90,8 @@ def mostrar(dfs, save_data=None):
 
     df_activos["NOMBRES_COMPLETOS"] = df_activos.apply(format_name, axis=1)
 
-    col_dni = next((c for c in cols if "DNI" in c or "DOC" in c), "DNI")
-    col_cargo = next((c for c in cols if "CARGO" in c or "PUESTO" in c), "CARGO")
+    col_dni = next((c for c in cols if "DNI" in str(c).upper() or "DOC" in str(c).upper()), "DNI")
+    col_cargo = next((c for c in cols if "CARGO" in str(c).upper() or "PUESTO" in str(c).upper()), "CARGO")
 
     df_activos["DISPLAY"] = (
         df_activos[col_dni].astype(str)
@@ -113,47 +106,37 @@ def mostrar(dfs, save_data=None):
         "Seleccione Colaborador Activo:", df_activos["DISPLAY"].unique()
     )
     contrato_row = df_activos[df_activos["DISPLAY"] == colaborador_sel].iloc[0]
-    dni_sel = str(contrato_row.get(col_dni, ""))
-    f_inicio_contrato = str(contrato_row.get("F_INICIO", "-"))
-    f_fin_contrato = str(contrato_row.get("F_FIN", "-"))
+    dni_sel = str(contrato_row.get(col_dni, "")).strip()
+    
+    col_finicio = next((c for c in contrato_row.index if "INICIO" in str(c).upper()), "F_INICIO")
+    col_ffin = next((c for c in contrato_row.index if "FIN" in str(c).upper()), "F_FIN")
+    f_inicio_contrato = str(contrato_row.get(col_finicio, "-"))
+    f_fin_contrato = str(contrato_row.get(col_ffin, "-"))
 
-    # Limpiar caché temporal de la interfaz al cambiar de colaborador
+    # Limpiar caché temporal al cambiar de colaborador
     if st.session_state.get("ultimo_dni_seleccionado") != dni_sel:
         for k in list(st.session_state.keys()):
-            if k.startswith(
-                ("check_", "tm_", "tt_", "e1_", "s1_", "e2_", "s2_")
-            ):
+            if k.startswith(("check_", "tm_", "tt_", "e1_", "s1_", "e2_", "s2_")):
                 del st.session_state[k]
         st.session_state["ultimo_dni_seleccionado"] = dni_sel
 
-    # --- LECTURA Y NORMALIZACIÓN DE HORARIOS_ADMIN ---
+    # --- LECTURA Y LECTURA ROBUSTA DE HORARIOS_ADMIN ---
     horario_bd = None
     if "HORARIOS_ADMIN" in dfs and not dfs["HORARIOS_ADMIN"].empty:
         df_horarios = dfs["HORARIOS_ADMIN"].copy()
-        df_horarios.columns = (
-            df_horarios.columns.astype(str).str.strip().str.upper()
-        )
-        df_horarios = df_horarios.loc[:, ~df_horarios.columns.duplicated()]
-        dfs["HORARIOS_ADMIN"] = df_horarios
-
         col_dni_horario = next(
-            (c for c in df_horarios.columns if "DNI" in c or "DOC" in c), None
+            (c for c in df_horarios.columns if "DNI" in str(c).upper() or "DOC" in str(c).upper()), None
         )
 
         if col_dni_horario:
             df_filtro = df_horarios[
-                df_horarios[col_dni_horario].astype(str) == dni_sel
+                df_horarios[col_dni_horario].astype(str).str.strip() == dni_sel
             ]
             if not df_filtro.empty:
                 horario_bd = df_filtro.iloc[-1]
 
     def parse_time(time_str, default):
-        if pd.isna(time_str) or str(time_str).strip() in [
-            "",
-            "-",
-            "nan",
-            "None",
-        ]:
+        if pd.isna(time_str) or str(time_str).strip() in ["", "-", "nan", "None"]:
             return datetime.strptime(default, "%H:%M").time()
         try:
             val = str(time_str).strip()
@@ -181,19 +164,9 @@ def mostrar(dfs, save_data=None):
         for d in ["Martes", "Miércoles", "Jueves", "Viernes"]:
             for key in ["check", "tm", "tt", "e1", "s1", "e2", "s2"]:
                 if f"{key}_Lunes" in st.session_state:
-                    st.session_state[f"{key}_{d}"] = st.session_state[
-                        f"{key}_Lunes"
-                    ]
+                    st.session_state[f"{key}_{d}"] = st.session_state[f"{key}_Lunes"]
 
-    dias_semana = [
-        "Lunes",
-        "Martes",
-        "Miércoles",
-        "Jueves",
-        "Viernes",
-        "Sábado",
-        "Domingo",
-    ]
+    dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
     mapa_dias = {
         "Lunes": "LUN",
         "Martes": "MAR",
@@ -217,14 +190,12 @@ def mostrar(dfs, save_data=None):
         prefijo = mapa_dias[dia]
 
         if horario_bd is not None:
-            def_labora = (
-                str(horario_bd.get(f"{prefijo}_LAB", "NO")).strip().upper()
-                == "SI"
-            )
-            v_e1 = str(horario_bd.get(f"{prefijo}_E1", "-"))
-            v_s1 = str(horario_bd.get(f"{prefijo}_S1", "-"))
-            v_e2 = str(horario_bd.get(f"{prefijo}_E2", "-"))
-            v_s2 = str(horario_bd.get(f"{prefijo}_S2", "-"))
+            v_lab = get_bd_val(horario_bd, f"{prefijo}_LAB", "NO").upper()
+            def_labora = (v_lab == "SI")
+            v_e1 = get_bd_val(horario_bd, f"{prefijo}_E1", "-")
+            v_s1 = get_bd_val(horario_bd, f"{prefijo}_S1", "-")
+            v_e2 = get_bd_val(horario_bd, f"{prefijo}_E2", "-")
+            v_s2 = get_bd_val(horario_bd, f"{prefijo}_S2", "-")
 
             def_tm = v_e1 not in ["-", "", "nan", "None"]
             def_tt = v_e2 not in ["-", "", "nan", "None"]
@@ -234,21 +205,11 @@ def mostrar(dfs, save_data=None):
             val_e2 = parse_time(v_e2, "16:00")
             val_s2 = parse_time(v_s2, "19:00")
         else:
-            def_labora = dia in [
-                "Lunes",
-                "Martes",
-                "Miércoles",
-                "Jueves",
-                "Viernes",
-            ]
+            def_labora = dia in ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"]
             def_tm = True
             def_tt = True
-            val_e1, val_s1 = parse_time("08:00", "08:00"), parse_time(
-                "13:00", "13:00"
-            )
-            val_e2, val_s2 = parse_time("16:00", "16:00"), parse_time(
-                "19:00", "19:00"
-            )
+            val_e1, val_s1 = parse_time("08:00", "08:00"), parse_time("13:00", "13:00")
+            val_e2, val_s2 = parse_time("16:00", "16:00"), parse_time("19:00", "19:00")
 
         if f"check_{dia}" not in st.session_state:
             st.session_state[f"check_{dia}"] = def_labora
@@ -267,9 +228,7 @@ def mostrar(dfs, save_data=None):
 
         with st.expander(
             f"📌 Configurar {dia}",
-            expanded=(
-                dia in ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"]
-            ),
+            expanded=(dia in ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"]),
         ):
             asiste = st.checkbox(f"¿Labora el {dia}?", key=f"check_{dia}")
             horarios_config[dia] = {
@@ -285,9 +244,7 @@ def mostrar(dfs, save_data=None):
                 col_m, col_t = st.columns(2)
 
                 with col_m:
-                    turno_manana = st.checkbox(
-                        "☀️ Habilitar Turno Mañana", key=f"tm_{dia}"
-                    )
+                    turno_manana = st.checkbox("☀️ Habilitar Turno Mañana", key=f"tm_{dia}")
                     if turno_manana:
                         sub_c1, sub_c2 = st.columns(2)
                         with sub_c1:
@@ -297,14 +254,10 @@ def mostrar(dfs, save_data=None):
 
                         horarios_config[dia]["E1"] = str(e1)
                         horarios_config[dia]["S1"] = str(s1)
-                        total_horas_semanales += calcular_diferencia_horas(
-                            e1, s1
-                        )
+                        total_horas_semanales += calcular_diferencia_horas(e1, s1)
 
                 with col_t:
-                    turno_tarde = st.checkbox(
-                        "🌙 Habilitar Turno Tarde", key=f"tt_{dia}"
-                    )
+                    turno_tarde = st.checkbox("🌙 Habilitar Turno Tarde", key=f"tt_{dia}")
                     if turno_tarde:
                         sub_c3, sub_c4 = st.columns(2)
                         with sub_c3:
@@ -314,9 +267,7 @@ def mostrar(dfs, save_data=None):
 
                         horarios_config[dia]["E2"] = str(e2)
                         horarios_config[dia]["S2"] = str(s2)
-                        total_horas_semanales += calcular_diferencia_horas(
-                            e2, s2
-                        )
+                        total_horas_semanales += calcular_diferencia_horas(e2, s2)
 
     marcador_horas.metric(
         "⏱️ TOTAL HORAS SEMANALES ASIGNADAS",
@@ -374,31 +325,32 @@ def mostrar(dfs, save_data=None):
 
                 if "HORARIOS_ADMIN" in dfs and not dfs["HORARIOS_ADMIN"].empty:
                     df_base = dfs["HORARIOS_ADMIN"].copy()
-                    
-                    # Mapeo inteligente: empareja las columnas ignorando espacios y guiones bajos
+
+                    # Mapeo inteligente de columnas
                     col_map = {}
                     for col_nuevo in df_nuevo.columns:
-                        col_clean_nuevo = str(col_nuevo).replace('_', '').replace(' ', '').upper()
+                        col_clean_nuevo = str(col_nuevo).replace("_", "").replace(" ", "").upper()
                         for col_base in df_base.columns:
-                            col_clean_base = str(col_base).replace('_', '').replace(' ', '').upper()
+                            col_clean_base = str(col_base).replace("_", "").replace(" ", "").upper()
                             if col_clean_nuevo == col_clean_base:
                                 col_map[col_nuevo] = col_base
                                 break
-                    
+
                     df_nuevo.rename(columns=col_map, inplace=True)
 
-                    col_dni_bd = next((c for c in df_base.columns if 'DNI' in str(c).upper() or 'DOC' in str(c).upper()), None)
+                    col_dni_bd = next(
+                        (c for c in df_base.columns if "DNI" in str(c).upper() or "DOC" in str(c).upper()),
+                        None,
+                    )
 
                     if col_dni_bd:
                         mask = df_base[col_dni_bd].astype(str).str.strip() == str(dni_sel).strip()
                         if mask.any():
-                            # Actualizar fila existente en las columnas correspondientes
                             idx_to_update = df_base[mask].index[-1]
                             for col in df_nuevo.columns:
                                 df_base.at[idx_to_update, col] = df_nuevo.iloc[0][col]
                             dfs["HORARIOS_ADMIN"] = df_base
                         else:
-                            # Anexar nueva fila alineada a las columnas existentes
                             dfs["HORARIOS_ADMIN"] = pd.concat([df_base, df_nuevo], ignore_index=True)
                     else:
                         dfs["HORARIOS_ADMIN"] = pd.concat([df_base, df_nuevo], ignore_index=True)
@@ -408,10 +360,13 @@ def mostrar(dfs, save_data=None):
                 save_data(dfs, "HORARIOS_ADMIN")
 
                 st.balloons()
-                st.success(f"¡Horario guardado con éxito! (DNI {dni_sel} - Total: {total_horas_semanales:.2f} hrs)")
+                st.success(
+                    f"¡Horario guardado con éxito! (DNI {dni_sel} - Total: {total_horas_semanales:.2f} hrs)"
+                )
             except Exception as e:
                 st.error(f"Ocurrió un error al intentar guardar: {e}")
         else:
             st.error("No se ha definido la función de guardado (save_data).")
+
 
 render_mod_horarios_admin = mostrar
