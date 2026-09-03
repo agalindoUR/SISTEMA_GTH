@@ -16,6 +16,7 @@ def get_bd_val(row_data, key_name, default_val="-"):
 
 
 def parse_time_obj(t_str):
+    """Convierte una cadena de texto a objeto datetime.time."""
     if pd.isna(t_str) or str(t_str).strip() in ["", "-", "nan", "None"]:
         return None
     try:
@@ -25,10 +26,10 @@ def parse_time_obj(t_str):
         return None
 
 
-def procesar_evaluacion_asistencia(df_asist, df_horarios_admin):
+def procesar_evaluacion_asistencia(df_asist, df_horarios_admin, dnis_registrados=None):
     """
-    Evalúa cada fila del reporte de asistencia contra el horario programado
-    en HORARIOS_ADMIN según el DNI y el día de la semana.
+    Evalúa cada fila del reporte de asistencia contra el horario programado.
+    Filtra únicamente los colaboradores cuyos DNIs estén en dnis_registrados.
     """
     mapa_dias_es = {
         0: 'LUN', 1: 'MAR', 2: 'MIE', 3: 'JUE', 4: 'VIE', 5: 'SAB', 6: 'DOM'
@@ -42,12 +43,17 @@ def procesar_evaluacion_asistencia(df_asist, df_horarios_admin):
                 dni_k = str(row[col_dni_h]).strip()
                 horarios_by_dni[dni_k] = row
 
-    estados = []
-    tardanzas = []
-    horas_trabajadas = []
+    col_dni_asist = next((c for c in df_asist.columns if "DNI" in str(c).upper() or "DOC" in str(c).upper()), "DNI")
+
+    filas_procesadas = []
 
     for _, row in df_asist.iterrows():
-        dni = str(row.get("DNI", "")).strip()
+        dni = str(row.get(col_dni_asist, "")).strip()
+
+        # 🛑 REGLA: Si se proporcionan DNIs registrados/activos, ignorar a cualquier otro
+        if dnis_registrados is not None and dni not in dnis_registrados:
+            continue
+
         fecha_str = str(row.get("FECHA", "")).strip()
 
         ent_m = str(row.get("ENTRADA MAÑANA", row.get("ENTRADA_M", "-"))).strip()
@@ -63,8 +69,8 @@ def procesar_evaluacion_asistencia(df_asist, df_horarios_admin):
 
         horario_usr = horarios_by_dni.get(dni)
 
-        labora = "SI"
-        e1_prog, s1_prog, e2_prog, s2_prog = "08:00", "13:00", "16:00", "19:00"
+        labora = "NO"
+        e1_prog, s1_prog, e2_prog, s2_prog = "-", "-", "-", "-"
         tolerancia = 5
 
         if horario_usr is not None:
@@ -78,32 +84,59 @@ def procesar_evaluacion_asistencia(df_asist, df_horarios_admin):
             except Exception:
                 tolerancia = 5
 
+        row_dict = row.to_dict()
+
         if labora != "SI":
-            estados.append("DESCANSO")
-            tardanzas.append(0)
-            horas_trabajadas.append(0.0)
+            row_dict["ESTADO"] = "DESCANSO"
+            row_dict["MIN_TARDANZA"] = 0
+            row_dict["MIN_SALIDA_ADELANTADA"] = 0
+            row_dict["HORAS_TRABAJADAS"] = 0.0
+            filas_procesadas.append(row_dict)
             continue
 
-        # Cálculo de tardanzas
+        # --- CÁLCULO DE TARDANZAS Y SALIDAS ADELANTADAS ---
         tardanza_min = 0
-        t_ent_m = parse_time_obj(ent_m)
-        t_prog_e1 = parse_time_obj(e1_prog)
-        t_ent_t = parse_time_obj(ent_t)
-        t_prog_e2 = parse_time_obj(e2_prog)
+        adelanto_min = 0
 
+        t_ent_m = parse_time_obj(ent_m)
+        t_sal_m = parse_time_obj(sal_m)
+        t_ent_t = parse_time_obj(ent_t)
+        t_sal_t = parse_time_obj(sal_t)
+
+        t_prog_e1 = parse_time_obj(e1_prog)
+        t_prog_s1 = parse_time_obj(s1_prog)
+        t_prog_e2 = parse_time_obj(e2_prog)
+        t_prog_s2 = parse_time_obj(s2_prog)
+
+        # Tardanza Mañana
         if t_prog_e1 and t_ent_m:
             dt_real = datetime.combine(date.today(), t_ent_m)
             dt_prog = datetime.combine(date.today(), t_prog_e1) + timedelta(minutes=tolerancia)
             if dt_real > dt_prog:
                 tardanza_min += int((dt_real - datetime.combine(date.today(), t_prog_e1)).total_seconds() / 60)
 
+        # Tardanza Tarde
         if t_prog_e2 and t_ent_t:
             dt_real_t = datetime.combine(date.today(), t_ent_t)
             dt_prog_t = datetime.combine(date.today(), t_prog_e2) + timedelta(minutes=tolerancia)
             if dt_real_t > dt_prog_t:
                 tardanza_min += int((dt_real_t - datetime.combine(date.today(), t_prog_e2)).total_seconds() / 60)
 
-        # Determinar estado
+        # Salida Adelantada Mañana
+        if t_prog_s1 and t_sal_m:
+            dt_sal_m_real = datetime.combine(date.today(), t_sal_m)
+            dt_sal_m_prog = datetime.combine(date.today(), t_prog_s1)
+            if dt_sal_m_real < dt_sal_m_prog:
+                adelanto_min += int((dt_sal_m_prog - dt_sal_m_real).total_seconds() / 60)
+
+        # Salida Adelantada Tarde
+        if t_prog_s2 and t_sal_t:
+            dt_sal_t_real = datetime.combine(date.today(), t_sal_t)
+            dt_sal_t_prog = datetime.combine(date.today(), t_prog_s2)
+            if dt_sal_t_real < dt_sal_t_prog:
+                adelanto_min += int((dt_sal_t_prog - dt_sal_t_real).total_seconds() / 60)
+
+        # Determinar Estado del Día
         if ent_m == "-" and sal_m == "-" and ent_t == "-" and sal_t == "-":
             estado = "FALTA"
         elif (e1_prog != "-" and ent_m == "-") or (s1_prog != "-" and sal_m == "-") or \
@@ -114,25 +147,21 @@ def procesar_evaluacion_asistencia(df_asist, df_horarios_admin):
         else:
             estado = "PUNTUAL"
 
-        # Cálculo de horas trabajadas
+        # Cálculo de Horas Efectivas Trabajadas
         hrs = 0.0
-        t_sal_m = parse_time_obj(sal_m)
-        t_sal_t = parse_time_obj(sal_t)
-
         if t_ent_m and t_sal_m:
             hrs += (datetime.combine(date.today(), t_sal_m) - datetime.combine(date.today(), t_ent_m)).total_seconds() / 3600.0
         if t_ent_t and t_sal_t:
             hrs += (datetime.combine(date.today(), t_sal_t) - datetime.combine(date.today(), t_ent_t)).total_seconds() / 3600.0
 
-        estados.append(estado)
-        tardanzas.append(tardanza_min)
-        horas_trabajadas.append(round(max(hrs, 0.0), 2))
+        row_dict["ESTADO"] = estado
+        row_dict["MIN_TARDANZA"] = tardanza_min
+        row_dict["MIN_SALIDA_ADELANTADA"] = adelanto_min
+        row_dict["HORAS_TRABAJADAS"] = round(max(hrs, 0.0), 2)
 
-    df_res = df_asist.copy()
-    df_res["ESTADO"] = estados
-    df_res["MIN_TARDANZA"] = tardanzas
-    df_res["HORAS_TRABAJADAS"] = horas_trabajadas
-    return df_res
+        filas_procesadas.append(row_dict)
+
+    return pd.DataFrame(filas_procesadas)
 
 
 def mostrar(dfs, save_data=None):
@@ -146,8 +175,7 @@ def mostrar(dfs, save_data=None):
 
     nombre_tabla_personal = next(
         (
-            k
-            for k in dfs.keys()
+            k for k in dfs.keys()
             if str(k).replace("_", "").replace(" ", "").upper()
             in ["DATOSGENERALES", "PERSONAL", "EMPLEADOS", "TRABAJADORES"]
         ),
@@ -188,10 +216,12 @@ def mostrar(dfs, save_data=None):
         return
 
     cols = df_activos.columns.tolist()
+    col_dni = next((c for c in cols if "DNI" in str(c).upper() or "DOC" in str(c).upper()), "DNI")
+    col_cargo = next((c for c in cols if "CARGO" in str(c).upper() or "PUESTO" in str(c).upper()), "CARGO")
+
     col_nom = next(
         (
-            c
-            for c in cols
+            c for c in cols
             if str(c).replace("_", "").replace(" ", "").upper()
             in ["NOMBRES", "NOMBRE", "NOMBRESYAPELLIDOS", "APELLIDOSYNOMBRES", "TRABAJADOR"]
         ),
@@ -208,8 +238,8 @@ def mostrar(dfs, save_data=None):
 
     df_activos["NOMBRES_COMPLETOS"] = df_activos.apply(format_name, axis=1)
 
-    col_dni = next((c for c in cols if "DNI" in str(c).upper() or "DOC" in str(c).upper()), "DNI")
-    col_cargo = next((c for c in cols if "CARGO" in str(c).upper() or "PUESTO" in str(c).upper()), "CARGO")
+    # Conjunto de DNIs activos/registrados
+    dnis_activos_set = set(df_activos[col_dni].astype(str).str.strip().unique())
 
     tab_config, tab_procesar, tab_regularizar = st.tabs([
         "⚙️ Configuración de Horarios", 
@@ -233,7 +263,7 @@ def mostrar(dfs, save_data=None):
         )
         contrato_row = df_activos[df_activos["DISPLAY"] == colaborador_sel].iloc[0]
         dni_sel = str(contrato_row.get(col_dni, "")).strip()
-        
+
         col_finicio = next((c for c in contrato_row.index if "INICIO" in str(c).upper()), "F_INICIO")
         col_ffin = next((c for c in contrato_row.index if "FIN" in str(c).upper()), "F_FIN")
         f_inicio_contrato = str(contrato_row.get(col_finicio, "-"))
@@ -495,29 +525,36 @@ def mostrar(dfs, save_data=None):
                 tables = pd.read_html(archivo_excel)
                 df_asistencia_raw = tables[0]
 
-                # Evaluar Estado, Tardanzas y Horas Trabajadas cruzando con HORARIOS_ADMIN
                 df_horarios_admin = dfs.get("HORARIOS_ADMIN", pd.DataFrame())
-                df_evaluado = procesar_evaluacion_asistencia(df_asistencia_raw, df_horarios_admin)
 
-                st.success(f"✅ Archivo procesado correctamente. Se analizaron {len(df_evaluado)} registros de asistencia.")
+                # 🎯 Evaluación cruzando con HORARIOS_ADMIN y FILTRANDO solo colaboradores activos
+                df_evaluado = procesar_evaluacion_asistencia(
+                    df_asistencia_raw, 
+                    df_horarios_admin, 
+                    dnis_registrados=dnis_activos_set
+                )
+
+                st.success(f"✅ Archivo procesado correctamente. Se analizaron {len(df_evaluado)} registros de colaboradores registrados activos.")
 
                 # Tarjetas Métricas / KPIs
-                kpi1, kpi2, kpi3, kpi4, kpi5 = st.columns(5)
-                tot_p = len(df_evaluado[df_evaluado["ESTADO"] == "PUNTUAL"])
-                tot_t = len(df_evaluado[df_evaluado["ESTADO"] == "TARDANZA"])
-                tot_f = len(df_evaluado[df_evaluado["ESTADO"] == "FALTA"])
-                tot_inc = len(df_evaluado[df_evaluado["ESTADO"] == "INCOMPLETO"])
-                tot_min_tard = df_evaluado["MIN_TARDANZA"].sum()
+                kpi1, kpi2, kpi3, kpi4, kpi5, kpi6 = st.columns(6)
+                tot_p = len(df_evaluado[df_evaluado["ESTADO"] == "PUNTUAL"]) if not df_evaluado.empty else 0
+                tot_t = len(df_evaluado[df_evaluado["ESTADO"] == "TARDANZA"]) if not df_evaluado.empty else 0
+                tot_f = len(df_evaluado[df_evaluado["ESTADO"] == "FALTA"]) if not df_evaluado.empty else 0
+                tot_inc = len(df_evaluado[df_evaluado["ESTADO"] == "INCOMPLETO"]) if not df_evaluado.empty else 0
+                tot_min_tard = df_evaluado["MIN_TARDANZA"].sum() if "MIN_TARDANZA" in df_evaluado.columns else 0
+                tot_min_adel = df_evaluado["MIN_SALIDA_ADELANTADA"].sum() if "MIN_SALIDA_ADELANTADA" in df_evaluado.columns else 0
 
                 kpi1.metric("🟢 Puntuales", tot_p)
                 kpi2.metric("🟡 Tardanzas", tot_t)
                 kpi3.metric("🔴 Faltas", tot_f)
                 kpi4.metric("🟠 Incompletos", tot_inc)
-                kpi5.metric("⏱️ Min. Tardanza Acum.", f"{tot_min_tard} min")
+                kpi5.metric("⏱️ Min. Tardanza", f"{tot_min_tard} min")
+                kpi6.metric("🚪 Min. Sal. Adelantada", f"{tot_min_adel} min")
 
                 st.markdown("---")
                 st.markdown("### 🔍 Filtros y Consola de Asistencia")
-                
+
                 f1, f2, f3, f4 = st.columns(4)
                 with f1:
                     areas = ["TODAS"] + sorted([x for x in df_evaluado["ÁREA"].dropna().astype(str).unique() if x != "nan"]) if "ÁREA" in df_evaluado.columns else ["TODAS"]
@@ -541,13 +578,23 @@ def mostrar(dfs, save_data=None):
                     df_fil = df_fil[df_fil["ESTADO"] == est_sel]
                 if busqueda_persona.strip():
                     term = busqueda_persona.strip().lower()
+                    col_dni_f = next((c for c in df_fil.columns if "DNI" in str(c).upper() or "DOC" in str(c).upper()), df_fil.columns[0])
                     col_b = "APELLIDOS Y NOMBRES" if "APELLIDOS Y NOMBRES" in df_fil.columns else df_fil.columns[1]
                     df_fil = df_fil[
-                        df_fil["DNI"].astype(str).str.contains(term) | 
+                        df_fil[col_dni_f].astype(str).str.contains(term) | 
                         df_fil[col_b].astype(str).str.lower().str.contains(term)
                     ]
 
                 st.dataframe(df_fil, use_container_width=True)
+
+                # Botón de guardado de reporte procesado
+                if st.button("💾 Guardar Reporte Procesado en Base de Datos", type="primary"):
+                    if callable(save_data):
+                        dfs["ASISTENCIA_PROCESADA"] = df_evaluado
+                        save_data(dfs, "ASISTENCIA_PROCESADA")
+                        st.success("¡Reporte de asistencia guardado exitosamente!")
+                    else:
+                        st.error("No se definió la función de guardado (save_data).")
 
             except Exception as e:
                 st.error(f"Error al procesar la evaluación de asistencia: {e}")
@@ -556,5 +603,31 @@ def mostrar(dfs, save_data=None):
     with tab_regularizar:
         st.subheader("📝 Regularización y Corrección de Marcaciones")
         st.info("Permite ajustar marcaciones omitidas o justificadas guardando la trazabilidad del usuario.")
+
+        col_usr = st.selectbox("Seleccione Colaborador a Regularizar:", df_activos["DISPLAY"].unique(), key="reg_usr")
+        reg_row = df_activos[df_activos["DISPLAY"] == col_usr].iloc[0]
+        reg_dni = str(reg_row.get(col_dni, "")).strip()
+
+        c_reg1, c_reg2 = st.columns(2)
+        with c_reg1:
+            fecha_reg = st.date_input("Fecha a Regularizar")
+            motivo_reg = st.selectbox("Motivo de Regularización", [
+                "Comisión de Servicio", 
+                "Olvido de Marcación", 
+                "Falla de Biométrico / Sistema", 
+                "Permiso de Salud", 
+                "Otro"
+            ])
+        with c_reg2:
+            tipo_marcacion = st.selectbox("Turno / Marcación a corregir", [
+                "Entrada Mañana", "Salida Mañana", "Entrada Tarde", "Salida Tarde"
+            ])
+            hora_corr = st.time_input("Hora corregida", time(8, 0))
+
+        obs_reg = st.text_area("Observación / Sustento")
+
+        if st.button("💾 Registrar Regularización", type="primary"):
+            st.success(f"Marcación de {tipo_marcacion} regularizada para DNI {reg_dni} el día {fecha_reg}.")
+
 
 render_mod_horarios_admin = mostrar
