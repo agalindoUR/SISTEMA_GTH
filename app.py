@@ -2330,9 +2330,10 @@ else:
                                                             st.rerun()
                                                             
                                 
-                               with col_b:
+                            with col_b:
                                     # LLAMADA AL NUEVO MÓDULO (le pasamos cols_reales porque tu código lo usa)
-                                   mod_editor.mostrar_editor(dfs, save_data, h_name, sel, cols_reales)
+                                    mod_editor.mostrar_editor(dfs, save_data, h_name, sel, cols_reales)
+                            
     # ==========================================
     # --- SECCIÓN REGISTRO Y NÓMINA ---
     # ==========================================
