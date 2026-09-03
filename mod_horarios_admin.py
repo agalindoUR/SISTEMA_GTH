@@ -372,58 +372,46 @@ def mostrar(dfs, save_data=None):
             try:
                 df_nuevo = pd.DataFrame([nuevo_registro])
 
-                # --- GUARDADO CON LIMPIEZA DE COLUMNAS ---
-                if (
-                    "HORARIOS_ADMIN" in dfs
-                    and not dfs["HORARIOS_ADMIN"].empty
-                ):
+                if "HORARIOS_ADMIN" in dfs and not dfs["HORARIOS_ADMIN"].empty:
                     df_base = dfs["HORARIOS_ADMIN"].copy()
-                    df_base.columns = (
-                        df_base.columns.astype(str).str.strip().str.upper()
-                    )
-                    df_base = df_base.loc[:, ~df_base.columns.duplicated()]
+                    
+                    # Mapeo inteligente: empareja las columnas ignorando espacios y guiones bajos
+                    col_map = {}
+                    for col_nuevo in df_nuevo.columns:
+                        col_clean_nuevo = str(col_nuevo).replace('_', '').replace(' ', '').upper()
+                        for col_base in df_base.columns:
+                            col_clean_base = str(col_base).replace('_', '').replace(' ', '').upper()
+                            if col_clean_nuevo == col_clean_base:
+                                col_map[col_nuevo] = col_base
+                                break
+                    
+                    df_nuevo.rename(columns=col_map, inplace=True)
 
-                    col_dni_bd = next(
-                        (
-                            c
-                            for c in df_base.columns
-                            if "DNI" in c or "DOC" in c
-                        ),
-                        None,
-                    )
+                    col_dni_bd = next((c for c in df_base.columns if 'DNI' in str(c).upper() or 'DOC' in str(c).upper()), None)
 
                     if col_dni_bd:
-                        mask = df_base[col_dni_bd].astype(str) == dni_sel
+                        mask = df_base[col_dni_bd].astype(str).str.strip() == str(dni_sel).strip()
                         if mask.any():
-                            # Actualizar fila existente
+                            # Actualizar fila existente en las columnas correspondientes
                             idx_to_update = df_base[mask].index[-1]
                             for col in df_nuevo.columns:
-                                df_base.at[idx_to_update, col] = df_nuevo.iloc[
-                                    0
-                                ][col]
+                                df_base.at[idx_to_update, col] = df_nuevo.iloc[0][col]
                             dfs["HORARIOS_ADMIN"] = df_base
                         else:
-                            # Anexar nueva fila
-                            dfs["HORARIOS_ADMIN"] = pd.concat(
-                                [df_base, df_nuevo], ignore_index=True
-                            )
+                            # Anexar nueva fila alineada a las columnas existentes
+                            dfs["HORARIOS_ADMIN"] = pd.concat([df_base, df_nuevo], ignore_index=True)
                     else:
-                        dfs["HORARIOS_ADMIN"] = pd.concat(
-                            [df_base, df_nuevo], ignore_index=True
-                        )
+                        dfs["HORARIOS_ADMIN"] = pd.concat([df_base, df_nuevo], ignore_index=True)
                 else:
                     dfs["HORARIOS_ADMIN"] = df_nuevo
 
                 save_data(dfs, "HORARIOS_ADMIN")
 
                 st.balloons()
-                st.success(
-                    f"¡Horario guardado con éxito! (DNI {dni_sel} - Total: {total_horas_semanales:.2f} hrs)"
-                )
+                st.success(f"¡Horario guardado con éxito! (DNI {dni_sel} - Total: {total_horas_semanales:.2f} hrs)")
             except Exception as e:
                 st.error(f"Ocurrió un error al intentar guardar: {e}")
         else:
             st.error("No se ha definido la función de guardado (save_data).")
-
 
 render_mod_horarios_admin = mostrar
