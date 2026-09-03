@@ -9,10 +9,12 @@ def mostrar(dfs, save_data=None):
         st.error("No se encontraron los datos de 'CONTRATOS' en el sistema.")
         return
 
+    # Normalización de Tabla CONTRATOS
     df_contratos = dfs["CONTRATOS"].copy()
     df_contratos.columns = df_contratos.columns.astype(str).str.strip().str.upper()
     df_contratos = df_contratos.loc[:, ~df_contratos.columns.duplicated()]
 
+    # Normalización de Tabla Personal (si existe)
     nombre_tabla_personal = next((k for k in dfs.keys() if k.upper() in ["DATOS GENERALES", "DATOS_GENERALES", "PERSONAL", "EMPLEADOS", "TRABAJADORES"]), None)
     if nombre_tabla_personal:
         df_personal = dfs[nombre_tabla_personal].copy()
@@ -55,19 +57,22 @@ def mostrar(dfs, save_data=None):
     f_inicio_contrato = str(contrato_row.get('F_INICIO', '-'))
     f_fin_contrato = str(contrato_row.get('F_FIN', '-'))
 
-    # Limpiar caché temporal de la interfaz
+    # Limpiar caché temporal de la interfaz al cambiar de colaborador
     if st.session_state.get('ultimo_dni_seleccionado') != dni_sel:
         for k in list(st.session_state.keys()):
             if k.startswith(('check_', 'tm_', 'tt_', 'e1_', 's1_', 'e2_', 's2_')):
                 del st.session_state[k]
         st.session_state['ultimo_dni_seleccionado'] = dni_sel
 
-    # --- PROTECCIÓN CONTRA KEYERROR AL LEER ---
+    # --- LECTURA Y NORMALIZACIÓN DE HORARIOS_ADMIN ---
     horario_bd = None
     if "HORARIOS_ADMIN" in dfs and not dfs["HORARIOS_ADMIN"].empty:
-        df_horarios = dfs["HORARIOS_ADMIN"]
-        # Buscar la columna DNI sin importar espacios o mayúsculas
-        col_dni_horario = next((c for c in df_horarios.columns if 'DNI' in str(c).upper() or 'DOC' in str(c).upper()), None)
+        df_horarios = dfs["HORARIOS_ADMIN"].copy()
+        df_horarios.columns = df_horarios.columns.astype(str).str.strip().str.upper()
+        df_horarios = df_horarios.loc[:, ~df_horarios.columns.duplicated()]
+        dfs["HORARIOS_ADMIN"] = df_horarios  # Actualizamos en dfs para mantener sincronía
+        
+        col_dni_horario = next((c for c in df_horarios.columns if 'DNI' in c or 'DOC' in c), None)
         
         if col_dni_horario:
             df_filtro = df_horarios[df_horarios[col_dni_horario].astype(str) == dni_sel]
@@ -198,25 +203,28 @@ def mostrar(dfs, save_data=None):
             try:
                 df_nuevo = pd.DataFrame([nuevo_registro])
                 
-                # --- PROTECCIÓN CONTRA KEYERROR AL GUARDAR ---
+                # --- GUARDADO CON LIMPIEZA DE COLUMNAS ---
                 if "HORARIOS_ADMIN" in dfs and not dfs["HORARIOS_ADMIN"].empty:
-                    col_dni_bd = next((c for c in dfs["HORARIOS_ADMIN"].columns if 'DNI' in str(c).upper() or 'DOC' in str(c).upper()), None)
+                    df_base = dfs["HORARIOS_ADMIN"].copy()
+                    df_base.columns = df_base.columns.astype(str).str.strip().str.upper()
+                    df_base = df_base.loc[:, ~df_base.columns.duplicated()]
+                    
+                    col_dni_bd = next((c for c in df_base.columns if 'DNI' in c or 'DOC' in c), None)
                     
                     if col_dni_bd:
-                        mask = dfs["HORARIOS_ADMIN"][col_dni_bd].astype(str) == dni_sel
+                        mask = df_base[col_dni_bd].astype(str) == dni_sel
                         if mask.any():
-                            # Actualizar existente
-                            idx_to_update = dfs["HORARIOS_ADMIN"][mask].index[-1]
+                            # Actualizar fila existente
+                            idx_to_update = df_base[mask].index[-1]
                             for col in df_nuevo.columns:
-                                dfs["HORARIOS_ADMIN"].at[idx_to_update, col] = df_nuevo.iloc[0][col]
+                                df_base.at[idx_to_update, col] = df_nuevo.iloc[0][col]
+                            dfs["HORARIOS_ADMIN"] = df_base
                         else:
-                            # Anexar nuevo
-                            dfs["HORARIOS_ADMIN"] = pd.concat([dfs["HORARIOS_ADMIN"], df_nuevo], ignore_index=True)
+                            # Anexar nueva fila
+                            dfs["HORARIOS_ADMIN"] = pd.concat([df_base, df_nuevo], ignore_index=True)
                     else:
-                        # Si existe la hoja pero no hay columna DNI, anexamos asumiendo que está mal estructurada
-                        dfs["HORARIOS_ADMIN"] = pd.concat([dfs["HORARIOS_ADMIN"], df_nuevo], ignore_index=True)
+                        dfs["HORARIOS_ADMIN"] = pd.concat([df_base, df_nuevo], ignore_index=True)
                 else:
-                    # Hoja completamente vacía
                     dfs["HORARIOS_ADMIN"] = df_nuevo
                 
                 save_data(dfs, "HORARIOS_ADMIN")
@@ -227,5 +235,7 @@ def mostrar(dfs, save_data=None):
                 st.error(f"Ocurrió un error al intentar guardar: {e}")
         else:
             st.error("No se ha definido la función de guardado (save_data).")
+
+render_mod_horarios_admin = mostrarfinido la función de guardado (save_data).")
 
 render_mod_horarios_admin = mostrar
