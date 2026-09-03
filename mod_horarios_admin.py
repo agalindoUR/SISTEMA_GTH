@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, time, timedelta
 
 
 def get_bd_val(row_data, key_name, default_val="-"):
@@ -15,6 +15,126 @@ def get_bd_val(row_data, key_name, default_val="-"):
     return default_val
 
 
+def parse_time_obj(t_str):
+    if pd.isna(t_str) or str(t_str).strip() in ["", "-", "nan", "None"]:
+        return None
+    try:
+        parts = [int(x) for x in str(t_str).strip().split(":")]
+        return time(parts[0], parts[1], parts[2] if len(parts) > 2 else 0)
+    except Exception:
+        return None
+
+
+def procesar_evaluacion_asistencia(df_asist, df_horarios_admin):
+    """
+    Evalúa cada fila del reporte de asistencia contra el horario programado
+    en HORARIOS_ADMIN según el DNI y el día de la semana.
+    """
+    mapa_dias_es = {
+        0: 'LUN', 1: 'MAR', 2: 'MIE', 3: 'JUE', 4: 'VIE', 5: 'SAB', 6: 'DOM'
+    }
+
+    horarios_by_dni = {}
+    if df_horarios_admin is not None and not df_horarios_admin.empty:
+        col_dni_h = next((c for c in df_horarios_admin.columns if "DNI" in str(c).upper() or "DOC" in str(c).upper()), None)
+        if col_dni_h:
+            for _, row in df_horarios_admin.iterrows():
+                dni_k = str(row[col_dni_h]).strip()
+                horarios_by_dni[dni_k] = row
+
+    estados = []
+    tardanzas = []
+    horas_trabajadas = []
+
+    for _, row in df_asist.iterrows():
+        dni = str(row.get("DNI", "")).strip()
+        fecha_str = str(row.get("FECHA", "")).strip()
+
+        ent_m = str(row.get("ENTRADA MAÑANA", row.get("ENTRADA_M", "-"))).strip()
+        sal_m = str(row.get("SALIDA MAÑANA", row.get("SALIDA_M", "-"))).strip()
+        ent_t = str(row.get("ENTRADA TARDE", row.get("ENTRADA_T", "-"))).strip()
+        sal_t = str(row.get("SALIDA TARDE", row.get("SALIDA_T", "-"))).strip()
+
+        try:
+            dt_fecha = datetime.strptime(fecha_str, "%Y-%m-%d")
+            dia_pref = mapa_dias_es[dt_fecha.weekday()]
+        except Exception:
+            dia_pref = "LUN"
+
+        horario_usr = horarios_by_dni.get(dni)
+
+        labora = "SI"
+        e1_prog, s1_prog, e2_prog, s2_prog = "08:00", "13:00", "16:00", "19:00"
+        tolerancia = 5
+
+        if horario_usr is not None:
+            labora = get_bd_val(horario_usr, f"{dia_pref}_LAB", "NO").upper()
+            e1_prog = get_bd_val(horario_usr, f"{dia_pref}_E1", "-")
+            s1_prog = get_bd_val(horario_usr, f"{dia_pref}_S1", "-")
+            e2_prog = get_bd_val(horario_usr, f"{dia_pref}_E2", "-")
+            s2_prog = get_bd_val(horario_usr, f"{dia_pref}_S2", "-")
+            try:
+                tolerancia = int(get_bd_val(horario_usr, "TOLERANCIA_MIN", 5))
+            except Exception:
+                tolerancia = 5
+
+        if labora != "SI":
+            estados.append("DESCANSO")
+            tardanzas.append(0)
+            horas_trabajadas.append(0.0)
+            continue
+
+        # Cálculo de tardanzas
+        tardanza_min = 0
+        t_ent_m = parse_time_obj(ent_m)
+        t_prog_e1 = parse_time_obj(e1_prog)
+        t_ent_t = parse_time_obj(ent_t)
+        t_prog_e2 = parse_time_obj(e2_prog)
+
+        if t_prog_e1 and t_ent_m:
+            dt_real = datetime.combine(date.today(), t_ent_m)
+            dt_prog = datetime.combine(date.today(), t_prog_e1) + timedelta(minutes=tolerancia)
+            if dt_real > dt_prog:
+                tardanza_min += int((dt_real - datetime.combine(date.today(), t_prog_e1)).total_seconds() / 60)
+
+        if t_prog_e2 and t_ent_t:
+            dt_real_t = datetime.combine(date.today(), t_ent_t)
+            dt_prog_t = datetime.combine(date.today(), t_prog_e2) + timedelta(minutes=tolerancia)
+            if dt_real_t > dt_prog_t:
+                tardanza_min += int((dt_real_t - datetime.combine(date.today(), t_prog_e2)).total_seconds() / 60)
+
+        # Determinar estado
+        if ent_m == "-" and sal_m == "-" and ent_t == "-" and sal_t == "-":
+            estado = "FALTA"
+        elif (e1_prog != "-" and ent_m == "-") or (s1_prog != "-" and sal_m == "-") or \
+             (e2_prog != "-" and ent_t == "-") or (s2_prog != "-" and sal_t == "-"):
+            estado = "INCOMPLETO"
+        elif tardanza_min > 0:
+            estado = "TARDANZA"
+        else:
+            estado = "PUNTUAL"
+
+        # Cálculo de horas trabajadas
+        hrs = 0.0
+        t_sal_m = parse_time_obj(sal_m)
+        t_sal_t = parse_time_obj(sal_t)
+
+        if t_ent_m and t_sal_m:
+            hrs += (datetime.combine(date.today(), t_sal_m) - datetime.combine(date.today(), t_ent_m)).total_seconds() / 3600.0
+        if t_ent_t and t_sal_t:
+            hrs += (datetime.combine(date.today(), t_sal_t) - datetime.combine(date.today(), t_ent_t)).total_seconds() / 3600.0
+
+        estados.append(estado)
+        tardanzas.append(tardanza_min)
+        horas_trabajadas.append(round(max(hrs, 0.0), 2))
+
+    df_res = df_asist.copy()
+    df_res["ESTADO"] = estados
+    df_res["MIN_TARDANZA"] = tardanzas
+    df_res["HORAS_TRABAJADAS"] = horas_trabajadas
+    return df_res
+
+
 def mostrar(dfs, save_data=None):
     st.title("⏰ Gestión de Horarios Administrativos")
 
@@ -22,10 +142,8 @@ def mostrar(dfs, save_data=None):
         st.error("No se encontraron los datos de 'CONTRATOS' en el sistema.")
         return
 
-    # Normalización de Tabla CONTRATOS
     df_contratos = dfs["CONTRATOS"].copy()
 
-    # Normalización de Tabla Personal (si existe)
     nombre_tabla_personal = next(
         (
             k
@@ -93,18 +211,13 @@ def mostrar(dfs, save_data=None):
     col_dni = next((c for c in cols if "DNI" in str(c).upper() or "DOC" in str(c).upper()), "DNI")
     col_cargo = next((c for c in cols if "CARGO" in str(c).upper() or "PUESTO" in str(c).upper()), "CARGO")
 
-    # ==========================================
-    # CREACIÓN DE SUB-MENÚ DESPLEGABLE (PESTAÑAS)
-    # ==========================================
     tab_config, tab_procesar, tab_regularizar = st.tabs([
         "⚙️ Configuración de Horarios", 
         "📊 Procesar Reporte de Asistencia", 
         "✏️ Regularización de Marcaciones"
     ])
 
-    # ------------------------------------------
-    # PESTAÑA 1: CONFIGURACIÓN DE HORARIOS
-    # ------------------------------------------
+    # --- PESTAÑA 1: CONFIGURACIÓN ---
     with tab_config:
         df_activos["DISPLAY"] = (
             df_activos[col_dni].astype(str)
@@ -126,14 +239,12 @@ def mostrar(dfs, save_data=None):
         f_inicio_contrato = str(contrato_row.get(col_finicio, "-"))
         f_fin_contrato = str(contrato_row.get(col_ffin, "-"))
 
-        # Limpiar caché temporal al cambiar de colaborador
         if st.session_state.get("ultimo_dni_seleccionado") != dni_sel:
             for k in list(st.session_state.keys()):
                 if k.startswith(("check_", "tm_", "tt_", "e1_", "s1_", "e2_", "s2_")):
                     del st.session_state[k]
             st.session_state["ultimo_dni_seleccionado"] = dni_sel
 
-        # --- LECTURA Y CARGA DE HORARIOS DESDE LA BASE DE DATOS ---
         horario_bd = None
         if "HORARIOS_ADMIN" in dfs and not dfs["HORARIOS_ADMIN"].empty:
             df_horarios = dfs["HORARIOS_ADMIN"].copy()
@@ -181,13 +292,8 @@ def mostrar(dfs, save_data=None):
 
         dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
         mapa_dias = {
-            "Lunes": "LUN",
-            "Martes": "MAR",
-            "Miércoles": "MIE",
-            "Jueves": "JUE",
-            "Viernes": "VIE",
-            "Sábado": "SAB",
-            "Domingo": "DOM",
+            "Lunes": "LUN", "Martes": "MAR", "Miércoles": "MIE",
+            "Jueves": "JUE", "Viernes": "VIE", "Sábado": "SAB", "Domingo": "DOM"
         }
         horarios_config = {}
         total_horas_semanales = 0.0
@@ -245,11 +351,7 @@ def mostrar(dfs, save_data=None):
             ):
                 asiste = st.checkbox(f"¿Labora el {dia}?", key=f"check_{dia}")
                 horarios_config[dia] = {
-                    "LABORA": "NO",
-                    "E1": "-",
-                    "S1": "-",
-                    "E2": "-",
-                    "S2": "-",
+                    "LABORA": "NO", "E1": "-", "S1": "-", "E2": "-", "S2": "-"
                 }
 
                 if asiste:
@@ -339,7 +441,6 @@ def mostrar(dfs, save_data=None):
                     if "HORARIOS_ADMIN" in dfs and not dfs["HORARIOS_ADMIN"].empty:
                         df_base = dfs["HORARIOS_ADMIN"].copy()
 
-                        # Mapeo inteligente de columnas
                         col_map = {}
                         for col_nuevo in df_nuevo.columns:
                             col_clean_nuevo = str(col_nuevo).replace("_", "").replace(" ", "").upper()
@@ -381,9 +482,7 @@ def mostrar(dfs, save_data=None):
             else:
                 st.error("No se ha definido la función de guardado (save_data).")
 
-    # ------------------------------------------
-    # PESTAÑA 2: PROCESAR REPORTE DE ASISTENCIA
-    # ------------------------------------------
+    # --- PESTAÑA 2: PROCESAR REPORTE DE ASISTENCIA ---
     with tab_procesar:
         st.subheader("📥 Carga y Procesamiento de Asistencia")
         archivo_excel = st.file_uploader(
@@ -394,18 +493,68 @@ def mostrar(dfs, save_data=None):
         if archivo_excel is not None:
             try:
                 tables = pd.read_html(archivo_excel)
-                df_asistencia = tables[0]
-                st.success(f"Archivo cargado correctamente. Se encontraron {len(df_asistencia)} registros.")
-                st.dataframe(df_asistencia, use_container_width=True)
-            except Exception as e:
-                st.error(f"Error al procesar el archivo: {e}")
+                df_asistencia_raw = tables[0]
 
-    # ------------------------------------------
-    # PESTAÑA 3: REGULARIZACIÓN DE MARCACIONES
-    # ------------------------------------------
+                # Evaluar Estado, Tardanzas y Horas Trabajadas cruzando con HORARIOS_ADMIN
+                df_horarios_admin = dfs.get("HORARIOS_ADMIN", pd.DataFrame())
+                df_evaluado = procesar_evaluacion_asistencia(df_asistencia_raw, df_horarios_admin)
+
+                st.success(f"✅ Archivo procesado correctamente. Se analizaron {len(df_evaluado)} registros de asistencia.")
+
+                # Tarjetas Métricas / KPIs
+                kpi1, kpi2, kpi3, kpi4, kpi5 = st.columns(5)
+                tot_p = len(df_evaluado[df_evaluado["ESTADO"] == "PUNTUAL"])
+                tot_t = len(df_evaluado[df_evaluado["ESTADO"] == "TARDANZA"])
+                tot_f = len(df_evaluado[df_evaluado["ESTADO"] == "FALTA"])
+                tot_inc = len(df_evaluado[df_evaluado["ESTADO"] == "INCOMPLETO"])
+                tot_min_tard = df_evaluado["MIN_TARDANZA"].sum()
+
+                kpi1.metric("🟢 Puntuales", tot_p)
+                kpi2.metric("🟡 Tardanzas", tot_t)
+                kpi3.metric("🔴 Faltas", tot_f)
+                kpi4.metric("🟠 Incompletos", tot_inc)
+                kpi5.metric("⏱️ Min. Tardanza Acum.", f"{tot_min_tard} min")
+
+                st.markdown("---")
+                st.markdown("### 🔍 Filtros y Consola de Asistencia")
+                
+                f1, f2, f3, f4 = st.columns(4)
+                with f1:
+                    areas = ["TODAS"] + sorted([x for x in df_evaluado["ÁREA"].dropna().astype(str).unique() if x != "nan"]) if "ÁREA" in df_evaluado.columns else ["TODAS"]
+                    area_sel = st.selectbox("Filtrar por Área:", areas)
+                with f2:
+                    fechas = ["TODAS"] + sorted([x for x in df_evaluado["FECHA"].dropna().astype(str).unique() if x != "nan"]) if "FECHA" in df_evaluado.columns else ["TODAS"]
+                    fecha_sel = st.selectbox("Filtrar por Fecha:", fechas)
+                with f3:
+                    est_list = ["TODOS", "PUNTUAL", "TARDANZA", "FALTA", "INCOMPLETO", "DESCANSO"]
+                    est_sel = st.selectbox("Filtrar por Estado:", est_list)
+                with f4:
+                    busqueda_persona = st.text_input("Buscar por DNI / Nombre:")
+
+                # Aplicar Filtros
+                df_fil = df_evaluado.copy()
+                if area_sel != "TODAS" and "ÁREA" in df_fil.columns:
+                    df_fil = df_fil[df_fil["ÁREA"] == area_sel]
+                if fecha_sel != "TODAS" and "FECHA" in df_fil.columns:
+                    df_fil = df_fil[df_fil["FECHA"] == fecha_sel]
+                if est_sel != "TODOS":
+                    df_fil = df_fil[df_fil["ESTADO"] == est_sel]
+                if busqueda_persona.strip():
+                    term = busqueda_persona.strip().lower()
+                    col_b = "APELLIDOS Y NOMBRES" if "APELLIDOS Y NOMBRES" in df_fil.columns else df_fil.columns[1]
+                    df_fil = df_fil[
+                        df_fil["DNI"].astype(str).str.contains(term) | 
+                        df_fil[col_b].astype(str).str.lower().str.contains(term)
+                    ]
+
+                st.dataframe(df_fil, use_container_width=True)
+
+            except Exception as e:
+                st.error(f"Error al procesar la evaluación de asistencia: {e}")
+
+    # --- PESTAÑA 3: REGULARIZACIÓN ---
     with tab_regularizar:
         st.subheader("📝 Regularización y Corrección de Marcaciones")
         st.info("Permite ajustar marcaciones omitidas o justificadas guardando la trazabilidad del usuario.")
-
 
 render_mod_horarios_admin = mostrar
