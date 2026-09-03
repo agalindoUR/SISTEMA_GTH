@@ -32,6 +32,7 @@ def procesar_registros_dia(lista_marcaciones, config_horario):
         "ENTRADA_T": "-",
         "SALIDA_T": "-",
         "ESTADO": "OK",
+        "MINUTOS_SALIDA_ADELANTADA": 0,
     }
 
     if not lista_marcaciones or config_horario.get("LABORA") != "SI":
@@ -39,7 +40,7 @@ def procesar_registros_dia(lista_marcaciones, config_horario):
 
     # Convertir marcaciones a segundos y ordenar
     marc_sec = sorted([time_to_seconds(m) for m in lista_marcaciones if time_to_seconds(m) is not None])
-    
+
     if not marc_sec:
         return resultado
 
@@ -50,11 +51,15 @@ def procesar_registros_dia(lista_marcaciones, config_horario):
 
     # Caso 1: Horario de Doble Turno (Mañana y Tarde)
     if s1_sec and e2_sec and s2_sec:
-        corte_m = s1_sec - 600  # 10 minutos antes de la Salida de la Mañana
-        corte_t = s2_sec - 600  # 10 minutos antes de la Salida de la Tarde
+        # Separador entre turno mañana y tarde (punto medio entre S1 y E2)
+        corte_interturno = (s1_sec + e2_sec) // 2
 
-        m_manana = [m for m in marc_sec if m < e2_sec - 600]
-        m_tarde = [m for m in marc_sec if m >= e2_sec - 600]
+        # Punto medio para separar Entrada y Salida de cada turno
+        corte_m = (e1_sec + s1_sec) // 2 if e1_sec else s1_sec - 3600
+        corte_t = (e2_sec + s2_sec) // 2
+
+        m_manana = [m for m in marc_sec if m < corte_interturno]
+        m_tarde = [m for m in marc_sec if m >= corte_interturno]
 
         # Procesar Mañana
         if m_manana:
@@ -76,7 +81,7 @@ def procesar_registros_dia(lista_marcaciones, config_horario):
 
     # Caso 2: Horario de Un Solo Turno (Corrido)
     elif s1_sec:
-        corte_unico = s1_sec - 600  # 10 minutos antes de la Salida
+        corte_unico = (e1_sec + s1_sec) // 2 if e1_sec else s1_sec - 3600
         e_m = [m for m in marc_sec if m <= corte_unico]
         s_m = [m for m in marc_sec if m > corte_unico]
 
@@ -84,5 +89,26 @@ def procesar_registros_dia(lista_marcaciones, config_horario):
             resultado["ENTRADA_M"] = seconds_to_time_str(min(e_m))
         if s_m:
             resultado["SALIDA_M"] = seconds_to_time_str(max(s_m))
+
+    # --- Cálculo de Minutos de Salida Anticipada (para Descuentos) ---
+    min_adelanto = 0
+    if resultado["SALIDA_M"] != "-" and s1_sec:
+        sal_m_sec = time_to_seconds(resultado["SALIDA_M"])
+        if sal_m_sec < s1_sec:
+            min_adelanto += int((s1_sec - sal_m_sec) // 60)
+
+    if resultado["SALIDA_T"] != "-" and s2_sec:
+        sal_t_sec = time_to_seconds(resultado["SALIDA_T"])
+        if sal_t_sec < s2_sec:
+            min_adelanto += int((s2_sec - sal_t_sec) // 60)
+
+    resultado["MINUTOS_SALIDA_ADELANTADA"] = min_adelanto
+
+    # Evaluar si falta alguna marcación esperada
+    if (e1_sec and resultado["ENTRADA_M"] == "-") or \
+       (s1_sec and resultado["SALIDA_M"] == "-") or \
+       (e2_sec and resultado["ENTRADA_T"] == "-") or \
+       (s2_sec and resultado["SALIDA_T"] == "-"):
+        resultado["ESTADO"] = "INCOMPLETO"
 
     return resultado
