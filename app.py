@@ -2001,11 +2001,12 @@ if h_name == "EXP. LABORAL":
                             st.markdown(f"**🏥 C. de la Salud:** Apto para dictar en **{', '.join(match_salud)}**.")
                         if match_empresariales:
                             st.markdown(f"**🏢 C. Empresariales:** Apto para dictar en **{', '.join(match_empresariales)}**.")
-                else:
+               else:
                     st.error("❌ **Docente Universitario (Pregrado):** NO CUMPLE (La Ley exige mínimo Grado de Maestro).")
 
         # ---------------------------------------
         # TABLA DESPLEGABLE PARA EDICIÓN
+        # (Nota: ¡Todo esto tiene 8 espacios a la izquierda para no romper el elif de abajo!)
         # ---------------------------------------
         st.markdown("<br>", unsafe_allow_html=True)
         with st.expander("⚙️ Clic aquí para Editar o Eliminar Experiencia Externa"):
@@ -2026,7 +2027,6 @@ if h_name == "EXP. LABORAL":
     # NUEVO DISEÑO: CONTRATOS
     # ==========================================
     elif h_name == "CONTRATOS":
-        # MOVIDO AQUÍ ADENTRO: Evita romper la cadena if-elif superior
         col_conf_cfg = col_conf if 'col_conf' in locals() and isinstance(col_conf, dict) else {}
         
         vst_df = vst if 'vst' in locals() and isinstance(vst, pd.DataFrame) else pd.DataFrame()
