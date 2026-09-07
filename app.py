@@ -1530,209 +1530,227 @@ elif m == "Vencimientos":
 elif m == "🔐 Usuarios y Seguridad":
     mod_usuarios.render(dfs)
             
-                      # =========================================================
-                        # 1. SI ES DATOS GENERALES -> DISEÑO TIPO FICHA (TARJETA)
-                        # =========================================================
-                        if h_name == "DATOS GENERALES" and not vst.empty:
-                            ficha = vst.iloc[0]
-                            
-                            def get_val(names):
-                                # Limpieza interna para asegurar que encuentre las columnas
-                                ficha_clean = {str(k).lower().replace('á','a').replace('é','e').replace('í','i').replace('ó','o').replace('ú','u').replace('_',' '): v 
-                                               for k, v in ficha.to_dict().items()}
-                                for name in names:
-                                    clean_name = name.lower().replace('á','a').replace('é','e').replace('í','i').replace('ó','o').replace('ú','u').replace('_',' ')
-                                    val = ficha_clean.get(clean_name)
-                                    if pd.notnull(val) and str(val).strip() not in ["", "-", "0", "nan"]: 
-                                        return str(val)
-                                return "-"
+                      # ==============================================================================
+# MÓDULO: RENDERIZADO DINÁMICO DE PESTAÑAS Y FICHA DEL TRABAJADOR
+# Líneas 1533 - 1735 (Continuación e integración completa)
+# ==============================================================================
 
-                            # Asignación de variables desde tu Google Sheets
-                            sede = get_val(['SEDE'])
-                            sexo = get_val(['SEXO'])
-                            est_civil = get_val(['ESTADO CIVIL', 'ESTADO_CIVIL'])
-                            f_nac = get_val(['FECHA DE NACIMIENTO', 'NACIMIENTO'])
-                            edad = get_val(['EDAD'])
-                            telefono = get_val(['CELULAR', 'TELEFONO', 'TELÉFONO'])
-                            correo = get_val(['CORREO', 'EMAIL', 'CORREO ELECTRONICO'])
-                            direccion = get_val(['DIRECCION', 'DIRECCIÓN', 'DOMICILIO'])
-                            
-                            dir_display = "-"
-                            if direccion != "-":
-                                query_map = direccion.replace(" ", "+")
-                                link_mapa = f"https://www.google.com/maps/search/?api=1&query={query_map}"
-                                dir_display = f'<a href="{link_mapa}" target="_blank" style="color: #4da3ff; text-decoration: none; font-weight: bold;">📍 {direccion} (Ver en Google Maps 🗺️)</a>'
+# =========================================================
+# 1. SI ES DATOS GENERALES -> DISEÑO TIPO FICHA (TARJETA)
+# =========================================================
+if h_name == "DATOS GENERALES" and not vst.empty:
+    ficha = vst.iloc[0]
+    
+    def get_val(names):
+        # Limpieza interna para asegurar que encuentre las columnas
+        ficha_clean = {
+            str(k).lower().replace('á','a').replace('é','e').replace('í','i').replace('ó','o').replace('ú','u').replace('_',' '): v 
+            for k, v in ficha.to_dict().items()
+        }
+        for name in names:
+            clean_name = name.lower().replace('á','a').replace('é','e').replace('í','i').replace('ó','o').replace('ú','u').replace('_',' ')
+            val = ficha_clean.get(clean_name)
+            if pd.notnull(val) and str(val).strip() not in ["", "-", "0", "nan"]: 
+                return str(val)
+        return "-"
 
-                            st.markdown(f"""
-                            <div style="background-color: rgba(255, 215, 0, 0.05); padding: 25px; border-radius: 15px; border: 2px solid #FFD700; color: inherit; font-family: sans-serif;">
-                                <h2 style="margin-top:0; color: #FFD700; border-bottom: 1px solid rgba(255,215,0,0.3); padding-bottom:10px;">🪪 Expediente del Personal</h2>
-                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin-top: 15px;">
-                                    <div><p style="margin:0; font-size: 0.85em; opacity: 0.7;">📍 SEDE</p><p style="margin:0; font-weight: bold; font-size: 1.1em;">{sede}</p></div>
-                                    <div><p style="margin:0; font-size: 0.85em; opacity: 0.7;">🚻 SEXO</p><p style="margin:0; font-weight: bold; font-size: 1.1em;">{sexo}</p></div>
-                                    <div><p style="margin:0; font-size: 0.85em; opacity: 0.7;">💍 ESTADO CIVIL</p><p style="margin:0; font-weight: bold; font-size: 1.1em;">{est_civil}</p></div>
-                                    <div><p style="margin:0; font-size: 0.85em; opacity: 0.7;">🎂 F. NACIMIENTO</p><p style="margin:0; font-weight: bold; font-size: 1.1em;">{f_nac}</p></div>
-                                    <div><p style="margin:0; font-size: 0.85em; opacity: 0.7;">🔢 EDAD ACTUAL</p><p style="margin:0; font-weight: bold; font-size: 1.1em;">{edad} años</p></div>
-                                    <div><p style="margin:0; font-size: 0.85em; opacity: 0.7;">📱 TELÉFONO / CELULAR</p><p style="margin:0; font-weight: bold; font-size: 1.1em;">{telefono}</p></div>
-                                </div>
-                                <div style="margin-top: 25px; padding-top: 15px; border-top: 1px dashed rgba(255,215,0,0.3);">
-                                    <div style="margin-bottom: 15px;">
-                                        <p style="margin:0; font-size: 0.85em; opacity: 0.7;">📧 CORREO ELECTRÓNICO</p>
-                                        <p style="margin:0; font-weight: bold; font-size: 1.1em;">{correo}</p>
-                                    </div>
-                                    <div>
-                                        <p style="margin:0; font-size: 0.85em; opacity: 0.7;">🏠 DIRECCIÓN DE DOMICILIO</p>
-                                        <p style="margin:0; font-size: 1.1em;">{dir_display}</p>
-                                    </div>
-                                </div>
+    # Asignación de variables desde Google Sheets / DataFrame
+    sede = get_val(['SEDE'])
+    sexo = get_val(['SEXO'])
+    est_civil = get_val(['ESTADO CIVIL', 'ESTADO_CIVIL'])
+    f_nac = get_val(['FECHA DE NACIMIENTO', 'NACIMIENTO'])
+    edad = get_val(['EDAD'])
+    telefono = get_val(['CELULAR', 'TELEFONO', 'TELÉFONO'])
+    correo = get_val(['CORREO', 'EMAIL', 'CORREO ELECTRONICO'])
+    direccion = get_val(['DIRECCION', 'DIRECCIÓN', 'DOMICILIO'])
+    
+    dir_display = "-"
+    if direccion != "-":
+        query_map = direccion.replace(" ", "+")
+        link_mapa = f"https://www.google.com/maps/search/?api=1&query={query_map}"
+        dir_display = f'<a href="{link_mapa}" target="_blank" style="color: #4da3ff; text-decoration: none; font-weight: bold;">📍 {direccion} (Ver en Google Maps 🗺️)</a>'
+
+    st.markdown(f"""
+    <div style="background-color: rgba(255, 215, 0, 0.05); padding: 25px; border-radius: 15px; border: 2px solid #FFD700; color: inherit; font-family: sans-serif;">
+        <h2 style="margin-top:0; color: #FFD700; border-bottom: 1px solid rgba(255,215,0,0.3); padding-bottom:10px;">🪪 Expediente del Personal</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin-top: 15px;">
+            <div><p style="margin:0; font-size: 0.85em; opacity: 0.7;">📍 SEDE</p><p style="margin:0; font-weight: bold; font-size: 1.1em;">{sede}</p></div>
+            <div><p style="margin:0; font-size: 0.85em; opacity: 0.7;">🚻 SEXO</p><p style="margin:0; font-weight: bold; font-size: 1.1em;">{sexo}</p></div>
+            <div><p style="margin:0; font-size: 0.85em; opacity: 0.7;">💍 ESTADO CIVIL</p><p style="margin:0; font-weight: bold; font-size: 1.1em;">{est_civil}</p></div>
+            <div><p style="margin:0; font-size: 0.85em; opacity: 0.7;">🎂 F. NACIMIENTO</p><p style="margin:0; font-weight: bold; font-size: 1.1em;">{f_nac}</p></div>
+            <div><p style="margin:0; font-size: 0.85em; opacity: 0.7;">🔢 EDAD ACTUAL</p><p style="margin:0; font-weight: bold; font-size: 1.1em;">{edad} años</p></div>
+            <div><p style="margin:0; font-size: 0.85em; opacity: 0.7;">📱 TELÉFONO / CELULAR</p><p style="margin:0; font-weight: bold; font-size: 1.1em;">{telefono}</p></div>
+        </div>
+        <div style="margin-top: 25px; padding-top: 15px; border-top: 1px dashed rgba(255,215,0,0.3);">
+            <div style="margin-bottom: 15px;">
+                <p style="margin:0; font-size: 0.85em; opacity: 0.7;">📧 CORREO ELECTRÓNICO</p>
+                <p style="margin:0; font-weight: bold; font-size: 1.1em;">{correo}</p>
+            </div>
+            <div>
+                <p style="margin:0; font-size: 0.85em; opacity: 0.7;">🏠 DIRECCIÓN DE DOMICILIO</p>
+                <p style="margin:0; font-size: 1.1em;">{dir_display}</p>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.write("")
+    sel = vst.head(1)
+
+# =========================================================
+# 2. SI ES CUALQUIER OTRA PESTAÑA -> VISTAS ESPECIALES O TABLA
+# =========================================================
+else:
+    if "SEL" not in vst.columns:
+        vst.insert(0, "SEL", False)
+        
+    # Limpieza de columnas no requeridas en la vista
+    columnas_basura = ["DNI", "FECHA DE INICIO", "FECHA DE FIN", "DIAS GENERADOS", "SALDO"]
+    for col in columnas_basura:
+        if col in vst.columns:
+            col_conf[col] = None
+            
+    # Reordenamiento de columnas prioritarias
+    cols_importantes = ["SEL", "PERIODO", "F_INICIO", "F_FIN", "DIAS GOZADOS"]
+    cols_finales = [c for c in cols_importantes if c in vst.columns] + [c for c in vst.columns if c not in cols_importantes]
+        
+    # Eliminación de duplicados accidentales en encabezados
+    cols_finales = list(dict.fromkeys(cols_finales))
+    vst = vst[cols_finales]
+
+    # ---------------------------------------------------------
+    # 2.A. PESTAÑA DE INVESTIGACIÓN (TARJETAS VISUALES + DASHBOARD)
+    # ---------------------------------------------------------
+    if h_name == "INVESTIGACION":
+        col_izq, col_der = st.columns([2, 1])
+        
+        # --- LÓGICA DE LECTURA Y FILTRADO ---
+        df_inv = dfs.get("INVESTIGACION", pd.DataFrame())
+        col_dni_inv = "dni" if "dni" in df_inv.columns else "DNI"
+        
+        inv_empleado = pd.DataFrame()
+        if not df_inv.empty and col_dni_inv in df_inv.columns:
+            inv_empleado = df_inv[df_inv[col_dni_inv].astype(str) == str(dni_buscado)]
+        
+        conteo_pub = conteo_fondos = conteo_sem = 0
+        
+        # --- COLUMNA IZQUIERDA: TARJETAS DE ACTIVIDADES ---
+        with col_izq:
+            st.markdown("<h3 style='color: #FFD700;'>🔬 Registro de Actividades de Investigación</h3>", unsafe_allow_html=True)
+            
+            if inv_empleado.empty:
+                st.markdown("<p style='color:#DDDDDD;'>No hay registros de investigación para este colaborador.</p>", unsafe_allow_html=True)
+            else:
+                for idx, row in inv_empleado.iterrows():
+                    tipo = str(row.get('tipo de registro', row.get('TIPO DE REGISTRO', 'Otro'))).strip()
+                    
+                    # Targeta 1: CTI Vitae / RENACYT
+                    if tipo == "Datos Generales (CTI Vitae / RENACYT)":
+                        renacyt = row.get('codigo renacyt', 'N/A')
+                        nivel = row.get('nivel renacyt', 'N/A')
+                        link = row.get('enlace cti vitae', '#')
+                        
+                        st.markdown(f"""
+                        <div style='background-color: #E8F4F8; padding: 15px; border-radius: 8px; border-left: 6px solid #00AEEF; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #CCCCCC;'>
+                            <div style='color: #000000; font-size: 1.1em; font-weight: bold; margin-bottom: 5px;'>👤 Perfil CTI Vitae / RENACYT</div>
+                            <div style='color: #222222; font-size: 0.95em;'>
+                                <strong>Código:</strong> {renacyt} <br>
+                                <strong>Nivel RENACYT:</strong> {nivel} <br>
+                                <a href="{link}" target="_blank" style="color: #00AEEF; text-decoration: none;">🔗 Ver Perfil CTI Vitae</a>
                             </div>
-                            """, unsafe_allow_html=True)
-                            
-                            st.write("")
-                            sel = vst.head(1)
-                                                                                                   
-                        # =========================================================
-                        # 2. SI ES CUALQUIER OTRA PESTAÑA -> DISEÑO DE TABLA NORMAL
-                        # =========================================================
-                        else:
-                            if "SEL" not in vst.columns:
-                                vst.insert(0, "SEL", False)
-                                
-                            # Dejamos un solo "DIAS GENERADOS" sin tilde
-                            columnas_basura = ["DNI", "FECHA DE INICIO", "FECHA DE FIN", "DIAS GENERADOS", "SALDO"]
-                            for col in columnas_basura:
-                                if col in vst.columns:
-                                    col_conf[col] = None
-                                    
-                            # Dejamos un solo "DIAS GOZADOS" sin tilde
-                            cols_importantes = ["SEL", "PERIODO", "F_INICIO", "F_FIN", "DIAS GOZADOS"]
-                            cols_finales = [c for c in cols_importantes if c in vst.columns] + [c for c in vst.columns if c not in cols_importantes]
-                                
-                            # TRUCO ANTIFALLOS: Eliminamos cualquier duplicado accidental en la lista final
-                            cols_finales = list(dict.fromkeys(cols_finales))
-                            vst = vst[cols_finales]
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                    # Targeta 2: Publicación Científica
+                    elif tipo == "Publicación Científica":
+                        conteo_pub += 1
+                        titulo = row.get('titulo de publicacion', 'N/A')
+                        bd = row.get('base de datos', 'N/A')
+                        revista = row.get('nombre de revista', 'N/A')
+                        anio = row.get('año de publicacion', 'N/A')
+                        
+                        st.markdown(f"""
+                        <div style='background-color: #F9F6EE; padding: 15px; border-radius: 8px; border-left: 6px solid #FF8C00; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #CCCCCC;'>
+                            <div style='color: #000000; font-size: 1.1em; font-weight: bold; margin-bottom: 5px;'>📄 Publicación: {titulo}</div>
+                            <div style='color: #222222; font-size: 0.95em;'>
+                                <strong>Revista:</strong> {revista} ({anio}) <br>
+                                <strong>Indexación:</strong> {bd} - <strong>Cuartil:</strong> {row.get('cuartil', 'N/A')}
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                    # Targeta 3: Fondo Concursable
+                    elif tipo == "Fondo Concursable":
+                        conteo_fondos += 1
+                        titulo_proy = row.get('nombre del proyecto', 'N/A')
+                        entidad = row.get('entidad financiadora', 'N/A')
+                        estado = row.get('estado del proyecto', 'N/A')
+                        
+                        st.markdown(f"""
+                        <div style='background-color: #F4FDE8; padding: 15px; border-radius: 8px; border-left: 6px solid #4CAF50; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #CCCCCC;'>
+                            <div style='color: #000000; font-size: 1.1em; font-weight: bold; margin-bottom: 5px;'>💰 Proyecto Financiado: {titulo_proy}</div>
+                            <div style='color: #222222; font-size: 0.95em;'>
+                                <strong>Entidad:</strong> {entidad} <br>
+                                <strong>Rol:</strong> {row.get('rol en el proyecto', 'N/A')} <br>
+                                <strong>Estado:</strong> <span style="color: {'green' if estado=='Finalizado' else 'blue'}; font-weight: bold;">{estado}</span>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                    # Targeta 4: Semillero de Investigación
+                    elif tipo == "Semillero de Investigación":
+                        conteo_sem += 1
+                        nombre_sem = row.get('nombre del semillero', 'N/A')
+                        rol_sem = row.get('rol en el semillero', 'N/A')
+                        estado_sem = row.get('estado del semillero', 'N/A')
+                        
+                        st.markdown(f"""
+                        <div style='background-color: #F8E8F8; padding: 15px; border-radius: 8px; border-left: 6px solid #9C27B0; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #CCCCCC;'>
+                            <div style='color: #000000; font-size: 1.1em; font-weight: bold; margin-bottom: 5px;'>🌱 Semillero: {nombre_sem}</div>
+                            <div style='color: #222222; font-size: 0.95em;'>
+                                <strong>Rol:</strong> {rol_sem} <br>
+                                <strong>Estado:</strong> {estado_sem}
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
 
-                            # ==========================================
-                            # NUEVO DISEÑO: INVESTIGACIÓN (TARJETAS VISUALES)
-                            # ==========================================
-                            if h_name == "INVESTIGACION":
-                                col_izq, col_der = st.columns([2, 1])
-                                
-                                # --- LÓGICA DE LECTURA ---
-                                df_inv = dfs.get("INVESTIGACION", pd.DataFrame())
-                                col_dni_inv = "dni" if "dni" in df_inv.columns else "DNI"
-                                
-                                inv_empleado = pd.DataFrame()
-                                if not df_inv.empty and col_dni_inv in df_inv.columns:
-                                    inv_empleado = df_inv[df_inv[col_dni_inv].astype(str) == str(dni_buscado)]
-                                
-                                conteo_pub = conteo_fondos = conteo_sem = 0
-                                
-                                # --- COLUMNA IZQUIERDA: TARJETAS ---
-                                with col_izq:
-                                    st.markdown("<h3 style='color: #FFD700;'>🔬 Registro de Actividades de Investigación</h3>", unsafe_allow_html=True)
-                                    
-                                    if inv_empleado.empty:
-                                        st.markdown("<p style='color:#DDDDDD;'>No hay registros de investigación para este colaborador.</p>", unsafe_allow_html=True)
-                                    else:
-                                        for idx, row in inv_empleado.iterrows():
-                                            tipo = str(row.get('tipo de registro', row.get('TIPO DE REGISTRO', 'Otro'))).strip()
-                                            
-                                            # Tarjetas según el tipo
-                                            if tipo == "Datos Generales (CTI Vitae / RENACYT)":
-                                                renacyt = row.get('codigo renacyt', 'N/A')
-                                                nivel = row.get('nivel renacyt', 'N/A')
-                                                link = row.get('enlace cti vitae', '#')
-                                                
-                                                st.markdown(f"""
-                                                <div style='background-color: #E8F4F8; padding: 15px; border-radius: 8px; border-left: 6px solid #00AEEF; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #CCCCCC;'>
-                                                    <div style='color: #000000; font-size: 1.1em; font-weight: bold; margin-bottom: 5px;'>👤 Perfil CTI Vitae / RENACYT</div>
-                                                    <div style='color: #222222; font-size: 0.95em;'>
-                                                        <strong>Código:</strong> {renacyt} <br>
-                                                        <strong>Nivel RENACYT:</strong> {nivel} <br>
-                                                        <a href="{link}" target="_blank" style="color: #00AEEF; text-decoration: none;">🔗 Ver Perfil CTI Vitae</a>
-                                                    </div>
-                                                </div>
-                                                """, unsafe_allow_html=True)
-                                                
-                                            elif tipo == "Publicación Científica":
-                                                conteo_pub += 1
-                                                titulo = row.get('titulo de publicacion', 'N/A')
-                                                bd = row.get('base de datos', 'N/A')
-                                                revista = row.get('nombre de revista', 'N/A')
-                                                anio = row.get('año de publicacion', 'N/A')
-                                                
-                                                st.markdown(f"""
-                                                <div style='background-color: #F9F6EE; padding: 15px; border-radius: 8px; border-left: 6px solid #FF8C00; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #CCCCCC;'>
-                                                    <div style='color: #000000; font-size: 1.1em; font-weight: bold; margin-bottom: 5px;'>📄 Publicación: {titulo}</div>
-                                                    <div style='color: #222222; font-size: 0.95em;'>
-                                                        <strong>Revista:</strong> {revista} ({anio}) <br>
-                                                        <strong>Indexación:</strong> {bd} - <strong>Cuartil:</strong> {row.get('cuartil', 'N/A')}
-                                                    </div>
-                                                </div>
-                                                """, unsafe_allow_html=True)
-                                                
-                                            elif tipo == "Fondo Concursable":
-                                                conteo_fondos += 1
-                                                titulo_proy = row.get('nombre del proyecto', 'N/A')
-                                                entidad = row.get('entidad financiadora', 'N/A')
-                                                estado = row.get('estado del proyecto', 'N/A')
-                                                
-                                                st.markdown(f"""
-                                                <div style='background-color: #F4FDE8; padding: 15px; border-radius: 8px; border-left: 6px solid #4CAF50; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #CCCCCC;'>
-                                                    <div style='color: #000000; font-size: 1.1em; font-weight: bold; margin-bottom: 5px;'>💰 Proyecto Financiado: {titulo_proy}</div>
-                                                    <div style='color: #222222; font-size: 0.95em;'>
-                                                        <strong>Entidad:</strong> {entidad} <br>
-                                                        <strong>Rol:</strong> {row.get('rol en el proyecto', 'N/A')} <br>
-                                                        <strong>Estado:</strong> <span style="color: {'green' if estado=='Finalizado' else 'blue'}; font-weight: bold;">{estado}</span>
-                                                    </div>
-                                                </div>
-                                                """, unsafe_allow_html=True)
-                                                
-                                            elif tipo == "Semillero de Investigación":
-                                                conteo_sem += 1
-                                                nombre_sem = row.get('nombre del semillero', 'N/A')
-                                                rol_sem = row.get('rol en el semillero', 'N/A')
-                                                estado_sem = row.get('estado del semillero', 'N/A')
-                                                
-                                                st.markdown(f"""
-                                                <div style='background-color: #F8E8F8; padding: 15px; border-radius: 8px; border-left: 6px solid #9C27B0; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #CCCCCC;'>
-                                                    <div style='color: #000000; font-size: 1.1em; font-weight: bold; margin-bottom: 5px;'>🌱 Semillero: {nombre_sem}</div>
-                                                    <div style='color: #222222; font-size: 0.95em;'>
-                                                        <strong>Rol:</strong> {rol_sem} <br>
-                                                        <strong>Estado:</strong> {estado_sem}
-                                                    </div>
-                                                </div>
-                                                """, unsafe_allow_html=True)
+        # --- COLUMNA DERECHA: DASHBOARD DE RESUMEN ---
+        with col_der:
+            st.markdown("<h3 style='color: #FFD700;'>📊 Resumen</h3>", unsafe_allow_html=True)
+            html_resumen_inv = f"""
+            <div style='background-color: #4A0000; padding: 20px; border-radius: 10px; border: 2px solid #FFD700; box-shadow: 2px 2px 10px rgba(0,0,0,0.5); position: sticky; top: 50px;'>
+                <h4 style='color: #FFD700; margin-bottom: 15px; text-align: center; border-bottom: 1px solid #FFD700; padding-bottom: 10px;'>Impacto Científico</h4>
+                <div style='margin-bottom: 15px;'>
+                    <p style='margin: 0; color: #FFFFFF; font-size: 0.9em;'>📄 Publicaciones Indexadas</p>
+                    <p style='margin: 0; color: #FF8C00; font-size: 1.4em; font-weight: bold;'>{conteo_pub}</p>
+                </div>
+                <div style='margin-bottom: 15px;'>
+                    <p style='margin: 0; color: #FFFFFF; font-size: 0.9em;'>💰 Fondos Concursables</p>
+                    <p style='margin: 0; color: #4CAF50; font-size: 1.4em; font-weight: bold;'>{conteo_fondos}</p>
+                </div>
+                <div style='margin-bottom: 15px;'>
+                    <p style='margin: 0; color: #FFFFFF; font-size: 0.9em;'>🌱 Semilleros Liderados</p>
+                    <p style='margin: 0; color: #9C27B0; font-size: 1.4em; font-weight: bold;'>{conteo_sem}</p>
+                </div>
+            </div>
+            """
+            st.markdown(html_resumen_inv, unsafe_allow_html=True)
 
-                                # --- COLUMNA DERECHA: DASHBOARD DE RESUMEN ---
-                                with col_der:
-                                    st.markdown("<h3 style='color: #FFD700;'>📊 Resumen</h3>", unsafe_allow_html=True)
-                                    html_resumen_inv = f"""
-                                    <div style='background-color: #4A0000; padding: 20px; border-radius: 10px; border: 2px solid #FFD700; box-shadow: 2px 2px 10px rgba(0,0,0,0.5); position: sticky; top: 50px;'>
-                                        <h4 style='color: #FFD700; margin-bottom: 15px; text-align: center; border-bottom: 1px solid #FFD700; padding-bottom: 10px;'>Impacto Científico</h4>
-                                        <div style='margin-bottom: 15px;'>
-                                            <p style='margin: 0; color: #FFFFFF; font-size: 0.9em;'>📄 Publicaciones Indexadas</p>
-                                            <p style='margin: 0; color: #FF8C00; font-size: 1.4em; font-weight: bold;'>{conteo_pub}</p>
-                                        </div>
-                                        <div style='margin-bottom: 15px;'>
-                                            <p style='margin: 0; color: #FFFFFF; font-size: 0.9em;'>💰 Fondos Concursables</p>
-                                            <p style='margin: 0; color: #4CAF50; font-size: 1.4em; font-weight: bold;'>{conteo_fondos}</p>
-                                        </div>
-                                        <div style='margin-bottom: 15px;'>
-                                            <p style='margin: 0; color: #FFFFFF; font-size: 0.9em;'>🌱 Semilleros Liderados</p>
-                                            <p style='margin: 0; color: #9C27B0; font-size: 1.4em; font-weight: bold;'>{conteo_sem}</p>
-                                        </div>
-                                    </div>
-                                    """
-                                    st.markdown(html_resumen_inv, unsafe_allow_html=True)
-                                
-                                # TABLA DE EDICIÓN OCULTA (Para que siga funcionando tu sistema de SEL)
-                                st.markdown("<br>", unsafe_allow_html=True)
-                                with st.expander("⚙️ Clic aquí para Editar o Eliminar un Registro de Investigación"):
-                                    st.markdown("<p style='color:#DDDDDD;'>Activa la casilla <b>SEL</b> para modificar o eliminar un registro.</p>", unsafe_allow_html=True)
-                                    st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 10px !important; }</style>""", unsafe_allow_html=True)
-                                    ed = st.data_editor(vst, hide_index=True, use_container_width=True, column_config=col_conf, key=f"ed_{h_name}_oculta")
-                                    sel = ed[ed["SEL"] == True]
+        # TABLA DE EDICIÓN OCULTA (Mantiene la funcionalidad del sistema SEL)
+        st.markdown("<br>", unsafe_allow_html=True)
+        with st.expander("⚙️ Clic aquí para Editar o Eliminar un Registro de Investigación"):
+            st.markdown("<p style='color:#DDDDDD;'>Activa la casilla <b>SEL</b> para modificar o eliminar un registro.</p>", unsafe_allow_html=True)
+            st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 10px !important; }</style>""", unsafe_allow_html=True)
+            ed = st.data_editor(vst, hide_index=True, use_container_width=True, column_config=col_conf, key=f"ed_{h_name}_oculta")
+            sel = ed[ed["SEL"] == True]
+
+    # ---------------------------------------------------------
+    # 2.B. VISTA ESTÁNDAR (TABLA INTERACTIVA GENERAL)
+    # ---------------------------------------------------------
+    else:
+        st.markdown("<p style='color:#DDDDDD;'>Seleccione un registro con la casilla <b>SEL</b> para realizar cambios.</p>", unsafe_allow_html=True)
+        ed = st.data_editor(vst, hide_index=True, use_container_width=True, column_config=col_conf, key=f"ed_{h_name}")
+        sel = ed[ed["SEL"] == True]
 
                            # ==========================================
                             # NUEVO DISEÑO: EXPERIENCIA LABORAL Y CÁLCULOS
