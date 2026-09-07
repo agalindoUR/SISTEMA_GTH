@@ -1,9 +1,9 @@
+streamlit
 pandas
 openpyxl
 python-docx
 st-gsheets-connection
 gspread
-oauth2client
 Pillow
 requests
 plotly
