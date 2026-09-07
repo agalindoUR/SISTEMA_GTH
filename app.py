@@ -2234,701 +2234,447 @@ elif h_name == "FORM. ACADEMICA":
             sel = pd.DataFrame()
                             
                             # ==========================================
-                            # PESTAÑA: DATOS FAMILIARES
-                            # ==========================================
-                            elif h_name == "DATOS FAMILIARES":
-                                st.markdown("<h3 style='color: #FFD700; margin-bottom: 20px;'>👨‍👩‍👧‍👦 Datos Familiares</h3>", unsafe_allow_html=True)
-                                
-                                # --- 1. BUSCAR LA DIRECCIÓN DEL TRABAJADOR ---
-                                dir_trabajador = ""
-                                if not dfs["DATOS GENERALES"].empty:
-                                    df_gen = dfs["DATOS GENERALES"]
-                                    # Buscamos la fila del trabajador por su DNI
-                                    datos_trabajador = df_gen[df_gen["dni"].astype(str) == str(dni_buscado)]
-                                    if not datos_trabajador.empty:
-                                        # Buscamos exactamente la columna sin importar si panda la lee en mayúscula o minúscula
-                                        for col in datos_trabajador.columns:
-                                            if str(col).strip().upper() == "DIRECCION":
-                                                val = datos_trabajador.iloc[0][col]
-                                                if pd.notna(val) and str(val).strip() != "":
-                                                    dir_trabajador = str(val)
-                                                break
+# PESTAÑA: DATOS FAMILIARES
+# ==========================================
+elif h_name == "DATOS FAMILIARES":
+    st.markdown("<h3 style='color: #FFD700; margin-bottom: 20px;'>👨‍👩‍👧‍👦 Datos Familiares</h3>", unsafe_allow_html=True)
+    
+    # --- 1. BUSCAR LA DIRECCIÓN DEL TRABAJADOR ---
+    dir_trabajador = ""
+    if not dfs["DATOS GENERALES"].empty:
+        df_gen = dfs["DATOS GENERALES"]
+        datos_trabajador = df_gen[df_gen["dni"].astype(str) == str(dni_buscado)]
+        if not datos_trabajador.empty:
+            for col in datos_trabajador.columns:
+                if str(col).strip().upper() == "DIRECCION":
+                    val = datos_trabajador.iloc[0][col]
+                    if pd.notna(val) and str(val).strip() != "":
+                        dir_trabajador = str(val)
+                    break
 
-                                # --- 2. MOSTRAR FAMILIARES REGISTRADOS (CON TODOS LOS DATOS) ---
-                                st.markdown("<h4 style='color: #FFD700; border-bottom: 2px solid #FFD700; padding-bottom: 5px;'>📋 Familiares Registrados</h4>", unsafe_allow_html=True)
-                                
-                                def get_fam_val(r, col_name):
-                                    for col in r.index:
-                                        if str(col).strip().lower() == col_name.lower():
-                                            val = r[col]
-                                            if pd.notna(val) and str(val).strip() != "":
-                                                return str(val)
-                                    return "-"
+    # --- 2. MOSTRAR FAMILIARES REGISTRADOS ---
+    st.markdown("<h4 style='color: #FFD700; border-bottom: 2px solid #FFD700; padding-bottom: 5px;'>📋 Familiares Registrados</h4>", unsafe_allow_html=True)
+    
+    def get_fam_val(r, col_name):
+        for col in r.index:
+            if str(col).strip().lower() == col_name.lower():
+                val = r[col]
+                if pd.notna(val) and str(val).strip() != "":
+                    return str(val)
+        return "-"
 
-                                if len(vst) == 0:
-                                    st.markdown("<p style='color:#DDDDDD;'>No hay familiares registrados aún.</p>", unsafe_allow_html=True)
-                                else:
-                                    for idx, row in vst.iterrows():
-                                        f_dni = get_fam_val(row, "dni familiar")
-                                        if f_dni == "-": f_dni = get_fam_val(row, "dni_familiar") # Por si acaso
-                                        f_parentesco = get_fam_val(row, "parentesco")
-                                        f_nombres = get_fam_val(row, "nombres y apellidos")
-                                        f_edad = get_fam_val(row, "edad")
-                                        f_estado = get_fam_val(row, "estado")
-                                        f_celular = get_fam_val(row, "celular")
-                                        f_correo = get_fam_val(row, "correo")
-                                        f_domicilio = get_fam_val(row, "domicilio")
-                                        f_sit_acad = get_fam_val(row, "situacion academica")
-                                        f_emergencia = get_fam_val(row, "contacto emergencia").lower()
-                                        
-                                        badge_emergencia = "<span style='color: #FF5252; font-size: 0.9em;'>🚨 <b>CONTACTO DE EMERGENCIA</b></span>" if f_emergencia in ["sí", "si", "true", "1"] else ""
-                                        
-                                        st.markdown(f"""
-                                        <div style='background-color: #FFFFFF; padding: 15px; border-radius: 8px; border: 1px solid #CCCCCC; border-left: 6px solid #2196F3; margin-bottom: 10px; color: #000000;'>
-                                            <div style='margin-bottom: 10px; font-size: 1.1em; font-weight: bold; border-bottom: 1px solid #EEEEEE; padding-bottom: 5px;'>
-                                                {f_nombres} <span style='color: #666666; font-size: 0.9em;'>({f_parentesco})</span> {badge_emergencia}
-                                            </div>
-                                            <div style='display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.95em;'>
-                                                <div><strong>DNI:</strong> {f_dni}</div>
-                                                <div><strong>Edad:</strong> {f_edad} años</div>
-                                                <div><strong>Estado:</strong> {f_estado}</div>
-                                                <div><strong>Celular:</strong> {f_celular}</div>
-                                                <div><strong>Correo:</strong> {f_correo}</div>
-                                                <div><strong>Sit. Académica:</strong> {f_sit_acad}</div>
-                                                <div style='grid-column: span 2;'><strong>Domicilio:</strong> {f_domicilio}</div>
-                                            </div>
-                                        </div>
-                                        """, unsafe_allow_html=True)
+    if len(vst) == 0:
+        st.markdown("<p style='color:#DDDDDD;'>No hay familiares registrados aún.</p>", unsafe_allow_html=True)
+    else:
+        for idx, row in vst.iterrows():
+            f_dni = get_fam_val(row, "dni familiar")
+            if f_dni == "-": f_dni = get_fam_val(row, "dni_familiar")
+            f_parentesco = get_fam_val(row, "parentesco")
+            f_nombres = get_fam_val(row, "nombres y apellidos")
+            f_edad = get_fam_val(row, "edad")
+            f_estado = get_fam_val(row, "estado")
+            f_celular = get_fam_val(row, "celular")
+            f_correo = get_fam_val(row, "correo")
+            f_domicilio = get_fam_val(row, "domicilio")
+            f_sit_acad = get_fam_val(row, "situacion academica")
+            f_emergencia = get_fam_val(row, "contacto emergencia").lower()
+            
+            badge_emergencia = "<span style='color: #FF5252; font-size: 0.9em;'>🚨 <b>CONTACTO DE EMERGENCIA</b></span>" if f_emergencia in ["sí", "si", "true", "1"] else ""
+            
+            st.markdown(f"""
+            <div style='background-color: #FFFFFF; padding: 15px; border-radius: 8px; border: 1px solid #CCCCCC; border-left: 6px solid #2196F3; margin-bottom: 10px; color: #000000;'>
+                <div style='margin-bottom: 10px; font-size: 1.1em; font-weight: bold; border-bottom: 1px solid #EEEEEE; padding-bottom: 5px;'>
+                    {f_nombres} <span style='color: #666666; font-size: 0.9em;'>({f_parentesco})</span> {badge_emergencia}
+                </div>
+                <div style='display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.95em;'>
+                    <div><strong>DNI:</strong> {f_dni}</div>
+                    <div><strong>Edad:</strong> {f_edad} años</div>
+                    <div><strong>Estado:</strong> {f_estado}</div>
+                    <div><strong>Celular:</strong> {f_celular}</div>
+                    <div><strong>Correo:</strong> {f_correo}</div>
+                    <div><strong>Sit. Académica:</strong> {f_sit_acad}</div>
+                    <div style='grid-column: span 2;'><strong>Domicilio:</strong> {f_domicilio}</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
-                                st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
 
-                                # --- 3. TABLA DESPLEGABLE PARA EDICIÓN ---
-                                with st.expander("⚙️ Clic aquí para Editar o Eliminar un Familiar"):
-                                    st.markdown("<p style='color:#DDDDDD;'>Activa la casilla <b>SEL</b> en la tabla de abajo para modificar o eliminar un registro.</p>", unsafe_allow_html=True)
-                                    
-                                    # ✅ AYUDA VISUAL PARA COPIAR Y PEGAR LA DIRECCIÓN
-                                    if dir_trabajador:
-                                        st.info(f"💡 **Tip para la edición:** Si el familiar vive con el trabajador, simplemente copia y pega esta dirección en la tabla:  \n**{dir_trabajador}**")
-                                        
-                                    st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 8px !important; }</style>""", unsafe_allow_html=True)
-                                    ed = st.data_editor(vst, hide_index=True, use_container_width=True, column_config=col_conf, key=f"ed_{h_name}_oculta")
-                                    sel = ed[ed["SEL"] == True]
+    # --- 3. TABLA DESPLEGABLE PARA EDICIÓN ---
+    with st.expander("⚙️ Clic aquí para Editar o Eliminar un Familiar"):
+        st.markdown("<p style='color:#DDDDDD;'>Activa la casilla <b>SEL</b> en la tabla de abajo para modificar o eliminar un registro.</p>", unsafe_allow_html=True)
+        
+        if dir_trabajador:
+            st.info(f"💡 **Tip para la edición:** Si el familiar vive con el trabajador, simplemente copia y pega esta dirección en la tabla: \n**{dir_trabajador}**")
+            
+        st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 8px !important; }</style>""", unsafe_allow_html=True)
+        
+        # Garantizar que la columna SEL existe en vst
+        vst_editor = vst.copy()
+        if "SEL" not in vst_editor.columns:
+            vst_editor.insert(0, "SEL", False)
+            
+        ed = st.data_editor(vst_editor, hide_index=True, use_container_width=True, column_config=col_conf, key=f"ed_{h_name}_oculta")
+        sel_fam = ed[ed["SEL"] == True]
 
-                                # --- 4. FORMULARIO DENTRO DE "NUEVO REGISTRO" ---
-                                st.markdown("<br>", unsafe_allow_html=True)
-                                with st.expander("➕ NUEVO REGISTRO"):
-                                    
-                                    st.markdown("<p style='color:#DDDDDD; font-style: italic;'>Rellena los datos para agregar un familiar.</p>", unsafe_allow_html=True)
-                                    col_f1, col_f2 = st.columns(2)
-                                    
-                                    with col_f1:
-                                        parentesco = st.selectbox("Parentesco", ["Cónyuge / Conviviente", "Hijo(a)", "Madre", "Padre", "Hermano(a)", "Familiar Adicional (Otros)"])
-                                        dni_fam = st.text_input("DNI del Familiar", max_chars=8)
-                                        
-                                        if dni_fam and len(dni_fam) >= 8:
-                                            if not dfs["DATOS GENERALES"].empty:
-                                                es_trabajador = dfs["DATOS GENERALES"][dfs["DATOS GENERALES"]["dni"].astype(str) == str(dni_fam)]
-                                                if not es_trabajador.empty:
-                                                    nombre_vinculo = es_trabajador.iloc[0].get("apellidos y nombres", "Trabajador")
-                                                    st.success(f"🔗 ¡Vínculo detectado! Este familiar es trabajador activo: **{nombre_vinculo}**")
-                                        
-                                        nombres_fam = st.text_input("Apellidos y Nombres")
-                                        
-                                        f_nac_fam = st.date_input("Fecha de Nacimiento", min_value=date(1920, 1, 1), max_value=date.today())
-                                        hoy = date.today()
-                                        edad_fam = hoy.year - f_nac_fam.year - ((hoy.month, hoy.day) < (f_nac_fam.month, f_nac_fam.day))
-                                        st.info(f"🎂 Edad calculada: **{edad_fam} años**")
+    # --- 4. FORMULARIO DENTRO DE "NUEVO REGISTRO" ---
+    st.markdown("<br>", unsafe_allow_html=True)
+    with st.expander("➕ NUEVO REGISTRO"):
+        st.markdown("<p style='color:#DDDDDD; font-style: italic;'>Rellena los datos para agregar un familiar.</p>", unsafe_allow_html=True)
+        col_f1, col_f2 = st.columns(2)
+        
+        with col_f1:
+            parentesco = st.selectbox("Parentesco", ["Cónyuge / Conviviente", "Hijo(a)", "Madre", "Padre", "Hermano(a)", "Familiar Adicional (Otros)"])
+            dni_fam = st.text_input("DNI del Familiar", max_chars=8)
+            
+            if dni_fam and len(dni_fam) >= 8:
+                if not dfs["DATOS GENERALES"].empty:
+                    es_trabajador = dfs["DATOS GENERALES"][dfs["DATOS GENERALES"]["dni"].astype(str) == str(dni_fam)]
+                    if not es_trabajador.empty:
+                        nombre_vinculo = es_trabajador.iloc[0].get("apellidos y nombres", "Trabajador")
+                        st.success(f"🔗 ¡Vínculo detectado! Este familiar es trabajador activo: **{nombre_vinculo}**")
+            
+            nombres_fam = st.text_input("Apellidos y Nombres")
+            f_nac_fam = st.date_input("Fecha de Nacimiento", min_value=date(1920, 1, 1), max_value=date.today())
+            hoy = date.today()
+            edad_fam = hoy.year - f_nac_fam.year - ((hoy.month, hoy.day) < (f_nac_fam.month, f_nac_fam.day))
+            st.info(f"🎂 Edad calculada: **{edad_fam} años**")
 
-                                    with col_f2:
-                                        estado_fam = st.selectbox("Estado", ["Vivo", "Fallecido", "Otra condición"])
-                                        
-                                        if estado_fam == "Vivo":
-                                            cel_fam = st.text_input("Celular")
-                                            correo_fam = st.text_input("Correo Electrónico")
-                                            
-                                            # --- CHECK DE VIVE CON EL TRABAJADOR ---
-                                            st.markdown("---")
-                                            vive_juntos = st.checkbox("🏠 Vive con el trabajador")
-                                            
-                                            if vive_juntos:
-                                                domicilio_fam = st.text_input("Domicilio del familiar", value=dir_trabajador, key="domicilio_juntos")
-                                                if not dir_trabajador:
-                                                    st.warning("⚠️ Ojo: El trabajador no tiene una dirección registrada en su pestaña de Datos Generales.")
-                                            else:
-                                                domicilio_fam = st.text_input("Domicilio del familiar", value="", key="domicilio_separado")
-                                        else:
-                                            cel_fam = "-"
-                                            correo_fam = "-"
-                                            domicilio_fam = "-"
-                                            vive_juntos = False
+        with col_f2:
+            estado_fam = st.selectbox("Estado", ["Vivo", "Fallecido", "Otra condición"])
+            
+            if estado_fam == "Vivo":
+                cel_fam = st.text_input("Celular")
+                correo_fam = st.text_input("Correo Electrónico")
+                st.markdown("---")
+                vive_juntos = st.checkbox("🏠 Vive con el trabajador")
+                
+                if vive_juntos:
+                    domicilio_fam = st.text_input("Domicilio del familiar", value=dir_trabajador, key="domicilio_juntos")
+                    if not dir_trabajador:
+                        st.warning("⚠️ Ojo: El trabajador no tiene una dirección registrada en su pestaña de Datos Generales.")
+                else:
+                    domicilio_fam = st.text_input("Domicilio del familiar", value="", key="domicilio_separado")
+            else:
+                cel_fam = "-"
+                correo_fam = "-"
+                domicilio_fam = "-"
+                vive_juntos = False
 
-                                        sit_acad_fam = st.selectbox("Situación Académica", [
-                                            "Ninguna / No aplica",
-                                            "Estudiando Primaria", "Estudiando Secundaria", "Estudiando Superior",
-                                            "Estudios Concluidos Primaria", "Estudios Concluidos Secundaria", "Estudios Concluidos Superior"
-                                        ])
-                                        
-                                        contacto_emergencia = st.checkbox("🚨 Es Contacto de Emergencia Principal")
+            sit_acad_fam = st.selectbox("Situación Académica", [
+                "Ninguna / No aplica",
+                "Estudiando Primaria", "Estudiando Secundaria", "Estudiando Superior",
+                "Estudios Concluidos Primaria", "Estudios Concluidos Secundaria", "Estudios Concluidos Superior"
+            ])
+            contacto_emergencia = st.checkbox("🚨 Es Contacto de Emergencia Principal")
 
-                                    if st.button("💾 Guardar Familiar", type="primary"):
-                                        if not dni_fam or not nombres_fam:
-                                            st.error("⚠️ El DNI y los Nombres son obligatorios.")
-                                        else:
-                                            new_row = {
-                                                "dni": str(dni_buscado),
-                                                "dni familiar": str(dni_fam),
-                                                "parentesco": parentesco,
-                                                "nombres y apellidos": nombres_fam,
-                                                "fecha de nacimiento": str(f_nac_fam),
-                                                "edad": edad_fam,
-                                                "domicilio": domicilio_fam,
-                                                "estado": estado_fam,
-                                                "celular": cel_fam,
-                                                "correo": correo_fam,
-                                                "situacion academica": sit_acad_fam,
-                                                "contacto emergencia": "Sí" if contacto_emergencia else "No"
-                                            }
-                                            
-                                            if not dfs[h_name].empty and "id" in dfs[h_name].columns:
-                                                new_row["id"] = dfs[h_name]["id"].max() + 1
-                                            elif "id" in dfs[h_name].columns:
-                                                new_row["id"] = 1
-                                                
-                                            dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new_row])], ignore_index=True)
-                                            save_data(dfs)
-                                            st.success("✅ Familiar guardado correctamente.")
-                                            st.rerun()                   
-                        # ==========================================
-                        # BOTÓN DE IMPRESIÓN DE PAPELETA (SOLO EN VACACIONES)
-                        # ==========================================
-                        if h_name == "VACACIONES" and not sel.empty:
-                            st.markdown("---")
-                            # Necesitamos el cargo actual y fecha de ingreso del trabajador
-                            current_cargo = "TRABAJADOR" # Default
-                            f_ingreso_val = ""
-                            df_c_data = dfs["CONTRATOS"][dfs["CONTRATOS"]["dni"] == dni_buscado]
-                            
-                            if not df_c_data.empty:
-                                try:
-                                    # Obtener cargo (último contrato)
-                                    last_contract = df_c_data.assign(f_fin_dt=pd.to_datetime(df_c_data['f_fin'], errors='coerce')).sort_values('f_fin_dt').iloc[-1]
-                                    current_cargo = last_contract.get("cargo", "TRABAJADOR")
-                                    
-                                    # Obtener fecha de ingreso (primer contrato de planilla)
-                                    df_planilla = df_c_data[df_c_data["tipo contrato"].astype(str).str.lower().str.contains("planilla", na=False)]
-                                    if not df_planilla.empty:
-                                        f_min = pd.to_datetime(df_planilla['f_inicio'], errors='coerce').min()
-                                        if pd.notnull(f_min): f_ingreso_val = f_min.date()
-                                except: pass
+        if st.button("💾 Guardar Familiar", type="primary"):
+            if not dni_fam or not nombres_fam:
+                st.error("⚠️ El DNI y los Nombres son obligatorios.")
+            else:
+                new_row = {
+                    "dni": str(dni_buscado),
+                    "dni familiar": str(dni_fam),
+                    "parentesco": parentesco,
+                    "nombres y apellidos": nombres_fam,
+                    "fecha de nacimiento": str(f_nac_fam),
+                    "edad": edad_fam,
+                    "domicilio": domicilio_fam,
+                    "estado": estado_fam,
+                    "celular": cel_fam,
+                    "correo": correo_fam,
+                    "situacion academica": sit_acad_fam,
+                    "contacto emergencia": "Sí" if contacto_emergencia else "No"
+                }
+                
+                if not dfs[h_name].empty and "id" in dfs[h_name].columns:
+                    new_row["id"] = dfs[h_name]["id"].max() + 1
+                elif "id" in dfs[h_name].columns:
+                    new_row["id"] = 1
+                    
+                dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new_row])], ignore_index=True)
+                save_data(dfs)
+                st.success("✅ Familiar guardado correctamente.")
+                st.rerun()
 
-                            # Capturar datos de la fila seleccionada
-                            r_sel = sel.iloc[0]
-                            
-                            # 1. BÚSQUEDA INTELIGENTE DE COLUMNAS (Barre todas las coincidencias)
-                            cols_per = [c for c in r_sel.index if "PERIODO" in str(c).upper()]
-                            cols_ini = [c for c in r_sel.index if "INICIO" in str(c).upper()]
-                            cols_fin = [c for c in r_sel.index if "FIN" in str(c).upper()]
-                            cols_dias = [c for c in r_sel.index if "GOZADOS" in str(c).upper()]
+# ==========================================
+# LÓGICA DE VACACIONES E IMPRESIÓN DE PAPELETA
+# ==========================================
+if h_name == "VACACIONES":
+    # Definición explícita de filas seleccionadas para esta pestaña
+    vst_vac = vst.copy()
+    if "SEL" not in vst_vac.columns:
+        vst_vac.insert(0, "SEL", False)
+    
+    # Extraer filas seleccionadas en la vista actual
+    sel_vac = vst_vac[vst_vac["SEL"] == True]
 
-                            # Función para ignorar los 'NaT' y sacar el valor real
-                            def get_valid_val(cols):
-                                for c in cols:
-                                    val = r_sel.get(c)
-                                    if pd.notnull(val) and str(val).strip() not in ["", "NaT", "None"]:
-                                        return val
-                                return None
+    if not sel_vac.empty:
+        st.markdown("---")
+        current_cargo = "TRABAJADOR"
+        f_ingreso_val = ""
+        df_c_data = dfs["CONTRATOS"][dfs["CONTRATOS"]["dni"] == dni_buscado]
+        
+        if not df_c_data.empty:
+            try:
+                last_contract = df_c_data.assign(f_fin_dt=pd.to_datetime(df_c_data['f_fin'], errors='coerce')).sort_values('f_fin_dt').iloc[-1]
+                current_cargo = last_contract.get("cargo", "TRABAJADOR")
+                
+                df_planilla = df_c_data[df_c_data["tipo contrato"].astype(str).str.lower().str.contains("planilla", na=False)]
+                if not df_planilla.empty:
+                    f_min = pd.to_datetime(df_planilla['f_inicio'], errors='coerce').min()
+                    if pd.notnull(f_min): 
+                        f_ingreso_val = f_min.date()
+            except Exception as e:
+                st.warning(f"No se pudieron consolidar los contratos: {e}")
 
-                            p_papeleta = str(get_valid_val(cols_per) or "")
-                            fi_papeleta_raw = get_valid_val(cols_ini)
-                            ff_papeleta_raw = get_valid_val(cols_fin)
-                            dg_papeleta_raw = get_valid_val(cols_dias) or 0
-                            
-                            # 2. CONVERSIÓN ULTRA ROBUSTA DE FECHAS
-                            try:
-                                fi_papeleta = pd.to_datetime(fi_papeleta_raw).date() if fi_papeleta_raw else None
-                            except:
-                                fi_papeleta = None
-                                
-                            try:
-                                ff_papeleta = pd.to_datetime(ff_papeleta_raw).date() if ff_papeleta_raw else None
-                            except:
-                                ff_papeleta = None
+        r_sel = sel_vac.iloc[0]
+        
+        cols_per = [c for c in r_sel.index if "PERIODO" in str(c).upper()]
+        cols_ini = [c for c in r_sel.index if "INICIO" in str(c).upper()]
+        cols_fin = [c for c in r_sel.index if "FIN" in str(c).upper()]
+        cols_dias = [c for c in r_sel.index if "GOZADOS" in str(c).upper()]
 
-                            # 3. LIMPIEZA DE LOS DÍAS GOZADOS
-                            try:
-                                dg_papeleta = int(float(dg_papeleta_raw))
-                            except:
-                                dg_papeleta = 0
+        def get_valid_val(cols):
+            for c in cols:
+                val = r_sel.get(c)
+                if pd.notnull(val) and str(val).strip() not in ["", "NaT", "None"]:
+                    return val
+            return None
 
-                            # 4. BOTÓN Y VALIDACIÓN FINAL
-                            if st.button(f"📄 Generar Papeleta de Impresión (Periodo {p_papeleta})", key="btn_print_vaca_tab", use_container_width=False):
-                                if fi_papeleta is None or ff_papeleta is None:
-                                    st.error(f"⚠️ Aún no se detectan fechas válidas. Inicio extraído: '{fi_papeleta_raw}' | Fin extraído: '{ff_papeleta_raw}'")
-                                else:
-                                    # AQUÍ LLAMAMOS A LA FUNCIÓN CON TODOS LOS DATOS
-                                    papeleta_word = gen_papeleta_vac(ape_c, nom_p_c, dni_buscado, current_cargo, f_ingreso_val, p_papeleta, fi_papeleta, ff_papeleta, dg_papeleta)
-                                    if papeleta_word:
-                                        st.markdown("""<style>[data-testid="stDownloadButton"] button { background-color: #FFD700 !important; color: #4A0000 !important; font-weight: bold !important; border: 2px solid #4A0000 !important; width: 100% !important; }</style>""", unsafe_allow_html=True)
-                                        st.download_button(
-                                            label=f"⬇️ Descargar Papeleta - {nom_c}.docx",
-                                            data=papeleta_word,
-                                            file_name=f"Papeleta_{dni_buscado}_{p_papeleta}.docx",
-                                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                                            key="dl_papeleta_tab"
-                                        )
-                            st.markdown("---")
+        p_papeleta = str(get_valid_val(cols_per) or "")
+        fi_papeleta_raw = get_valid_val(cols_ini)
+        ff_papeleta_raw = get_valid_val(cols_fin)
+        dg_papeleta_raw = get_valid_val(cols_dias) or 0
+        
+        try:
+            fi_papeleta = pd.to_datetime(fi_papeleta_raw).date() if fi_papeleta_raw else None
+        except Exception:
+            fi_papeleta = None
+            
+        try:
+            ff_papeleta = pd.to_datetime(ff_papeleta_raw).date() if ff_papeleta_raw else None
+        except Exception:
+            ff_papeleta = None
+
+        try:
+            dg_papeleta = int(float(dg_papeleta_raw))
+        except (ValueError, TypeError):
+            dg_papeleta = 0
+
+        if st.button(f"📄 Generar Papeleta de Impresión (Periodo {p_papeleta})", key="btn_print_vaca_tab", use_container_width=False):
+            if fi_papeleta is None or ff_papeleta is None:
+                st.error(f"⚠️ Aún no se detectan fechas válidas. Inicio extraído: '{fi_papeleta_raw}' | Fin extraído: '{ff_papeleta_raw}'")
+            else:
+                papeleta_word = gen_papeleta_vac(ape_c, nom_p_c, dni_buscado, current_cargo, f_ingreso_val, p_papeleta, fi_papeleta, ff_papeleta, dg_papeleta)
+                if papeleta_word:
+                    st.markdown("""<style>[data-testid="stDownloadButton"] button { background-color: #FFD700 !important; color: #4A0000 !important; font-weight: bold !important; border: 2px solid #4A0000 !important; width: 100% !important; }</style>""", unsafe_allow_html=True)
+                    st.download_button(
+                        label=f"⬇️ Descargar Papeleta - {nom_c}.docx",
+                        data=papeleta_word,
+                        file_name=f"Papeleta_{dni_buscado}_{p_papeleta}.docx",
+                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        key="dl_papeleta_tab"
+                    )
+        st.markdown("---")
+
+if not es_lector:
+    if h_name not in dfs:
+        st.error(f"⚠️ Error crítico: No se pudo cargar la pestaña '{h_name}'. Por favor, entra al Google Sheets y elimina las columnas duplicadas.")
+    else:
+        col_a, col_b = st.columns(2)
+        cols_reales = [c for c in dfs[h_name].columns if c.lower() not in ["id", "dni", "apellidos y nombres", "apellidos", "nombres"]]
+        
+        with col_a:
+            df_filtro = dfs[h_name][dfs[h_name]["dni"] == dni_buscado] if not dfs[h_name].empty else pd.DataFrame()
+            
+            if h_name == "DATOS GENERALES" and len(df_filtro) > 0:
+                st.info("📌 Los datos generales ya están registrados. Selecciona el registro en la tabla de arriba para editarlos.")
+            elif h_name == "DATOS FAMILIARES":
+                pass
+            else:
+                with st.expander("➕ Nuevo Registro"):
+                    if h_name == "VACACIONES":
+                        st.markdown("<div style='font-size: 1.5em; font-weight: bold; color: white; background-color: #4A0000; padding: 10px; border-radius: 8px; margin-bottom: 15px;'>➕ Registrar Nuevas Vacaciones</div>", unsafe_allow_html=True)
                         
-                        if not es_lector:
-                            # 1. Validamos que la hoja se haya cargado correctamente en 'dfs'
-                            if h_name not in dfs:
-                                st.error(f"⚠️ Error crítico: No se pudo cargar la pestaña '{h_name}'. Por favor, entra al Google Sheets y elimina las columnas duplicadas.")
+                        if detalles:
+                            opciones_periodo = [d["Periodo"] for d in detalles]
+                            dict_generados = {d["Periodo"]: d["Días Generados"] for d in detalles}
+                            dict_saldo_actual = {d["Periodo"]: d["Saldo"] for d in detalles}
+                        else:
+                            opciones_periodo = ["Sin periodo calculado"]
+                            dict_generados = {"Sin periodo calculado": 0}
+                            dict_saldo_actual = {"Sin periodo calculado": 0}
+
+                        sel_periodo = st.selectbox("Periodo Vacacional", options=opciones_periodo)
+                        
+                        col_f1, col_f2 = st.columns(2)
+                        with col_f1:
+                            f_ini_val = st.date_input("Fecha de Salida (Inicio)", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
+                        with col_f2:
+                            f_fin_val = st.date_input("Fecha de Retorno (Último día)", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
+
+                        dias_gozar_calc = 0
+                        if f_fin_val >= f_ini_val:
+                            dias_gozar_calc = (f_fin_val - f_ini_val).days + 1
+                        
+                        gen_periodo = dict_generados.get(sel_periodo, 0)
+                        saldo_previo = dict_saldo_actual.get(sel_periodo, 0)
+                        nuevo_saldo = saldo_previo - dias_gozar_calc
+
+                        if nuevo_saldo < 0:
+                            txt_saldo = f":red[{nuevo_saldo:.2f} (¡Saldo Negativo!)]"
+                        elif nuevo_saldo == 0:
+                            txt_saldo = f"{nuevo_saldo:.2f}"
+                        else:
+                            txt_saldo = f":green[{nuevo_saldo:.2f}]"
+                        
+                        st.markdown(f"""
+                        **Resumen:**
+                        * **Días a Gozar (Calculado):** {dias_gozar_calc}
+                        * **Saldo Restante:** {txt_saldo}
+                        """)
+                        
+                        if st.button("💾 Guardar Registro de Vacaciones", type="primary", use_container_width=False):
+                            if dias_gozar_calc <= 0:
+                                st.error("⚠️ La Fecha de Fin debe ser igual o posterior a la Fecha de Inicio.")
                             else:
-                                # 2. Si la hoja existe, ejecutamos el código normalmente
-                                col_a, col_b = st.columns(2)
-                                cols_reales = [c for c in dfs[h_name].columns if c.lower() not in ["id", "dni", "apellidos y nombres", "apellidos", "nombres"]]
+                                new_row = {
+                                    "dni": dni_buscado, 
+                                    "periodo": sel_periodo, 
+                                    "f inicio": f_ini_val, 
+                                    "f fin": f_fin_val, 
+                                    "dias gozados": dias_gozar_calc
+                                }
                                 
-                                with col_a:
-                                    df_filtro = dfs[h_name][dfs[h_name]["dni"] == dni_buscado] if not dfs[h_name].empty else pd.DataFrame()
-                                    
-                                    if h_name == "DATOS GENERALES" and len(df_filtro) > 0:
-                                        st.info("📌 Los datos generales ya están registrados. Selecciona el registro en la tabla de arriba para editarlos.")
-                                    elif h_name == "DATOS FAMILIARES":
-                                        pass # No dibujamos nada extra porque estas pestañas ya tienen su propio diseño arriba
-                                    else:
-                                        # ¡AQUÍ ESTÁ EL CAMBIO IMPORTANTE!
-                                        with st.expander("➕ Nuevo Registro"):
-                                            
-                                            # ==========================================
-                                            # NUEVO REGISTRO REACTIVO DE VACACIONES
-                                            # ==========================================
-                                            if h_name == "VACACIONES":
-                                                st.markdown("<div style='font-size: 1.5em; font-weight: bold; color: white; background-color: #4A0000; padding: 10px; border-radius: 8px; margin-bottom: 15px;'>➕ Registrar Nuevas Vacaciones</div>", unsafe_allow_html=True)
+                                if not dfs[h_name].empty and "id" in dfs[h_name].columns:
+                                    new_row["id"] = dfs[h_name]["id"].max() + 1
+                                elif "id" in dfs[h_name].columns:
+                                    new_row["id"] = 1
+                                
+                                dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new_row])], ignore_index=True)
+                                save_data(dfs)
+                                st.session_state['just_saved_vacation'] = new_row
+                                st.success("✅ Registro guardado correctamente.")
+                                st.rerun()
+
+                                           else:
+                                                # ==========================================
+                                                # FORMULARIO GENÉRICO PARA OTRAS HOJAS
+                                                # ==========================================
+                                                st.markdown(f"<div style='font-size: 1.3em; font-weight: bold; color: white; background-color: #333333; padding: 10px; border-radius: 8px; margin-bottom: 15px;'>➕ Registrar en {h_name}</div>", unsafe_allow_html=True)
                                                 
-                                                if detalles:
-                                                    opciones_periodo = [d["Periodo"] for d in detalles]
-                                                    dict_generados = {d["Periodo"]: d["Días Generados"] for d in detalles}
-                                                    dict_saldo_actual = {d["Periodo"]: d["Saldo"] for d in detalles}
-                                                else:
-                                                    opciones_periodo = ["Sin periodo calculado"]
-                                                    dict_generados = {"Sin periodo calculado": 0}
-                                                    dict_saldo_actual = {"Sin periodo calculado": 0}
-
-                                                sel_periodo = st.selectbox("Periodo Vacacional", options=opciones_periodo)
-                                                
-                                                col_f1, col_f2 = st.columns(2)
-                                                with col_f1:
-                                                    f_ini_val = st.date_input("Fecha de Salida (Inicio)", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
-                                                with col_f2:
-                                                    f_fin_val = st.date_input("Fecha de Retorno (Último día)", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
-
-                                                dias_gozar_calc = 0
-                                                if f_fin_val >= f_ini_val:
-                                                    dias_gozar_calc = (f_fin_val - f_ini_val).days + 1
-                                                
-                                                gen_periodo = dict_generados.get(sel_periodo, 0)
-                                                saldo_previo = dict_saldo_actual.get(sel_periodo, 0)
-                                                nuevo_saldo = saldo_previo - dias_gozar_calc
-
-                                                # Lógica de colores para el saldo
-                                                if nuevo_saldo < 0:
-                                                    txt_saldo = f":red[{nuevo_saldo:.2f} (¡Saldo Negativo!)]"
-                                                elif nuevo_saldo == 0:
-                                                    txt_saldo = f"{nuevo_saldo:.2f}"
-                                                else:
-                                                    txt_saldo = f":green[{nuevo_saldo:.2f}]"
-                                                
-                                                st.markdown(f"""
-                                                **Resumen:**
-                                                * **Días a Gozar (Calculado):** {dias_gozar_calc}
-                                                * **Saldo Restante:** {txt_saldo}
-                                                """)
-                                                
-                                                if st.button("💾 Guardar Registro de Vacaciones", type="primary", use_container_width=False):
-                                                    if dias_gozar_calc <= 0:
-                                                        st.error("⚠️ La Fecha de Fin debe ser igual o posterior a la Fecha de Inicio.")
-                                                    else:
-                                                        # NUEVA FILA: Ajustada para coincidir con tus encabezados de Google Sheets
-                                                        new_row = {
-                                                            "dni": dni_buscado, 
-                                                            "periodo": sel_periodo, 
-                                                            "f inicio": f_ini_val, 
-                                                            "f fin": f_fin_val, 
-                                                            "dias gozados": dias_gozar_calc
-                                                        }
-                                                        
-                                                        # Manejo del ID (siempre en minúsculas para coincidir con tu tabla)
-                                                        if not dfs[h_name].empty and "id" in dfs[h_name].columns:
-                                                            new_row["id"] = dfs[h_name]["id"].max() + 1
-                                                        elif "id" in dfs[h_name].columns:
-                                                            new_row["id"] = 1
-                                                        
-                                                        # Guardar en el DataFrame y subir a la nube
-                                                        dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new_row])], ignore_index=True)
-                                                        save_data(dfs)
-                                                        st.session_state['just_saved_vacation'] = new_row
-                                                        st.success("✅ Registro guardado correctamente.")
-                                                        st.rerun()
-
-                                            # ==========================================
-                                            # FORMULARIOS NORMALES PARA EL RESTO DE HOJAS
-                                            # ==========================================
-                                            # ==========================================
-                                            # NUEVO REGISTRO: EXPERIENCIA LABORAL
-                                            # ==========================================
-                                            elif h_name == "EXP. LABORAL":
-                                                st.markdown("<div style='font-size: 1.5em; font-weight: bold; color: white; background-color: #004A80; padding: 10px; border-radius: 8px; margin-bottom: 15px;'>💼 Registrar Experiencia Externa</div>", unsafe_allow_html=True)
-                                                
-                                                col_e1, col_e2 = st.columns(2)
-                                                with col_e1:
-                                                    tipo_exp = st.selectbox("Tipo de Experiencia", ["Administrativo", "Docente"])
-                                                    lugar_exp = st.text_input("Lugar (Empresa/Institución)")
-                                                    puesto_exp = st.text_input("Puesto o Cargo ocupado")
-                                                with col_e2:
-                                                    f_ini_exp = st.date_input("Fecha de Inicio", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
-                                                    f_fin_exp = st.date_input("Fecha de Fin", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
-                                                    motivo_exp = st.selectbox("Motivo de Cese", MOTIVOS_CESE)
-                                                
-                                                if st.button("💾 Guardar Experiencia", type="primary", use_container_width=False):
-                                                    if f_fin_exp < f_ini_exp:
-                                                        st.error("⚠️ La Fecha de Fin no puede ser anterior a la Fecha de Inicio.")
-                                                    elif not lugar_exp or not puesto_exp:
-                                                        st.error("⚠️ El Lugar y el Puesto son campos obligatorios.")
-                                                    else:
-                                                        new_row = {
-                                                            "dni": str(dni_buscado), 
-                                                            "tipo de experiencia": tipo_exp, 
-                                                            "lugar": lugar_exp, 
-                                                            "puesto": puesto_exp, 
-                                                            "fecha de inicio": f_ini_exp, 
-                                                            "fecha de fin": f_fin_exp, 
-                                                            "motivo de cese": motivo_exp
-                                                        }
-                                                        if not dfs[h_name].empty and "id" in dfs[h_name].columns:
-                                                            new_row["id"] = dfs[h_name]["id"].max() + 1
-                                                        elif "id" in dfs[h_name].columns:
-                                                            new_row["id"] = 1
-                                                        
-                                                        dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new_row])], ignore_index=True)
-                                                        save_data(dfs)
-                                                        st.success("✅ Experiencia guardada correctamente.")
-                                                        st.rerun()
-
-                                            # ==========================================
-                                            # NUEVO REGISTRO: FORMACIÓN ACADÉMICA (DINÁMICO)
-                                            # ==========================================
-                                            elif h_name == "FORM. ACADEMICA":
-                                                # --- CARGA MAESTRA DE PARÁMETROS ---
-                                                df_para = dfs.get("PARAMETROS", pd.DataFrame())
-                                                if not df_para.empty:
-                                                    df_para.columns = df_para.columns.str.strip().str.replace(" ", "_").str.upper()
-                                                
-                                                def get_lista(columna, default):
-                                                    if columna in df_para.columns:
-                                                        lista = df_para[columna].dropna().astype(str).str.strip().unique().tolist()
-                                                        lista = [i for i in lista if i and i.lower() != "nan"]
-                                                        return lista if lista else default
-                                                    return default
-                                                # -----------------------------------
-
-                                                # Listas dinámicas para Formación
-                                                lst_tipo_estudio = get_lista("TIPO_ESTUDIO", ["Grados y Títulos", "Estudios Terminados", "Especializaciones", "Diplomados", "Cursos"])
-                                                lst_grado = get_lista("GRADO_OBTENIDO", ["Bachiller", "Título Profesional", "Magíster", "Doctor"])
-                                                lst_estado_est = get_lista("ESTADO_ESTUDIO", ["Concluido", "Estudiando", "En abandono"])
-
-                                                st.markdown("""
-                                                <div style='color: #000000; font-size: 1.5em; font-weight: bold; margin-bottom: 5px;'>🎓 Registrar Nuevo Estudio</div>
-                                                <div style='color: #000000; margin-bottom: 15px;'>Selecciona el tipo de estudio para ver los campos requeridos.</div>
-                                                """, unsafe_allow_html=True)
-                                                
-                                                tipo_estudio = st.selectbox("📌 Tipo de Estudio", lst_tipo_estudio)
-
-                                                grado = "N/A"
-                                                institucion = ""
-                                                mencion = ""
-                                                anio = ""
-                                                estado = "N/A"
-                                                horas = "N/A"
-
-                                                col_f1, col_f2 = st.columns(2)
-
-                                                if tipo_estudio in ["Grados y Títulos", "Pregrado", "Maestría", "Doctorado"]:
-                                                    with col_f1:
-                                                        grado = st.selectbox("Grado o Título Obtenido", lst_grado)
-                                                        institucion = st.text_input("Institución Educativa")
-                                                    with col_f2:
-                                                        mencion = st.text_input("Mención (Especialidad / Carrera)")
-                                                        anio = st.text_input("Año")
-
-                                                elif tipo_estudio == "Estudios Terminados (Sin grado) o Inconclusos":
-                                                    with col_f1:
-                                                        institucion = st.text_input("Institución Educativa")
-                                                        mencion = st.text_input("Mención (Especialidad / Carrera)")
-                                                    with col_f2:
-                                                        anio = st.text_input("Año")
-                                                        estado = st.selectbox("Estado", lst_estado_est)
-
-                                                else: # Especializaciones, Diplomados, Cursos, etc.
-                                                    with col_f1:
-                                                        institucion = st.text_input("Institución Educativa")
-                                                        mencion = st.text_input("Mención (Nombre del estudio)")
-                                                    with col_f2:
-                                                        horas = st.text_input("Horas Académicas")
-                                                        anio = st.text_input("Año")
-
-                                                if st.button("💾 Guardar Estudio", type="primary", use_container_width=False):
-                                                    if not institucion or not mencion:
-                                                        st.error("⚠️ La Institución y la Mención son campos obligatorios.")
-                                                    else:
-                                                        new_row = {
-                                                            "dni": str(dni_buscado), 
-                                                            "tipo de estudio": tipo_estudio, 
-                                                            "grado o titulo obtenido": grado,
-                                                            "institucion educativa": institucion, 
-                                                            "mencion (especialidad / carrera / etc)": mencion, 
-                                                            "año": anio, 
-                                                            "estado": estado, 
-                                                            "horas academicas": horas
-                                                        }
-                                                        
-                                                        if not dfs[h_name].empty and "id" in dfs[h_name].columns:
-                                                            new_row["id"] = dfs[h_name]["id"].max() + 1
-                                                        elif "id" in dfs[h_name].columns:
-                                                            new_row["id"] = 1
-                                                           
-                                                              
-                                                        dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new_row])], ignore_index=True)
-                                                        save_data(dfs) # Aquí viaja a Google Sheets y lo guarda
-                                                        st.cache_data.clear() # 🧹 ¡LA ESCOBA MÁGICA! Borra la memoria vieja
-                                                        st.success("✅ Estudio guardado correctamente.")
-                                                        st.rerun() # Recarga la página y descarga los datos frescos
-
-                                            # ==========================================
-                                            # NUEVO REGISTRO: INVESTIGACIÓN
-                                            # ==========================================
-                                            elif h_name == "INVESTIGACION":
-                                                # --- CARGA MAESTRA DE PARÁMETROS ---
-                                                df_para = dfs.get("PARAMETROS", pd.DataFrame())
-                                                if not df_para.empty:
-                                                    df_para.columns = df_para.columns.str.strip().str.replace(" ", "_").str.upper()
-                                                
-                                                def get_lista(columna, default):
-                                                    if columna in df_para.columns:
-                                                        lista = df_para[columna].dropna().astype(str).str.strip().unique().tolist()
-                                                        lista = [i for i in lista if i and i.lower() != "nan"]
-                                                        return lista if lista else default
-                                                    return default
-                                                # -----------------------------------
-                                                
-                                                # Listas dinámicas para Investigación
-                                                lst_nivel_ren = get_lista("NIVEL_RENACYT", ["No tiene", "Nivel VII", "Nivel VI"])
-                                                lst_bd = get_lista("BASE_DATOS_INV", ["Scopus", "Web of Science (WoS)", "SciELO"])
-                                                lst_cuartil = get_lista("CUARTIL_INV", ["Q1", "Q2", "Q3", "Q4", "No aplica"])
-                                                lst_rol_p = get_lista("ROL_PROYECTO", ["Investigador Principal", "Co-Investigador"])
-                                                lst_est_p = get_lista("ESTADO_PROYECTO", ["En postulación", "En ejecución", "Finalizado"])
-                                                lst_rol_s = get_lista("ROL_SEMILLERO", ["Coordinador/Asesor", "Miembro Investigador"])
-                                                lst_est_s = get_lista("ESTADO_SEMILLERO", ["Activo", "Inactivo"])
-
-                                                st.markdown("<div style='font-size: 1.5em; font-weight: bold; color: white; background-color: #4A0000; padding: 10px; border-radius: 8px; margin-bottom: 15px;'>🔬 Registrar Actividad de Investigación</div>", unsafe_allow_html=True)
-
-                                                tipo_registro = st.selectbox(
-                                                    "¿Qué tipo de registro deseas ingresar?",
-                                                    ["Datos Generales (CTI Vitae / RENACYT)", "Publicación Científica", "Fondo Concursable", "Semillero de Investigación"],
-                                                    key="sel_tipo_inv"
-                                                )
-
-                                                with st.form("form_nuevo_investigacion", clear_on_submit=True):
-                                                    enlace_cti = codigo_renacyt = nivel_renacyt = ""
-                                                    titulo_pub = base_datos = nombre_revista = cuartil = doi_url = ""
-                                                    anio_pub = date.today().year
-                                                    nombre_proy = entidad_fin = rol_proy = estado_proy = ""
-                                                    monto_proy = 0.0
-                                                    nombre_semillero = resolucion = rol_semillero = estado_semillero = ""
+                                                new_data = {}
+                                                for col in cols_reales:
+                                                    col_lower = str(col).strip().lower()
+                                                    key_input = f"inp_{h_name}_{col}"
                                                     
-                                                    if tipo_registro == "Datos Generales (CTI Vitae / RENACYT)":
-                                                        col1, col2, col3 = st.columns(3)
-                                                        with col1: enlace_cti = st.text_input("Enlace CTI Vitae")
-                                                        with col2: codigo_renacyt = st.text_input("Código RENACYT")
-                                                        with col3: nivel_renacyt = st.selectbox("Nivel RENACYT", lst_nivel_ren)
-                                                        
-                                                    elif tipo_registro == "Publicación Científica":
-                                                        titulo_pub = st.text_input("Título de la Publicación")
-                                                        col1, col2 = st.columns(2)
-                                                        with col1:
-                                                            base_datos = st.selectbox("Base de Datos", lst_bd)
-                                                            cuartil = st.selectbox("Cuartil", lst_cuartil)
-                                                            anio_pub = st.number_input("Año de Publicación", min_value=1950, max_value=2100, step=1, value=date.today().year)
-                                                        with col2:
-                                                            nombre_revista = st.text_input("Nombre de la Revista")
-                                                            doi_url = st.text_input("DOI / URL del artículo")
-                                                            
-                                                    elif tipo_registro == "Fondo Concursable":
-                                                        nombre_proy = st.text_input("Nombre del Proyecto")
-                                                        col1, col2 = st.columns(2)
-                                                        with col1:
-                                                            entidad_fin = st.text_input("Entidad Financiadora")
-                                                            monto_proy = st.number_input("Monto Adjudicado (S/.)", min_value=0.0, step=100.0)
-                                                        with col2:
-                                                            rol_proy = st.selectbox("Rol en el Proyecto", lst_rol_p)
-                                                            estado_proy = st.selectbox("Estado del Proyecto", lst_est_p)
-                                                            
-                                                    elif tipo_registro == "Semillero de Investigación":
-                                                        nombre_semillero = st.text_input("Nombre del Semillero")
-                                                        col1, col2 = st.columns(2)
-                                                        with col1:
-                                                            resolucion = st.text_input("Resolución de Creación")
-                                                            rol_semillero = st.selectbox("Rol en el Semillero", lst_rol_s)
-                                                        with col2:
-                                                            estado_semillero = st.selectbox("Estado", lst_est_s)
-                                                            
-                                                    if st.form_submit_button("💾 Guardar Registro de Investigación"):
-                                                        nid = dfs[h_name]["id"].max() + 1 if not dfs[h_name].empty and "id" in dfs[h_name].columns else 1
-                                                        
-                                                        nuevo_registro = {
-                                                            "id": nid, "dni": str(dni_buscado), "tipo de registro": tipo_registro,
-                                                            "enlace cti vitae": enlace_cti, "codigo renacyt": codigo_renacyt, "nivel renacyt": nivel_renacyt,
-                                                            "titulo de publicacion": titulo_pub, "base de datos": base_datos, "nombre de revista": nombre_revista,
-                                                            "cuartil": cuartil, "año de publicacion": anio_pub, "doi o url": doi_url,
-                                                            "nombre del proyecto": nombre_proy, "entidad financiadora": entidad_fin,
-                                                            "rol en el proyecto": rol_proy, "monto adjudicado": monto_proy, "estado del proyecto": estado_proy,
-                                                            "nombre del semillero": nombre_semillero, "resolucion": resolucion, "rol en el semillero": rol_semillero,
-                                                            "estado del semillero": estado_semillero
-                                                        }
-                                                        
-                                                        dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([nuevo_registro])], ignore_index=True)
-                                                        save_data(dfs)
-                                                        st.success("✅ ¡Registro de investigación guardado exitosamente!")
-                                                        st.rerun()
+                                                    if "fecha" in col_lower or col_lower.startswith("f_") or col_lower.startswith("f "):
+                                                        new_data[col] = st.date_input(f"{col.title()}", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31), key=key_input)
+                                                    elif any(k in col_lower for k in ["monto", "precio", "sueldo", "remuneracion"]):
+                                                        new_data[col] = st.number_input(f"{col.title()}", min_value=0.0, value=0.0, step=10.0, key=key_input)
+                                                    elif any(k in col_lower for k in ["observacion", "detalle", "descripcion"]):
+                                                        new_data[col] = st.text_area(f"{col.title()}", key=key_input)
+                                                    else:
+                                                        new_data[col] = st.text_input(f"{col.title()}", key=key_input)
 
-                                            # ==========================================
-                                            # CONTRATOS Y CONDICIONES LABORALES
-                                            # ==========================================
-                                            else:
-                                                # --- CARGA MAESTRA DE PARÁMETROS ---
-                                                df_para = dfs.get("PARAMETROS", pd.DataFrame())
-                                                if not df_para.empty:
-                                                    df_para.columns = df_para.columns.str.strip().str.replace(" ", "_").str.upper()
-                                                
-                                                def get_lista(columna, default):
-                                                    if columna in df_para.columns:
-                                                        lista = df_para[columna].dropna().astype(str).str.strip().unique().tolist()
-                                                        lista = [i for i in lista if i and i.lower() != "nan"]
-                                                        return lista if lista else default
-                                                    return default
-                                                # -----------------------------------
+                                                if st.button(f"💾 Guardar Registro en {h_name}", type="primary", use_container_width=False):
+                                                    new_row = {"dni": str(dni_buscado)}
+                                                    new_row.update(new_data)
 
-                                                # Listas dinámicas para Contratos
-                                                lst_cargo = get_lista("CARGO", ["Docente", "Administrativo"])
-                                                lst_area = get_lista("AREA", ["Recursos Humanos", "Dirección Académica"])
-                                                
-                                                es_renovacion = False
-                                                if h_name == "CONTRATOS" and not df_contratos.empty:
-                                                    es_renovacion = st.checkbox("🔄 Es Renovación (Copiar datos del último contrato)")
-                                                
-                                                with st.form(f"f_add_{h_name}", clear_on_submit=True):
-                                                    if h_name == "CONTRATOS":
-                                                        d_car = ""
-                                                        d_area = ""  
-                                                        d_rem = 0.0
-                                                        d_bon = ""
-                                                        d_cond = ""
-                                                        d_ini = date.today()
-                                                        d_fin = date.today()
-                                                        d_ttrab = "Administrativo"
-                                                        d_mod = "Presencial"
-                                                        d_temp = "Plazo fijo"
-                                                        d_tcont = "Planilla completo"
+                                                    if not dfs[h_name].empty and "id" in dfs[h_name].columns:
+                                                        new_row["id"] = dfs[h_name]["id"].max() + 1
+                                                    elif "id" in dfs[h_name].columns:
+                                                        new_row["id"] = 1
+
+                                                    dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new_row])], ignore_index=True)
+                                                    save_data(dfs)
+                                                    st.cache_data.clear()
+                                                    st.success(f"✅ Registro guardado en {h_name} correctamente.")
+                                                    st.rerun()
+
+        # ==========================================
+        # ACCIONES GLOBALES: MODIFICAR / ELIMINAR
+        # ==========================================
+        if 'ed' in locals() and not ed.empty and "SEL" in ed.columns:
+            sel_rows = ed[ed["SEL"] == True]
+            if not sel_rows.empty:
+                st.markdown("---")
+                st.markdown("### 🛠️ Acciones sobre el registro seleccionado")
+                col_act1, col_act2 = st.columns(2)
+                
+                with col_act1:
+                    if st.button("✏️ Guardar Cambios Editados en Tabla", type="secondary", use_container_width=True):
+                        # Actualizar DataFrame original con las filas editadas
+                        for idx, row in ed.iterrows():
+                            if "id" in row and pd.notna(row["id"]):
+                                mask = dfs[h_name]["id"] == row["id"]
+                                for col in ed.columns:
+                                    if col != "SEL" and col in dfs[h_name].columns:
+                                        dfs[h_name].loc[mask, col] = row[col]
+                        save_data(dfs)
+                        st.cache_data.clear()
+                        st.success("✅ Cambios actualizados con éxito.")
+                        st.rerun()
+
+                with col_act2:
+                    if st.button("🗑️ Eliminar Registro Seleccionado", type="primary", use_container_width=True):
+                        ids_to_delete = sel_rows["id"].tolist() if "id" in sel_rows.columns else []
+                        if ids_to_delete:
+                            dfs[h_name] = dfs[h_name][~dfs[h_name]["id"].isin(ids_to_delete)]
+                            save_data(dfs)
+                            st.cache_data.clear()
+                            st.warning("🗑️ Registro eliminado correctamente.")
+                            st.rerun()
+                        else:
+                            st.error("⚠️ No se encontró la columna 'id' para ejecutar la eliminación.")
+
+                                            #else:
+                                                        # ==========================================
+                                                        # FORMULARIO GENÉRICO (Para otras pestañas)
+                                                        # ==========================================
+                                                        st.markdown(f"**➕ Registrar en {h_name}**")
+                                                        gen_data = {}
                                                         
-                                                        if es_renovacion and not df_contratos.empty:
-                                                            last_c = df_contratos.assign(f_fin_dt=pd.to_datetime(df_contratos['f_fin'], errors='coerce')).sort_values('f_fin_dt').iloc[-1]
-                                                            d_car = str(last_c.get("cargo", ""))
-                                                            d_area = str(last_c.get("area", ""))
-                                                            try: d_rem = float(last_c.get("remuneracion basica", 0.0))
-                                                            except: pass
-                                                            d_bon = str(last_c.get("bonificacion", ""))
-                                                            d_cond = str(last_c.get("condicion de trabajo", ""))
-                                                            try: d_ini = pd.to_datetime(last_c["f_fin"]).date() + pd.Timedelta(days=1)
-                                                            except: pass
+                                                        for col in cols_reales:
+                                                            col_clean = str(col).strip().lower()
+                                                            key_gen = f"input_{h_name}_{col}"
                                                             
-                                                            v_tt = str(last_c.get("tipo de trabajador", ""))
-                                                            if v_tt in ["Administrativo", "Docente", "Externo"]: d_ttrab = v_tt
-                                                            v_m = str(last_c.get("modalidad", ""))
-                                                            if v_m in ["Presencial", "Semipresencial", "Virtual"]: d_mod = v_m
-                                                            v_te = str(last_c.get("temporalidad", ""))
-                                                            if v_te in ["Plazo fijo", "Plazo indeterminado", "Ordinarizado"]: d_temp = v_te
-                                                            v_tc = str(last_c.get("tipo contrato", ""))
-                                                            if v_tc in ["Planilla completo", "Tiempo Parcial", "Recibo por Honorarios", "Otro"]: d_tcont = v_tc
+                                                            if "fecha" in col_clean or col_clean.startswith("f_"):
+                                                                gen_data[col] = st.date_input(f"{col.title()}", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31), key=key_gen)
+                                                            elif any(k in col_clean for k in ["monto", "remuneracion", "sueldo", "precio"]):
+                                                                gen_data[col] = st.number_input(f"{col.title()}", min_value=0.0, step=10.0, key=key_gen)
+                                                            elif any(k in col_clean for k in ["obs", "detalle", "descripcion"]):
+                                                                gen_data[col] = st.text_area(f"{col.title()}", key=key_gen)
+                                                            else:
+                                                                gen_data[col] = st.text_input(f"{col.title()}", key=key_gen)
 
-                                                        # Lógica inteligente para pre-seleccionar Cargo y Área al renovar
-                                                        if d_car and d_car not in lst_cargo: lst_cargo.append(d_car)
-                                                        idx_car = lst_cargo.index(d_car) if d_car in lst_cargo else 0
-                                                        
-                                                        if d_area and d_area not in lst_area: lst_area.append(d_area)
-                                                        idx_area = lst_area.index(d_area) if d_area in lst_area else 0
+                                                        if st.form_submit_button(f"💾 Guardar en {h_name}"):
+                                                            nid = dfs[h_name]["id"].max() + 1 if not dfs[h_name].empty and "id" in dfs[h_name].columns else 1
+                                                            new_row = {"id": nid, "dni": str(dni_buscado)}
+                                                            new_row.update(gen_data)
 
-                                                        car = st.selectbox("Cargo", lst_cargo, index=idx_car)
-                                                        area_input = st.selectbox("Área", lst_area, index=idx_area) 
-                                                        
-                                                        rem_b = st.number_input("Remuneración básica", value=d_rem)
-                                                        bono = st.text_input("Bonificación", value=d_bon)
-                                                        cond = st.text_input("Condición de trabajo", value=d_cond)
-                                                       # 1. Ponemos la Temporalidad ANTES de las fechas para que el sistema sepa qué eligió el usuario
-                                                        temp = st.selectbox("Temporalidad", ["Plazo fijo", "Plazo indeterminado", "Ordinarizado"], index=["Plazo fijo", "Plazo indeterminado", "Ordinarizado"].index(d_temp))
-                                                        
-                                                        # 2. Mostramos la Fecha de Inicio (esta siempre va)
-                                                        ini = st.date_input("Inicio", value=d_ini, format="DD/MM/YYYY", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
-                                                        
-                                                        # 3. Condicionamos la Fecha de Fin
-                                                        if temp == "Plazo indeterminado":
-                                                            st.info("ℹ️ Contrato a plazo indeterminado. No requiere fecha de fin.")
-                                                            fin = None  # Esto guardará el espacio en blanco en tu Excel para este contrato
-                                                        else:
-                                                            fin = st.date_input("Fin", value=d_fin, format="DD/MM/YYYY", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
-                                                        
-                                                        # 4. Los demás campos continúan normalmente
-                                                        t_trab = st.selectbox("Tipo de trabajador", ["Administrativo", "Docente", "Externo"], index=["Administrativo", "Docente", "Externo"].index(d_ttrab))
-                                                        mod = st.selectbox("Modalidad", ["Presencial", "Semipresencial", "Virtual"], index=["Presencial", "Semipresencial", "Virtual"].index(d_mod))
-                                                        # ¡ELIMINAMOS LA LÍNEA DUPLICADA DE "temp" QUE ESTABA AQUÍ!
-                                                        lnk = st.text_input("Link")
-                                                        tcont = st.selectbox("Tipo Contrato", ["Planilla completo", "Tiempo Parcial", "Recibo por Honorarios", "Otro"], index=["Planilla completo", "Tiempo Parcial", "Recibo por Honorarios", "Otro"].index(d_tcont))
-                                                        
-                                                        # Lógica de estado corregida para soportar contratos indeterminados (sin fecha de fin)
-                                                        if fin is None:
-                                                            est_a = "ACTIVO"  # Si es indeterminado y no tiene fecha de fin, por defecto sigue activo
-                                                        else:
-                                                            est_a = "ACTIVO" if fin >= date.today() else "CESADO"
-                                                        
-                                                        # El motivo de cese se mantiene igual, pero ahora funciona seguro sin errores
-                                                        mot_a = st.selectbox("Motivo Cese", ["Vigente"] + MOTIVOS_CESE) if est_a == "CESADO" else "Vigente"
-                                                        if st.form_submit_button("Guardar Contrato"):
-                                                            nid = dfs[h_name]["id"].max() + 1 if not dfs[h_name].empty else 1
-                                                            
-                                                            new = {
-                                                                "id": nid, 
-                                                                "dni": dni_buscado, 
-                                                                "cargo": car,
-                                                                "area": area_input,
-                                                                "remuneracion basica": rem_b,
-                                                                "bonificacion": bono,
-                                                                "condicion de trabajo": cond,
-                                                                "f_inicio": ini,
-                                                                "f_fin": fin,
-                                                                "tipo de trabajador": t_trab,
-                                                                "modalidad": mod,
-                                                                "temporalidad": temp,
-                                                                "link": lnk,
-                                                                "tipo contrato": tcont,
-                                                                "estado": est_a,
-                                                                "motivo cese": mot_a
-                                                            }
-                                                            dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new])], ignore_index=True)
+                                                            dfs[h_name] = pd.concat([dfs[h_name], pd.DataFrame([new_row])], ignore_index=True)
                                                             save_data(dfs)
-                                                            st.success("✅ Contrato guardado correctamente.")
+                                                            st.cache_data.clear()
+                                                            st.success(f"✅ Registro guardado en {h_name} correctamente.")
                                                             st.rerun()
-                                                            
-                                
+
+                            # ==========================================
+                            # COLUMNA B: TABLA INTERACTIVA Y EDICIÓN
+                            # ==========================================
                             with col_b:
-                                    # LLAMADA AL NUEVO MÓDULO (le pasamos cols_reales porque tu código lo usa)
-                                    mod_editor.mostrar_editor(dfs, save_data, h_name, sel, cols_reales)
+                                # Delegación del renderizado y edición al módulo externo mod_editor
+                                mod_editor.mostrar_editor(dfs, save_data, h_name, sel, cols_reales)
+
+            # ==========================================
+            # PIE DE PÁGINA Y ESTADO DEL EXPEDIENTE
+            # ==========================================
+            st.markdown("---")
+            st.caption(f"📌 **Expediente activo:** DNI `{dni_buscado}` | Datos sincronizados correctamente con el almacenamiento local.")
+
+        else:
+            st.warning(f"⚠️ No se encontró ningún expediente registrado con el DNI: **{dni_buscado}**")
                             
     # ==========================================
     # --- SECCIÓN REGISTRO Y NÓMINA ---
@@ -2937,10 +2683,9 @@ elif h_name == "FORM. ACADEMICA":
         import mod_registro
         mod_registro.mostrar(dfs, save_data)
         
-    # (El resto del código hacia abajo queda igualito)
-
     elif m == "📊 Nómina General":
         mod_nomina.mostrar(dfs, save_data)
+        
     # ==========================================
     # MÓDULO: ESTRUCTURA Y PUESTOS (MOF)
     # ==========================================
@@ -2950,7 +2695,7 @@ elif h_name == "FORM. ACADEMICA":
     # ==========================================
     # MÓDULO: REPORTE GENERAL
     # ==========================================
-    elif m == "Reporte General": # (Asegúrate de que 'm' sea la variable de tu menú)
+    elif m == "Reporte General": 
         mod_reportegeneral.mostrar(dfs)
 
     # ==========================================
@@ -2981,8 +2726,7 @@ elif h_name == "FORM. ACADEMICA":
     # ==========================================
     # MÓDULO: GESTOR DE EVALUACIONES
     # ==========================================
-    # ... dentro de tu menú en app.py ...
-    if m == "📋 Evaluaciones":  # (o como se llame tu opción en el menú)
+    elif m == "📋 Evaluaciones":
         mod_gestor_evaluaciones.mostrar(dfs, save_data)
 
     # ==========================================
@@ -2991,7 +2735,7 @@ elif h_name == "FORM. ACADEMICA":
     elif m == "🔐 Usuarios y Seguridad":
         mod_usuarios.mostrar(dfs, save_data)
 
-   # ==========================================
+    # ==========================================
     # MÓDULO: HORARIOS ADMINISTRATIVOS
     # ==========================================
     elif m == "⏰ Horarios Administrativos":
@@ -3004,6 +2748,5 @@ elif h_name == "FORM. ACADEMICA":
             st.warning(f"Aviso: No se pudo recargar el módulo dinámicamente ({e}). Se ejecutará la versión en memoria.")
             
         mod_horarios_admin.mostrar(dfs, save_data)
-
 
 
