@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
+import json
 import os
 import sys
+import time
 from datetime import date, datetime
 from io import BytesIO
 
 # --- LIBRERÍAS EXTERNAS ---
+from google.oauth2.service_account import Credentials
+import gspread
 import numpy as np
 import pandas as pd
 from PIL import Image, ImageDraw, ImageFont, ImageOps
@@ -17,7 +21,7 @@ from docx.shared import Inches, Pt
 # Garantizar el path raíz de la aplicación
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-# --- CONFIGURACIÓN DE PÁGINA (Siempre debe ejecutarse primero) ---
+# --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(
     page_title="Gestión Roosevelt", page_icon="🎓", layout="wide"
 )
@@ -43,60 +47,155 @@ from mod_guardar_sheets import cargar_df_desde_sheets, exportar_df_a_sheets
 # ==========================================
 # 1. CONFIGURACIÓN Y CONSTANTES
 # ==========================================
-DB = "DB_SISTEMA_GTH.xlsx"
+SHEET_NAME = "DB_SISTEMA_GTH"
 F_N = "MG. ARTURO JAVIER GALINDO MARTINEZ"
 F_C = "JEFE DE GESTIÓN DEL TALENTO HUMANO"
 
-MOTIVOS_CESE = ["Término de contrato", "Renuncia", "Despido", "Mutuo acuerdo", "Fallecimiento", "Otros"]
+MOTIVOS_CESE = [
+    "Término de contrato",
+    "Renuncia",
+    "Despido",
+    "Mutuo acuerdo",
+    "Fallecimiento",
+    "Otros",
+]
 
 COLUMNAS = {
     "PERSONAL": ["dni", "apellidos y nombres", "link"],
-    "DATOS GENERALES": ["dni", "sede", "sexo", "apellidos y nombres", "dirección", "estado civil", "fecha de nacimiento", "edad"], 
-    "DATOS FAMILIARES": ["parentesco", "apellidos y nombres", "dni", "fecha de nacimiento", "edad", "estudios", "telefono"],
-    "EXP. LABORAL": ["dni", "tipo de experiencia", "lugar", "puesto", "fecha de inicio", "fecha de fin", "motivo de cese"],
-    "FORM. ACADEMICA": ["dni", "tipo de estudio", "institución educativa", "mención (especialidad / carrera / etc)", "año", "estado", "horas académicas", "grado o título obtenido"],
-    "INVESTIGACION": ["id", "dni", "tipo de registro", "enlace cti vitae", "codigo renacyt", "nivel renacyt", "titulo de publicacion", "base de datos", "nombre de revista", "cuartil", "año de publicacion", "doi o url", "nombre del proyecto", "entidad financiadora", "rol en el proyecto", "monto adjudicado", "estado del proyecto", "nombre del semillero", "resolucion", "rol en el semillero", "estado del semillero"],
-    # NUEVAS COLUMNAS DE CONTRATOS APLICADAS:
-    "CONTRATOS": ["dni", "cargo", "AREA", "f_inicio", "f_fin", "tipo de trabajador", "modalidad", "temporalidad", "tipo contrato", "estado", "LINK"],
-    "VACACIONES": ["periodo", "fecha de inicio", "fecha de fin", "días generados", "dias gozados", "saldo", "link"],
+    "DATOS GENERALES": [
+        "dni",
+        "sede",
+        "sexo",
+        "apellidos y nombres",
+        "dirección",
+        "estado civil",
+        "fecha de nacimiento",
+        "edad",
+    ],
+    "DATOS FAMILIARES": [
+        "parentesco",
+        "apellidos y nombres",
+        "dni",
+        "fecha de nacimiento",
+        "edad",
+        "estudios",
+        "telefono",
+    ],
+    "EXP. LABORAL": [
+        "dni",
+        "tipo de experiencia",
+        "lugar",
+        "puesto",
+        "fecha de inicio",
+        "fecha de fin",
+        "motivo de cese",
+    ],
+    "FORM. ACADEMICA": [
+        "dni",
+        "tipo de estudio",
+        "institución educativa",
+        "mención (especialidad / carrera / etc)",
+        "año",
+        "estado",
+        "horas académicas",
+        "grado o título obtenido",
+    ],
+    "INVESTIGACION": [
+        "id",
+        "dni",
+        "tipo de registro",
+        "enlace cti vitae",
+        "codigo renacyt",
+        "nivel renacyt",
+        "titulo de publicacion",
+        "base de datos",
+        "nombre de revista",
+        "cuartil",
+        "año de publicacion",
+        "doi o url",
+        "nombre del proyecto",
+        "entidad financiadora",
+        "rol en el proyecto",
+        "monto adjudicado",
+        "estado del proyecto",
+        "nombre del semillero",
+        "resolucion",
+        "rol en el semillero",
+        "estado del semillero",
+    ],
+    "CONTRATOS": [
+        "dni",
+        "cargo",
+        "AREA",
+        "f_inicio",
+        "f_fin",
+        "tipo de trabajador",
+        "modalidad",
+        "temporalidad",
+        "tipo contrato",
+        "estado",
+        "LINK",
+    ],
+    "VACACIONES": [
+        "periodo",
+        "fecha de inicio",
+        "fecha de fin",
+        "días generados",
+        "dias gozados",
+        "saldo",
+        "link",
+    ],
     "OTROS BENEFICIOS": ["periodo", "tipo de beneficio", "link"],
     "MERITOS Y DEMERITOS": ["periodo", "merito o demerito", "motivo", "link"],
-    "EVALUACION DEL DESEMPEÑO": ["periodo", "merito o demerito", "motivo", "link"],
-    "LIQUIDACIONES": ["periodo", "firmo", "link"]
+    "EVALUACION DEL DESEMPEÑO": [
+        "periodo",
+        "merito o demerito",
+        "motivo",
+        "link",
+    ],
+    "LIQUIDACIONES": ["periodo", "firmo", "link"],
 }
 
-# ==========================================
-# ---> NUEVA FUNCIÓN: CONVERTIR LINK DE DRIVE A IMAGEN DIRECTA <---
-# ==========================================
+
 def obtener_link_directo_drive(url):
     """Convierte un link de compartir de Google Drive en un link directo de imagen."""
     if not isinstance(url, str) or not url.strip():
         return None
     if "drive.google.com" in url and "/d/" in url:
         try:
-            # Extrae el ID del archivo del link de Drive
             file_id = url.split("/d/")[1].split("/")[0]
-            # Formato más estable para forzar la vista de la imagen
             return f"https://drive.google.com/uc?export=view&id={file_id}"
-        except:
+        except Exception:
             return url
     return url
+
+
 # ==========================================
-# 2. FUNCIONES DE DATOS (VERSIÓN DEFINITIVA)
+# 2. FUNCIONES DE DATOS (VERSIÓN ACTUALIZADA)
 # ==========================================
 
-SCOPE = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-SHEET_NAME = "DB_SISTEMA_GTH" 
+SCOPE = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive",
+]
+
 
 def obtener_credenciales():
-    if "google_json" in st.secrets:
-        import json
+    """Autentica con Google APIs sin usar libraries obsoletas."""
+    if "gcp_service_account" in st.secrets:
+        return Credentials.from_service_account_info(
+            dict(st.secrets["gcp_service_account"]), scopes=SCOPE
+        )
+    elif "google_json" in st.secrets:
         creds_dict = json.loads(st.secrets["google_json"])
-        return ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, SCOPE)
+        return Credentials.from_service_account_info(
+            creds_dict, scopes=SCOPE
+        )
     else:
-        return ServiceAccountCredentials.from_json_keyfile_name("credenciales.json", SCOPE)
+        return Credentials.from_service_account_file(
+            "credenciales.json", scopes=SCOPE
+        )
 
-import time  # <--- ¡IMPORTANTE! Agrega esta línea si no la tienes arriba
 
 @st.cache_data(ttl=240)
 def load_data():
@@ -104,65 +203,89 @@ def load_data():
     client = gspread.authorize(creds)
     spreadsheet = client.open(SHEET_NAME)
     worksheets = spreadsheet.worksheets()
-    
+
     dfs = {}
     for worksheet in worksheets:
         try:
-            # ---> PAUSA CLAVE: Esperamos 0.6 segundos antes de leer cada pestaña
-            # Esto hace que Google no detecte un ataque de peticiones masivas
-            time.sleep(0.6) 
-            
+            time.sleep(0.6)
+
             data = worksheet.get_all_records()
             df = pd.DataFrame(data)
             if not df.empty:
-                # Limpieza agresiva: quitamos espacios, tildes y guiones bajos
-                df.columns = [str(c).strip().lower()
-                              .replace('á', 'a').replace('é', 'e')
-                              .replace('í', 'i').replace('ó', 'o')
-                              .replace('ú', 'u').replace('_', ' ') 
-                              for c in df.columns]
-                
-                # ---> 🛡️ AQUÍ VA LA LÍNEA NUEVA: ELIMINA COLUMNAS DUPLICADAS <---
+                df.columns = [
+                    str(c)
+                    .strip()
+                    .lower()
+                    .replace("á", "a")
+                    .replace("é", "e")
+                    .replace("í", "i")
+                    .replace("ó", "o")
+                    .replace("ú", "u")
+                    .replace("_", " ")
+                    for c in df.columns
+                ]
+
                 df = df.loc[:, ~df.columns.duplicated()].copy()
-                # ---------------------------------------------------------------
-                
-                # Arreglo especial para CONTRATOS (Evita el error f_inicio)
+
                 if worksheet.title == "CONTRATOS":
-                    # Mapeamos cualquier variante a 'f_inicio'
                     for col in df.columns:
-                        if 'inicio' in col: df.rename(columns={col: 'f_inicio'}, inplace=True)
-                        if 'termino' in col or 'fin' in col: df.rename(columns={col: 'f_fin'}, inplace=True)
-                
-               # Limpieza de DNI
+                        if "inicio" in col:
+                            df.rename(columns={col: "f_inicio"}, inplace=True)
+                        if "termino" in col or "fin" in col:
+                            df.rename(columns={col: "f_fin"}, inplace=True)
+
                 if "dni" in df.columns:
-                    df["dni"] = df["dni"].astype(str).str.strip().str.replace(r'\.0$', '', regex=True).str.zfill(8)
-                
-                # =======================================================
-                # 🚀 NUEVO: CÁLCULO MÁGICO Y GLOBAL DE EDAD EN TIEMPO REAL
-                # =======================================================
-                # Buscamos si la pestaña actual tiene una columna de fecha de nacimiento
-                col_fecha = next((c for c in df.columns if "fecha de nacimiento" in c or "fecha nacimiento" in c), None)
-                
+                    df["dni"] = (
+                        df["dni"]
+                        .astype(str)
+                        .str.strip()
+                        .str.replace(r"\.0$", "", regex=True)
+                        .str.zfill(8)
+                    )
+
+                col_fecha = next(
+                    (
+                        c
+                        for c in df.columns
+                        if "fecha de nacimiento" in c or "fecha nacimiento" in c
+                    ),
+                    None,
+                )
+
                 if col_fecha:
+
                     def calcular_edad_viva(fecha_str):
-                        if pd.isna(fecha_str) or str(fecha_str).strip() == "": return 0
-                        try:
-                            # Parseamos la fecha venga como venga
-                            if isinstance(fecha_str, str):
-                                fnac_date = pd.to_datetime(fecha_str, dayfirst=True).date()
-                            else:
-                                fnac_date = fecha_str.date() if hasattr(fecha_str, 'date') else fecha_str
-                                
-                            hoy = date.today()
-                            # Magia: Resta el año y comprueba si ya pasó su cumpleaños este año
-                            return hoy.year - fnac_date.year - ((hoy.month, hoy.day) < (fnac_date.month, fnac_date.day))
-                        except:
+                        if (
+                            pd.isna(fecha_str)
+                            or str(fecha_str).strip() == ""
+                        ):
                             return 0
-                            
-                    # Sobreescribimos la columna 'edad' (o la creamos si no existe) con el cálculo exacto de hoy
+                        try:
+                            if isinstance(fecha_str, str):
+                                fnac_date = pd.to_datetime(
+                                    fecha_str, dayfirst=True
+                                ).date()
+                            else:
+                                fnac_date = (
+                                    fecha_str.date()
+                                    if hasattr(fecha_str, "date")
+                                    else fecha_str
+                                )
+
+                            hoy = date.today()
+                            return (
+                                hoy.year
+                                - fnac_date.year
+                                - (
+                                    (hoy.month, hoy.day)
+                                    < (fnac_date.month, fnac_date.day)
+                                )
+                            )
+                        except Exception:
+                            return 0
+
                     df["edad"] = df[col_fecha].apply(calcular_edad_viva)
-                # =======================================================
-                
+
                 dfs[worksheet.title] = df
             else:
                 dfs[worksheet.title] = pd.DataFrame()
@@ -170,76 +293,83 @@ def load_data():
             st.error(f"Error en {worksheet.title}: {e}")
             dfs[worksheet.title] = pd.DataFrame()
             time.sleep(2)
-            
+
     return dfs
+
 
 def save_data(dfs, pestana_especifica=None):
     creds = obtener_credenciales()
     client = gspread.authorize(creds)
     sheet = client.open(SHEET_NAME)
 
-    # 💡 OPTIMIZACIÓN CLAVE: 
-    # Si le decimos qué pestaña guardar, solo procesa esa. Si no, procesa todas.
-    listado_pestanas = [pestana_especifica] if pestana_especifica else dfs.keys()
+    listado_pestanas = (
+        [pestana_especifica] if pestana_especifica else dfs.keys()
+    )
 
     for h in listado_pestanas:
         if h not in dfs:
             continue
-            
+
         df = dfs[h]
         if df.empty or len(df.columns) == 0:
             continue
 
         worksheet = sheet.worksheet(h)
         df_s = df.copy()
-        
-        # Escudo anti-duplicados y limpieza de fantasmas
+
         df_s = df_s.loc[:, ~df_s.columns.duplicated()]
         df_s = df_s.fillna("")
         df_s = df_s.astype(str)
-        
+
         fantasmas = ["nan", "NaN", "NaT", "nat", "None", "<NA>"]
         for fantasma in fantasmas:
             df_s = df_s.replace(fantasma, "")
-            
+
         df_s.columns = [str(c).upper() for c in df_s.columns]
-        
-        # Una pequeña pausa de seguridad (solo si guarda muchas, si es una sola no afectará)
+
         if not pestana_especifica:
             time.sleep(0.6)
-            
+
         worksheet.clear()
-        datos_a_guardar = [df_s.columns.values.tolist()] + df_s.values.tolist()
+        datos_a_guardar = (
+            [df_s.columns.values.tolist()] + df_s.values.tolist()
+        )
         worksheet.update(datos_a_guardar)
-    
-    # Limpiamos caché para ver los cambios inmediatamente
+
     st.cache_data.clear()
 
+
 def get_consolidated_contracts(df_c):
-    # Función inteligente para fusionar contratos consecutivos
-    if df_c.empty: return df_c
+    if df_c.empty:
+        return df_c
     df_c = df_c.copy()
-    df_c['f_inicio'] = pd.to_datetime(df_c['f_inicio'], errors='coerce')
-    df_c['f_fin'] = pd.to_datetime(df_c['f_fin'], errors='coerce')
-    df_c = df_c.sort_values('f_inicio').dropna(subset=['f_inicio'])
-    
+    df_c["f_inicio"] = pd.to_datetime(df_c["f_inicio"], errors="coerce")
+    df_c["f_fin"] = pd.to_datetime(df_c["f_fin"], errors="coerce")
+    df_c = df_c.sort_values("f_inicio").dropna(subset=["f_inicio"])
+
     merged = []
     for _, row in df_c.iterrows():
         if not merged:
             merged.append(row.to_dict())
         else:
             last = merged[-1]
-            # Si la fecha de inicio del nuevo contrato es justo un día después del fin del anterior (o antes)
-            if pd.notnull(last['f_fin']) and row['f_inicio'] <= last['f_fin'] + pd.Timedelta(days=1):
-                # Ampliamos la fecha final
-                last['f_fin'] = max(last['f_fin'], row['f_fin']) if pd.notnull(row['f_fin']) else row['f_fin']
-                # Actualizamos al cargo más reciente
-                last['cargo'] = row['cargo'] 
+            if pd.notnull(last["f_fin"]) and row[
+                "f_inicio"
+            ] <= last["f_fin"] + pd.Timedelta(days=1):
+                last["f_fin"] = (
+                    max(last["f_fin"], row["f_fin"])
+                    if pd.notnull(row["f_fin"])
+                    else row["f_fin"]
+                )
+                last["cargo"] = row["cargo"]
             else:
                 merged.append(row.to_dict())
     return pd.DataFrame(merged)
 
-def gen_word(nom, dni, df_c, tipo_seleccionado="Automático (Detectar por historial)"):
+
+def gen_word(
+    nom, dni, df_c, tipo_seleccionado="Automático (Detectar por historial)"
+):
     doc = Document()
     section = doc.sections[0]
     section.page_height, section.page_width = Inches(11.69), Inches(8.27)
@@ -255,18 +385,15 @@ def gen_word(nom, dni, df_c, tipo_seleccionado="Automático (Detectar por histor
         p_f.paragraph_format.left_indent = Inches(-1.0)
         p_f.add_run().add_picture("footer.png", width=Inches(8.27))
 
-   # =========================================================================
-    # 🎯 FILTRO A PRUEBA DE BALAS (DETECTA INTENCIÓN Y BUSCA EN TODAS LAS CELDAS)
-    # =========================================================================
     es_docente = False
     es_locacion = False
     tipo_upper = tipo_seleccionado.upper()
-    
-    # 1. Detectar intención incluso si el menú dice "Contrato de Servicios"
+
     if "AUTOM" in tipo_upper:
         if not df_c.empty:
-            # Escaneamos todo el historial para ver qué régimen predomina
-            texto_historial = " ".join(df_c.astype(str).agg(' '.join, axis=1).str.lower().tolist())
+            texto_historial = " ".join(
+                df_c.astype(str).agg(" ".join, axis=1).str.lower().tolist()
+            )
             if "docente" in texto_historial or "catedra" in texto_historial:
                 es_docente = True
             if "honorario" in texto_historial or "locaci" in texto_historial:
@@ -274,42 +401,26 @@ def gen_word(nom, dni, df_c, tipo_seleccionado="Automático (Detectar por histor
     else:
         if "DOCENTE" in tipo_upper:
             es_docente = True
-        # ¡AQUÍ ESTÁ LA MAGIA! Ahora detecta "SERVICIOS" de tu menú desplegable
-        if "LOCACI" in tipo_upper or "SERVICIO" in tipo_upper or "HONORARIO" in tipo_upper:
+        if (
+            "LOCACI" in tipo_upper
+            or "SERVICIO" in tipo_upper
+            or "HONORARIO" in tipo_upper
+        ):
             es_locacion = True
 
-    # =========================================================================
-    # 🛑 FILTRAR DATOS MODO "RADAR" (SEPARACIÓN ESTRICTA PLANILLA / LOCACIÓN)
-    # =========================================================================
-    
-    # 1. Convertimos toda la fila a texto en minúsculas para buscar fácilmente
-    filas_texto = df_c.astype(str).agg(' '.join, axis=1).str.lower()
-    
-    # 2. Identificamos estrictamente qué filas son de Locación/Honorarios
-    mask_locacion = filas_texto.str.contains('honorario|locaci|tercero', na=False)
+    filas_texto = df_c.astype(str).agg(" ".join, axis=1).str.lower()
+    mask_locacion = filas_texto.str.contains(
+        "honorario|locaci|tercero", na=False
+    )
 
-    # 3. Aplicamos el filtro según el tipo de documento que eligió el usuario
     if es_locacion:
-        # Si el usuario pide CONSTANCIA (Locación), jalamos SOLAMENTE filas que coincidan
         df_c_filtrado = df_c[mask_locacion]
     else:
-        # Si el usuario pide CERTIFICADO (Planilla), jalamos todo lo que NO es locación
-        # El símbolo ~ (virgulilla) invierte el filtro. ¡Es mucho más seguro!
         df_c_filtrado = df_c[~mask_locacion]
 
-    # NOTA: Hemos ELIMINADO el "Respaldo de seguridad" que igualaba df_c_filtrado a df_c.
-    # Ahora, si alguien de Planilla intenta sacar un recibo por honorarios que no tiene, 
-    # el documento simplemente saldrá con la tabla vacía en vez de mentir mezclando datos.
-    
-    # =========================================================================
-    # 🔄 CONSOLIDAR SOLO LOS DATOS FILTRADOS
-    # =========================================================================
     df_merged = get_consolidated_contracts(df_c_filtrado)
     df_tabla = df_merged
 
-    # =========================================================================
-    # 📝 REDACCIÓN DINÁMICA SEGÚN LOS 4 TIPOS DE CERTIFICADO
-    # =========================================================================
     titulo_certificado = "CERTIFICADO DE TRABAJO"
     texto_introduccion = "La oficina de Gestión de Talento Humano De La Universidad Privada De Huancayo “Franklin Roosevelt”, certifica que:"
     texto_cuerpo_identificacion = ""
@@ -318,30 +429,27 @@ def gen_word(nom, dni, df_c, tipo_seleccionado="Automático (Detectar por histor
     if not es_docente and not es_locacion:
         titulo_certificado = "CERTIFICADO DE TRABAJO"
         texto_cuerpo_identificacion = f"El(la) ex-servidor(a) administrativo(a) {nom.upper()}, identificado(a) con DNI N° {dni}, ha laborado en nuestra institución bajo el régimen laboral de la actividad privada, desempeñando funciones de manera subordinada de acuerdo al siguiente detalle:"
-        
+
     elif not es_docente and es_locacion:
         titulo_certificado = "CONSTANCIA DE PRESTACIÓN DE SERVICIOS"
         texto_introduccion = "La oficina de Gestión de Talento Humano De La Universidad Privada De Huancayo “Franklin Roosevelt”, hace constar que:"
         texto_cuerpo_identificacion = f"El(la) señor(a) {nom.upper()}, identificado(a) con DNI N° {dni}, ha prestado servicios autónomos e independientes de naturaleza civil bajo la modalidad de Locación de Servicios, realizando actividades de índole administrativa según el siguiente detalle:"
         columna_tabla_cargo = "ACTIVIDAD / SERVICIO"
-        
+
     elif es_docente and not es_locacion:
         titulo_certificado = "CERTIFICADO DE TRABAJO"
         texto_cuerpo_identificacion = f"El(la) docente {nom.upper()}, identificado(a) con DNI N° {dni}, ha laborado en nuestra casa de estudios superiores ejerciendo funciones pedagógicas y de cátedra universitaria, bajo el régimen laboral correspondiente, de acuerdo al siguiente detalle:"
-        
+
     elif es_docente and es_locacion:
         titulo_certificado = "CONSTANCIA DE LOCACIÓN DE SERVICIOS DOCENTES"
         texto_introduccion = "La oficina de Gestión de Talento Humano De La Universidad Privada De Huancayo “Franklin Roosevelt”, hace constar que:"
         texto_cuerpo_identificacion = f"El(la) profesional {nom.upper()}, identificado(a) con DNI N° {dni}, ha prestado servicios profesionales independientes de docencia universitaria bajo el régimen civil de Locación de Servicios, dictando asignaturas académicas de acuerdo al siguiente detalle:"
         columna_tabla_cargo = "CÁTEDRA / ASIGNATURA"
 
-    # =========================================================================
-    # 🏢 CONSTRUCCIÓN DEL DOCUMENTO WORD
-    # =========================================================================
     p_tit = doc.add_paragraph()
     p_tit.alignment = WD_ALIGN_PARAGRAPH.CENTER
     r_tit = p_tit.add_run(titulo_certificado)
-    r_tit.bold, r_tit.font.name, r_tit.font.size = True, 'Arial', Pt(18)
+    r_tit.bold, r_tit.font.name, r_tit.font.size = True, "Arial", Pt(18)
 
     p_intro = doc.add_paragraph(f"\n{texto_introduccion}")
     p_intro.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
@@ -353,64 +461,102 @@ def gen_word(nom, dni, df_c, tipo_seleccionado="Automático (Detectar por histor
     p_inf.add_run(texto_cuerpo_identificacion)
 
     t = doc.add_table(rows=1, cols=3)
-    t.style = 'Table Grid'
-    
+    t.style = "Table Grid"
+
     for i, h in enumerate([columna_tabla_cargo, "FECHA INICIO", "FECHA FIN"]):
         celda = t.rows[0].cells[i]
         celda.text = h
         celda.paragraphs[0].runs[0].font.bold = True
-        celda.paragraphs[0].runs[0].font.name = 'Arial'
+        celda.paragraphs[0].runs[0].font.name = "Arial"
 
     for _, fila in df_tabla.iterrows():
         celdas = t.add_row().cells
-        celdas[0].text = str(fila.get('cargo', fila.get('puesto', ''))).upper()
-        celdas[1].text = pd.to_datetime(fila['f_inicio']).strftime('%d/%m/%Y') if pd.notnull(fila['f_inicio']) else ""
-        celdas[2].text = pd.to_datetime(fila['f_fin']).strftime('%d/%m/%Y') if pd.notnull(fila['f_fin']) else "EN LA ACTUALIDAD"
-        
+        celdas[0].text = str(
+            fila.get("cargo", fila.get("puesto", ""))
+        ).upper()
+        celdas[1].text = (
+            pd.to_datetime(fila["f_inicio"]).strftime("%d/%m/%Y")
+            if pd.notnull(fila["f_inicio"])
+            else ""
+        )
+        celdas[2].text = (
+            pd.to_datetime(fila["f_fin"]).strftime("%d/%m/%Y")
+            if pd.notnull(fila["f_fin"])
+            else "EN LA ACTUALIDAD"
+        )
+
         for celda in celdas:
             if celda.paragraphs[0].runs:
-                celda.paragraphs[0].runs[0].font.name = 'Arial'
+                celda.paragraphs[0].runs[0].font.name = "Arial"
                 celda.paragraphs[0].runs[0].font.size = Pt(10)
 
-    p_cierre = doc.add_paragraph("\nSe expide el presente a solicitud del interesado para los fines que considere convenientes.")
+    p_cierre = doc.add_paragraph(
+        "\nSe expide el presente a solicitud del interesado para los fines que considere convenientes."
+    )
     p_cierre.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-    
-    p_fecha = doc.add_paragraph(f"\nHuancayo, {date.today().strftime('%d/%m/%Y')}")
+
+    p_fecha = doc.add_paragraph(
+        f"\nHuancayo, {date.today().strftime('%d/%m/%Y')}"
+    )
     p_fecha.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    p_fecha.runs[0].font.name = 'Arial'
-    
+    p_fecha.runs[0].font.name = "Arial"
+
     f = doc.add_paragraph()
     f.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    # OJO: Asegúrate de que F_N y F_C estén definidos globalmente o pasados como argumentos
     f_run = f.add_run("\n\n__________________________\n" + F_N + "\n" + F_C)
     f_run.bold = True
-    f_run.font.name = 'Arial'
+    f_run.font.name = "Arial"
 
     buf = BytesIO()
     doc.save(buf)
     buf.seek(0)
     return buf
-    
-# ==============================================================================
-# FUNCIÓN 2: GENERAR PAPELETA DE VACACIONES INDIVIDUAL (Word Duplicado A4)
-# ==============================================================================
-def gen_papeleta_vac(apellidos, nombres, dni_b, position, f_ingreso, period, start_d, end_d, days):
+
+
+def gen_papeleta_vac(
+    apellidos,
+    nombres,
+    dni_b,
+    position,
+    f_ingreso,
+    period,
+    start_d,
+    end_d,
+    days,
+):
     template_path = "Template_Papeleta.docx"
-    
+
     if not os.path.exists(template_path):
-        st.error(f"⚠️ No se encontró la plantilla en: {template_path}. Por favor crea el archivo Word.")
+        st.error(
+            f"⚠️ No se encontró la plantilla en: {template_path}. Por favor crea el archivo Word."
+        )
         return None
 
     doc = Document(template_path)
-    
-    hoy = date.today()
-    meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
-    txt_firma = f"Huancayo, {hoy.day} de {meses[hoy.month-1]} de {hoy.year}"
 
-    fin_dt = pd.to_datetime(end_d, errors='coerce')
+    hoy = date.today()
+    meses = [
+        "enero",
+        "febrero",
+        "marzo",
+        "abril",
+        "mayo",
+        "junio",
+        "julio",
+        "agosto",
+        "septiembre",
+        "octubre",
+        "noviembre",
+        "diciembre",
+    ]
+    txt_firma = (
+        f"Huancayo, {hoy.day} de {meses[hoy.month-1]} de {hoy.year}"
+    )
+
+    fin_dt = pd.to_datetime(end_d, errors="coerce")
     if pd.notnull(fin_dt):
         retorno_dt = fin_dt + pd.Timedelta(days=1)
-        if retorno_dt.weekday() == 6:  # Si cae Domingo (6), pasa a Lunes
+        if retorno_dt.weekday() == 6:
             retorno_dt += pd.Timedelta(days=1)
         str_retorno = retorno_dt.strftime("%d/%m/%Y")
     else:
@@ -421,13 +567,25 @@ def gen_papeleta_vac(apellidos, nombres, dni_b, position, f_ingreso, period, sta
         "{{NOMBRES}}": str(nombres).upper(),
         "{{DNI}}": str(dni_b),
         "{{CARGO}}": str(position).upper(),
-        "{{F_INGRESO}}": f_ingreso.strftime("%d/%m/%Y") if isinstance(f_ingreso, (date, datetime)) else str(f_ingreso),
+        "{{F_INGRESO}}": (
+            f_ingreso.strftime("%d/%m/%Y")
+            if isinstance(f_ingreso, (date, datetime))
+            else str(f_ingreso)
+        ),
         "{{PERIODO}}": str(period),
-        "{{F_INICIO}}": start_d.strftime("%d/%m/%Y") if isinstance(start_d, (date, datetime)) else str(start_d),
-        "{{F_FIN}}": end_d.strftime("%d/%m/%Y") if isinstance(end_d, (date, datetime)) else str(end_d),
+        "{{F_INICIO}}": (
+            start_d.strftime("%d/%m/%Y")
+            if isinstance(start_d, (date, datetime))
+            else str(start_d)
+        ),
+        "{{F_FIN}}": (
+            end_d.strftime("%d/%m/%Y")
+            if isinstance(end_d, (date, datetime))
+            else str(end_d)
+        ),
         "{{F_RETORNO}}": str_retorno,
         "{{DIAS}}": str(days),
-        "{{FECHA_FIRMA}}": txt_firma
+        "{{FECHA_FIRMA}}": txt_firma,
     }
 
     def replace_in_element(element, reps):
@@ -450,10 +608,12 @@ def gen_papeleta_vac(apellidos, nombres, dni_b, position, f_ingreso, period, sta
     docx_stream.seek(0)
     return docx_stream
 
+
 # ==========================================
 # 3. ESTILOS CSS
 # ==========================================
-st.markdown("""
+st.markdown(
+    """
 <style>
     .stApp { background-color: #4a0000 !important; }
     [data-testid="stHeader"] { display: none !important; }
@@ -467,16 +627,13 @@ st.markdown("""
     div[role="radiogroup"] label { background-color: transparent !important; }
     div[role="radiogroup"] label p { color: #FFFFFF !important; font-weight: bold !important; font-size: 16px !important; }
     
-    /* ========================================= */
-    /* BOTONES CON MEJOR CONTRASTE               */
-    /* ========================================= */
+    /* BOTONES CON MEJOR CONTRASTE */
     div.stButton > button, [data-testid="stFormSubmitButton"] > button { 
-        background-color: #FFD700 !important; /* Amarillo Roosevelt */
+        background-color: #FFD700 !important; 
         border: 2px solid #4a0000 !important; 
         border-radius: 10px !important; 
     }
 
-    /* Forzamos el color Guinda en TODO el texto de CUALQUIER botón */
     div.stButton > button *, [data-testid="stFormSubmitButton"] > button *,
     div.stButton > button p, [data-testid="stFormSubmitButton"] > button p { 
         color: #4a0000 !important; 
@@ -489,9 +646,7 @@ st.markdown("""
         border-color: #FFD700 !important; 
     }
 
-   /* ========================================= */
-   /* FONDOS Y CAJAS DE TEXTO                   */
-   /* ========================================= */
+    /* FONDOS Y CAJAS DE TEXTO */
     [data-testid="stExpander"] { 
         background-color: #FFF9C4 !important; 
         border: 2px solid #FFD700 !important; 
@@ -502,21 +657,18 @@ st.markdown("""
     [data-testid="stExpander"] summary { background-color: #FFD700 !important; padding: 10px !important; border-radius: 8px 8px 0 0 !important; }
     [data-testid="stExpander"] summary p { color: #4a0000 !important; font-weight: bold !important; font-size: 16px !important; }
 
-    /* Damos fondo blanco y borde a las cajas donde se escribe para que resalten sobre el crema */
     [data-baseweb="input"], [data-baseweb="select"], [data-baseweb="textarea"] { 
         background-color: #FFFFFF !important; 
         border: 1px solid #4a0000 !important; 
         border-radius: 5px !important; 
     }
     
-    /* El texto que tú escribes será negro */
     .stApp input, .stApp select, .stApp textarea, [data-baseweb="select"] span { 
         color: #000000 !important; 
         font-weight: bold !important; 
         -webkit-text-fill-color: #000000 !important;
     }
 
-    /* Fix para los mensajes de advertencia (Ej: Activa la casilla) */
     [data-testid="stAlert"] { 
         background-color: #FFF9C4 !important; 
         border: 2px solid #FFD700 !important; 
@@ -527,6 +679,10 @@ st.markdown("""
         font-weight: bold !important; 
         font-size: 16px !important; 
     }
+</style>
+""",
+    unsafe_allow_html=True,
+)
 
     /* ========================================= */
     /* TABLAS INTERACTIVAS                       */
