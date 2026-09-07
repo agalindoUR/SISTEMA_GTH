@@ -50,7 +50,7 @@ def procesar_evaluacion_asistencia(df_asist, df_horarios_admin, dnis_registrados
     for _, row in df_asist.iterrows():
         dni = str(row.get(col_dni_asist, "")).strip()
 
-        # 🛑 REGLA: Si se proporcionan DNIs registrados/activos, ignorar a cualquier otro
+        # Si se proporcionan DNIs registrados/activos, ignorar a cualquier otro
         if dnis_registrados is not None and dni not in dnis_registrados:
             continue
 
@@ -94,7 +94,7 @@ def procesar_evaluacion_asistencia(df_asist, df_horarios_admin, dnis_registrados
             filas_procesadas.append(row_dict)
             continue
 
-        # --- CÁLCULO DE TARDANZAS Y SALIDAS ADELANTADAS ---
+        # CÁLCULO DE TARDANZAS Y SALIDAS ADELANTADAS
         tardanza_min = 0
         adelanto_min = 0
 
@@ -147,12 +147,19 @@ def procesar_evaluacion_asistencia(df_asist, df_horarios_admin, dnis_registrados
         else:
             estado = "PUNTUAL"
 
-        # Cálculo de Horas Efectivas Trabajadas
+        # Cálculo de Horas Efectivas Trabajadas con validación de horas válidas
         hrs = 0.0
         if t_ent_m and t_sal_m:
-            hrs += (datetime.combine(date.today(), t_sal_m) - datetime.combine(date.today(), t_ent_m)).total_seconds() / 3600.0
+            dt_m_e = datetime.combine(date.today(), t_ent_m)
+            dt_m_s = datetime.combine(date.today(), t_sal_m)
+            if dt_m_s > dt_m_e:
+                hrs += (dt_m_s - dt_m_e).total_seconds() / 3600.0
+
         if t_ent_t and t_sal_t:
-            hrs += (datetime.combine(date.today(), t_sal_t) - datetime.combine(date.today(), t_ent_t)).total_seconds() / 3600.0
+            dt_t_e = datetime.combine(date.today(), t_ent_t)
+            dt_t_s = datetime.combine(date.today(), t_sal_t)
+            if dt_t_s > dt_t_e:
+                hrs += (dt_t_s - dt_t_e).total_seconds() / 3600.0
 
         row_dict["ESTADO"] = estado
         row_dict["MIN_TARDANZA"] = tardanza_min
@@ -319,6 +326,7 @@ def mostrar(dfs, save_data=None):
                 for key in ["check", "tm", "tt", "e1", "s1", "e2", "s2"]:
                     if f"{key}_Lunes" in st.session_state:
                         st.session_state[f"{key}_{d}"] = st.session_state[f"{key}_Lunes"]
+            st.rerun()
 
         dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
         mapa_dias = {
@@ -522,12 +530,16 @@ def mostrar(dfs, save_data=None):
 
         if archivo_excel is not None:
             try:
-                tables = pd.read_html(archivo_excel)
-                df_asistencia_raw = tables[0]
+                # Lectura híbrida: intenta read_excel primero y hace fallback a read_html si falla
+                try:
+                    df_asistencia_raw = pd.read_excel(archivo_excel)
+                except Exception:
+                    tables = pd.read_html(archivo_excel)
+                    df_asistencia_raw = tables[0]
 
                 df_horarios_admin = dfs.get("HORARIOS_ADMIN", pd.DataFrame())
 
-                # 🎯 Evaluación cruzando con HORARIOS_ADMIN y FILTRANDO solo colaboradores activos
+                # Evaluación cruzando con HORARIOS_ADMIN y FILTRANDO solo colaboradores activos
                 df_evaluado = procesar_evaluacion_asistencia(
                     df_asistencia_raw, 
                     df_horarios_admin, 
@@ -627,7 +639,25 @@ def mostrar(dfs, save_data=None):
         obs_reg = st.text_area("Observación / Sustento")
 
         if st.button("💾 Registrar Regularización", type="primary"):
-            st.success(f"Marcación de {tipo_marcacion} regularizada para DNI {reg_dni} el día {fecha_reg}.")
+            reg_entry = {
+                "FECHA_REGISTRO": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "DNI": reg_dni,
+                "FECHA": fecha_reg.strftime("%Y-%m-%d"),
+                "MOTIVO": motivo_reg,
+                "TIPO_MARCACION": tipo_marcacion,
+                "HORA_CORREGIDA": str(hora_corr),
+                "OBSERVACION": obs_reg,
+            }
+            if callable(save_data):
+                if "REGULARIZACIONES" in dfs and isinstance(dfs["REGULARIZACIONES"], pd.DataFrame):
+                    dfs["REGULARIZACIONES"] = pd.concat([dfs["REGULARIZACIONES"], pd.DataFrame([reg_entry])], ignore_index=True)
+                else:
+                    dfs["REGULARIZACIONES"] = pd.DataFrame([reg_entry])
+
+                save_data(dfs, "REGULARIZACIONES")
+                st.success(f"Marcación de {tipo_marcacion} regularizada para DNI {reg_dni} el día {fecha_reg}.")
+            else:
+                st.error("No se ha definido la función de guardado (save_data).")
 
 
 render_mod_horarios_admin = mostrar
