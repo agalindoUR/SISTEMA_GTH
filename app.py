@@ -1,37 +1,44 @@
 # -*- coding: utf-8 -*-
+import os
 import sys
-import os
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-import json
-import streamlit as st
-import pandas as pd
-import os
 from datetime import date, datetime
 from io import BytesIO
-from docx import Document
-from docx.shared import Pt, Inches
-from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+# --- LIBRERÍAS EXTERNAS ---
+import numpy as np
+import pandas as pd
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 import requests
-from io import BytesIO
-# --- NUEVOS IMPORTS PARA GOOGLE SHEETS ---
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
-import numpy as np
-import estructura as mod_estructura
-import mod_reportes as mod_dashboard
-import repvencimientos as mod_vencimientos
-import repcumpleanos as mod_cumpleanos
-import repvacaciones as mod_vacaciones
-import reportegeneral as mod_reportegeneral
-import gestor_evaluaciones as mod_gestor_evaluaciones
-import mod_registro
-import mod_nomina
-import mod_usuarios
-import mod_horarios_admin as mod_horarios_admin
-import mod_editor
+import streamlit as st
+from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.shared import Inches, Pt
 
-st.set_page_config(page_title="Gestión Roosevelt", page_icon="🎓", layout="wide")
+# Garantizar el path raíz de la aplicación
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+# --- CONFIGURACIÓN DE PÁGINA (Siempre debe ejecutarse primero) ---
+st.set_page_config(
+    page_title="Gestión Roosevelt", page_icon="🎓", layout="wide"
+)
+
+# --- IMPORTS DE MÓDULOS DEL SISTEMA ---
+import estructura as mod_estructura
+import gestor_evaluaciones as mod_gestor_evaluaciones
+import mod_editor
+import mod_horarios_admin as mod_horarios_admin
+import mod_nomina
+import mod_procesador_asistencia as mod_procesador_asistencia
+import mod_registro
+import mod_reportes as mod_dashboard
+import mod_usuarios
+import repcumpleanos as mod_cumpleanos
+import reportegeneral as mod_reportegeneral
+import repvacaciones as mod_vacaciones
+import repvencimientos as mod_vencimientos
+
+# --- IMPORTACIÓN DE MÓDULO BASE DE DATOS (GOOGLE SHEETS) ---
+from mod_guardar_sheets import cargar_df_desde_sheets, exportar_df_a_sheets
 
 # ==========================================
 # 1. CONFIGURACIÓN Y CONSTANTES
