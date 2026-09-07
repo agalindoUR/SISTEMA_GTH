@@ -2004,30 +2004,31 @@ if h_name == "EXP. LABORAL":
                 else:
                     st.error("❌ **Docente Universitario (Pregrado):** NO CUMPLE (La Ley exige mínimo Grado de Maestro).")
 
-    # ---------------------------------------
-    # TABLA DESPLEGABLE PARA EDICIÓN
-    # ---------------------------------------
-    st.markdown("<br>", unsafe_allow_html=True)
-    with st.expander("⚙️ Clic aquí para Editar o Eliminar Experiencia Externa"):
-        st.markdown("<p style='color:#DDDDDD;'>Activa la casilla <b>SEL</b> para modificar o eliminar un registro.</p>", unsafe_allow_html=True)
-        st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 10px !important; }</style>""", unsafe_allow_html=True)
-        
-        col_conf_exp = col_conf if 'col_conf' in locals() else {}
-        ed = st.data_editor(vst_df, hide_index=True, use_container_width=True, column_config=col_conf_exp, key=f"ed_{h_name}_oculta")
-        
-        for col in ed.columns:
-            if "fecha" in col.lower() or "f_" in col.lower():
-                ed[col] = ed[col].astype(str).replace(["NaT", "None"], "")
+        # ---------------------------------------
+        # TABLA DESPLEGABLE PARA EDICIÓN
+        # ---------------------------------------
+        st.markdown("<br>", unsafe_allow_html=True)
+        with st.expander("⚙️ Clic aquí para Editar o Eliminar Experiencia Externa"):
+            st.markdown("<p style='color:#DDDDDD;'>Activa la casilla <b>SEL</b> para modificar o eliminar un registro.</p>", unsafe_allow_html=True)
+            st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 10px !important; }</style>""", unsafe_allow_html=True)
+            
+            col_conf_exp = col_conf if 'col_conf' in locals() else {}
+            ed = st.data_editor(vst_df, hide_index=True, use_container_width=True, column_config=col_conf_exp, key=f"ed_{h_name}_oculta")
+            
+            for col in ed.columns:
+                if "fecha" in col.lower() or "f_" in col.lower():
+                    ed[col] = ed[col].astype(str).replace(["NaT", "None"], "")
 
-        if "SEL" in ed.columns:
-            sel = ed[ed["SEL"] == True]
-                           # Configuración por defecto para column_config
-col_conf_cfg = col_conf if 'col_conf' in locals() and isinstance(col_conf, dict) else {}
+            if "SEL" in ed.columns:
+                sel = ed[ed["SEL"] == True]
 
     # ==========================================
     # NUEVO DISEÑO: CONTRATOS
     # ==========================================
     elif h_name == "CONTRATOS":
+        # MOVIDO AQUÍ ADENTRO: Evita romper la cadena if-elif superior
+        col_conf_cfg = col_conf if 'col_conf' in locals() and isinstance(col_conf, dict) else {}
+        
         vst_df = vst if 'vst' in locals() and isinstance(vst, pd.DataFrame) else pd.DataFrame()
         
         if vst_df.empty:
@@ -2065,6 +2066,9 @@ col_conf_cfg = col_conf if 'col_conf' in locals() and isinstance(col_conf, dict)
     # NUEVO DISEÑO: VACACIONES
     # ==========================================
     elif h_name == "VACACIONES":
+        # MOVIDO AQUÍ ADENTRO TAMBIÉN
+        col_conf_cfg = col_conf if 'col_conf' in locals() and isinstance(col_conf, dict) else {}
+        
         vst_df = vst if 'vst' in locals() and isinstance(vst, pd.DataFrame) else pd.DataFrame()
         
         st.markdown("<br>", unsafe_allow_html=True)
