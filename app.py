@@ -1753,293 +1753,274 @@ else:
         sel = ed[ed["SEL"] == True]
 
                            # ==========================================
-                            # NUEVO DISEÑO: EXPERIENCIA LABORAL Y CÁLCULOS
-                            # ==========================================
-                            if h_name == "EXP. LABORAL":
-                                # Dividimos la pantalla: 2/3 para tarjetas, 1/3 para el resumen
-                                col_izq, col_der = st.columns([2, 1])
-                                
-                                df_contratos = dfs.get("CONTRATOS", pd.DataFrame())
-                                col_dni_contratos = "DNI" if "DNI" in df_contratos.columns else "dni"
-                                
-                                contratos_empleado = pd.DataFrame()
-                                if not df_contratos.empty and col_dni_contratos in df_contratos.columns:
-                                    contratos_empleado = df_contratos[df_contratos[col_dni_contratos] == str(dni_buscado)]
-                                
-                                # --- LÓGICA DE CÁLCULO DE TIEMPO Y FORMATO DE FECHAS ---
-                                meses_docente = 0
-                                meses_admin = 0
-                                
-                                def calcular_meses(f_ini, f_fin):
-                                    try:
-                                        inicio = pd.to_datetime(f_ini, errors='coerce')
-                                        fin = pd.to_datetime(f_fin, errors='coerce')
-                                        if pd.isna(inicio) or pd.isna(fin): return 0
-                                        return max(0, int((fin - inicio).days / 30.44))
-                                    except:
-                                        return 0
-                                        
-                                def dar_formato_fecha(fecha_str):
-                                    """Convierte cualquier fecha al formato bonito DD/MM/YYYY"""
-                                    try:
-                                        if pd.isna(fecha_str) or str(fecha_str).strip() == "" or str(fecha_str) == "NaT": 
-                                            return "N/A"
-                                        return pd.to_datetime(fecha_str).strftime('%d/%m/%Y')
-                                    except:
-                                        return str(fecha_str)
+# NUEVO DISEÑO: EXPERIENCIA LABORAL Y CÁLCULOS
+# ==========================================
+if h_name == "EXP. LABORAL":
+    # Garantizar que vst esté definido como DataFrame
+    vst_df = vst if 'vst' in locals() and isinstance(vst, pd.DataFrame) else pd.DataFrame()
 
-                                # ---------------------------------------
-                                # COLUMNA IZQUIERDA: TARJETAS VISUALES
-                                # ---------------------------------------
-                                with col_izq:
-                                    st.markdown("<h3 style='color: #FFD700;'>🏢 Experiencia Interna (Universidad Roosevelt)</h3>", unsafe_allow_html=True)
-                                    if contratos_empleado.empty:
-                                        st.markdown("<p style='color:#DDDDDD;'>No hay contratos internos registrados.</p>", unsafe_allow_html=True)
-                                    else:
-                                        for idx, row in contratos_empleado.iterrows():
-                                            f_ini = row.get('f_inicio', row.get('F_INICIO', 'N/A'))
-                                            f_fin = row.get('f_fin', row.get('F_FIN', 'N/A'))
-                                            
-                                            # Aplicamos formato bonito
-                                            f_ini_str = dar_formato_fecha(f_ini)
-                                            f_fin_str = dar_formato_fecha(f_fin)
-                                            
-                                            puesto = row.get('cargo', row.get('CARGO', row.get('PUESTO', 'N/A')))
-                                            tipo_trabajador_raw = str(row.get('TIPO DE TRABAJADOR', row.get('tipo de trabajador', 'Administrativo')))
-                                            tipo_exp = "Docente" if "docente" in tipo_trabajador_raw.lower() else "Administrativo"
-                                            
-                                            meses_calc = calcular_meses(f_ini, f_fin)
-                                            if tipo_exp == "Docente": meses_docente += meses_calc
-                                            else: meses_admin += meses_calc
+    # Dividimos la pantalla: 2/3 para tarjetas, 1/3 para el resumen
+    col_izq, col_der = st.columns([2, 1])
+    
+    df_contratos = dfs.get("CONTRATOS", pd.DataFrame())
+    col_dni_contratos = "DNI" if "DNI" in df_contratos.columns else "dni"
+    
+    contratos_empleado = pd.DataFrame()
+    if not df_contratos.empty and col_dni_contratos in df_contratos.columns:
+        contratos_empleado = df_contratos[df_contratos[col_dni_contratos].astype(str) == str(dni_buscado)]
+    
+    # --- LÓGICA DE CÁLCULO DE TIEMPO Y FORMATO DE FECHAS ---
+    meses_docente = 0
+    meses_admin = 0
+    
+    def calcular_meses(f_ini, f_fin):
+        try:
+            inicio = pd.to_datetime(f_ini, errors='coerce')
+            fin = pd.to_datetime(f_fin, errors='coerce')
+            if pd.isna(inicio) or pd.isna(fin): return 0
+            return max(0, int((fin - inicio).days / 30.44))
+        except:
+            return 0
+            
+    def dar_formato_fecha(fecha_str):
+        """Convierte cualquier fecha al formato bonito DD/MM/YYYY"""
+        try:
+            if pd.isna(fecha_str) or str(fecha_str).strip() in ["", "NaT", "None"]: 
+                return "N/A"
+            return pd.to_datetime(fecha_str).strftime('%d/%m/%Y')
+        except:
+            return str(fecha_str)
 
-                                            # Fondo Blanco Hueso (#F9F6EE)
-                                            st.markdown(f"""
-                                            <div style='background-color: #F9F6EE; padding: 15px; border-radius: 8px; border-left: 6px solid #4A0000; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #CCCCCC;'>
-                                                <div style='color: #000000; font-size: 1.1em; font-weight: bold; margin-bottom: 5px;'>{puesto} <span style='font-size: 0.85em; color: #555555;'>(Interno - {tipo_exp})</span></div>
-                                                <div style='color: #222222; font-size: 0.95em;'>
-                                                    <strong>Lugar:</strong> Universidad Roosevelt <br>
-                                                    <strong>Periodo:</strong> {f_ini_str} hasta {f_fin_str} <br>
-                                                    <strong>Tipo de Contrato:</strong> {row.get('tipo contrato', row.get('TIPO CONTRATO', 'N/A'))}
-                                                </div>
-                                            </div>
-                                            """, unsafe_allow_html=True)
-                                    
-                                    st.markdown("<h3 style='color: #FFD700; margin-top: 20px;'>💼 Experiencia Externa Registrada</h3>", unsafe_allow_html=True)
-                                    if vst.empty:
-                                        st.markdown("<p style='color:#DDDDDD;'>No hay experiencia externa registrada.</p>", unsafe_allow_html=True)
-                                    else:
-                                        for idx, row in vst.iterrows():
-                                            f_ini = row.get('FECHA DE INICIO', row.get('fecha de inicio', 'N/A'))
-                                            f_fin = row.get('FECHA DE FIN', row.get('fecha de fin', 'N/A'))
-                                            
-                                            # Aplicamos formato bonito
-                                            f_ini_str = dar_formato_fecha(f_ini)
-                                            f_fin_str = dar_formato_fecha(f_fin)
-                                            
-                                            tipo_exp_raw = str(row.get('TIPO DE EXPERIENCIA', row.get('tipo de experiencia', 'Administrativo')))
-                                            tipo_exp = "Docente" if "docente" in tipo_exp_raw.lower() else "Administrativo"
-                                            
-                                            meses_calc = calcular_meses(f_ini, f_fin)
-                                            if tipo_exp == "Docente": meses_docente += meses_calc
-                                            else: meses_admin += meses_calc
+    # ---------------------------------------
+    # COLUMNA IZQUIERDA: TARJETAS VISUALES
+    # ---------------------------------------
+    with col_izq:
+        st.markdown("<h3 style='color: #FFD700;'>🏢 Experiencia Interna (Universidad Roosevelt)</h3>", unsafe_allow_html=True)
+        if contratos_empleado.empty:
+            st.markdown("<p style='color:#DDDDDD;'>No hay contratos internos registrados.</p>", unsafe_allow_html=True)
+        else:
+            for idx, row in contratos_empleado.iterrows():
+                f_ini = row.get('f_inicio', row.get('F_INICIO', 'N/A'))
+                f_fin = row.get('f_fin', row.get('F_FIN', 'N/A'))
+                
+                f_ini_str = dar_formato_fecha(f_ini)
+                f_fin_str = dar_formato_fecha(f_fin)
+                
+                puesto = row.get('cargo', row.get('CARGO', row.get('PUESTO', 'N/A')))
+                tipo_trabajador_raw = str(row.get('TIPO DE TRABAJADOR', row.get('tipo de trabajador', 'Administrativo')))
+                tipo_exp = "Docente" if "docente" in tipo_trabajador_raw.lower() else "Administrativo"
+                
+                meses_calc = calcular_meses(f_ini, f_fin)
+                if tipo_exp == "Docente": meses_docente += meses_calc
+                else: meses_admin += meses_calc
 
-                                            puesto_ext = row.get('PUESTO', row.get('puesto', 'N/A'))
-                                            lugar_ext = row.get('LUGAR', row.get('lugar', 'N/A'))
-                                            motivo_ext = row.get('MOTIVO DE CESE', row.get('motivo de cese', 'N/A'))
+                st.markdown(f"""
+                <div style='background-color: #F9F6EE; padding: 15px; border-radius: 8px; border-left: 6px solid #4A0000; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #CCCCCC;'>
+                    <div style='color: #000000; font-size: 1.1em; font-weight: bold; margin-bottom: 5px;'>{puesto} <span style='font-size: 0.85em; color: #555555;'>(Interno - {tipo_exp})</span></div>
+                    <div style='color: #222222; font-size: 0.95em;'>
+                        <strong>Lugar:</strong> Universidad Roosevelt <br>
+                        <strong>Periodo:</strong> {f_ini_str} hasta {f_fin_str} <br>
+                        <strong>Tipo de Contrato:</strong> {row.get('tipo contrato', row.get('TIPO CONTRATO', 'N/A'))}
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+        
+        st.markdown("<h3 style='color: #FFD700; margin-top: 20px;'>💼 Experiencia Externa Registrada</h3>", unsafe_allow_html=True)
+        if vst_df.empty:
+            st.markdown("<p style='color:#DDDDDD;'>No hay experiencia externa registrada.</p>", unsafe_allow_html=True)
+        else:
+            for idx, row in vst_df.iterrows():
+                f_ini = row.get('FECHA DE INICIO', row.get('fecha de inicio', 'N/A'))
+                f_fin = row.get('FECHA DE FIN', row.get('fecha de fin', 'N/A'))
+                
+                f_ini_str = dar_formato_fecha(f_ini)
+                f_fin_str = dar_formato_fecha(f_fin)
+                
+                tipo_exp_raw = str(row.get('TIPO DE EXPERIENCIA', row.get('tipo de experiencia', 'Administrativo')))
+                tipo_exp = "Docente" if "docente" in tipo_exp_raw.lower() else "Administrativo"
+                
+                meses_calc = calcular_meses(f_ini, f_fin)
+                if tipo_exp == "Docente": meses_docente += meses_calc
+                else: meses_admin += meses_calc
 
-                                            # Fondo Blanco Hueso (#F9F6EE)
-                                            st.markdown(f"""
-                                            <div style='background-color: #F9F6EE; padding: 15px; border-radius: 8px; border-left: 6px solid #004A80; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #CCCCCC;'>
-                                                <div style='color: #000000; font-size: 1.1em; font-weight: bold; margin-bottom: 5px;'>{puesto_ext} <span style='font-size: 0.85em; color: #555555;'>({tipo_exp.capitalize()})</span></div>
-                                                <div style='color: #222222; font-size: 0.95em;'>
-                                                    <strong>Lugar:</strong> {lugar_ext} <br>
-                                                    <strong>Periodo:</strong> {f_ini_str} hasta {f_fin_str} <br>
-                                                    <strong>Motivo de cese:</strong> {motivo_ext}
-                                                </div>
-                                            </div>
-                                            """, unsafe_allow_html=True)
-                                            
-                                # ---------------------------------------
-                                # COLUMNA DERECHA: DASHBOARD DE TIEMPO
-                                # ---------------------------------------
-                                with col_der:
-                                    def formato_tiempo(total_meses):
-                                        anios = total_meses // 12
-                                        meses = total_meses % 12
-                                        if anios > 0 and meses > 0: return f"{anios} años y {meses} meses"
-                                        elif anios > 0: return f"{anios} años"
-                                        elif meses > 0: return f"{meses} meses"
-                                        else: return "0 meses"
+                puesto_ext = row.get('PUESTO', row.get('puesto', 'N/A'))
+                lugar_ext = row.get('LUGAR', row.get('lugar', 'N/A'))
+                motivo_ext = row.get('MOTIVO DE CESE', row.get('motivo de cese', 'N/A'))
 
-                                    st.markdown("<h3 style='color: #FFD700;'>📊 Resumen</h3>", unsafe_allow_html=True)
-                                    
-                                    html_resumen = f"""
-                                    <div style='background-color: #4A0000; padding: 20px; border-radius: 10px; border: 2px solid #FFD700; box-shadow: 2px 2px 10px rgba(0,0,0,0.5); position: sticky; top: 50px;'>
-                                        <h4 style='color: #FFD700; margin-bottom: 15px; text-align: center; border-bottom: 1px solid #FFD700; padding-bottom: 10px;'>Tiempo Total Calculado</h4>
-                                        <div style='margin-bottom: 15px;'>
-                                            <p style='margin: 0; color: #FFFFFF; font-size: 0.9em;'>👨‍🏫 Como Docente</p>
-                                            <p style='margin: 0; color: #FFD700; font-size: 1.2em; font-weight: bold;'>{formato_tiempo(meses_docente)}</p>
-                                        </div>
-                                        <div style='margin-bottom: 15px;'>
-                                            <p style='margin: 0; color: #FFFFFF; font-size: 0.9em;'>💼 Como Administrativo</p>
-                                            <p style='margin: 0; color: #FFD700; font-size: 1.2em; font-weight: bold;'>{formato_tiempo(meses_admin)}</p>
-                                        </div>
-                                        <div style='margin-top: 15px; padding-top: 10px; border-top: 1px solid #FFD700;'>
-                                            <p style='margin: 0; color: #FFFFFF; font-size: 0.9em;'>🌟 Experiencia General</p>
-                                            <p style='margin: 0; color: #00FF00; font-size: 1.4em; font-weight: bold;'>{formato_tiempo(meses_docente + meses_admin)}</p>
-                                        </div>
-                                    </div>
-                                    """
-                                    st.markdown(html_resumen, unsafe_allow_html=True)
+                st.markdown(f"""
+                <div style='background-color: #F9F6EE; padding: 15px; border-radius: 8px; border-left: 6px solid #004A80; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #CCCCCC;'>
+                    <div style='color: #000000; font-size: 1.1em; font-weight: bold; margin-bottom: 5px;'>{puesto_ext} <span style='font-size: 0.85em; color: #555555;'>({tipo_exp.capitalize()})</span></div>
+                    <div style='color: #222222; font-size: 0.95em;'>
+                        <strong>Lugar:</strong> {lugar_ext} <br>
+                        <strong>Periodo:</strong> {f_ini_str} hasta {f_fin_str} <br>
+                        <strong>Motivo de cese:</strong> {motivo_ext}
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+    # ---------------------------------------
+    # COLUMNA DERECHA: DASHBOARD DE TIEMPO
+    # ---------------------------------------
+    with col_der:
+        def formato_tiempo(total_meses):
+            anios = total_meses // 12
+            meses = total_meses % 12
+            if anios > 0 and meses > 0: return f"{anios} años y {meses} meses"
+            elif anios > 0: return f"{anios} años"
+            elif meses > 0: return f"{meses} meses"
+            else: return "0 meses"
 
-                                # ==========================================
-                                    # MÓDULO INTELIGENTE: ANÁLISIS DE PERFIL Y LÍNEA DE CARRERA
-                                    # ==========================================
-                                    st.markdown("<br>", unsafe_allow_html=True)
-                                    st.markdown("<h4 style='color: #4A0000;'>🎯 Plan de Carrera (Análisis SUNEDU/Estatuto)</h4>", unsafe_allow_html=True)
+        st.markdown("<h3 style='color: #FFD700;'>📊 Resumen</h3>", unsafe_allow_html=True)
+        
+        html_resumen = f"""
+        <div style='background-color: #4A0000; padding: 20px; border-radius: 10px; border: 2px solid #FFD700; box-shadow: 2px 2px 10px rgba(0,0,0,0.5); position: sticky; top: 50px;'>
+            <h4 style='color: #FFD700; margin-bottom: 15px; text-align: center; border-bottom: 1px solid #FFD700; padding-bottom: 10px;'>Tiempo Total Calculado</h4>
+            <div style='margin-bottom: 15px;'>
+                <p style='margin: 0; color: #FFFFFF; font-size: 0.9em;'>👨‍🏫 Como Docente</p>
+                <p style='margin: 0; color: #FFD700; font-size: 1.2em; font-weight: bold;'>{formato_tiempo(meses_docente)}</p>
+            </div>
+            <div style='margin-bottom: 15px;'>
+                <p style='margin: 0; color: #FFFFFF; font-size: 0.9em;'>💼 Como Administrativo</p>
+                <p style='margin: 0; color: #FFD700; font-size: 1.2em; font-weight: bold;'>{formato_tiempo(meses_admin)}</p>
+            </div>
+            <div style='margin-top: 15px; padding-top: 10px; border-top: 1px solid #FFD700;'>
+                <p style='margin: 0; color: #FFFFFF; font-size: 0.9em;'>🌟 Experiencia General</p>
+                <p style='margin: 0; color: #00FF00; font-size: 1.4em; font-weight: bold;'>{formato_tiempo(meses_docente + meses_admin)}</p>
+            </div>
+        </div>
+        """
+        st.markdown(html_resumen, unsafe_allow_html=True)
 
-                                    # 1. RECOLECCIÓN DE DATOS DEL TRABAJADOR
-                                    es_doctor = False
-                                    es_maestro = False
-                                    tiene_renacyt = False
-                                    total_publicaciones = 0
-                                    anios_docencia = meses_docente // 12
-                                    
-                                    # Analizamos Formación Académica
-                                    df_acad = dfs.get("FORM. ACADEMICA", pd.DataFrame())
-                                    if not df_acad.empty and "dni" in df_acad.columns:
-                                        acad_emp = df_acad[df_acad["dni"].astype(str) == str(dni_buscado)]
-                                        for idx, row in acad_emp.iterrows():
-                                            grado = str(row.get('grado o titulo obtenido', '')).upper()
-                                            if "DOCTOR" in grado: es_doctor = True
-                                            if "MAGISTER" in grado or "MAESTRO" in grado or "MAESTRIA" in grado: es_maestro = True
+        # ==========================================
+        # MÓDULO INTELIGENTE: ANÁLISIS DE PERFIL Y LÍNEA DE CARRERA
+        # ==========================================
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("<h4 style='color: #4A0000;'>🎯 Plan de Carrera (Análisis SUNEDU/Estatuto)</h4>", unsafe_allow_html=True)
 
-                                    # Analizamos Investigación
-                                    df_inv = dfs.get("INVESTIGACION", pd.DataFrame())
-                                    if not df_inv.empty and "dni" in df_inv.columns:
-                                        inv_emp = df_inv[df_inv["dni"].astype(str) == str(dni_buscado)]
-                                        for idx, row in inv_emp.iterrows():
-                                            tipo = str(row.get('tipo de registro', ''))
-                                            nivel_renacyt = str(row.get('nivel renacyt', 'No tiene'))
-                                            
-                                            if "Datos Generales" in tipo and nivel_renacyt != "No tiene":
-                                                tiene_renacyt = True
-                                            if "Publicación Científica" in tipo:
-                                                total_publicaciones += 1
+        es_doctor = False
+        es_maestro = False
+        tiene_renacyt = False
+        total_publicaciones = 0
+        anios_docencia = meses_docente // 12
+        
+        df_acad = dfs.get("FORM. ACADEMICA", pd.DataFrame())
+        acad_emp = pd.DataFrame()
+        if not df_acad.empty and "dni" in df_acad.columns:
+            acad_emp = df_acad[df_acad["dni"].astype(str) == str(dni_buscado)]
+            for idx, row in acad_emp.iterrows():
+                grado = str(row.get('grado o titulo obtenido', '')).upper()
+                if "DOCTOR" in grado: es_doctor = True
+                if any(kw in grado for kw in ["MAGISTER", "MAESTRO", "MAESTRIA"]): es_maestro = True
 
-                                    # 2. SISTEMA DE PUNTUACIÓN AUTOMÁTICA (Baremo UPHFR)
-                                    puntos_formacion = 40 if es_doctor else (25 if es_maestro else 10)
-                                    puntos_investigacion = (15 if tiene_renacyt else 0) + (total_publicaciones * 5)
-                                    if puntos_investigacion > 30: puntos_investigacion = 30 # Tope máximo
-                                    puntos_experiencia = anios_docencia * 2
-                                    if puntos_experiencia > 30: puntos_experiencia = 30 # Tope máximo
+        df_inv = dfs.get("INVESTIGACION", pd.DataFrame())
+        if not df_inv.empty and "dni" in df_inv.columns:
+            inv_emp = df_inv[df_inv["dni"].astype(str) == str(dni_buscado)]
+            for idx, row in inv_emp.iterrows():
+                tipo = str(row.get('tipo de registro', ''))
+                nivel_renacyt = str(row.get('nivel renacyt', 'No tiene'))
+                
+                if "Datos Generales" in tipo and nivel_renacyt != "No tiene":
+                    tiene_renacyt = True
+                if "Publicación Científica" in tipo:
+                    total_publicaciones += 1
 
-                                    puntaje_total = puntos_formacion + puntos_investigacion + puntos_experiencia
+        puntos_formacion = 40 if es_doctor else (25 if es_maestro else 10)
+        puntos_investigacion = min(30, (15 if tiene_renacyt else 0) + (total_publicaciones * 5))
+        puntos_experiencia = min(30, anios_docencia * 2)
 
-                                    # Contenedor para el Plan de Carrera
-                                    with st.container():
-                                        st.markdown(f"""
-                                        <div style='background-color: #F9F6EE; padding: 15px; border-radius: 8px; border: 1px solid #CCCCCC;'>
-                                            <div style='color: #004A80; font-size: 1.1em; font-weight: bold; margin-bottom: 10px;'>📊 Nivel de Competitividad Institucional: {puntaje_total}/100 pts</div>
-                                            <div style='font-size: 0.85em; color: #555555; margin-bottom: 5px;'>🎓 Formación: {puntos_formacion}/40 | 💼 Exp: {puntos_experiencia}/30 | 🔬 Inv: {puntos_investigacion}/30</div>
-                                        </div>
-                                        """, unsafe_allow_html=True)
-                                        
-                                        st.progress(puntaje_total / 100)
-                                        st.markdown("<br>", unsafe_allow_html=True)
+        puntaje_total = puntos_formacion + puntos_investigacion + puntos_experiencia
 
-                                        # Acordeón para ver los Match de Cargos
-                                        with st.expander("🏛️ Ver Idoneidad para Cargos UPHFR (Estatuto)"):
-                                            # Evaluación para RECTOR (Art. 64)
-                                            if es_doctor and anios_docencia >= 5: 
-                                                st.success("✅ **Rector / Vicerrector:** CUMPLE (Tiene Grado de Doctor y experiencia requerida según Art. 64).")
-                                            else:
-                                                st.error("❌ **Rector / Vicerrector:** NO CUMPLE (Requiere Grado de Doctor y 5+ años de experiencia docente).")
-                                                
-                                            # Evaluación para DIRECTOR DE POSGRADO (Art. 25 y 28)
-                                            if es_doctor:
-                                                st.success("✅ **Director de Escuela de Posgrado:** CUMPLE (Tiene el grado máximo que otorga la unidad).")
-                                            else:
-                                                st.error("❌ **Director de Escuela de Posgrado:** NO CUMPLE (Requiere Grado de Doctor).")
+        with st.container():
+            st.markdown(f"""
+            <div style='background-color: #F9F6EE; padding: 15px; border-radius: 8px; border: 1px solid #CCCCCC;'>
+                <div style='color: #004A80; font-size: 1.1em; font-weight: bold; margin-bottom: 10px;'>📊 Nivel de Competitividad Institucional: {puntaje_total}/100 pts</div>
+                <div style='font-size: 0.85em; color: #555555; margin-bottom: 5px;'>🎓 Formación: {puntos_formacion}/40 | 💼 Exp: {puntos_experiencia}/30 | 🔬 Inv: {puntos_investigacion}/30</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.progress(puntaje_total / 100)
+            st.markdown("<br>", unsafe_allow_html=True)
 
-                                            # Evaluación para DOCENTE INVESTIGADOR
-                                            if tiene_renacyt:
-                                                st.success("✅ **Docente Investigador:** CUMPLE (Cuenta con clasificación RENACYT activa).")
-                                            else:
-                                                st.warning("⚠️ **Docente Investigador:** EN PROCESO (Requiere obtener clasificación RENACYT).")
+            with st.expander("🏛️ Ver Idoneidad para Cargos UPHFR (Estatuto)"):
+                if es_doctor and anios_docencia >= 5: 
+                    st.success("✅ **Rector / Vicerrector:** CUMPLE (Tiene Grado de Doctor y experiencia requerida según Art. 64).")
+                else:
+                    st.error("❌ **Rector / Vicerrector:** NO CUMPLE (Requiere Grado de Doctor y 5+ años de experiencia docente).")
+                    
+                if es_doctor:
+                    st.success("✅ **Director de Escuela de Posgrado:** CUMPLE (Tiene el grado máximo que otorga la unidad).")
+                else:
+                    st.error("❌ **Director de Escuela de Posgrado:** NO CUMPLE (Requiere Grado de Doctor).")
 
-                                            # Evaluación para DOCENTE DE PREGRADO y Match de Carreras
-                                            if es_maestro or es_doctor:
-                                                st.success("✅ **Docente Universitario (Pregrado):** CUMPLE (Cuenta con Grado de Maestro o superior).")
-                                                
-                                                # --- MOTOR DE MATCH DE ESPECIALIDADES ---
-                                                st.markdown("<p style='color: #004A80; font-weight: bold; margin-top: 10px; margin-bottom: 5px;'>🔍 Análisis de Especialidad Docente:</p>", unsafe_allow_html=True)
-                                                
-                                                # 1. Recopilar texto a analizar (Grados y Puestos)
-                                                texto_perfil = ""
-                                                if not df_acad.empty and "dni" in df_acad.columns:
-                                                    for _, row in acad_emp.iterrows():
-                                                        texto_perfil += " " + str(row.get('grado o titulo obtenido', '')).upper()
-                                                        texto_perfil += " " + str(row.get('especialidad', '')).upper() # Si tienes esta columna
-                                                        
-                                                # Añadimos la experiencia externa al texto de análisis
-                                                if 'vst' in locals() and not vst.empty:
-                                                    for _, row in vst.iterrows():
-                                                        texto_perfil += " " + str(row.get('PUESTO', row.get('puesto', ''))).upper()
-                                                        texto_perfil += " " + str(row.get('LUGAR', row.get('lugar', ''))).upper()
+                if tiene_renacyt:
+                    st.success("✅ **Docente Investigador:** CUMPLE (Cuenta con clasificación RENACYT activa).")
+                else:
+                    st.warning("⚠️ **Docente Investigador:** EN PROCESO (Requiere obtener clasificación RENACYT).")
 
-                                                # 2. Diccionario de Carreras UPHFR
-                                                diccionario_carreras = {
-                                                    "Enfermería": ["ENFERMER", "CUIDADO", "CLINIC"],
-                                                    "Medicina Humana": ["MEDICIN", "MEDICO", "CIRUJAN", "CLINIC", "HOSPITAL"],
-                                                    "Obstetricia": ["OBSTETR", "MATRON", "GINECOLOG"],
-                                                    "Farmacia y Bioquímica": ["FARMAC", "BIOQUIMIC", "LABORATORI", "QUIMIC"],
-                                                    "Psicología": ["PSICOLOG", "SALUD MENTAL", "TERAP"],
-                                                    "Estomatología": ["ESTOMATOLOG", "ODONTOLOG", "DENTIS"],
-                                                    "Derecho": ["DERECHO", "ABOGAD", "LEGAL", "JURIDIC", "LEY", "MAGISTRAD", "JUEZ", "FISCAL"],
-                                                    "Administración": ["ADMINISTRAC", "GERENCI", "NEGOCIO", "EMPRES", "CONTABILIDAD", "ECONOMI"]
-                                                }
+                if es_maestro or es_doctor:
+                    st.success("✅ **Docente Universitario (Pregrado):** CUMPLE (Cuenta con Grado de Maestro o superior).")
+                    
+                    st.markdown("<p style='color: #004A80; font-weight: bold; margin-top: 10px; margin-bottom: 5px;'>🔍 Análisis de Especialidad Docente:</p>", unsafe_allow_html=True)
+                    
+                    texto_perfil = ""
+                    if not acad_emp.empty:
+                        for _, row in acad_emp.iterrows():
+                            texto_perfil += " " + str(row.get('grado o titulo obtenido', '')).upper()
+                            texto_perfil += " " + str(row.get('especialidad', '')).upper()
+                            
+                    if not vst_df.empty:
+                        for _, row in vst_df.iterrows():
+                            texto_perfil += " " + str(row.get('PUESTO', row.get('puesto', ''))).upper()
+                            texto_perfil += " " + str(row.get('LUGAR', row.get('lugar', ''))).upper()
 
-                                                # 3. Analizar coincidencias
-                                                match_salud = []
-                                                match_empresariales = []
-                                                
-                                                for carrera, palabras in diccionario_carreras.items():
-                                                    if any(palabra in texto_perfil for palabra in palabras):
-                                                        if carrera in ["Enfermería", "Medicina Humana", "Obstetricia", "Farmacia y Bioquímica", "Psicología", "Estomatología"]:
-                                                            match_salud.append(carrera)
-                                                        else:
-                                                            match_empresariales.append(carrera)
+                    diccionario_carreras = {
+                        "Enfermería": ["ENFERMER", "CUIDADO", "CLINIC"],
+                        "Medicina Humana": ["MEDICIN", "MEDICO", "CIRUJAN", "CLINIC", "HOSPITAL"],
+                        "Obstetricia": ["OBSTETR", "MATRON", "GINECOLOG"],
+                        "Farmacia y Bioquímica": ["FARMAC", "BIOQUIMIC", "LABORATORI", "QUIMIC"],
+                        "Psicología": ["PSICOLOG", "SALUD MENTAL", "TERAP"],
+                        "Estomatología": ["ESTOMATOLOG", "ODONTOLOG", "DENTIS"],
+                        "Derecho": ["DERECHO", "ABOGAD", "LEGAL", "JURIDIC", "LEY", "MAGISTRAD", "JUEZ", "FISCAL"],
+                        "Administración": ["ADMINISTRAC", "GERENCI", "NEGOCIO", "EMPRES", "CONTABILIDAD", "ECONOMI"]
+                    }
 
-                                                # 4. Mostrar Resultados
-                                                if not match_salud and not match_empresariales:
-                                                    st.info("ℹ️ Perfil multidisciplinario. Se requiere revisión manual para asignar cursos específicos.")
-                                                else:
-                                                    if match_salud:
-                                                        st.markdown(f"**🏥 C. de la Salud:** Apto para dictar en **{', '.join(match_salud)}**.")
-                                                    if match_empresariales:
-                                                        st.markdown(f"**🏢 C. Empresariales:** Apto para dictar en **{', '.join(match_empresariales)}**.")
-                                                        
-                                            else:
-                                                st.error("❌ **Docente Universitario (Pregrado):** NO CUMPLE (La Ley exige mínimo Grado de Maestro).")
-                               # ---------------------------------------
-                                # TABLA DESPLEGABLE PARA EDICIÓN
-                                # ---------------------------------------
-                                st.markdown("<br>", unsafe_allow_html=True)
-                                with st.expander("⚙️ Clic aquí para Editar o Eliminar Experiencia Externa"):
-                                    st.markdown("<p style='color:#DDDDDD;'>Activa la casilla <b>SEL</b> para modificar o eliminar un registro.</p>", unsafe_allow_html=True)
-                                    st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 10px !important; }</style>""", unsafe_allow_html=True)
-                                    
-                                    # Usamos directamente el col_conf global que ya arreglamos arriba
-                                    ed = st.data_editor(vst, hide_index=True, use_container_width=True, column_config=col_conf, key=f"ed_{h_name}_oculta")
-                                    
-                                    # Convertimos los calendarios de vuelta a texto antes de que pasen a SEL
-                                    for col in ed.columns:
-                                        if "fecha" in col.lower() or "f_" in col.lower():
-                                            ed[col] = ed[col].astype(str)
-                                            ed[col] = ed[col].replace(["NaT", "None"], "") # Limpiamos vacíos
+                    match_salud = []
+                    match_empresariales = []
+                    
+                    for carrera, palabras in diccionario_carreras.items():
+                        if any(palabra in texto_perfil for palabra in palabras):
+                            if carrera in ["Enfermería", "Medicina Humana", "Obstetricia", "Farmacia y Bioquímica", "Psicología", "Estomatología"]:
+                                match_salud.append(carrera)
+                            else:
+                                match_empresariales.append(carrera)
 
-                                    sel = ed[ed["SEL"] == True]
+                    if not match_salud and not match_empresariales:
+                        st.info("ℹ️ Perfil multidisciplinario. Se requiere revisión manual para asignar cursos específicos.")
+                    else:
+                        if match_salud:
+                            st.markdown(f"**🏥 C. de la Salud:** Apto para dictar en **{', '.join(match_salud)}**.")
+                        if match_empresariales:
+                            st.markdown(f"**🏢 C. Empresariales:** Apto para dictar en **{', '.join(match_empresariales)}**.")
+                else:
+                    st.error("❌ **Docente Universitario (Pregrado):** NO CUMPLE (La Ley exige mínimo Grado de Maestro).")
+
+    # ---------------------------------------
+    # TABLA DESPLEGABLE PARA EDICIÓN
+    # ---------------------------------------
+    st.markdown("<br>", unsafe_allow_html=True)
+    with st.expander("⚙️ Clic aquí para Editar o Eliminar Experiencia Externa"):
+        st.markdown("<p style='color:#DDDDDD;'>Activa la casilla <b>SEL</b> para modificar o eliminar un registro.</p>", unsafe_allow_html=True)
+        st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 10px !important; }</style>""", unsafe_allow_html=True)
+        
+        col_conf_exp = col_conf if 'col_conf' in locals() else {}
+        ed = st.data_editor(vst_df, hide_index=True, use_container_width=True, column_config=col_conf_exp, key=f"ed_{h_name}_oculta")
+        
+        for col in ed.columns:
+            if "fecha" in col.lower() or "f_" in col.lower():
+                ed[col] = ed[col].astype(str).replace(["NaT", "None"], "")
+
+        if "SEL" in ed.columns:
+            sel = ed[ed["SEL"] == True]
                             # ==========================================
                             # NUEVO DISEÑO: CONTRATOS
                             # ==========================================
