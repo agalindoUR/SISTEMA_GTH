@@ -7,3 +7,4 @@ oauth2client
 Pillow
 requests
 plotly
+google-auth
