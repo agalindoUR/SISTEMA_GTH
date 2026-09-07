@@ -679,14 +679,8 @@ st.markdown(
         font-weight: bold !important; 
         font-size: 16px !important; 
     }
-</style>
-""",
-    unsafe_allow_html=True,
-)
 
-    /* ========================================= */
-    /* TABLAS INTERACTIVAS                       */
-    /* ========================================= */
+    /* TABLAS INTERACTIVAS */
     [data-testid="stDataEditor"], [data-testid="stTable"], .stTable { background-color: white !important; border-radius: 10px !important; overflow: hidden !important; }
     
     [data-testid="stDataEditor"] .react-grid-HeaderCell span { 
@@ -698,74 +692,90 @@ st.markdown(
     
     thead tr th { background-color: #FFF9C4 !important; color: #000000 !important; font-weight: bold !important; text-transform: uppercase !important; border: 1px solid #f0f0f0 !important; }
     
-    /* ========================================= */
-    /* SUBTÍTULOS (LABELS DE LOS FORMULARIOS)    */
-    /* ========================================= */
-    
-    /* 1. Subtítulos generales (Login, Buscar, Alta Trabajador) en color DORADO */
+    /* SUBTÍTULOS (LABELS DE LOS FORMULARIOS) */
     label p, label span, .stApp label p { 
         color: #FFD700 !important; 
         font-weight: bold !important; 
         font-size: 16px !important; 
     }
     
-    /* 2. Subtítulos SOLO dentro de los recuadros desplegables (fondo crema) en color GUINDA */
     [data-testid="stExpander"] label p, [data-testid="stExpander"] label span { 
         color: #4a0000 !important; 
         font-weight: bold !important; 
     }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 # ==========================================
 # 4. LÓGICA DE DATOS Y SESIÓN
 # ==========================================
-if "rol" not in st.session_state: st.session_state.rol = None
-if "usuario_actual" not in st.session_state: st.session_state.usuario_actual = None
+if "rol" not in st.session_state:
+    st.session_state.rol = None
+if "usuario_actual" not in st.session_state:
+    st.session_state.usuario_actual = None
 
 # ---> CARGAMOS LOS DATOS ANTES DEL LOGIN <---
 dfs = load_data()
 
 if st.session_state.rol is None:
-    st.markdown("<h3 style='text-align: center; color: #FFD700;'>¡Tu talento es importante! :)</h3>", unsafe_allow_html=True)
+    st.markdown(
+        "<h3 style='text-align: center; color: #FFD700;'>¡Tu talento es importante! :)</h3>",
+        unsafe_allow_html=True,
+    )
 
     col_logo1, col_logo2, col_logo3 = st.columns([1, 1.2, 1])
     with col_logo2:
-        if os.path.exists("Logo_amarillo.png"): st.image("Logo_amarillo.png", use_container_width=False)
+        if os.path.exists("Logo_amarillo.png"):
+            st.image("Logo_amarillo.png", use_container_width=True)
 
     col1, col2, col3 = st.columns([1, 1.5, 1])
     with col2:
         u = st.text_input("USUARIO").lower().strip()
         p = st.text_input("CONTRASEÑA", type="password")
-        st.markdown('<p style="color:white; text-align:center; font-weight:bold; margin-top:15px;">Bienvenido (a) al sistema de gestión de datos de los colaboradores</p>', unsafe_allow_html=True)
+        st.markdown(
+            '<p style="color:white; text-align:center; font-weight:bold; margin-top:15px;">Bienvenido (a) al sistema de gestión de datos de los colaboradores</p>',
+            unsafe_allow_html=True,
+        )
 
         if st.button("INGRESAR"):
             df_usuarios = dfs.get("USUARIOS", pd.DataFrame())
-            
-            # Buscamos en el dataframe de Google Sheets
+
             if not df_usuarios.empty and "usuario" in df_usuarios.columns:
-                user_match = df_usuarios[(df_usuarios["usuario"].astype(str).str.lower() == u) & 
-                                         (df_usuarios["password"].astype(str) == p)]
-                
+                user_match = df_usuarios[
+                    (df_usuarios["usuario"].astype(str).str.lower() == u)
+                    & (df_usuarios["password"].astype(str) == p)
+                ]
+
                 if not user_match.empty:
-                    estado = str(user_match.iloc[0].get("estado", "Activo")).title().strip()
+                    estado = (
+                        str(user_match.iloc[0].get("estado", "Activo"))
+                        .title()
+                        .strip()
+                    )
                     if estado == "Inactivo":
-                        st.error("⚠️ Tu cuenta está inactiva. Contacta al administrador.")
+                        st.error(
+                            "⚠️ Tu cuenta está inactiva. Contacta al administrador."
+                        )
                     else:
-                        st.session_state.rol = user_match.iloc[0].get("rol", "Lector").strip().capitalize()
+                        st.session_state.rol = (
+                            user_match.iloc[0]
+                            .get("rol", "Lector")
+                            .strip()
+                            .capitalize()
+                        )
                         st.session_state.usuario_actual = u
                         st.rerun()
                 else:
-                    # Backup de emergencia por si algo falla
-                    if u == "admin" and p == "12345": 
+                    if u == "admin" and p == "12345":
                         st.session_state.rol = "Admin"
                         st.session_state.usuario_actual = "admin"
                         st.rerun()
                     else:
                         st.error("❌ Credenciales incorrectas.")
             else:
-                # Si la pestaña USUARIOS está vacía o no existe
-                if u == "admin" and p == "12345": 
+                if u == "admin" and p == "12345":
                     st.session_state.rol = "Admin"
                     st.session_state.usuario_actual = "admin"
                     st.rerun()
@@ -777,46 +787,76 @@ else:
 
     with st.sidebar:
         st.markdown("<br>", unsafe_allow_html=True)
-        col_logo_1, col_logo_2, col_logo_3 = st.columns([1, 2, 1]) 
+        col_logo_1, col_logo_2, col_logo_3 = st.columns([1, 2, 1])
         with col_logo_2:
-            if os.path.exists("Logo_guindo.png"): st.image("Logo_guindo.png", use_container_width=False)
-        st.markdown("<br>", unsafe_allow_html=True)
-        
-        # ---> MOSTRAMOS USUARIO LOGUEADO <---
-        st.markdown(f"<div style='text-align: center; color:#FFD700;'>Hola, <b>{st.session_state.usuario_actual}</b><br><small>Rol: {st.session_state.rol}</small></div>", unsafe_allow_html=True)
+            if os.path.exists("Logo_guindo.png"):
+                st.image("Logo_guindo.png", use_container_width=True)
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # --- LÓGICA DE MENÚS INTELIGENTES ---
-        if "menu_p" not in st.session_state: st.session_state.menu_p = "🔍 Consulta"
-        if "menu_r" not in st.session_state: st.session_state.menu_r = None
-        if "menu_activo" not in st.session_state: st.session_state.menu_activo = "🔍 Consulta"
+        st.markdown(
+            f"<div style='text-align: center; color:#FFD700;'>Hola, <b>{st.session_state.usuario_actual}</b><br><small>Rol: {st.session_state.rol}</small></div>",
+            unsafe_allow_html=True,
+        )
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        if "menu_p" not in st.session_state:
+            st.session_state.menu_p = "🔍 Consulta"
+        if "menu_r" not in st.session_state:
+            st.session_state.menu_r = None
+        if "menu_activo" not in st.session_state:
+            st.session_state.menu_activo = "🔍 Consulta"
 
         def click_menu_p():
             st.session_state.menu_activo = st.session_state.menu_p
-            st.session_state.menu_r = None # Apaga los reportes
+            st.session_state.menu_r = None
 
         def click_menu_r():
             if st.session_state.menu_r is not None:
                 st.session_state.menu_activo = st.session_state.menu_r
-                st.session_state.menu_p = None # Apaga el menú principal
+                st.session_state.menu_p = None
 
         st.markdown("### 🛠️ MENÚ PRINCIPAL")
-        # AGREGADO: index=None para permitir que este menú se pueda desmarcar desde el código
-        st.radio("Menú Principal", ["🔍 Consulta", "➕ Registro", "⏰ Horarios Administrativos", "📊 Nómina General", "🏢 Estructura", "📋 Evaluaciones", "📈 Dashboard Desempeño"], key="menu_p", on_change=click_menu_p, index=None, label_visibility="collapsed")
-        
-        st.markdown("<h3 style='color: #FFD700;'>📊 REPORTES</h3>", unsafe_allow_html=True)
-        # Este ya lo tenías bien con index=None
-        st.radio("Reportes", ["Reporte General", "Cumpleañeros", "Vacaciones", "Vencimientos"], key="menu_r", on_change=click_menu_r, index=None, label_visibility="collapsed")
-        
-        # ---> CALLBACK PARA EL MENÚ DE USUARIOS <---
+        st.radio(
+            "Menú Principal",
+            [
+                "🔍 Consulta",
+                "➕ Registro",
+                "⏰ Horarios Administrativos",
+                "📊 Nómina General",
+                "🏢 Estructura",
+                "📋 Evaluaciones",
+                "📈 Dashboard Desempeño",
+            ],
+            key="menu_p",
+            on_change=click_menu_p,
+            index=None,
+            label_visibility="collapsed",
+        )
+
+        st.markdown(
+            "<h3 style='color: #FFD700;'>📊 REPORTES</h3>",
+            unsafe_allow_html=True,
+        )
+        st.radio(
+            "Reportes",
+            ["Reporte General", "Cumpleañeros", "Vacaciones", "Vencimientos"],
+            key="menu_r",
+            on_change=click_menu_r,
+            index=None,
+            label_visibility="collapsed",
+        )
+
         def click_usuarios():
             st.session_state.menu_activo = "🔐 Usuarios y Seguridad"
             st.session_state.menu_p = None
             st.session_state.menu_r = None
 
         st.markdown("---")
-        # Usamos on_click para ejecutar la función antes de redibujar
-        st.button("🔐 Usuarios y Seguridad", use_container_width=True, on_click=click_usuarios)
+        st.button(
+            "🔐 Usuarios y Seguridad",
+            use_container_width=True,
+            on_click=click_usuarios,
+        )
 
         m = st.session_state.menu_activo
 
@@ -829,47 +869,78 @@ else:
 
     # === SECCIÓN DE MÓDULOS ===
     if m == "🔍 Consulta":
-        st.markdown("<h2 style='color: #FFD700;'>Búsqueda de Colaborador</h2>", unsafe_allow_html=True)
+        st.markdown(
+            "<h2 style='color: #FFD700;'>Búsqueda de Colaborador</h2>",
+            unsafe_allow_html=True,
+        )
 
         df_per_consulta = dfs["PERSONAL"].copy()
-        
-        df_per_consulta["dni_str"] = df_per_consulta.get("dni", pd.Series([""]*len(df_per_consulta))).astype(str).str.strip()
-        apellidos_col = df_per_consulta.get("apellidos", pd.Series([""]*len(df_per_consulta))).fillna("").astype(str).str.strip()
-        nombres_col = df_per_consulta.get("nombres", pd.Series([""]*len(df_per_consulta))).fillna("").astype(str).str.strip()
-        
-        df_per_consulta["nom_str"] = (apellidos_col + " " + nombres_col).str.strip()
-        df_per_consulta["search_str"] = df_per_consulta["dni_str"] + " - " + df_per_consulta["nom_str"]
-        
-        opciones_buscador = [""] + [x for x in df_per_consulta["search_str"].tolist() if x != " - "]
 
-        selected_search = st.selectbox("🔍 Escriba el DNI o Apellidos y Nombres:", opciones_buscador)
+        df_per_consulta["dni_str"] = (
+            df_per_consulta.get("dni", pd.Series([""] * len(df_per_consulta)))
+            .astype(str)
+            .str.strip()
+        )
+        apellidos_col = (
+            df_per_consulta.get(
+                "apellidos", pd.Series([""] * len(df_per_consulta))
+            )
+            .fillna("")
+            .astype(str)
+            .str.strip()
+        )
+        nombres_col = (
+            df_per_consulta.get(
+                "nombres", pd.Series([""] * len(df_per_consulta))
+            )
+            .fillna("")
+            .astype(str)
+            .str.strip()
+        )
+
+        df_per_consulta["nom_str"] = (
+            apellidos_col + " " + nombres_col
+        ).str.strip()
+        df_per_consulta["search_str"] = (
+            df_per_consulta["dni_str"] + " - " + df_per_consulta["nom_str"]
+        )
+
+        opciones_buscador = [""] + [
+            x
+            for x in df_per_consulta["search_str"].tolist()
+            if x != " - "
+        ]
+
+        selected_search = st.selectbox(
+            "🔍 Escriba el DNI o Apellidos y Nombres:", opciones_buscador
+        )
 
         if selected_search:
             dni_buscado = selected_search.split(" - ")[0].strip()
-            
-            fila_pers = df_per_consulta[df_per_consulta["dni_str"] == dni_buscado]
+
+            fila_pers = df_per_consulta[
+                df_per_consulta["dni_str"] == dni_buscado
+            ]
             if not fila_pers.empty:
                 nom_c = fila_pers.iloc[0]["nom_str"]
-                # --- AQUÍ ESTÁ LA SOLUCIÓN ---
                 ape_c = str(fila_pers.iloc[0].get("apellidos", "")).strip()
                 nom_p_c = str(fila_pers.iloc[0].get("nombres", "")).strip()
-                # -----------------------------
 
-               # --- NUEVA LÓGICA DE FOTO (Revisada para mayor tamaño y ajuste perfecto) ---
-                # Buscamos la columna "foto" (minúscula o mayúscula)
-                link_foto_raw = fila_pers.iloc[0].get("foto", fila_pers.iloc[0].get("FOTO", ""))
-                
-                # Transformamos el link (si usas Postimages/Blogger, la función lo dejará igual)
+                link_foto_raw = fila_pers.iloc[0].get(
+                    "foto", fila_pers.iloc[0].get("FOTO", "")
+                )
+
                 if pd.notnull(link_foto_raw) and str(link_foto_raw).strip() != "":
-                    foto_directa = obtener_link_directo_drive(str(link_foto_raw).strip())
+                    foto_directa = obtener_link_directo_drive(
+                        str(link_foto_raw).strip()
+                    )
                 else:
                     foto_directa = None
 
-                # Renderizamos la cabecera con FOTO MÁS GRANDE y AJUSTE PERFECTO
                 if foto_directa:
-                    st.markdown(f"""
+                    st.markdown(
+                        f"""
                         <style>
-                        /* Nueva clase para foto más grande que oculta los bordes guindos */
                         .foto-perfil-large {{
                             width: 110px;
                             height: 110px;
@@ -881,7 +952,6 @@ else:
                             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
                             transition: transform 0.2s ease-in-out;
                         }}
-                        /* Efecto hover ligero, pero SIN clic y SIN abrir ventana */
                         .foto-perfil-large:hover {{
                             transform: scale(1.08);
                         }}
@@ -891,18 +961,46 @@ else:
                             <h1 id='avatar-{dni_buscado}' style='color: white; margin: 0; margin-right: 15px; font-size: 3em; display: none;'>👤</h1>
                             <h1 style='color: #FFD700; margin: 0; font-size: 2.5em;'>{nom_c}</h1>
                         </div>
-                    """, unsafe_allow_html=True)
+                    """,
+                        unsafe_allow_html=True,
+                    )
                 else:
-                    # Versión por defecto si no hay foto
-                    st.markdown(f"""
+                    st.markdown(
+                        f"""
                         <div style='border-bottom: 2px solid #FFD700; padding-bottom: 10px; margin-bottom: 20px; display: flex; align-items: center;'>
                             <h1 style='color: white; margin: 0; margin-right: 15px; font-size: 3em;'>👤</h1>
                             <h1 style='color: #FFD700; margin: 0; font-size: 2.5em;'>{nom_c}</h1>
                         </div>
-                    """, unsafe_allow_html=True)
-                                
-                t_noms = ["Datos Generales", "Exp. Laboral", "Form. Académica", "Investigación", "Datos Familiares", "Contratos", "Vacaciones", "Otros Beneficios", "Méritos/Demer.", "Evaluación", "Liquidaciones"]
-                h_keys = ["DATOS GENERALES", "EXP. LABORAL", "FORM. ACADEMICA", "INVESTIGACION", "DATOS FAMILIARES", "CONTRATOS", "VACACIONES", "OTROS BENEFICIOS", "MERITOS Y DEMERITOS", "EVALUACION DEL DESEMPEÑO", "LIQUIDACIONES"]
+                    """,
+                        unsafe_allow_html=True,
+                    )
+
+                t_noms = [
+                    "Datos Generales",
+                    "Exp. Laboral",
+                    "Form. Académica",
+                    "Investigación",
+                    "Datos Familiares",
+                    "Contratos",
+                    "Vacaciones",
+                    "Otros Beneficios",
+                    "Méritos/Demer.",
+                    "Evaluación",
+                    "Liquidaciones",
+                ]
+                h_keys = [
+                    "DATOS GENERALES",
+                    "EXP. LABORAL",
+                    "FORM. ACADEMICA",
+                    "INVESTIGACION",
+                    "DATOS FAMILIARES",
+                    "CONTRATOS",
+                    "VACACIONES",
+                    "OTROS BENEFICIOS",
+                    "MERITOS Y DEMERITOS",
+                    "EVALUACION DEL DESEMPEÑO",
+                    "LIQUIDACIONES",
+                ]
 
                 tabs = st.tabs(t_noms)
 
@@ -910,194 +1008,527 @@ else:
                     h_name = h_keys[i]
                     with tab:
                         if h_name in dfs and "dni" in dfs[h_name].columns:
-                            c_df = dfs[h_name][dfs[h_name]["dni"] == dni_buscado]
+                            c_df = dfs[h_name][
+                                dfs[h_name]["dni"] == dni_buscado
+                            ]
                         else:
-                            c_df = pd.DataFrame(columns=COLUMNAS.get(h_name, []))
+                            c_df = pd.DataFrame(
+                                columns=COLUMNAS.get(h_name, [])
+                            )
 
                         if h_name == "CONTRATOS":
-                            df_contratos_base = dfs.get("CONTRATOS", pd.DataFrame())
-                            if not df_contratos_base.empty and "dni" in df_contratos_base.columns:
-                                df_contratos = df_contratos_base[df_contratos_base["dni"].astype(str) == str(dni_buscado)]
+                            df_contratos_base = dfs.get(
+                                "CONTRATOS", pd.DataFrame()
+                            )
+                            if (
+                                not df_contratos_base.empty
+                                and "dni" in df_contratos_base.columns
+                            ):
+                                df_contratos = df_contratos_base[
+                                    df_contratos_base["dni"].astype(str)
+                                    == str(dni_buscado)
+                                ]
                             else:
                                 df_contratos = pd.DataFrame()
+
                             if not df_contratos.empty:
-                                st.markdown("""
-                                    <style>
-                                    [data-testid="stDownloadButton"] button { background-color: #FFD700 !important; border: 2px solid #4A0000 !important; }
-                                    [data-testid="stDownloadButton"] button p { color: #4A0000 !important; font-weight: bold !important; font-size: 16px !important; }
-                                    [data-testid="stDownloadButton"] button:hover { background-color: #ffffff !important; border: 2px solid #FFD700 !important; }
-                                    </style>
-                                """, unsafe_allow_html=True)
+                                st.dataframe(
+                                    df_contratos, use_container_width=True
+                                )
+
+                                col_cert1, col_cert2 = st.columns([2, 1])
+                                with col_cert1:
+                                    tipo_doc = st.selectbox(
+                                        "Seleccione tipo de certificado a emitir:",
+                                        [
+                                            "Automático (Detectar por historial)",
+                                            "Certificado de Trabajo (Administrativo)",
+                                            "Certificado de Trabajo (Docente)",
+                                            "Constancia de Locación de Servicios (Administrativo)",
+                                            "Constancia de Locación de Servicios (Docente)",
+                                        ],
+                                        key=f"tipo_doc_{dni_buscado}",
+                                    )
+
+                                with col_cert2:
+                                    st.markdown("<br>", unsafe_allow_html=True)
+                                    doc_buffer = gen_word(
+                                        nom_c, dni_buscado, df_contratos, tipo_doc
+                                    )
+                                    st.download_button(
+                                        label="📄 Generar Documento Word",
+                                        data=doc_buffer,
+                                        file_name=f"Certificado_{dni_buscado}.docx",
+                                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                                        key=f"dl_cert_{dni_buscado}",
+                                    )
+                            else:
+                                st.info(
+                                    "No se encontraron registros de contratos para este colaborador."
+                                )
+
+                        elif h_name == "VACACIONES":
+                            if not c_df.empty:
+                                st.dataframe(c_df, use_container_width=True)
+
+                                st.markdown("### 📄 Generar Papeleta de Vacaciones")
+                                with st.form(f"form_papeleta_{dni_buscado}"):
+                                    c_p1, c_p2 = st.columns(2)
+                                    with c_p1:
+                                        p_cargo = st.text_input(
+                                            "Cargo:",
+                                            value=(
+                                                c_df.iloc[0].get("cargo", "")
+                                                if "cargo" in c_df.columns
+                                                else ""
+                                            ),
+                                        )
+                                        p_f_ing = st.date_input(
+                                            "Fecha de Ingreso:", date.today()
+                                        )
+                                        p_per = st.text_input(
+                                            "Periodo Vacacional:",
+                                            value=str(date.today().year),
+                                        )
+                                    with c_p2:
+                                        p_f_ini = st.date_input(
+                                            "Fecha de Inicio de Vacaciones:",
+                                            date.today(),
+                                        )
+                                        p_f_fin = st.date_input(
+                                            "Fecha de Fin de Vacaciones:",
+                                            date.today(),
+                                        )
+                                        p_dias = st.number_input(
+                                            "Días Gozados:",
+                                            min_value=1,
+                                            max_value=30,
+                                            value=7,
+                                        )
+
+                                    btn_gen_papeleta = st.form_submit_button(
+                                        "Generar Papeleta"
+                                    )
+
+                                if btn_gen_papeleta:
+                                    papeleta_stream = gen_papeleta_vac(
+                                        ape_c,
+                                        nom_p_c,
+                                        dni_buscado,
+                                        p_cargo,
+                                        p_f_ing,
+                                        p_per,
+                                        p_f_ini,
+                                        p_f_fin,
+                                        p_dias,
+                                    )
+                                    if papeleta_stream:
+                                        st.download_button(
+                                            label="📥 Descargar Papeleta Word",
+                                            data=papeleta_stream,
+                                            file_name=f"Papeleta_Vacaciones_{dni_buscado}.docx",
+                                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                                        )
+                            else:
+                                st.info(
+                                    "No hay registros de vacaciones para este colaborador."
+                                )
+
+                        else:
+                            if not c_df.empty:
+                                st.dataframe(c_df, use_container_width=True)
+                            else:
+                                st.info(
+                                    f"Sin información registrada en {h_name}."
+                                )
+
+    elif m == "➕ Registro":
+        mod_registro.render(dfs, es_lector)
+
+    elif m == "⏰ Horarios Administrativos":
+        mod_horarios_admin.render(dfs)
+
+    elif m == "📊 Nómina General":
+        mod_nomina.render(dfs)
+
+    elif m == "🏢 Estructura":
+        mod_estructura.render(dfs)
+
+    elif m == "📋 Evaluaciones":
+        mod_gestor_evaluaciones.render(dfs)
+
+    elif m == "📈 Dashboard Desempeño":
+        mod_dashboard.render(dfs)
+
+    elif m == "Reporte General":
+        mod_reportegeneral.render(dfs)
+
+    elif m == "Cumpleañeros":
+        mod_cumpleanos.render(dfs)
+
+    elif m == "Vacaciones":
+        mod_vacaciones.render(dfs)
+
+    elif m == "Vencimientos":
+        mod_vencimientos.render(dfs)
+
+    elif m == "🔐 Usuarios y Seguridad":
+        mod_usuarios.render(dfs)
                                                               
                             # =========================================================================
-                            # 🎯 INTERFAZ DE GENERACIÓN DE CERTIFICADO (CON FILTROS DE SEGURIDAD)
-                            # =========================================================================
-                            st.markdown("### 📄 Opciones de Certificado")
-                            
-                            # 1. Analizar el historial completo para restringir las opciones incorrectas
-                            df_merged_para_filtro = get_consolidated_contracts(df_contratos)
-                            ha_sido_docente = False
-                            ha_sido_administrativo = False
-                            ha_tenido_planilla = False
-                            ha_tenido_locacion = False
-                            
-                            if not df_merged_para_filtro.empty:
-                                for _, fila in df_merged_para_filtro.iterrows():
-                                    # Convertimos toda la fila a texto en minúsculas para evaluar las palabras clave
-                                    texto_fila = " ".join([str(val).lower() for val in fila.values])
-                                    
-                                    # Filtro por tipo de rol
-                                    if "docente" in texto_fila or "profesor" in texto_fila or "catedra" in texto_fila:
-                                        ha_sido_docente = True
-                                    else:
-                                        ha_sido_administrativo = True
-                                        
-                                    # Filtro por modalidad de pago/contrato
-                                    if "locacion" in texto_fila or "honorarios" in texto_fila or "servicios terceros" in texto_fila or "terceros" in texto_fila:
-                                        ha_tenido_locacion = True
-                                    else:
-                                        ha_tenido_planilla = True
-                            
-                            # 2. Construir dinámicamente la lista de opciones válidas para este trabajador
-                            opciones_permitidas = ["Automático (Detectar por último contrato)"]
-                            
-                            if ha_sido_administrativo and ha_tenido_planilla:
-                                opciones_permitidas.append("Certificado de Trabajo - Planilla Administrativo")
-                                
-                            if ha_sido_administrativo and ha_tenido_locacion:
-                                opciones_permitidas.append("Constancia de Servicios - Locación Administrativo")
-                                
-                            if ha_sido_docente and ha_tenido_planilla:
-                                opciones_permitidas.append("Certificado de Trabajo - Planilla Docente")
-                                
-                            if ha_sido_docente and ha_tenido_locacion:
-                                opciones_permitidas.append("Constancia de Servicios - Locación Docente")
-                            
-                            # Salvaguarda: Si el algoritmo no reconoce textos conocidos, muestra todas por defecto para no bloquear el flujo
-                            if len(opciones_permitidas) == 1:
-                                opciones_permitidas = [
-                                    "Automático (Detectar por último contrato)",
-                                    "Certificado de Trabajo - Planilla Administrativo",
-                                    "Constancia de Servicios - Locación Administrativo",
-                                    "Certificado de Trabajo - Planilla Docente",
-                                    "Constancia de Servicios - Locación Docente"
-                                ]
-                            
-                            # 3. El usuario elige solo sobre las opciones seguras y válidas
-                            tipo_certificado = st.selectbox(
-                                "Seleccione el tipo de documento a generar:",
-                                opciones_permitidas,
-                                key=f"selector_certificado_{dni_buscado}"
-                            )
-                            
-                            # 4. Generación del archivo en vivo pasando la selección final
-                            try:
-                                word_file = gen_word(nom_c, dni_buscado, df_contratos, tipo_certificado)
-                                
-                                # 5. Botón de descarga
-                                st.download_button(
-                                    label="📥 Descargar Documento Word",
-                                    data=word_file,
-                                    file_name=f"Certificado_{dni_buscado}.docx",
-                                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                                    key=f"btn_descargar_cert_{dni_buscado}"
-                                )
-                            except Exception as e:
-                                st.error(f"Error al generar el documento: {e}")
-                            
-                            st.markdown("<br>", unsafe_allow_html=True)
+# 🎯 INTERFAZ DE GENERACIÓN DE CERTIFICADO (CON FILTROS DE SEGURIDAD)
+# =========================================================================
+st.markdown("### 📄 Opciones de Certificado")
 
-                        if h_name == "VACACIONES":
-                            df_tc = df_contratos[df_contratos["tipo contrato"].astype(str).str.lower().str.contains("planilla", na=False)] if "df_contratos" in locals() else pd.DataFrame()
-                            
-                            detalles = []
-                            dias_generados_totales = 0
-                            dias_gozados_totales = pd.to_numeric(c_df["dias gozados"], errors='coerce').sum()
+# 1. Analizar el historial completo para restringir las opciones incorrectas
+df_merged_para_filtro = get_consolidated_contracts(df_contratos)
+ha_sido_docente = False
+ha_sido_administrativo = False
+ha_tenido_planilla = False
+ha_tenido_locacion = False
 
-                            if not df_tc.empty:
-                                df_tc_calc = df_tc.copy()
-                                df_tc_calc['f_inicio_dt'] = pd.to_datetime(df_tc_calc['f_inicio'], errors='coerce')
-                                df_tc_calc['f_fin_dt'] = pd.to_datetime(df_tc_calc['f_fin'], errors='coerce')
-                                
-                                start_global = df_tc_calc['f_inicio_dt'].min()
-                                
-                                if pd.notnull(start_global):
-                                    start_global = start_global.date()
-                                    curr_start = start_global
-                                    
-                                    while curr_start <= date.today():
-                                        curr_end = (pd.to_datetime(curr_start) + pd.DateOffset(years=1) - pd.Timedelta(days=1)).date()
-                                        days_in_p = 0
-                                        
-                                        for _, r in df_tc_calc.iterrows():
-                                            c_start = r['f_inicio_dt'].date() if pd.notnull(r['f_inicio_dt']) else None
-                                            c_end = r['f_fin_dt'].date() if pd.notnull(r['f_fin_dt']) else None
-                                            if c_start and c_end:
-                                                o_start = max(curr_start, c_start)
-                                                o_end = min(curr_end, c_end, date.today())
-                                                if o_start <= o_end: 
-                                                    days_in_p += (o_end - o_start).days + 1
-                                                
-                                        # --- SOLUCIÓN: CÁLCULO PROPORCIONAL EXACTO ---
-                                        # Obtenemos los días totales reales que tiene ese periodo (365 o 366 si cruza un bisiesto)
-                                        total_dias_periodo = (curr_end - curr_start).days + 1
-                                        
-                                        # Nueva fórmula: garantizamos un máximo exacto de 30 días por año completo
-                                        gen_p = round((days_in_p / total_dias_periodo) * 30, 2)
-                                        # ---------------------------------------------
-                                        
-                                        p_name = f"{curr_start.year}-{curr_start.year+1}"
-                                        
-                                        goz_df = c_df[c_df["periodo"].astype(str).str.strip() == p_name]
-                                        goz_p = pd.to_numeric(goz_df["dias gozados"], errors='coerce').sum()
-                                        
-                                        if gen_p > 0 or goz_p > 0:
-                                            detalles.append({"Periodo": p_name, "Del": curr_start.strftime("%d/%m/%Y"), "Al": curr_end.strftime("%d/%m/%Y"), "Días Generados": gen_p, "Dias Gozados": goz_p, "Saldo": round(gen_p - goz_p, 2)})
-                                        
-                                        dias_generados_totales += gen_p
-                                        curr_start = (pd.to_datetime(curr_start) + pd.DateOffset(years=1)).date()
+if not df_merged_para_filtro.empty:
+    for _, fila in df_merged_para_filtro.iterrows():
+        # Convertimos toda la fila a texto en minúsculas para evaluar las palabras clave
+        texto_fila = " ".join([str(val).lower() for val in fila.values])
 
-                            saldo_v = round(dias_generados_totales - dias_gozados_totales, 2)
+        # Filtro por tipo de rol
+        if (
+            "docente" in texto_fila
+            or "profesor" in texto_fila
+            or "catedra" in texto_fila
+        ):
+            ha_sido_docente = True
+        else:
+            ha_sido_administrativo = True
 
-                            st.markdown(f"""
-                            <div style="display: flex; gap: 15px; margin-bottom: 20px;">
-                                <div style="flex: 1; background-color: #4A0000; padding: 20px; border-radius: 10px; text-align: center; border: 2px solid #FFD700;"><h2 style="color: #FFD700; margin: 0; font-size: 2.5em;">{dias_generados_totales:.2f}</h2><p style="color: #FFFFFF; margin: 0; font-weight: bold; font-size: 1.1em;">Días Generados Totales</p></div>
-                                <div style="flex: 1; background-color: #4A0000; padding: 20px; border-radius: 10px; text-align: center; border: 2px solid #FFD700;"><h2 style="color: #FFD700; margin: 0; font-size: 2.5em;">{dias_gozados_totales:.2f}</h2><p style="color: #FFFFFF; margin: 0; font-weight: bold; font-size: 1.1em;">Dias Gozados</p></div>
-                                <div style="flex: 1; background-color: #4A0000; padding: 20px; border-radius: 10px; text-align: center; border: 2px solid #FFD700;"><h2 style="color: #FFD700; margin: 0; font-size: 2.5em;">{saldo_v:.2f}</h2><p style="color: #FFFFFF; margin: 0; font-weight: bold; font-size: 1.1em;">Saldo Disponible</p></div>
-                            </div>
-                            """, unsafe_allow_html=True)
-                            
-                            if detalles:
-                                st.markdown("<h4 style='color: #FFD700;'>Desglose por Periodos</h4>", unsafe_allow_html=True)
-                                div_table = "<div style='display: flex; flex-direction: column; width: 100%; border: 2px solid #FFD700; border-radius: 8px; overflow: hidden; margin-bottom: 20px;'><div style='display: flex; background-color: #4A0000; color: #FFD700; font-weight: bold;'><div style='flex: 1; padding: 12px; text-align: center; border-right: 1px solid #FFD700;'>PERIODO</div><div style='flex: 1; padding: 12px; text-align: center; border-right: 1px solid #FFD700;'>DEL</div><div style='flex: 1; padding: 12px; text-align: center; border-right: 1px solid #FFD700;'>AL</div><div style='flex: 1; padding: 12px; text-align: center; border-right: 1px solid #FFD700;'>DÍAS GENERADOS</div><div style='flex: 1; padding: 12px; text-align: center; border-right: 1px solid #FFD700;'>DIAS GOZADOS</div><div style='flex: 1; padding: 12px; text-align: center;'>SALDO</div></div>"
-                                for d in detalles:
-                                    div_table += f"<div style='display: flex; background-color: #FFF9C4; color: #4A0000; font-weight: bold; border-top: 1px solid #FFD700;'><div style='flex: 1; padding: 10px; text-align: center; border-right: 1px solid #FFD700;'>{d['Periodo']}</div><div style='flex: 1; padding: 10px; text-align: center; border-right: 1px solid #FFD700;'>{d['Del']}</div><div style='flex: 1; padding: 10px; text-align: center; border-right: 1px solid #FFD700;'>{d['Al']}</div><div style='flex: 1; padding: 10px; text-align: center; border-right: 1px solid #FFD700;'>{d['Días Generados']:.2f}</div><div style='flex: 1; padding: 10px; text-align: center; border-right: 1px solid #FFD700;'>{d['Dias Gozados']:.2f}</div><div style='flex: 1; padding: 10px; text-align: center;'>{d['Saldo']:.2f}</div></div>"
-                                div_table += "</div>"
-                                st.markdown(div_table, unsafe_allow_html=True)
+        # Filtro por modalidad de pago/contrato
+        if (
+            "locacion" in texto_fila
+            or "honorarios" in texto_fila
+            or "servicios terceros" in texto_fila
+            or "terceros" in texto_fila
+        ):
+            ha_tenido_locacion = True
+        else:
+            ha_tenido_planilla = True
 
-                        vst = c_df.copy()
-                        
-                        cols_ocultar = [c for c in vst.columns if c.lower() in ["apellidos y nombres", "apellidos", "nombres"]]
-                        vst = vst.drop(columns=cols_ocultar)
+# 2. Construir dinámicamente la lista de opciones válidas para este trabajador
+opciones_permitidas = ["Automático (Detectar por último contrato)"]
 
-                        col_conf = {}
-                        for col in vst.columns:
-                            if "fecha" in col.lower() or "f_" in col.lower():
-                                vst[col] = pd.to_datetime(vst[col], errors='coerce').dt.date
-                                # Volvemos a usar date() ahora que ya no hay reglas duplicadas
-                                col_conf[str(col).upper()] = st.column_config.DateColumn(
-                                    format="DD/MM/YYYY",
-                                    min_value=date(1950, 1, 1),
-                                    max_value=date(2100, 12, 31)
-                                )
-                            elif col.lower().strip() == "periodo":
-                                vst[col] = vst[col].astype(str)
-                                col_conf[str(col).upper()] = st.column_config.TextColumn()
+if ha_sido_administrativo and ha_tenido_planilla:
+    opciones_permitidas.append(
+        "Certificado de Trabajo - Planilla Administrativo"
+    )
 
-                        vst.columns = [str(col).upper() for col in vst.columns]
-                            
-                        # Eliminamos duplicados de la base
-                        vst = vst.loc[:, ~vst.columns.duplicated()]
+if ha_sido_administrativo and ha_tenido_locacion:
+    opciones_permitidas.append(
+        "Constancia de Servicios - Locación Administrativo"
+    )
+
+if ha_sido_docente and ha_tenido_planilla:
+    opciones_permitidas.append("Certificado de Trabajo - Planilla Docente")
+
+if ha_sido_docente and ha_tenido_locacion:
+    opciones_permitidas.append("Constancia de Servicios - Locación Docente")
+
+# Salvaguarda: Si el algoritmo no reconoce textos conocidos, muestra todas por defecto para no bloquear el flujo
+if len(opciones_permitidas) == 1:
+    opciones_permitidas = [
+        "Automático (Detectar por último contrato)",
+        "Certificado de Trabajo - Planilla Administrativo",
+        "Constancia de Servicios - Locación Administrativo",
+        "Certificado de Trabajo - Planilla Docente",
+        "Constancia de Servicios - Locación Docente",
+    ]
+
+# 3. El usuario elige solo sobre las opciones seguras y válidas
+tipo_certificado = st.selectbox(
+    "Seleccione el tipo de documento a generar:",
+    opciones_permitidas,
+    key=f"selector_certificado_{dni_buscado}",
+)
+
+# 4. Generación del archivo en vivo pasando la selección final
+try:
+    word_file = gen_word(
+        nom_c, dni_buscado, df_contratos, tipo_certificado
+    )
+
+    # 5. Botón de descarga
+    st.download_button(
+        label="📥 Descargar Documento Word",
+        data=word_file,
+        file_name=f"Certificado_{dni_buscado}.docx",
+        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        key=f"btn_descargar_cert_{dni_buscado}",
+    )
+except Exception as e:
+    st.error(f"Error al generar el documento: {e}")
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+# =========================================================================
+# 🏖️ PESTAÑA DE VACACIONES (CÁLCULOS, TABLAS Y PAPELETAS)
+# =========================================================================
+if h_name == "VACACIONES":
+    df_tc = (
+        df_contratos[
+            df_contratos["tipo contrato"]
+            .astype(str)
+            .str.lower()
+            .str.contains("planilla", na=False)
+        ]
+        if "df_contratos" in locals() and not df_contratos.empty
+        else pd.DataFrame()
+    )
+
+    detalles = []
+    dias_generados_totales = 0
+    dias_gozados_totales = pd.to_numeric(
+        c_df["dias gozados"], errors="coerce"
+    ).sum()
+
+    if not df_tc.empty:
+        df_tc_calc = df_tc.copy()
+        df_tc_calc["f_inicio_dt"] = pd.to_datetime(
+            df_tc_calc["f_inicio"], errors="coerce"
+        )
+        df_tc_calc["f_fin_dt"] = pd.to_datetime(
+            df_tc_calc["f_fin"], errors="coerce"
+        )
+
+        start_global = df_tc_calc["f_inicio_dt"].min()
+
+        if pd.notnull(start_global):
+            start_global = start_global.date()
+            curr_start = start_global
+
+            while curr_start <= date.today():
+                curr_end = (
+                    pd.to_datetime(curr_start)
+                    + pd.DateOffset(years=1)
+                    - pd.Timedelta(days=1)
+                ).date()
+                days_in_p = 0
+
+                for _, r in df_tc_calc.iterrows():
+                    c_start = (
+                        r["f_inicio_dt"].date()
+                        if pd.notnull(r["f_inicio_dt"])
+                        else None
+                    )
+                    c_end = (
+                        r["f_fin_dt"].date()
+                        if pd.notnull(r["f_fin_dt"])
+                        else None
+                    )
+                    if c_start and c_end:
+                        o_start = max(curr_start, c_start)
+                        o_end = min(curr_end, c_end, date.today())
+                        if o_start <= o_end:
+                            days_in_p += (o_end - o_start).days + 1
+
+                # --- CÁLCULO PROPORCIONAL EXACTO ---
+                total_dias_periodo = (curr_end - curr_start).days + 1
+                gen_p = round((days_in_p / total_dias_periodo) * 30, 2)
+
+                p_name = f"{curr_start.year}-{curr_start.year+1}"
+
+                goz_df = c_df[
+                    c_df["periodo"].astype(str).str.strip() == p_name
+                ]
+                goz_p = pd.to_numeric(
+                    goz_df["dias gozados"], errors="coerce"
+                ).sum()
+
+                if gen_p > 0 or goz_p > 0:
+                    detalles.append(
+                        {
+                            "Periodo": p_name,
+                            "Del": curr_start.strftime("%d/%m/%Y"),
+                            "Al": curr_end.strftime("%d/%m/%Y"),
+                            "Días Generados": gen_p,
+                            "Dias Gozados": goz_p,
+                            "Saldo": round(gen_p - goz_p, 2),
+                        }
+                    )
+
+                dias_generados_totales += gen_p
+                curr_start = (
+                    pd.to_datetime(curr_start) + pd.DateOffset(years=1)
+                ).date()
+
+    saldo_v = round(dias_generados_totales - dias_gozados_totales, 2)
+
+    st.markdown(
+        f"""
+    <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+        <div style="flex: 1; background-color: #4A0000; padding: 20px; border-radius: 10px; text-align: center; border: 2px solid #FFD700;"><h2 style="color: #FFD700; margin: 0; font-size: 2.5em;">{dias_generados_totales:.2f}</h2><p style="color: #FFFFFF; margin: 0; font-weight: bold; font-size: 1.1em;">Días Generados Totales</p></div>
+        <div style="flex: 1; background-color: #4A0000; padding: 20px; border-radius: 10px; text-align: center; border: 2px solid #FFD700;"><h2 style="color: #FFD700; margin: 0; font-size: 2.5em;">{dias_gozados_totales:.2f}</h2><p style="color: #FFFFFF; margin: 0; font-weight: bold; font-size: 1.1em;">Dias Gozados</p></div>
+        <div style="flex: 1; background-color: #4A0000; padding: 20px; border-radius: 10px; text-align: center; border: 2px solid #FFD700;"><h2 style="color: #FFD700; margin: 0; font-size: 2.5em;">{saldo_v:.2f}</h2><p style="color: #FFFFFF; margin: 0; font-weight: bold; font-size: 1.1em;">Saldo Disponible</p></div>
+    </div>
+    """,
+        unsafe_allow_html=True,
+    )
+
+    if detalles:
+        st.markdown(
+            "<h4 style='color: #FFD700;'>Desglose por Periodos</h4>",
+            unsafe_allow_html=True,
+        )
+        div_table = "<div style='display: flex; flex-direction: column; width: 100%; border: 2px solid #FFD700; border-radius: 8px; overflow: hidden; margin-bottom: 20px;'><div style='display: flex; background-color: #4A0000; color: #FFD700; font-weight: bold;'><div style='flex: 1; padding: 12px; text-align: center; border-right: 1px solid #FFD700;'>PERIODO</div><div style='flex: 1; padding: 12px; text-align: center; border-right: 1px solid #FFD700;'>DEL</div><div style='flex: 1; padding: 12px; text-align: center; border-right: 1px solid #FFD700;'>AL</div><div style='flex: 1; padding: 12px; text-align: center; border-right: 1px solid #FFD700;'>DÍAS GENERADOS</div><div style='flex: 1; padding: 12px; text-align: center; border-right: 1px solid #FFD700;'>DIAS GOZADOS</div><div style='flex: 1; padding: 12px; text-align: center;'>SALDO</div></div>"
+        for d in detalles:
+            div_table += f"<div style='display: flex; background-color: #FFF9C4; color: #4A0000; font-weight: bold; border-top: 1px solid #FFD700;'><div style='flex: 1; padding: 10px; text-align: center; border-right: 1px solid #FFD700;'>{d['Periodo']}</div><div style='flex: 1; padding: 10px; text-align: center; border-right: 1px solid #FFD700;'>{d['Del']}</div><div style='flex: 1; padding: 10px; text-align: center; border-right: 1px solid #FFD700;'>{d['Al']}</div><div style='flex: 1; padding: 10px; text-align: center; border-right: 1px solid #FFD700;'>{d['Días Generados']:.2f}</div><div style='flex: 1; padding: 10px; text-align: center; border-right: 1px solid #FFD700;'>{d['Dias Gozados']:.2f}</div><div style='flex: 1; padding: 10px; text-align: center;'>{d['Saldo']:.2f}</div></div>"
+        div_table += "</div>"
+        st.markdown(div_table, unsafe_allow_html=True)
+
+    vst = c_df.copy()
+
+    cols_ocultar = [
+        c
+        for c in vst.columns
+        if c.lower() in ["apellidos y nombres", "apellidos", "nombres"]
+    ]
+    vst = vst.drop(columns=cols_ocultar)
+
+    col_conf = {}
+    for col in vst.columns:
+        if "fecha" in col.lower() or "f_" in col.lower():
+            vst[col] = pd.to_datetime(vst[col], errors="coerce").dt.date
+            col_conf[str(col).upper()] = st.column_config.DateColumn(
+                format="DD/MM/YYYY",
+                min_value=date(1950, 1, 1),
+                max_value=date(2100, 12, 31),
+            )
+        elif col.lower().strip() == "periodo":
+            vst[col] = vst[col].astype(str)
+            col_conf[str(col).upper()] = st.column_config.TextColumn()
+
+    vst.columns = [str(col).upper() for col in vst.columns]
+
+    # Eliminamos duplicados de la base
+    vst = vst.loc[:, ~vst.columns.duplicated()]
+
+    # Mostrar tabla estructurada de vacaciones registradas
+    if not vst.empty:
+        st.dataframe(
+            vst, column_config=col_conf, use_container_width=True
+        )
+
+    # Formulario para emitir papeleta de vacaciones en formato Word (.docx)
+    st.markdown("---")
+    st.markdown("### 📄 Generar Papeleta de Vacaciones")
+    with st.form(key=f"form_papeleta_{dni_buscado}"):
+        col_pap1, col_pap2 = st.columns(2)
+
+        cargo_def = ""
+        if "CONTRATOS" in dfs and not dfs["CONTRATOS"].empty:
+            contr_user = dfs["CONTRATOS"][
+                dfs["CONTRATOS"]["dni"].astype(str) == str(dni_buscado)
+            ]
+            if not contr_user.empty and "cargo" in contr_user.columns:
+                cargo_def = str(contr_user.iloc[-1]["cargo"])
+
+        with col_pap1:
+            p_cargo = st.text_input("Cargo del trabajador:", value=cargo_def)
+            p_f_ing = st.date_input("Fecha de Ingreso:", value=date.today())
+            p_per = st.text_input(
+                "Periodo Vacacional:", value=f"{date.today().year}"
+            )
+
+        with col_pap2:
+            p_f_ini = st.date_input(
+                "Inicio de Vacaciones:", value=date.today()
+            )
+            p_f_fin = st.date_input(
+                "Fin de Vacaciones:", value=date.today()
+            )
+            p_dias = st.number_input(
+                "Días Gozados:", min_value=1, max_value=30, value=7
+            )
+
+        btn_generar_papeleta = st.form_submit_button("📄 Generar Papeleta")
+
+    if btn_generar_papeleta:
+        try:
+            papeleta_doc = gen_papeleta_vac(
+                ape_c,
+                nom_p_c,
+                dni_buscado,
+                p_cargo,
+                p_f_ing,
+                p_per,
+                p_f_ini,
+                p_f_fin,
+                p_dias,
+            )
+            if papeleta_doc:
+                st.download_button(
+                    label="📥 Descargar Papeleta Word",
+                    data=papeleta_doc,
+                    file_name=f"Papeleta_Vacaciones_{dni_buscado}.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    key=f"dl_papeleta_{dni_buscado}",
+                )
+            else:
+                st.error("No se pudo generar el documento de papeleta.")
+        except Exception as err:
+            st.error(f"Error generando papeleta: {err}")
+
+# =========================================================================
+# 📌 RESTO DE PESTAÑAS (VISTA ESTÁNDAR)
+# =========================================================================
+elif h_name not in ["CONTRATOS", "VACACIONES"]:
+    if not c_df.empty:
+        # Formatear columnas de fecha
+        vst = c_df.copy()
+        for col in vst.columns:
+            if "fecha" in col.lower() or "f_" in col.lower():
+                vst[col] = pd.to_datetime(
+                    vst[col], errors="coerce"
+                ).dt.strftime("%d/%m/%Y")
+
+        st.dataframe(vst, use_container_width=True)
+    else:
+        st.info(f"Sin información registrada en {h_name}.")
+
+
+# =========================================================================
+# 5. ENRUTAMIENTO GENERAL DE MÓDULOS DE LA APLICACIÓN
+# =========================================================================
+elif m == "➕ Registro":
+    mod_registro.render(dfs, es_lector)
+
+elif m == "⏰ Horarios Administrativos":
+    mod_horarios_admin.render(dfs)
+
+elif m == "📊 Nómina General":
+    mod_nomina.render(dfs)
+
+elif m == "🏢 Estructura":
+    mod_estructura.render(dfs)
+
+elif m == "📋 Evaluaciones":
+    mod_gestor_evaluaciones.render(dfs)
+
+elif m == "📈 Dashboard Desempeño":
+    mod_dashboard.render(dfs)
+
+elif m == "Reporte General":
+    mod_reportegeneral.render(dfs)
+
+elif m == "Cumpleañeros":
+    mod_cumpleanos.render(dfs)
+
+elif m == "Vacaciones":
+    mod_vacaciones.render(dfs)
+
+elif m == "Vencimientos":
+    mod_vencimientos.render(dfs)
+
+elif m == "🔐 Usuarios y Seguridad":
+    mod_usuarios.render(dfs)
             
                       # =========================================================
                         # 1. SI ES DATOS GENERALES -> DISEÑO TIPO FICHA (TARJETA)
