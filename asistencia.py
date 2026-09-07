@@ -1,6 +1,7 @@
 import streamlit as st
 import mysql.connector
 import pandas as pd
+from mod_guardar_sheets import exportar_df_a_sheets
 
 # 1. Conexión a la base de datos de XAMPP
 def init_connection():
@@ -46,9 +47,21 @@ try:
     col1.metric("Total de Marcaciones Registradas", len(df_asistencia))
     col2.metric("Última actualización", pd.Timestamp.now().strftime("%H:%M:%S"))
     
-    if st.button("🔄 Refrescar Datos Ahora"):
-        st.cache_data.clear()
-        st.rerun()
+    btn_col1, btn_col2 = st.columns(2)
+    
+    with btn_col1:
+        if st.button("🔄 Refrescar Datos Ahora"):
+            st.cache_data.clear()
+            st.rerun()
+
+    with btn_col2:
+        if st.button("☁️ Sincronizar con Google Sheets", type="primary"):
+            with st.spinner("Subiendo datos a Google Sheets..."):
+                exito, msj = exportar_df_a_sheets(df_asistencia)
+                if exito:
+                    st.success(f"✅ {msj}")
+                else:
+                    st.error(f"⚠️ {msj}")
         
     st.dataframe(df_asistencia, use_container_width=True)
 
