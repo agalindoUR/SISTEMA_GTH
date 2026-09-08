@@ -1577,567 +1577,567 @@ for i, tab in enumerate(tabs):
         ed = st.data_editor(vst, hide_index=True, use_container_width=True, column_config=conf, key=f"ed_{h_name}_oculta")
         sel = ed[ed["SEL"] == True] if "SEL" in ed.columns else pd.DataFrame()
 
-    # ==========================================
-    # NUEVO DISEÑO: EXPERIENCIA LABORAL Y CÁLCULOS
-    # ==========================================
-    elif h_name == "EXP. LABORAL":
-        vst_df = c_df.copy() if not c_df.empty else pd.DataFrame()
-        
-        if not vst_df.empty and "SEL" not in vst_df.columns:
-            vst_df.insert(0, "SEL", False)
-
-        col_izq, col_der = st.columns([2, 1])
-        
-        df_contratos = dfs.get("CONTRATOS", pd.DataFrame())
-        col_dni_contratos = "DNI" if "DNI" in df_contratos.columns else "dni"
-        
-        contratos_empleado = pd.DataFrame()
-        if not df_contratos.empty and col_dni_contratos in df_contratos.columns:
-            contratos_empleado = df_contratos[df_contratos[col_dni_contratos].astype(str) == str(dni_buscado)]
-        
-        meses_docente = 0
-        meses_admin = 0
-        
-        def calcular_meses(f_ini, f_fin):
-            try:
-                inicio = pd.to_datetime(f_ini, errors='coerce')
-                fin = pd.to_datetime(f_fin, errors='coerce')
-                if pd.isna(inicio) or pd.isna(fin): return 0
-                return max(0, int((fin - inicio).days / 30.44))
-            except:
-                return 0
-                
-        def dar_formato_fecha(fecha_str):
-            try:
-                if pd.isna(fecha_str) or str(fecha_str).strip() in ["", "NaT", "None"]: 
-                    return "N/A"
-                return pd.to_datetime(fecha_str).strftime('%d/%m/%Y')
-            except:
-                return str(fecha_str)
-
-        with col_izq:
-            st.markdown("<h3 style='color: #FFD700;'>🏢 Experiencia Interna (Universidad Roosevelt)</h3>", unsafe_allow_html=True)
-            if contratos_empleado.empty:
-                st.markdown("<p style='color:#DDDDDD;'>No hay contratos internos registrados.</p>", unsafe_allow_html=True)
-            else:
-                for idx, row in contratos_empleado.iterrows():
-                    f_ini = row.get('f_inicio', row.get('F_INICIO', 'N/A'))
-                    f_fin = row.get('f_fin', row.get('F_FIN', 'N/A'))
+        # ==========================================
+        # NUEVO DISEÑO: EXPERIENCIA LABORAL Y CÁLCULOS
+        # ==========================================
+        elif h_name == "EXP. LABORAL":
+            vst_df = c_df.copy() if not c_df.empty else pd.DataFrame()
+            
+            if not vst_df.empty and "SEL" not in vst_df.columns:
+                vst_df.insert(0, "SEL", False)
+    
+            col_izq, col_der = st.columns([2, 1])
+            
+            df_contratos = dfs.get("CONTRATOS", pd.DataFrame())
+            col_dni_contratos = "DNI" if "DNI" in df_contratos.columns else "dni"
+            
+            contratos_empleado = pd.DataFrame()
+            if not df_contratos.empty and col_dni_contratos in df_contratos.columns:
+                contratos_empleado = df_contratos[df_contratos[col_dni_contratos].astype(str) == str(dni_buscado)]
+            
+            meses_docente = 0
+            meses_admin = 0
+            
+            def calcular_meses(f_ini, f_fin):
+                try:
+                    inicio = pd.to_datetime(f_ini, errors='coerce')
+                    fin = pd.to_datetime(f_fin, errors='coerce')
+                    if pd.isna(inicio) or pd.isna(fin): return 0
+                    return max(0, int((fin - inicio).days / 30.44))
+                except:
+                    return 0
                     
-                    f_ini_str = dar_formato_fecha(f_ini)
-                    f_fin_str = dar_formato_fecha(f_fin)
-                    
-                    puesto = row.get('cargo', row.get('CARGO', row.get('PUESTO', 'N/A')))
-                    tipo_trabajador_raw = str(row.get('TIPO DE TRABAJADOR', row.get('tipo de trabajador', 'Administrativo')))
-                    tipo_exp = "Docente" if "docente" in tipo_trabajador_raw.lower() else "Administrativo"
-                    
-                    meses_calc = calcular_meses(f_ini, f_fin)
-                    if tipo_exp == "Docente": meses_docente += meses_calc
-                    else: meses_admin += meses_calc
-
-                    st.markdown(f"""
-                    <div style='background-color: #F9F6EE; padding: 15px; border-radius: 8px; border-left: 6px solid #4A0000; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #CCCCCC;'>
-                        <div style='color: #000000; font-size: 1.1em; font-weight: bold; margin-bottom: 5px;'>{puesto} <span style='font-size: 0.85em; color: #555555;'>(Interno - {tipo_exp})</span></div>
-                        <div style='color: #222222; font-size: 0.95em;'>
-                            <strong>Lugar:</strong> Universidad Roosevelt <br>
-                            <strong>Periodo:</strong> {f_ini_str} hasta {f_fin_str} <br>
-                            <strong>Tipo de Contrato:</strong> {row.get('tipo contrato', row.get('TIPO CONTRATO', 'N/A'))}
+            def dar_formato_fecha(fecha_str):
+                try:
+                    if pd.isna(fecha_str) or str(fecha_str).strip() in ["", "NaT", "None"]: 
+                        return "N/A"
+                    return pd.to_datetime(fecha_str).strftime('%d/%m/%Y')
+                except:
+                    return str(fecha_str)
+    
+            with col_izq:
+                st.markdown("<h3 style='color: #FFD700;'>🏢 Experiencia Interna (Universidad Roosevelt)</h3>", unsafe_allow_html=True)
+                if contratos_empleado.empty:
+                    st.markdown("<p style='color:#DDDDDD;'>No hay contratos internos registrados.</p>", unsafe_allow_html=True)
+                else:
+                    for idx, row in contratos_empleado.iterrows():
+                        f_ini = row.get('f_inicio', row.get('F_INICIO', 'N/A'))
+                        f_fin = row.get('f_fin', row.get('F_FIN', 'N/A'))
+                        
+                        f_ini_str = dar_formato_fecha(f_ini)
+                        f_fin_str = dar_formato_fecha(f_fin)
+                        
+                        puesto = row.get('cargo', row.get('CARGO', row.get('PUESTO', 'N/A')))
+                        tipo_trabajador_raw = str(row.get('TIPO DE TRABAJADOR', row.get('tipo de trabajador', 'Administrativo')))
+                        tipo_exp = "Docente" if "docente" in tipo_trabajador_raw.lower() else "Administrativo"
+                        
+                        meses_calc = calcular_meses(f_ini, f_fin)
+                        if tipo_exp == "Docente": meses_docente += meses_calc
+                        else: meses_admin += meses_calc
+    
+                        st.markdown(f"""
+                        <div style='background-color: #F9F6EE; padding: 15px; border-radius: 8px; border-left: 6px solid #4A0000; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #CCCCCC;'>
+                            <div style='color: #000000; font-size: 1.1em; font-weight: bold; margin-bottom: 5px;'>{puesto} <span style='font-size: 0.85em; color: #555555;'>(Interno - {tipo_exp})</span></div>
+                            <div style='color: #222222; font-size: 0.95em;'>
+                                <strong>Lugar:</strong> Universidad Roosevelt <br>
+                                <strong>Periodo:</strong> {f_ini_str} hasta {f_fin_str} <br>
+                                <strong>Tipo de Contrato:</strong> {row.get('tipo contrato', row.get('TIPO CONTRATO', 'N/A'))}
+                            </div>
                         </div>
-                    </div>
-                    """, unsafe_allow_html=True)
-            
-            st.markdown("<h3 style='color: #FFD700; margin-top: 20px;'>💼 Experiencia Externa Registrada</h3>", unsafe_allow_html=True)
-            if vst_df.empty:
-                st.markdown("<p style='color:#DDDDDD;'>No hay experiencia externa registrada.</p>", unsafe_allow_html=True)
-            else:
-                for idx, row in vst_df.iterrows():
-                    f_ini = row.get('FECHA DE INICIO', row.get('fecha de inicio', 'N/A'))
-                    f_fin = row.get('FECHA DE FIN', row.get('fecha de fin', 'N/A'))
-                    
-                    f_ini_str = dar_formato_fecha(f_ini)
-                    f_fin_str = dar_formato_fecha(f_fin)
-                    
-                    tipo_exp_raw = str(row.get('TIPO DE EXPERIENCIA', row.get('tipo de experiencia', 'Administrativo')))
-                    tipo_exp = "Docente" if "docente" in tipo_exp_raw.lower() else "Administrativo"
-                    
-                    meses_calc = calcular_meses(f_ini, f_fin)
-                    if tipo_exp == "Docente": meses_docente += meses_calc
-                    else: meses_admin += meses_calc
-
-                    puesto_ext = row.get('PUESTO', row.get('puesto', 'N/A'))
-                    lugar_ext = row.get('LUGAR', row.get('lugar', 'N/A'))
-                    motivo_ext = row.get('MOTIVO DE CESE', row.get('motivo de cese', 'N/A'))
-
-                    st.markdown(f"""
-                    <div style='background-color: #F9F6EE; padding: 15px; border-radius: 8px; border-left: 6px solid #004A80; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #CCCCCC;'>
-                        <div style='color: #000000; font-size: 1.1em; font-weight: bold; margin-bottom: 5px;'>{puesto_ext} <span style='font-size: 0.85em; color: #555555;'>({tipo_exp.capitalize()})</span></div>
-                        <div style='color: #222222; font-size: 0.95em;'>
-                            <strong>Lugar:</strong> {lugar_ext} <br>
-                            <strong>Periodo:</strong> {f_ini_str} hasta {f_fin_str} <br>
-                            <strong>Motivo de cese:</strong> {motivo_ext}
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-        with col_der:
-            def formato_tiempo(total_meses):
-                anios = total_meses // 12
-                meses = total_meses % 12
-                if anios > 0 and meses > 0: return f"{anios} años y {meses} meses"
-                elif anios > 0: return f"{anios} años"
-                elif meses > 0: return f"{meses} meses"
-                else: return "0 meses"
-
-            st.markdown("<h3 style='color: #FFD700;'>📊 Resumen</h3>", unsafe_allow_html=True)
-            
-            html_resumen = f"""
-            <div style='background-color: #4A0000; padding: 20px; border-radius: 10px; border: 2px solid #FFD700; box-shadow: 2px 2px 10px rgba(0,0,0,0.5); position: sticky; top: 50px;'>
-                <h4 style='color: #FFD700; margin-bottom: 15px; text-align: center; border-bottom: 1px solid #FFD700; padding-bottom: 10px;'>Tiempo Total Calculado</h4>
-                <div style='margin-bottom: 15px;'>
-                    <p style='margin: 0; color: #FFFFFF; font-size: 0.9em;'>👨‍🏫 Como Docente</p>
-                    <p style='margin: 0; color: #FFD700; font-size: 1.2em; font-weight: bold;'>{formato_tiempo(meses_docente)}</p>
-                </div>
-                <div style='margin-bottom: 15px;'>
-                    <p style='margin: 0; color: #FFFFFF; font-size: 0.9em;'>💼 Como Administrativo</p>
-                    <p style='margin: 0; color: #FFD700; font-size: 1.2em; font-weight: bold;'>{formato_tiempo(meses_admin)}</p>
-                </div>
-                <div style='margin-top: 15px; padding-top: 10px; border-top: 1px solid #FFD700;'>
-                    <p style='margin: 0; color: #FFFFFF; font-size: 0.9em;'>🌟 Experiencia General</p>
-                    <p style='margin: 0; color: #00FF00; font-size: 1.4em; font-weight: bold;'>{formato_tiempo(meses_docente + meses_admin)}</p>
-                </div>
-            </div>
-            """
-            st.markdown(html_resumen, unsafe_allow_html=True)
-
-            st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown("<h4 style='color: #4A0000;'>🎯 Plan de Carrera (Análisis SUNEDU/Estatuto)</h4>", unsafe_allow_html=True)
-
-            es_doctor = False
-            es_maestro = False
-            tiene_renacyt = False
-            total_publicaciones = 0
-            anios_docencia = meses_docente // 12
-            
-            df_acad = dfs.get("FORM. ACADEMICA", pd.DataFrame())
-            acad_emp = pd.DataFrame()
-            if not df_acad.empty and "dni" in df_acad.columns:
-                acad_emp = df_acad[df_acad["dni"].astype(str) == str(dni_buscado)]
-                for idx, row in acad_emp.iterrows():
-                    grado = str(row.get('grado o titulo obtenido', '')).upper()
-                    if "DOCTOR" in grado: es_doctor = True
-                    if any(kw in grado for kw in ["MAGISTER", "MAESTRO", "MAESTRIA"]): es_maestro = True
-
-            df_inv = dfs.get("INVESTIGACION", pd.DataFrame())
-            if not df_inv.empty and "dni" in df_inv.columns:
-                inv_emp = df_inv[df_inv["dni"].astype(str) == str(dni_buscado)]
-                for idx, row in inv_emp.iterrows():
-                    tipo = str(row.get('tipo de registro', ''))
-                    nivel_renacyt = str(row.get('nivel renacyt', 'No tiene'))
-                    
-                    if "Datos Generales" in tipo and nivel_renacyt != "No tiene":
-                        tiene_renacyt = True
-                    if "Publicación Científica" in tipo:
-                        total_publicaciones += 1
-
-            puntos_formacion = 40 if es_doctor else (25 if es_maestro else 10)
-            puntos_investigacion = min(30, (15 if tiene_renacyt else 0) + (total_publicaciones * 5))
-            puntos_experiencia = min(30, anios_docencia * 2)
-
-            puntaje_total = puntos_formacion + puntos_investigacion + puntos_experiencia
-
-            with st.container():
-                st.markdown(f"""
-                <div style='background-color: #F9F6EE; padding: 15px; border-radius: 8px; border: 1px solid #CCCCCC;'>
-                    <div style='color: #004A80; font-size: 1.1em; font-weight: bold; margin-bottom: 10px;'>📊 Nivel de Competitividad Institucional: {puntaje_total}/100 pts</div>
-                    <div style='font-size: 0.85em; color: #555555; margin-bottom: 5px;'>🎓 Formación: {puntos_formacion}/40 | 💼 Exp: {puntos_experiencia}/30 | 🔬 Inv: {puntos_investigacion}/30</div>
-                </div>
-                """, unsafe_allow_html=True)
+                        """, unsafe_allow_html=True)
                 
-                st.progress(puntaje_total / 100)
+                st.markdown("<h3 style='color: #FFD700; margin-top: 20px;'>💼 Experiencia Externa Registrada</h3>", unsafe_allow_html=True)
+                if vst_df.empty:
+                    st.markdown("<p style='color:#DDDDDD;'>No hay experiencia externa registrada.</p>", unsafe_allow_html=True)
+                else:
+                    for idx, row in vst_df.iterrows():
+                        f_ini = row.get('FECHA DE INICIO', row.get('fecha de inicio', 'N/A'))
+                        f_fin = row.get('FECHA DE FIN', row.get('fecha de fin', 'N/A'))
+                        
+                        f_ini_str = dar_formato_fecha(f_ini)
+                        f_fin_str = dar_formato_fecha(f_fin)
+                        
+                        tipo_exp_raw = str(row.get('TIPO DE EXPERIENCIA', row.get('tipo de experiencia', 'Administrativo')))
+                        tipo_exp = "Docente" if "docente" in tipo_exp_raw.lower() else "Administrativo"
+                        
+                        meses_calc = calcular_meses(f_ini, f_fin)
+                        if tipo_exp == "Docente": meses_docente += meses_calc
+                        else: meses_admin += meses_calc
+    
+                        puesto_ext = row.get('PUESTO', row.get('puesto', 'N/A'))
+                        lugar_ext = row.get('LUGAR', row.get('lugar', 'N/A'))
+                        motivo_ext = row.get('MOTIVO DE CESE', row.get('motivo de cese', 'N/A'))
+    
+                        st.markdown(f"""
+                        <div style='background-color: #F9F6EE; padding: 15px; border-radius: 8px; border-left: 6px solid #004A80; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #CCCCCC;'>
+                            <div style='color: #000000; font-size: 1.1em; font-weight: bold; margin-bottom: 5px;'>{puesto_ext} <span style='font-size: 0.85em; color: #555555;'>({tipo_exp.capitalize()})</span></div>
+                            <div style='color: #222222; font-size: 0.95em;'>
+                                <strong>Lugar:</strong> {lugar_ext} <br>
+                                <strong>Periodo:</strong> {f_ini_str} hasta {f_fin_str} <br>
+                                <strong>Motivo de cese:</strong> {motivo_ext}
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+    
+            with col_der:
+                def formato_tiempo(total_meses):
+                    anios = total_meses // 12
+                    meses = total_meses % 12
+                    if anios > 0 and meses > 0: return f"{anios} años y {meses} meses"
+                    elif anios > 0: return f"{anios} años"
+                    elif meses > 0: return f"{meses} meses"
+                    else: return "0 meses"
+    
+                st.markdown("<h3 style='color: #FFD700;'>📊 Resumen</h3>", unsafe_allow_html=True)
+                
+                html_resumen = f"""
+                <div style='background-color: #4A0000; padding: 20px; border-radius: 10px; border: 2px solid #FFD700; box-shadow: 2px 2px 10px rgba(0,0,0,0.5); position: sticky; top: 50px;'>
+                    <h4 style='color: #FFD700; margin-bottom: 15px; text-align: center; border-bottom: 1px solid #FFD700; padding-bottom: 10px;'>Tiempo Total Calculado</h4>
+                    <div style='margin-bottom: 15px;'>
+                        <p style='margin: 0; color: #FFFFFF; font-size: 0.9em;'>👨‍🏫 Como Docente</p>
+                        <p style='margin: 0; color: #FFD700; font-size: 1.2em; font-weight: bold;'>{formato_tiempo(meses_docente)}</p>
+                    </div>
+                    <div style='margin-bottom: 15px;'>
+                        <p style='margin: 0; color: #FFFFFF; font-size: 0.9em;'>💼 Como Administrativo</p>
+                        <p style='margin: 0; color: #FFD700; font-size: 1.2em; font-weight: bold;'>{formato_tiempo(meses_admin)}</p>
+                    </div>
+                    <div style='margin-top: 15px; padding-top: 10px; border-top: 1px solid #FFD700;'>
+                        <p style='margin: 0; color: #FFFFFF; font-size: 0.9em;'>🌟 Experiencia General</p>
+                        <p style='margin: 0; color: #00FF00; font-size: 1.4em; font-weight: bold;'>{formato_tiempo(meses_docente + meses_admin)}</p>
+                    </div>
+                </div>
+                """
+                st.markdown(html_resumen, unsafe_allow_html=True)
+    
                 st.markdown("<br>", unsafe_allow_html=True)
-
-                with st.expander("🏛️ Ver Idoneidad para Cargos UPHFR (Estatuto)"):
-                    if es_doctor and anios_docencia >= 5: 
-                        st.success("✅ **Rector / Vicerrector:** CUMPLE (Tiene Grado de Doctor y experiencia requerida según Art. 64).")
-                    else:
-                        st.error("❌ **Rector / Vicerrector:** NO CUMPLE (Requiere Grado de Doctor y 5+ años de experiencia docente).")
-                        
-                    if es_doctor:
-                        st.success("✅ **Director de Escuela de Posgrado:** CUMPLE (Tiene el grado máximo que otorga la unidad).")
-                    else:
-                        st.error("❌ **Director de Escuela de Posgrado:** NO CUMPLE (Requiere Grado de Doctor).")
-
-                    if tiene_renacyt:
-                        st.success("✅ **Docente Investigador:** CUMPLE (Cuenta con clasificación RENACYT activa).")
-                    else:
-                        st.warning("⚠️ **Docente Investigador:** EN PROCESO (Requiere obtener clasificación RENACYT).")
-
-                    if es_maestro or es_doctor:
-                        st.success("✅ **Docente Universitario (Pregrado):** CUMPLE (Cuenta con Grado de Maestro o superior).")
-                        
-                        st.markdown("<p style='color: #004A80; font-weight: bold; margin-top: 10px; margin-bottom: 5px;'>🔍 Análisis de Especialidad Docente:</p>", unsafe_allow_html=True)
-                        
-                        texto_perfil = ""
-                        if not acad_emp.empty:
-                            for _, row in acad_emp.iterrows():
-                                texto_perfil += " " + str(row.get('grado o titulo obtenido', '')).upper()
-                                texto_perfil += " " + str(row.get('especialidad', '')).upper()
-                                
-                        if not vst_df.empty:
-                            for _, row in vst_df.iterrows():
-                                texto_perfil += " " + str(row.get('PUESTO', row.get('puesto', ''))).upper()
-                                texto_perfil += " " + str(row.get('LUGAR', row.get('lugar', ''))).upper()
-
-                        diccionario_carreras = {
-                            "Enfermería": ["ENFERMER", "CUIDADO", "CLINIC"],
-                            "Medicina Humana": ["MEDICIN", "MEDICO", "CIRUJAN", "CLINIC", "HOSPITAL"],
-                            "Obstetricia": ["OBSTETR", "MATRON", "GINECOLOG"],
-                            "Farmacia y Bioquímica": ["FARMAC", "BIOQUIMIC", "LABORATORI", "QUIMIC"],
-                            "Psicología": ["PSICOLOG", "SALUD MENTAL", "TERAP"],
-                            "Estomatología": ["ESTOMATOLOG", "ODONTOLOG", "DENTIS"],
-                            "Derecho": ["DERECHO", "ABOGAD", "LEGAL", "JURIDIC", "LEY", "MAGISTRAD", "JUEZ", "FISCAL"],
-                            "Administración": ["ADMINISTRAC", "GERENCI", "NEGOCIO", "EMPRES", "CONTABILIDAD", "ECONOMI"]
-                        }
-
-                        match_salud = []
-                        match_empresariales = []
-                        
-                        for carrera, palabras in diccionario_carreras.items():
-                            if any(palabra in texto_perfil for palabra in palabras):
-                                if carrera in ["Enfermería", "Medicina Humana", "Obstetricia", "Farmacia y Bioquímica", "Psicología", "Estomatología"]:
-                                    match_salud.append(carrera)
-                                else:
-                                    match_empresariales.append(carrera)
-
-                        if not match_salud and not match_empresariales:
-                            st.info("ℹ️ Perfil multidisciplinario. Se requiere revisión manual para asignar cursos específicos.")
-                        else:
-                            if match_salud:
-                                st.markdown(f"**🏥 C. de la Salud:** Apto para dictar en **{', '.join(match_salud)}**.")
-                            if match_empresariales:
-                                st.markdown(f"**🏢 C. Empresariales:** Apto para dictar en **{', '.join(match_empresariales)}**.")
-                    else:
-                        st.error("❌ **Docente Universitario (Pregrado):** NO CUMPLE (La Ley exige mínimo Grado de Maestro).")
-
-        st.markdown("<br>", unsafe_allow_html=True)
-        with st.expander("⚙️ Clic aquí para Editar o Eliminar Experiencia Externa"):
-            st.markdown("<p style='color:#DDDDDD;'>Activa la casilla <b>SEL</b> para modificar o eliminar un registro.</p>", unsafe_allow_html=True)
-            st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 10px !important; }</style>""", unsafe_allow_html=True)
-            
-            col_conf_exp = col_conf if 'col_conf' in locals() else {}
-            ed = st.data_editor(vst_df, hide_index=True, use_container_width=True, column_config=col_conf_exp, key=f"ed_{h_name}_oculta")
-            
-            for col in ed.columns:
-                if "fecha" in col.lower() or "f_" in col.lower():
-                    ed[col] = ed[col].astype(str).replace(["NaT", "None"], "")
-
-            if "SEL" in ed.columns:
-                sel = ed[ed["SEL"] == True]
-
-    # ==========================================
-    # NUEVO DISEÑO: CONTRATOS
-    # ==========================================
-    elif h_name == "CONTRATOS":
-        col_conf_cfg = col_conf if 'col_conf' in locals() and isinstance(col_conf, dict) else {}
-        vst_df = vst if 'vst' in locals() and isinstance(vst, pd.DataFrame) else pd.DataFrame()
-        
-        if vst_df.empty:
-            st.markdown("<p style='color:#DDDDDD;'>No hay contratos registrados para este colaborador.</p>", unsafe_allow_html=True)
-        else:
-            for _, row in vst_df.iterrows():
-                f_inicio = row.get('F_INICIO', row.get('f_inicio', 'N/A'))
-                f_fin = row.get('F_FIN', row.get('f_fin', 'N/A'))
-                cargo = row.get('CARGO', row.get('cargo', 'N/A'))
-                tipo = row.get('TIPO CONTRATO', row.get('tipo contrato', 'N/A'))
-                estado = str(row.get('ESTADO', row.get('estado', 'N/A'))).strip()
+                st.markdown("<h4 style='color: #4A0000;'>🎯 Plan de Carrera (Análisis SUNEDU/Estatuto)</h4>", unsafe_allow_html=True)
+    
+                es_doctor = False
+                es_maestro = False
+                tiene_renacyt = False
+                total_publicaciones = 0
+                anios_docencia = meses_docente // 12
                 
-                color_borde = "#4CAF50" if estado.upper() == "ACTIVO" else "#F44336"
-                
-                st.markdown(f"""
-                <div style='background-color: #FFFFFF; padding: 15px; border-radius: 8px; border-left: 6px solid {color_borde}; margin-bottom: 10px; border: 1px solid #CCCCCC;'>
-                    <div style='color: #000000; font-size: 1.1em; font-weight: bold; margin-bottom: 5px;'>{cargo}</div>
-                    <div style='color: #111111; font-size: 0.95em;'>
-                        <strong>📅 Periodo:</strong> {f_inicio} hasta {f_fin} <br>
-                        <strong>📝 Tipo de Contrato:</strong> {tipo} <br>
-                        <strong>📌 Estado:</strong> <span style='color: {color_borde}; font-weight: bold;'>{estado}</span>
+                df_acad = dfs.get("FORM. ACADEMICA", pd.DataFrame())
+                acad_emp = pd.DataFrame()
+                if not df_acad.empty and "dni" in df_acad.columns:
+                    acad_emp = df_acad[df_acad["dni"].astype(str) == str(dni_buscado)]
+                    for idx, row in acad_emp.iterrows():
+                        grado = str(row.get('grado o titulo obtenido', '')).upper()
+                        if "DOCTOR" in grado: es_doctor = True
+                        if any(kw in grado for kw in ["MAGISTER", "MAESTRO", "MAESTRIA"]): es_maestro = True
+    
+                df_inv = dfs.get("INVESTIGACION", pd.DataFrame())
+                if not df_inv.empty and "dni" in df_inv.columns:
+                    inv_emp = df_inv[df_inv["dni"].astype(str) == str(dni_buscado)]
+                    for idx, row in inv_emp.iterrows():
+                        tipo = str(row.get('tipo de registro', ''))
+                        nivel_renacyt = str(row.get('nivel renacyt', 'No tiene'))
+                        
+                        if "Datos Generales" in tipo and nivel_renacyt != "No tiene":
+                            tiene_renacyt = True
+                        if "Publicación Científica" in tipo:
+                            total_publicaciones += 1
+    
+                puntos_formacion = 40 if es_doctor else (25 if es_maestro else 10)
+                puntos_investigacion = min(30, (15 if tiene_renacyt else 0) + (total_publicaciones * 5))
+                puntos_experiencia = min(30, anios_docencia * 2)
+    
+                puntaje_total = puntos_formacion + puntos_investigacion + puntos_experiencia
+    
+                with st.container():
+                    st.markdown(f"""
+                    <div style='background-color: #F9F6EE; padding: 15px; border-radius: 8px; border: 1px solid #CCCCCC;'>
+                        <div style='color: #004A80; font-size: 1.1em; font-weight: bold; margin-bottom: 10px;'>📊 Nivel de Competitividad Institucional: {puntaje_total}/100 pts</div>
+                        <div style='font-size: 0.85em; color: #555555; margin-bottom: 5px;'>🎓 Formación: {puntos_formacion}/40 | 💼 Exp: {puntos_experiencia}/30 | 🔬 Inv: {puntos_investigacion}/30</div>
                     </div>
-                </div>
-                """, unsafe_allow_html=True)
+                    """, unsafe_allow_html=True)
+                    
+                    st.progress(puntaje_total / 100)
+                    st.markdown("<br>", unsafe_allow_html=True)
     
-        st.markdown("<br>", unsafe_allow_html=True)
-        with st.expander("⚙️ Clic aquí para Editar o Eliminar Contratos"):
-            st.markdown("<p style='color:#DDDDDD;'>Activa la casilla <b>SEL</b> en la tabla de abajo para modificar o eliminar un registro.</p>", unsafe_allow_html=True)
-            st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 8px !important; }</style>""", unsafe_allow_html=True)
-            
-            ed = st.data_editor(vst_df, hide_index=True, use_container_width=True, column_config=col_conf_cfg, key=f"ed_{h_name}_oculta")
-            sel = ed[ed["SEL"] == True] if "SEL" in ed.columns else pd.DataFrame()
+                    with st.expander("🏛️ Ver Idoneidad para Cargos UPHFR (Estatuto)"):
+                        if es_doctor and anios_docencia >= 5: 
+                            st.success("✅ **Rector / Vicerrector:** CUMPLE (Tiene Grado de Doctor y experiencia requerida según Art. 64).")
+                        else:
+                            st.error("❌ **Rector / Vicerrector:** NO CUMPLE (Requiere Grado de Doctor y 5+ años de experiencia docente).")
+                            
+                        if es_doctor:
+                            st.success("✅ **Director de Escuela de Posgrado:** CUMPLE (Tiene el grado máximo que otorga la unidad).")
+                        else:
+                            st.error("❌ **Director de Escuela de Posgrado:** NO CUMPLE (Requiere Grado de Doctor).")
     
-    # ==========================================
-    # NUEVO DISEÑO: VACACIONES
-    # ==========================================
-    elif h_name == "VACACIONES":
-        col_conf_cfg = col_conf if 'col_conf' in locals() and isinstance(col_conf, dict) else {}
-        vst_df = vst if 'vst' in locals() and isinstance(vst, pd.DataFrame) else pd.DataFrame()
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        with st.expander("⚙️ Clic aquí para ver el Detalle Completo, Editar o Eliminar Vacaciones"):
-            st.markdown("<p style='color:#000000; background-color:#FFD700; padding:5px; border-radius:5px;'><b>Detalle de registros:</b> Activa la casilla <b>SEL</b> para modificar o eliminar.</p>", unsafe_allow_html=True)
-            st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 8px !important; }</style>""", unsafe_allow_html=True)
-            
-            ed = st.data_editor(vst_df, hide_index=True, use_container_width=True, column_config=col_conf_cfg, key=f"ed_{h_name}_oculta")
-            sel = ed[ed["SEL"] == True] if "SEL" in ed.columns else pd.DataFrame()
+                        if tiene_renacyt:
+                            st.success("✅ **Docente Investigador:** CUMPLE (Cuenta con clasificación RENACYT activa).")
+                        else:
+                            st.warning("⚠️ **Docente Investigador:** EN PROCESO (Requiere obtener clasificación RENACYT).")
     
-    # ==========================================
-    # NUEVO DISEÑO: FORMACIÓN ACADÉMICA
-    # ==========================================
-    elif h_name == "FORM. ACADEMICA":
-        vst_df = vst if 'vst' in locals() and isinstance(vst, pd.DataFrame) else pd.DataFrame()
-        
-        st.markdown("<h3 style='color: #FFD700; margin-bottom: 20px;'>🎓 Resumen de Formación Académica</h3>", unsafe_allow_html=True)
-        
-        col_tipo = "TIPO DE ESTUDIO" if "TIPO DE ESTUDIO" in vst_df.columns else "tipo de estudio"
-        
-        if not vst_df.empty and col_tipo in vst_df.columns:
-            mask_estudios = vst_df[col_tipo].astype(str).str.contains("Terminados|Inconclusos|Sin grado", case=False, na=False)
-            df_estudios = vst_df[mask_estudios]
+                        if es_maestro or es_doctor:
+                            st.success("✅ **Docente Universitario (Pregrado):** CUMPLE (Cuenta con Grado de Maestro o superior).")
+                            
+                            st.markdown("<p style='color: #004A80; font-weight: bold; margin-top: 10px; margin-bottom: 5px;'>🔍 Análisis de Especialidad Docente:</p>", unsafe_allow_html=True)
+                            
+                            texto_perfil = ""
+                            if not acad_emp.empty:
+                                for _, row in acad_emp.iterrows():
+                                    texto_perfil += " " + str(row.get('grado o titulo obtenido', '')).upper()
+                                    texto_perfil += " " + str(row.get('especialidad', '')).upper()
+                                    
+                            if not vst_df.empty:
+                                for _, row in vst_df.iterrows():
+                                    texto_perfil += " " + str(row.get('PUESTO', row.get('puesto', ''))).upper()
+                                    texto_perfil += " " + str(row.get('LUGAR', row.get('lugar', ''))).upper()
+    
+                            diccionario_carreras = {
+                                "Enfermería": ["ENFERMER", "CUIDADO", "CLINIC"],
+                                "Medicina Humana": ["MEDICIN", "MEDICO", "CIRUJAN", "CLINIC", "HOSPITAL"],
+                                "Obstetricia": ["OBSTETR", "MATRON", "GINECOLOG"],
+                                "Farmacia y Bioquímica": ["FARMAC", "BIOQUIMIC", "LABORATORI", "QUIMIC"],
+                                "Psicología": ["PSICOLOG", "SALUD MENTAL", "TERAP"],
+                                "Estomatología": ["ESTOMATOLOG", "ODONTOLOG", "DENTIS"],
+                                "Derecho": ["DERECHO", "ABOGAD", "LEGAL", "JURIDIC", "LEY", "MAGISTRAD", "JUEZ", "FISCAL"],
+                                "Administración": ["ADMINISTRAC", "GERENCI", "NEGOCIO", "EMPRES", "CONTABILIDAD", "ECONOMI"]
+                            }
+    
+                            match_salud = []
+                            match_empresariales = []
+                            
+                            for carrera, palabras in diccionario_carreras.items():
+                                if any(palabra in texto_perfil for palabra in palabras):
+                                    if carrera in ["Enfermería", "Medicina Humana", "Obstetricia", "Farmacia y Bioquímica", "Psicología", "Estomatología"]:
+                                        match_salud.append(carrera)
+                                    else:
+                                        match_empresariales.append(carrera)
+    
+                            if not match_salud and not match_empresariales:
+                                st.info("ℹ️ Perfil multidisciplinario. Se requiere revisión manual para asignar cursos específicos.")
+                            else:
+                                if match_salud:
+                                    st.markdown(f"**🏥 C. de la Salud:** Apto para dictar en **{', '.join(match_salud)}**.")
+                                if match_empresariales:
+                                    st.markdown(f"**🏢 C. Empresariales:** Apto para dictar en **{', '.join(match_empresariales)}**.")
+                        else:
+                            st.error("❌ **Docente Universitario (Pregrado):** NO CUMPLE (La Ley exige mínimo Grado de Maestro).")
+    
+            st.markdown("<br>", unsafe_allow_html=True)
+            with st.expander("⚙️ Clic aquí para Editar o Eliminar Experiencia Externa"):
+                st.markdown("<p style='color:#DDDDDD;'>Activa la casilla <b>SEL</b> para modificar o eliminar un registro.</p>", unsafe_allow_html=True)
+                st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 10px !important; }</style>""", unsafe_allow_html=True)
+                
+                col_conf_exp = col_conf if 'col_conf' in locals() else {}
+                ed = st.data_editor(vst_df, hide_index=True, use_container_width=True, column_config=col_conf_exp, key=f"ed_{h_name}_oculta")
+                
+                for col in ed.columns:
+                    if "fecha" in col.lower() or "f_" in col.lower():
+                        ed[col] = ed[col].astype(str).replace(["NaT", "None"], "")
+    
+                if "SEL" in ed.columns:
+                    sel = ed[ed["SEL"] == True]
+    
+        # ==========================================
+        # NUEVO DISEÑO: CONTRATOS
+        # ==========================================
+        elif h_name == "CONTRATOS":
+            col_conf_cfg = col_conf if 'col_conf' in locals() and isinstance(col_conf, dict) else {}
+            vst_df = vst if 'vst' in locals() and isinstance(vst, pd.DataFrame) else pd.DataFrame()
             
-            mask_grados = vst_df[col_tipo].astype(str).str.contains("Grado|Títul|Titul", case=False, na=False) & ~mask_estudios
-            df_grados = vst_df[mask_grados]
+            if vst_df.empty:
+                st.markdown("<p style='color:#DDDDDD;'>No hay contratos registrados para este colaborador.</p>", unsafe_allow_html=True)
+            else:
+                for _, row in vst_df.iterrows():
+                    f_inicio = row.get('F_INICIO', row.get('f_inicio', 'N/A'))
+                    f_fin = row.get('F_FIN', row.get('f_fin', 'N/A'))
+                    cargo = row.get('CARGO', row.get('cargo', 'N/A'))
+                    tipo = row.get('TIPO CONTRATO', row.get('tipo contrato', 'N/A'))
+                    estado = str(row.get('ESTADO', row.get('estado', 'N/A'))).strip()
+                    
+                    color_borde = "#4CAF50" if estado.upper() == "ACTIVO" else "#F44336"
+                    
+                    st.markdown(f"""
+                    <div style='background-color: #FFFFFF; padding: 15px; border-radius: 8px; border-left: 6px solid {color_borde}; margin-bottom: 10px; border: 1px solid #CCCCCC;'>
+                        <div style='color: #000000; font-size: 1.1em; font-weight: bold; margin-bottom: 5px;'>{cargo}</div>
+                        <div style='color: #111111; font-size: 0.95em;'>
+                            <strong>📅 Periodo:</strong> {f_inicio} hasta {f_fin} <br>
+                            <strong>📝 Tipo de Contrato:</strong> {tipo} <br>
+                            <strong>📌 Estado:</strong> <span style='color: {color_borde}; font-weight: bold;'>{estado}</span>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+        
+            st.markdown("<br>", unsafe_allow_html=True)
+            with st.expander("⚙️ Clic aquí para Editar o Eliminar Contratos"):
+                st.markdown("<p style='color:#DDDDDD;'>Activa la casilla <b>SEL</b> en la tabla de abajo para modificar o eliminar un registro.</p>", unsafe_allow_html=True)
+                st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 8px !important; }</style>""", unsafe_allow_html=True)
+                
+                ed = st.data_editor(vst_df, hide_index=True, use_container_width=True, column_config=col_conf_cfg, key=f"ed_{h_name}_oculta")
+                sel = ed[ed["SEL"] == True] if "SEL" in ed.columns else pd.DataFrame()
+        
+        # ==========================================
+        # NUEVO DISEÑO: VACACIONES
+        # ==========================================
+        elif h_name == "VACACIONES":
+            col_conf_cfg = col_conf if 'col_conf' in locals() and isinstance(col_conf, dict) else {}
+            vst_df = vst if 'vst' in locals() and isinstance(vst, pd.DataFrame) else pd.DataFrame()
             
-            df_especi = vst_df[vst_df[col_tipo].astype(str).str.contains("Especialización|Especializaciones", case=False, na=False)]
-            df_diplo = vst_df[vst_df[col_tipo].astype(str).str.contains("Diplomado", case=False, na=False)]
-            df_cursos = vst_df[vst_df[col_tipo].astype(str).str.contains("Curso", case=False, na=False)]
+            st.markdown("<br>", unsafe_allow_html=True)
+            with st.expander("⚙️ Clic aquí para ver el Detalle Completo, Editar o Eliminar Vacaciones"):
+                st.markdown("<p style='color:#000000; background-color:#FFD700; padding:5px; border-radius:5px;'><b>Detalle de registros:</b> Activa la casilla <b>SEL</b> para modificar o eliminar.</p>", unsafe_allow_html=True)
+                st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 8px !important; }</style>""", unsafe_allow_html=True)
+                
+                ed = st.data_editor(vst_df, hide_index=True, use_container_width=True, column_config=col_conf_cfg, key=f"ed_{h_name}_oculta")
+                sel = ed[ed["SEL"] == True] if "SEL" in ed.columns else pd.DataFrame()
+        
+        # ==========================================
+        # NUEVO DISEÑO: FORMACIÓN ACADÉMICA
+        # ==========================================
+        elif h_name == "FORM. ACADEMICA":
+            vst_df = vst if 'vst' in locals() and isinstance(vst, pd.DataFrame) else pd.DataFrame()
+            
+            st.markdown("<h3 style='color: #FFD700; margin-bottom: 20px;'>🎓 Resumen de Formación Académica</h3>", unsafe_allow_html=True)
+            
+            col_tipo = "TIPO DE ESTUDIO" if "TIPO DE ESTUDIO" in vst_df.columns else "tipo de estudio"
+            
+            if not vst_df.empty and col_tipo in vst_df.columns:
+                mask_estudios = vst_df[col_tipo].astype(str).str.contains("Terminados|Inconclusos|Sin grado", case=False, na=False)
+                df_estudios = vst_df[mask_estudios]
+                
+                mask_grados = vst_df[col_tipo].astype(str).str.contains("Grado|Títul|Titul", case=False, na=False) & ~mask_estudios
+                df_grados = vst_df[mask_grados]
+                
+                df_especi = vst_df[vst_df[col_tipo].astype(str).str.contains("Especialización|Especializaciones", case=False, na=False)]
+                df_diplo = vst_df[vst_df[col_tipo].astype(str).str.contains("Diplomado", case=False, na=False)]
+                df_cursos = vst_df[vst_df[col_tipo].astype(str).str.contains("Curso", case=False, na=False)]
+            else:
+                df_grados = df_estudios = df_especi = df_diplo = df_cursos = pd.DataFrame()
+        
+            def get_val(r, opciones):
+                for op in opciones:
+                    if op in r:
+                        val = r[op]
+                        if pd.notna(val) and str(val).strip() != "":
+                            return str(val)
+                return "N/A"
+        
+            # --- 1. GRADOS Y TÍTULOS ---
+            st.markdown("<h4 style='color: #FFD700; font-weight: bold; border-bottom: 2px solid #FFD700; padding-bottom: 5px;'>📜 Grados y Títulos</h4>", unsafe_allow_html=True)
+            if df_grados.empty:
+                st.markdown("<p style='color:#DDDDDD;'>No hay grados o títulos registrados.</p>", unsafe_allow_html=True)
+            else:
+                for _, row in df_grados.iterrows():
+                    grado = get_val(row, ['grado o titulo obtenido', 'GRADO O TITULO OBTENIDO', 'grado o título obtenido'])
+                    inst = get_val(row, ['institucion educativa', 'INSTITUCION EDUCATIVA', 'institución educativa'])
+                    mencion = get_val(row, ['mencion (especialidad / carrera / etc)', 'MENCION (ESPECIALIDAD / CARRERA / ETC)', 'mención'])
+                    anio = get_val(row, ['AÑO', 'año'])
+                    
+                    st.markdown(f"""
+                    <div style='background-color: #FFFFFF; padding: 15px; border-radius: 8px; border: 1px solid #CCCCCC; border-left: 6px solid #FFC107; margin-bottom: 10px;'>
+                        <div style='margin-bottom: 5px; color: #000000; font-size: 1.1em; font-weight: bold;'>{grado}</div>
+                        <div style='margin: 2px 0; color: #000000;'><strong>Institución:</strong> {inst}</div>
+                        <div style='margin: 2px 0; color: #000000;'><strong>Mención:</strong> {mencion}</div>
+                        <div style='margin: 2px 0; color: #000000;'><strong>Año:</strong> {anio}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+        
+            # --- 2. COLUMNAS SECUNDARIAS ---
+            col_izq_acad, col_der_acad = st.columns(2)
+            
+            with col_izq_acad:
+                st.markdown("<h5 style='color: #FFD700; font-weight: bold;'>📖 Estudios Complementarios</h5>", unsafe_allow_html=True)
+                if df_estudios.empty:
+                    st.markdown("<p style='color:#DDDDDD;'>Sin estudios complementarios.</p>", unsafe_allow_html=True)
+                else:
+                    for _, row in df_estudios.iterrows():
+                        inst = get_val(row, ['institucion educativa', 'INSTITUCION EDUCATIVA'])
+                        mencion = get_val(row, ['mencion (especialidad / carrera / etc)', 'MENCION (ESPECIALIDAD / CARRERA / ETC)'])
+                        st.markdown(f"""
+                        <div style='background-color: #F9F6EE; padding: 10px; border-radius: 6px; border-left: 4px solid #2196F3; margin-bottom: 8px;'>
+                            <strong style='color:#000;'>{mencion}</strong><br>
+                            <small style='color:#444;'>{inst}</small>
+                        </div>
+                        """, unsafe_allow_html=True)
+    
+                st.markdown("<h5 style='color: #FFD700; font-weight: bold; margin-top: 15px;'>🎖️ Especializaciones</h5>", unsafe_allow_html=True)
+                if df_especi.empty:
+                    st.markdown("<p style='color:#DDDDDD;'>Sin especializaciones.</p>", unsafe_allow_html=True)
+                else:
+                    for _, row in df_especi.iterrows():
+                        inst = get_val(row, ['institucion educativa', 'INSTITUCION EDUCATIVA'])
+                        mencion = get_val(row, ['mencion (especialidad / carrera / etc)', 'MENCION (ESPECIALIDAD / CARRERA / ETC)'])
+                        st.markdown(f"""
+                        <div style='background-color: #F9F6EE; padding: 10px; border-radius: 6px; border-left: 4px solid #9C27B0; margin-bottom: 8px;'>
+                            <strong style='color:#000;'>{mencion}</strong><br>
+                            <small style='color:#444;'>{inst}</small>
+                        </div>
+                        """, unsafe_allow_html=True)
+    
+            with col_der_acad:
+                st.markdown("<h5 style='color: #FFD700; font-weight: bold;'>📑 Diplomados</h5>", unsafe_allow_html=True)
+                if df_diplo.empty:
+                    st.markdown("<p style='color:#DDDDDD;'>Sin diplomados.</p>", unsafe_allow_html=True)
+                else:
+                    for _, row in df_diplo.iterrows():
+                        inst = get_val(row, ['institucion educativa', 'INSTITUCION EDUCATIVA'])
+                        mencion = get_val(row, ['mencion (especialidad / carrera / etc)', 'MENCION (ESPECIALIDAD / CARRERA / ETC)'])
+                        st.markdown(f"""
+                        <div style='background-color: #F9F6EE; padding: 10px; border-radius: 6px; border-left: 4px solid #009688; margin-bottom: 8px;'>
+                            <strong style='color:#000;'>{mencion}</strong><br>
+                            <small style='color:#444;'>{inst}</small>
+                        </div>
+                        """, unsafe_allow_html=True)
+    
+                st.markdown("<h5 style='color: #FFD700; font-weight: bold; margin-top: 15px;'>📚 Cursos</h5>", unsafe_allow_html=True)
+                if df_cursos.empty:
+                    st.markdown("<p style='color:#DDDDDD;'>Sin cursos registrados.</p>", unsafe_allow_html=True)
+                else:
+                    for _, row in df_cursos.iterrows():
+                        inst = get_val(row, ['institucion educativa', 'INSTITUCION EDUCATIVA'])
+                        mencion = get_val(row, ['mencion (especialidad / carrera / etc)', 'MENCION (ESPECIALIDAD / CARRERA / ETC)'])
+                        st.markdown(f"""
+                        <div style='background-color: #F9F6EE; padding: 10px; border-radius: 6px; border-left: 4px solid #FF9800; margin-bottom: 8px;'>
+                            <strong style='color:#000;'>{mencion}</strong><br>
+                            <small style='color:#444;'>{inst}</small>
+                        </div>
+                        """, unsafe_allow_html=True)
+    
+            st.markdown("<br>", unsafe_allow_html=True)
+            with st.expander("⚙️ Clic aquí para Editar o Eliminar Formación Académica"):
+                st.markdown("<p style='color:#DDDDDD;'>Activa la casilla <b>SEL</b> para modificar o eliminar un registro.</p>", unsafe_allow_html=True)
+                st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 8px !important; }</style>""", unsafe_allow_html=True)
+                
+                col_conf_cfg = col_conf if 'col_conf' in locals() and isinstance(col_conf, dict) else {}
+                ed = st.data_editor(vst_df, hide_index=True, use_container_width=True, column_config=col_conf_cfg, key=f"ed_{h_name}_oculta")
+                sel = ed[ed["SEL"] == True] if "SEL" in ed.columns else pd.DataFrame()
+    
+        # =========================================================
+        # 📋 PESTAÑAS ESTÁNDAR (TABLA INTERACTIVA GENERAL / DEFAULT)
+        # =========================================================
         else:
-            df_grados = df_estudios = df_especi = df_diplo = df_cursos = pd.DataFrame()
-    
-        def get_val(r, opciones):
-            for op in opciones:
-                if op in r:
-                    val = r[op]
-                    if pd.notna(val) and str(val).strip() != "":
-                        return str(val)
-            return "N/A"
-    
-        # --- 1. GRADOS Y TÍTULOS ---
-        st.markdown("<h4 style='color: #FFD700; font-weight: bold; border-bottom: 2px solid #FFD700; padding-bottom: 5px;'>📜 Grados y Títulos</h4>", unsafe_allow_html=True)
-        if df_grados.empty:
-            st.markdown("<p style='color:#DDDDDD;'>No hay grados o títulos registrados.</p>", unsafe_allow_html=True)
+            vst = c_df.copy() if not c_df.empty else pd.DataFrame()
+            if not vst.empty:
+                if "SEL" not in vst.columns:
+                    vst.insert(0, "SEL", False)
+                    
+                conf = col_conf if 'col_conf' in locals() else {}
+                columnas_basura = ["DNI", "FECHA DE INICIO", "FECHA DE FIN", "DIAS GENERADOS", "SALDO"]
+                for col in columnas_basura:
+                    if col in vst.columns:
+                        conf[col] = None
+                        
+                cols_importantes = ["SEL", "PERIODO", "F_INICIO", "F_FIN", "DIAS GOZADOS"]
+                cols_finales = [c for c in cols_importantes if c in vst.columns] + [c for c in vst.columns if c not in cols_importantes]
+                cols_finales = list(dict.fromkeys(cols_finales)) # Remover duplicados
+                vst = vst[cols_finales]
+                
+                st.markdown("<p style='color:#DDDDDD;'>Seleccione un registro con la casilla <b>SEL</b> para realizar cambios.</p>", unsafe_allow_html=True)
+                ed = st.data_editor(vst, hide_index=True, use_container_width=True, column_config=conf, key=f"ed_{h_name}")
+                sel = ed[ed["SEL"] == True]
+            else:
+                st.info(f"Sin información registrada en {h_name}.")
+        
+            with col_izq_acad:
+        # --- 2. ESTUDIOS TERMINADOS O INCONCLUSOS ---
+        st.markdown("<h4 style='color: #FFD700; font-weight: bold; margin-top: 15px; border-bottom: 2px solid #FFD700; padding-bottom: 5px;'>🚧 Estudios Sin Grado / Inconclusos</h4>", unsafe_allow_html=True)
+        if df_estudios.empty:
+            st.markdown("<p style='color:#DDDDDD;'>No registrados.</p>", unsafe_allow_html=True)
         else:
-            for _, row in df_grados.iterrows():
-                grado = get_val(row, ['grado o titulo obtenido', 'GRADO O TITULO OBTENIDO', 'grado o título obtenido'])
+            for _, row in df_estudios.iterrows():
                 inst = get_val(row, ['institucion educativa', 'INSTITUCION EDUCATIVA', 'institución educativa'])
                 mencion = get_val(row, ['mencion (especialidad / carrera / etc)', 'MENCION (ESPECIALIDAD / CARRERA / ETC)', 'mención'])
                 anio = get_val(row, ['AÑO', 'año'])
+                estado = get_val(row, ['ESTADO', 'estado'])
                 
                 st.markdown(f"""
-                <div style='background-color: #FFFFFF; padding: 15px; border-radius: 8px; border: 1px solid #CCCCCC; border-left: 6px solid #FFC107; margin-bottom: 10px;'>
-                    <div style='margin-bottom: 5px; color: #000000; font-size: 1.1em; font-weight: bold;'>{grado}</div>
+                <div style='background-color: #FFFFFF; padding: 15px; border-radius: 8px; border: 1px solid #CCCCCC; border-left: 6px solid #FF5722; margin-bottom: 10px;'>
+                    <div style='margin-bottom: 5px; color: #000000; font-size: 1em; font-weight: bold;'>{mencion}</div>
                     <div style='margin: 2px 0; color: #000000;'><strong>Institución:</strong> {inst}</div>
-                    <div style='margin: 2px 0; color: #000000;'><strong>Mención:</strong> {mencion}</div>
-                    <div style='margin: 2px 0; color: #000000;'><strong>Año:</strong> {anio}</div>
+                    <div style='margin: 2px 0; color: #000000;'><strong>Estado:</strong> <span style='color: #D84315; font-weight: bold;'>{estado}</span> | <strong>Año:</strong> {anio}</div>
                 </div>
                 """, unsafe_allow_html=True)
     
-        # --- 2. COLUMNAS SECUNDARIAS ---
-        col_izq_acad, col_der_acad = st.columns(2)
-        
-        with col_izq_acad:
-            st.markdown("<h5 style='color: #FFD700; font-weight: bold;'>📖 Estudios Complementarios</h5>", unsafe_allow_html=True)
-            if df_estudios.empty:
-                st.markdown("<p style='color:#DDDDDD;'>Sin estudios complementarios.</p>", unsafe_allow_html=True)
-            else:
-                for _, row in df_estudios.iterrows():
-                    inst = get_val(row, ['institucion educativa', 'INSTITUCION EDUCATIVA'])
-                    mencion = get_val(row, ['mencion (especialidad / carrera / etc)', 'MENCION (ESPECIALIDAD / CARRERA / ETC)'])
-                    st.markdown(f"""
-                    <div style='background-color: #F9F6EE; padding: 10px; border-radius: 6px; border-left: 4px solid #2196F3; margin-bottom: 8px;'>
-                        <strong style='color:#000;'>{mencion}</strong><br>
-                        <small style='color:#444;'>{inst}</small>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-            st.markdown("<h5 style='color: #FFD700; font-weight: bold; margin-top: 15px;'>🎖️ Especializaciones</h5>", unsafe_allow_html=True)
-            if df_especi.empty:
-                st.markdown("<p style='color:#DDDDDD;'>Sin especializaciones.</p>", unsafe_allow_html=True)
-            else:
-                for _, row in df_especi.iterrows():
-                    inst = get_val(row, ['institucion educativa', 'INSTITUCION EDUCATIVA'])
-                    mencion = get_val(row, ['mencion (especialidad / carrera / etc)', 'MENCION (ESPECIALIDAD / CARRERA / ETC)'])
-                    st.markdown(f"""
-                    <div style='background-color: #F9F6EE; padding: 10px; border-radius: 6px; border-left: 4px solid #9C27B0; margin-bottom: 8px;'>
-                        <strong style='color:#000;'>{mencion}</strong><br>
-                        <small style='color:#444;'>{inst}</small>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-        with col_der_acad:
-            st.markdown("<h5 style='color: #FFD700; font-weight: bold;'>📑 Diplomados</h5>", unsafe_allow_html=True)
-            if df_diplo.empty:
-                st.markdown("<p style='color:#DDDDDD;'>Sin diplomados.</p>", unsafe_allow_html=True)
-            else:
-                for _, row in df_diplo.iterrows():
-                    inst = get_val(row, ['institucion educativa', 'INSTITUCION EDUCATIVA'])
-                    mencion = get_val(row, ['mencion (especialidad / carrera / etc)', 'MENCION (ESPECIALIDAD / CARRERA / ETC)'])
-                    st.markdown(f"""
-                    <div style='background-color: #F9F6EE; padding: 10px; border-radius: 6px; border-left: 4px solid #009688; margin-bottom: 8px;'>
-                        <strong style='color:#000;'>{mencion}</strong><br>
-                        <small style='color:#444;'>{inst}</small>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-            st.markdown("<h5 style='color: #FFD700; font-weight: bold; margin-top: 15px;'>📚 Cursos</h5>", unsafe_allow_html=True)
-            if df_cursos.empty:
-                st.markdown("<p style='color:#DDDDDD;'>Sin cursos registrados.</p>", unsafe_allow_html=True)
-            else:
-                for _, row in df_cursos.iterrows():
-                    inst = get_val(row, ['institucion educativa', 'INSTITUCION EDUCATIVA'])
-                    mencion = get_val(row, ['mencion (especialidad / carrera / etc)', 'MENCION (ESPECIALIDAD / CARRERA / ETC)'])
-                    st.markdown(f"""
-                    <div style='background-color: #F9F6EE; padding: 10px; border-radius: 6px; border-left: 4px solid #FF9800; margin-bottom: 8px;'>
-                        <strong style='color:#000;'>{mencion}</strong><br>
-                        <small style='color:#444;'>{inst}</small>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-        st.markdown("<br>", unsafe_allow_html=True)
-        with st.expander("⚙️ Clic aquí para Editar o Eliminar Formación Académica"):
-            st.markdown("<p style='color:#DDDDDD;'>Activa la casilla <b>SEL</b> para modificar o eliminar un registro.</p>", unsafe_allow_html=True)
-            st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 8px !important; }</style>""", unsafe_allow_html=True)
-            
-            col_conf_cfg = col_conf if 'col_conf' in locals() and isinstance(col_conf, dict) else {}
-            ed = st.data_editor(vst_df, hide_index=True, use_container_width=True, column_config=col_conf_cfg, key=f"ed_{h_name}_oculta")
-            sel = ed[ed["SEL"] == True] if "SEL" in ed.columns else pd.DataFrame()
-
-    # =========================================================
-    # 📋 PESTAÑAS ESTÁNDAR (TABLA INTERACTIVA GENERAL / DEFAULT)
-    # =========================================================
-    else:
-        vst = c_df.copy() if not c_df.empty else pd.DataFrame()
-        if not vst.empty:
-            if "SEL" not in vst.columns:
-                vst.insert(0, "SEL", False)
-                
-            conf = col_conf if 'col_conf' in locals() else {}
-            columnas_basura = ["DNI", "FECHA DE INICIO", "FECHA DE FIN", "DIAS GENERADOS", "SALDO"]
-            for col in columnas_basura:
-                if col in vst.columns:
-                    conf[col] = None
-                    
-            cols_importantes = ["SEL", "PERIODO", "F_INICIO", "F_FIN", "DIAS GOZADOS"]
-            cols_finales = [c for c in cols_importantes if c in vst.columns] + [c for c in vst.columns if c not in cols_importantes]
-            cols_finales = list(dict.fromkeys(cols_finales)) # Remover duplicados
-            vst = vst[cols_finales]
-            
-            st.markdown("<p style='color:#DDDDDD;'>Seleccione un registro con la casilla <b>SEL</b> para realizar cambios.</p>", unsafe_allow_html=True)
-            ed = st.data_editor(vst, hide_index=True, use_container_width=True, column_config=conf, key=f"ed_{h_name}")
-            sel = ed[ed["SEL"] == True]
+        # --- 3. ESPECIALIZACIONES ---
+        st.markdown("<h4 style='color: #FFD700; font-weight: bold; margin-top: 15px; border-bottom: 2px solid #FFD700; padding-bottom: 5px;'>🔬 Especializaciones</h4>", unsafe_allow_html=True)
+        if df_especi.empty:
+            st.markdown("<p style='color:#DDDDDD;'>No registradas.</p>", unsafe_allow_html=True)
         else:
-            st.info(f"Sin información registrada en {h_name}.")
+            for _, row in df_especi.iterrows():
+                inst = get_val(row, ['institucion educativa', 'INSTITUCION EDUCATIVA', 'institución educativa'])
+                mencion = get_val(row, ['mencion (especialidad / carrera / etc)', 'MENCION (ESPECIALIDAD / CARRERA / ETC)', 'mención'])
+                anio = get_val(row, ['AÑO', 'año'])
+                horas = get_val(row, ['horas academicas', 'HORAS ACADEMICAS', 'horas académicas'])
+                
+                st.markdown(f"""
+                <div style='background-color: #FFFFFF; padding: 15px; border-radius: 8px; border: 1px solid #CCCCCC; border-left: 6px solid #9C27B0; margin-bottom: 10px;'>
+                    <div style='margin-bottom: 5px; color: #000000; font-size: 1em; font-weight: bold;'>{mencion}</div>
+                    <div style='margin: 2px 0; color: #000000;'><strong>Institución:</strong> {inst}</div>
+                    <div style='margin: 2px 0; color: #000000;'><strong>Horas Ac.:</strong> {horas} hrs | <strong>Año:</strong> {anio}</div>
+                </div>
+                """, unsafe_allow_html=True)
     
-        with col_izq_acad:
-    # --- 2. ESTUDIOS TERMINADOS O INCONCLUSOS ---
-    st.markdown("<h4 style='color: #FFD700; font-weight: bold; margin-top: 15px; border-bottom: 2px solid #FFD700; padding-bottom: 5px;'>🚧 Estudios Sin Grado / Inconclusos</h4>", unsafe_allow_html=True)
-    if df_estudios.empty:
-        st.markdown("<p style='color:#DDDDDD;'>No registrados.</p>", unsafe_allow_html=True)
-    else:
-        for _, row in df_estudios.iterrows():
-            inst = get_val(row, ['institucion educativa', 'INSTITUCION EDUCATIVA', 'institución educativa'])
-            mencion = get_val(row, ['mencion (especialidad / carrera / etc)', 'MENCION (ESPECIALIDAD / CARRERA / ETC)', 'mención'])
-            anio = get_val(row, ['AÑO', 'año'])
-            estado = get_val(row, ['ESTADO', 'estado'])
-            
-            st.markdown(f"""
-            <div style='background-color: #FFFFFF; padding: 15px; border-radius: 8px; border: 1px solid #CCCCCC; border-left: 6px solid #FF5722; margin-bottom: 10px;'>
-                <div style='margin-bottom: 5px; color: #000000; font-size: 1em; font-weight: bold;'>{mencion}</div>
-                <div style='margin: 2px 0; color: #000000;'><strong>Institución:</strong> {inst}</div>
-                <div style='margin: 2px 0; color: #000000;'><strong>Estado:</strong> <span style='color: #D84315; font-weight: bold;'>{estado}</span> | <strong>Año:</strong> {anio}</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-    # --- 3. ESPECIALIZACIONES ---
-    st.markdown("<h4 style='color: #FFD700; font-weight: bold; margin-top: 15px; border-bottom: 2px solid #FFD700; padding-bottom: 5px;'>🔬 Especializaciones</h4>", unsafe_allow_html=True)
-    if df_especi.empty:
-        st.markdown("<p style='color:#DDDDDD;'>No registradas.</p>", unsafe_allow_html=True)
-    else:
-        for _, row in df_especi.iterrows():
-            inst = get_val(row, ['institucion educativa', 'INSTITUCION EDUCATIVA', 'institución educativa'])
-            mencion = get_val(row, ['mencion (especialidad / carrera / etc)', 'MENCION (ESPECIALIDAD / CARRERA / ETC)', 'mención'])
-            anio = get_val(row, ['AÑO', 'año'])
-            horas = get_val(row, ['horas academicas', 'HORAS ACADEMICAS', 'horas académicas'])
-            
-            st.markdown(f"""
-            <div style='background-color: #FFFFFF; padding: 15px; border-radius: 8px; border: 1px solid #CCCCCC; border-left: 6px solid #9C27B0; margin-bottom: 10px;'>
-                <div style='margin-bottom: 5px; color: #000000; font-size: 1em; font-weight: bold;'>{mencion}</div>
-                <div style='margin: 2px 0; color: #000000;'><strong>Institución:</strong> {inst}</div>
-                <div style='margin: 2px 0; color: #000000;'><strong>Horas Ac.:</strong> {horas} hrs | <strong>Año:</strong> {anio}</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-with col_der_acad:
-    # --- 4. DIPLOMADOS ---
-    st.markdown("<h4 style='color: #FFD700; font-weight: bold; margin-top: 15px; border-bottom: 2px solid #FFD700; padding-bottom: 5px;'>🏅 Diplomados</h4>", unsafe_allow_html=True)
-    if df_diplo.empty:
-        st.markdown("<p style='color:#DDDDDD;'>No registrados.</p>", unsafe_allow_html=True)
-    else:
-        for _, row in df_diplo.iterrows():
-            inst = get_val(row, ['institucion educativa', 'INSTITUCION EDUCATIVA', 'institución educativa'])
-            mencion = get_val(row, ['mencion (especialidad / carrera / etc)', 'MENCION (ESPECIALIDAD / CARRERA / ETC)', 'mención'])
-            anio = get_val(row, ['AÑO', 'año'])
-            horas = get_val(row, ['horas academicas', 'HORAS ACADEMICAS', 'horas académicas'])
-            
-            st.markdown(f"""
-            <div style='background-color: #FFFFFF; padding: 15px; border-radius: 8px; border: 1px solid #CCCCCC; border-left: 6px solid #03A9F4; margin-bottom: 10px;'>
-                <div style='margin-bottom: 5px; color: #000000; font-size: 1em; font-weight: bold;'>{mencion}</div>
-                <div style='margin: 2px 0; color: #000000;'><strong>Institución:</strong> {inst}</div>
-                <div style='margin: 2px 0; color: #000000;'><strong>Horas Ac.:</strong> {horas} hrs | <strong>Año:</strong> {anio}</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-    # --- 5. CURSOS ---
-    st.markdown("<h4 style='color: #FFD700; font-weight: bold; margin-top: 15px; border-bottom: 2px solid #FFD700; padding-bottom: 5px;'>📚 Cursos</h4>", unsafe_allow_html=True)
-    if df_cursos.empty:
-        st.markdown("<p style='color:#DDDDDD;'>No registrados.</p>", unsafe_allow_html=True)
-    else:
-        for _, row in df_cursos.iterrows():
-            inst = get_val(row, ['institucion educativa', 'INSTITUCION EDUCATIVA', 'institución educativa'])
-            mencion = get_val(row, ['mencion (especialidad / carrera / etc)', 'MENCION (ESPECIALIDAD / CARRERA / ETC)', 'mención'])
-            anio = get_val(row, ['AÑO', 'año'])
-            horas = get_val(row, ['horas academicas', 'HORAS ACADEMICAS', 'horas académicas'])
-            
-            st.markdown(f"""
-            <div style='background-color: #FFFFFF; padding: 15px; border-radius: 8px; border: 1px solid #CCCCCC; border-left: 6px solid #4CAF50; margin-bottom: 10px;'>
-                <div style='margin-bottom: 5px; color: #000000; font-size: 1em; font-weight: bold;'>{mencion}</div>
-                <div style='margin: 2px 0; color: #000000;'><strong>Institución:</strong> {inst}</div>
-                <div style='margin: 2px 0; color: #000000;'><strong>Horas Ac.:</strong> {horas} hrs | <strong>Año:</strong> {anio}</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-# --- TABLA DE SELECCIÓN PARA EDITAR/ELIMINAR ---
-st.markdown("<br>", unsafe_allow_html=True)
-with st.expander("⚙️ Clic aquí para Editar o Eliminar Formación Académica"):
-    st.markdown("<span style='color:#A0A0A0; font-size:14px;'>Activa la casilla <b>SEL</b> en la tabla de abajo para modificar o eliminar un registro.</span>", unsafe_allow_html=True)
+    with col_der_acad:
+        # --- 4. DIPLOMADOS ---
+        st.markdown("<h4 style='color: #FFD700; font-weight: bold; margin-top: 15px; border-bottom: 2px solid #FFD700; padding-bottom: 5px;'>🏅 Diplomados</h4>", unsafe_allow_html=True)
+        if df_diplo.empty:
+            st.markdown("<p style='color:#DDDDDD;'>No registrados.</p>", unsafe_allow_html=True)
+        else:
+            for _, row in df_diplo.iterrows():
+                inst = get_val(row, ['institucion educativa', 'INSTITUCION EDUCATIVA', 'institución educativa'])
+                mencion = get_val(row, ['mencion (especialidad / carrera / etc)', 'MENCION (ESPECIALIDAD / CARRERA / ETC)', 'mención'])
+                anio = get_val(row, ['AÑO', 'año'])
+                horas = get_val(row, ['horas academicas', 'HORAS ACADEMICAS', 'horas académicas'])
+                
+                st.markdown(f"""
+                <div style='background-color: #FFFFFF; padding: 15px; border-radius: 8px; border: 1px solid #CCCCCC; border-left: 6px solid #03A9F4; margin-bottom: 10px;'>
+                    <div style='margin-bottom: 5px; color: #000000; font-size: 1em; font-weight: bold;'>{mencion}</div>
+                    <div style='margin: 2px 0; color: #000000;'><strong>Institución:</strong> {inst}</div>
+                    <div style='margin: 2px 0; color: #000000;'><strong>Horas Ac.:</strong> {horas} hrs | <strong>Año:</strong> {anio}</div>
+                </div>
+                """, unsafe_allow_html=True)
     
-    if h_name in dfs and not dfs[h_name].empty and "dni" in dfs[h_name].columns:
-        df_fa = dfs[h_name][dfs[h_name]["dni"].astype(str) == str(dni_buscado)].copy()
-    else:
-        df_fa = pd.DataFrame()
+        # --- 5. CURSOS ---
+        st.markdown("<h4 style='color: #FFD700; font-weight: bold; margin-top: 15px; border-bottom: 2px solid #FFD700; padding-bottom: 5px;'>📚 Cursos</h4>", unsafe_allow_html=True)
+        if df_cursos.empty:
+            st.markdown("<p style='color:#DDDDDD;'>No registrados.</p>", unsafe_allow_html=True)
+        else:
+            for _, row in df_cursos.iterrows():
+                inst = get_val(row, ['institucion educativa', 'INSTITUCION EDUCATIVA', 'institución educativa'])
+                mencion = get_val(row, ['mencion (especialidad / carrera / etc)', 'MENCION (ESPECIALIDAD / CARRERA / ETC)', 'mención'])
+                anio = get_val(row, ['AÑO', 'año'])
+                horas = get_val(row, ['horas academicas', 'HORAS ACADEMICAS', 'horas académicas'])
+                
+                st.markdown(f"""
+                <div style='background-color: #FFFFFF; padding: 15px; border-radius: 8px; border: 1px solid #CCCCCC; border-left: 6px solid #4CAF50; margin-bottom: 10px;'>
+                    <div style='margin-bottom: 5px; color: #000000; font-size: 1em; font-weight: bold;'>{mencion}</div>
+                    <div style='margin: 2px 0; color: #000000;'><strong>Institución:</strong> {inst}</div>
+                    <div style='margin: 2px 0; color: #000000;'><strong>Horas Ac.:</strong> {horas} hrs | <strong>Año:</strong> {anio}</div>
+                </div>
+                """, unsafe_allow_html=True)
     
-    if not df_fa.empty:
-        # Control de inserción segura de columna SEL
-        if "SEL" not in df_fa.columns:
-            df_fa.insert(0, "SEL", False)
+    # --- TABLA DE SELECCIÓN PARA EDITAR/ELIMINAR ---
+    st.markdown("<br>", unsafe_allow_html=True)
+    with st.expander("⚙️ Clic aquí para Editar o Eliminar Formación Académica"):
+        st.markdown("<span style='color:#A0A0A0; font-size:14px;'>Activa la casilla <b>SEL</b> en la tabla de abajo para modificar o eliminar un registro.</span>", unsafe_allow_html=True)
         
-        ed = st.data_editor(
-            df_fa,
-            hide_index=True,
-            use_container_width=True,
-            disabled=[c for c in df_fa.columns if c != "SEL"],
-            key="editor_form_acad"
-        )
-        sel = ed[ed["SEL"] == True] if "SEL" in ed.columns else pd.DataFrame()
-    else:
-        st.info("No hay registros para mostrar.")
-        sel = pd.DataFrame()
+        if h_name in dfs and not dfs[h_name].empty and "dni" in dfs[h_name].columns:
+            df_fa = dfs[h_name][dfs[h_name]["dni"].astype(str) == str(dni_buscado)].copy()
+        else:
+            df_fa = pd.DataFrame()
+        
+        if not df_fa.empty:
+            # Control de inserción segura de columna SEL
+            if "SEL" not in df_fa.columns:
+                df_fa.insert(0, "SEL", False)
+            
+            ed = st.data_editor(
+                df_fa,
+                hide_index=True,
+                use_container_width=True,
+                disabled=[c for c in df_fa.columns if c != "SEL"],
+                key="editor_form_acad"
+            )
+            sel = ed[ed["SEL"] == True] if "SEL" in ed.columns else pd.DataFrame()
+        else:
+            st.info("No hay registros para mostrar.")
+            sel = pd.DataFrame()
 
 # ==========================================
 # PESTAÑA: DATOS FAMILIARES
