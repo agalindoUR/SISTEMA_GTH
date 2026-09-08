@@ -2533,6 +2533,11 @@ else:
 # ==========================================
 # --- SECCIÓN REGISTRO Y NÓMINA Y MÓDULOS ---
 # ==========================================
+
+# Resguardo de seguridad para evitar NameError si las variables no se declararon antes
+m = m if 'm' in locals() or 'm' in globals() else st.session_state.get("m", st.session_state.get("menu", ""))
+es_lector = es_lector if 'es_lector' in locals() or 'es_lector' in globals() else st.session_state.get("es_lector", False)
+
 if m == "➕ Registro" and not es_lector:
     import mod_registro
     mod_registro.mostrar(dfs, save_data)
