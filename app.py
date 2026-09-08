@@ -2122,6 +2122,9 @@ else:
                         if h_name == "DATOS FAMILIARES":
                             st.markdown("<h3 style='color: #FFD700; margin-bottom: 20px;'>👨‍👩‍👧‍👦 Datos Familiares</h3>", unsafe_allow_html=True)
                             
+                            # --- DEFINICIÓN DE VST (Se inicializa la variable de los familiares del trabajador) ---
+                            vst = c_df.copy()
+                        
                             # --- 1. BUSCAR LA DIRECCIÓN DEL TRABAJADOR ---
                             dir_trabajador = ""
                             if not dfs["DATOS GENERALES"].empty:
@@ -2151,7 +2154,8 @@ else:
                             else:
                                 for idx, row in vst.iterrows():
                                     f_dni = get_fam_val(row, "dni familiar")
-                                    if f_dni == "-": f_dni = get_fam_val(row, "dni_familiar")
+                                    if f_dni == "-": 
+                                        f_dni = get_fam_val(row, "dni_familiar")
                                     f_parentesco = get_fam_val(row, "parentesco")
                                     f_nombres = get_fam_val(row, "nombres y apellidos")
                                     f_edad = get_fam_val(row, "edad")
@@ -2180,9 +2184,9 @@ else:
                                         </div>
                                     </div>
                                     """, unsafe_allow_html=True)
-                        
+                            
                             st.markdown("<br>", unsafe_allow_html=True)
-                        
+                            
                             # --- 3. TABLA DESPLEGABLE PARA EDICIÓN ---
                             with st.expander("⚙️ Clic aquí para Editar o Eliminar un Familiar"):
                                 st.markdown("<p style='color:#DDDDDD;'>Activa la casilla <b>SEL</b> en la tabla de abajo para modificar o eliminar un registro.</p>", unsafe_allow_html=True)
@@ -2192,14 +2196,14 @@ else:
                                     
                                 st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 8px !important; }</style>""", unsafe_allow_html=True)
                                 
-                                    # Garantizar que la columna SEL existe en vst
-                                    vst_editor = vst.copy()
-                                    if "SEL" not in vst_editor.columns:
-                                        vst_editor.insert(0, "SEL", False)
-                                        
-                                    ed = st.data_editor(vst_editor, hide_index=True, use_container_width=True, column_config=col_conf, key=f"ed_{h_name}_oculta")
-                                    sel_fam = ed[ed["SEL"] == True]
-                        
+                                # Garantizar que la columna SEL existe en vst
+                                vst_editor = vst.copy()
+                                if "SEL" not in vst_editor.columns:
+                                    vst_editor.insert(0, "SEL", False)
+                                    
+                                ed = st.data_editor(vst_editor, hide_index=True, use_container_width=True, key=f"ed_{h_name}_oculta")
+                                sel_fam = ed[ed["SEL"] == True]
+                            
                             # --- 4. FORMULARIO DENTRO DE "NUEVO REGISTRO" ---
                             st.markdown("<br>", unsafe_allow_html=True)
                             with st.expander("➕ NUEVO REGISTRO"):
@@ -2222,7 +2226,7 @@ else:
                                     hoy = date.today()
                                     edad_fam = hoy.year - f_nac_fam.year - ((hoy.month, hoy.day) < (f_nac_fam.month, f_nac_fam.day))
                                     st.info(f"🎂 Edad calculada: **{edad_fam} años**")
-                        
+                                
                                 with col_f2:
                                     estado_fam = st.selectbox("Estado", ["Vivo", "Fallecido", "Otra condición"])
                                     
@@ -2243,14 +2247,14 @@ else:
                                         correo_fam = "-"
                                         domicilio_fam = "-"
                                         vive_juntos = False
-                        
+                                    
                                     sit_acad_fam = st.selectbox("Situación Académica", [
                                         "Ninguna / No aplica",
                                         "Estudiando Primaria", "Estudiando Secundaria", "Estudiando Superior",
                                         "Estudios Concluidos Primaria", "Estudios Concluidos Secundaria", "Estudios Concluidos Superior"
                                     ])
                                     contacto_emergencia = st.checkbox("🚨 Es Contacto de Emergencia Principal")
-                        
+                                
                                 if st.button("💾 Guardar Familiar", type="primary"):
                                     if not dni_fam or not nombres_fam:
                                         st.error("⚠️ El DNI y los Nombres son obligatorios.")
