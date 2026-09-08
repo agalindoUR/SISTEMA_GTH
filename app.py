@@ -994,7 +994,7 @@ else:
                     "LIQUIDACIONES",
                 ]
 
-tabs = st.tabs(t_noms)
+                tabs = st.tabs(t_noms)
 
 for i, tab in enumerate(tabs):
     h_name = h_keys[i]
