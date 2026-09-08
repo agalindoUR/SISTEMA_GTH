@@ -2013,10 +2013,10 @@ for i, tab in enumerate(tabs):
                 st.info(f"Sin información registrada en {h_name}.")
         
             with col_izq_acad:
-        # --- 2. ESTUDIOS TERMINADOS O INCONCLUSOS ---
-        st.markdown("<h4 style='color: #FFD700; font-weight: bold; margin-top: 15px; border-bottom: 2px solid #FFD700; padding-bottom: 5px;'>🚧 Estudios Sin Grado / Inconclusos</h4>", unsafe_allow_html=True)
-        if df_estudios.empty:
-            st.markdown("<p style='color:#DDDDDD;'>No registrados.</p>", unsafe_allow_html=True)
+                # --- 2. ESTUDIOS TERMINADOS O INCONCLUSOS ---
+                st.markdown("<h4 style='color: #FFD700; font-weight: bold; margin-top: 15px; border-bottom: 2px solid #FFD700; padding-bottom: 5px;'>🚧 Estudios Sin Grado / Inconclusos</h4>", unsafe_allow_html=True)
+                if df_estudios.empty:
+                    st.markdown("<p style='color:#DDDDDD;'>No registrados.</p>", unsafe_allow_html=True)
         else:
             for _, row in df_estudios.iterrows():
                 inst = get_val(row, ['institucion educativa', 'INSTITUCION EDUCATIVA', 'institución educativa'])
