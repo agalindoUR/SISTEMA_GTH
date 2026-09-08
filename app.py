@@ -1440,13 +1440,8 @@ for i, tab in enumerate(tabs):
                                 )
                             ).strip()
 
-                            if (
-                                tipo
-                                == "Datos Generales (CTI Vitae / RENACYT)"
-                            ):
-                                renacyt = row.get(
-                                    "codigo renacyt", "N/A"
-                                )
+                            if tipo == "Datos Generales (CTI Vitae / RENACYT)":
+                                renacyt = row.get("codigo renacyt", "N/A")
                                 nivel = row.get("nivel renacyt", "N/A")
                                 link = row.get("enlace cti vitae", "#")
                                 st.markdown(
@@ -1465,16 +1460,10 @@ for i, tab in enumerate(tabs):
 
                             elif tipo == "Publicación Científica":
                                 conteo_pub += 1
-                                titulo = row.get(
-                                    "titulo de publicacion", "N/A"
-                                )
+                                titulo = row.get("titulo de publicacion", "N/A")
                                 bd = row.get("base de datos", "N/A")
-                                revista = row.get(
-                                    "nombre de revista", "N/A"
-                                )
-                                anio = row.get(
-                                    "año de publicacion", "N/A"
-                                )
+                                revista = row.get("nombre de revista", "N/A")
+                                anio = row.get("año de publicacion", "N/A")
                                 st.markdown(
                                     f"""
                                 <div style='background-color: #F9F6EE; padding: 15px; border-radius: 8px; border-left: 6px solid #FF8C00; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #CCCCCC;'>
@@ -1490,15 +1479,9 @@ for i, tab in enumerate(tabs):
 
                             elif tipo == "Fondo Concursable":
                                 conteo_fondos += 1
-                                titulo_proy = row.get(
-                                    "nombre del proyecto", "N/A"
-                                )
-                                entidad = row.get(
-                                    "entidad financiadora", "N/A"
-                                )
-                                estado = row.get(
-                                    "estado del proyecto", "N/A"
-                                )
+                                titulo_proy = row.get("nombre del proyecto", "N/A")
+                                entidad = row.get("entidad financiadora", "N/A")
+                                estado = row.get("estado del proyecto", "N/A")
                                 st.markdown(
                                     f"""
                                 <div style='background-color: #F4FDE8; padding: 15px; border-radius: 8px; border-left: 6px solid #4CAF50; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #CCCCCC;'>
@@ -1515,15 +1498,9 @@ for i, tab in enumerate(tabs):
 
                             elif tipo == "Semillero de Investigación":
                                 conteo_sem += 1
-                                nombre_sem = row.get(
-                                    "nombre del semillero", "N/A"
-                                )
-                                rol_sem = row.get(
-                                    "rol en el semillero", "N/A"
-                                )
-                                estado_sem = row.get(
-                                    "estado del semillero", "N/A"
-                                )
+                                nombre_sem = row.get("nombre del semillero", "N/A")
+                                rol_sem = row.get("rol en el semillero", "N/A")
+                                estado_sem = row.get("estado del semillero", "N/A")
                                 st.markdown(
                                     f"""
                                 <div style='background-color: #F8E8F8; padding: 15px; border-radius: 8px; border-left: 6px solid #9C27B0; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #CCCCCC;'>
@@ -1537,8 +1514,30 @@ for i, tab in enumerate(tabs):
                                     unsafe_allow_html=True,
                                 )
 
+                # (Continuación de la pestaña INVESTIGACION - Columna Derecha)
+                with col_der:
+                    st.markdown("<h3 style='color: #FFD700;'>📊 Resumen</h3>", unsafe_allow_html=True)
+                    html_resumen_inv = f"""
+                    <div style='background-color: #4A0000; padding: 20px; border-radius: 10px; border: 2px solid #FFD700; box-shadow: 2px 2px 10px rgba(0,0,0,0.5); position: sticky; top: 50px;'>
+                        <h4 style='color: #FFD700; margin-bottom: 15px; text-align: center; border-bottom: 1px solid #FFD700; padding-bottom: 10px;'>Impacto Científico</h4>
+                        <div style='margin-bottom: 15px;'>
+                            <p style='margin: 0; color: #FFFFFF; font-size: 0.9em;'>📄 Publicaciones Indexadas</p>
+                            <p style='margin: 0; color: #FF8C00; font-size: 1.4em; font-weight: bold;'>{conteo_pub}</p>
+                        </div>
+                        <div style='margin-bottom: 15px;'>
+                            <p style='margin: 0; color: #FFFFFF; font-size: 0.9em;'>💰 Fondos Concursables</p>
+                            <p style='margin: 0; color: #4CAF50; font-size: 1.4em; font-weight: bold;'>{conteo_fondos}</p>
+                        </div>
+                        <div style='margin-bottom: 15px;'>
+                            <p style='margin: 0; color: #FFFFFF; font-size: 0.9em;'>🌱 Semilleros Liderados</p>
+                            <p style='margin: 0; color: #9C27B0; font-size: 1.4em; font-weight: bold;'>{conteo_sem}</p>
+                        </div>
+                    </div>
+                    """
+                    st.markdown(html_resumen_inv, unsafe_allow_html=True)
+
             # =========================================================
-            # 📌 OTRAS PESTAÑAS (TABLAS POR DEFECTO)
+            # 📌 ESTO SE MUESTRA SI 'vst' ESTÁ VACÍO
             # =========================================================
             else:
                 if not c_df.empty:
@@ -1546,36 +1545,15 @@ for i, tab in enumerate(tabs):
                 else:
                     st.info(f"Sin información registrada en {h_name}.")
 
-        # (Continuación de la pestaña INVESTIGACION)
-    with col_der:
-        st.markdown("<h3 style='color: #FFD700;'>📊 Resumen</h3>", unsafe_allow_html=True)
-        html_resumen_inv = f"""
-        <div style='background-color: #4A0000; padding: 20px; border-radius: 10px; border: 2px solid #FFD700; box-shadow: 2px 2px 10px rgba(0,0,0,0.5); position: sticky; top: 50px;'>
-            <h4 style='color: #FFD700; margin-bottom: 15px; text-align: center; border-bottom: 1px solid #FFD700; padding-bottom: 10px;'>Impacto Científico</h4>
-            <div style='margin-bottom: 15px;'>
-                <p style='margin: 0; color: #FFFFFF; font-size: 0.9em;'>📄 Publicaciones Indexadas</p>
-                <p style='margin: 0; color: #FF8C00; font-size: 1.4em; font-weight: bold;'>{conteo_pub}</p>
-            </div>
-            <div style='margin-bottom: 15px;'>
-                <p style='margin: 0; color: #FFFFFF; font-size: 0.9em;'>💰 Fondos Concursables</p>
-                <p style='margin: 0; color: #4CAF50; font-size: 1.4em; font-weight: bold;'>{conteo_fondos}</p>
-            </div>
-            <div style='margin-bottom: 15px;'>
-                <p style='margin: 0; color: #FFFFFF; font-size: 0.9em;'>🌱 Semilleros Liderados</p>
-                <p style='margin: 0; color: #9C27B0; font-size: 1.4em; font-weight: bold;'>{conteo_sem}</p>
-            </div>
-        </div>
-        """
-        st.markdown(html_resumen_inv, unsafe_allow_html=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    with st.expander("⚙️ Clic aquí para Editar o Eliminar un Registro de Investigación"):
-        st.markdown("<p style='color:#DDDDDD;'>Activa la casilla <b>SEL</b> para modificar o eliminar un registro.</p>", unsafe_allow_html=True)
-        st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 10px !important; }</style>""", unsafe_allow_html=True)
-        
-        conf = col_conf if 'col_conf' in locals() else {}
-        ed = st.data_editor(vst, hide_index=True, use_container_width=True, column_config=conf, key=f"ed_{h_name}_oculta")
-        sel = ed[ed["SEL"] == True] if "SEL" in ed.columns else pd.DataFrame()
+            # Expansor también dentro de INVESTIGACION
+            st.markdown("<br>", unsafe_allow_html=True)
+            with st.expander("⚙️ Clic aquí para Editar o Eliminar un Registro de Investigación"):
+                st.markdown("<p style='color:#DDDDDD;'>Activa la casilla <b>SEL</b> para modificar o eliminar un registro.</p>", unsafe_allow_html=True)
+                st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 10px !important; }</style>""", unsafe_allow_html=True)
+                
+                conf = col_conf if 'col_conf' in locals() else {}
+                ed = st.data_editor(vst, hide_index=True, use_container_width=True, column_config=conf, key=f"ed_{h_name}_oculta")
+                sel = ed[ed["SEL"] == True] if "SEL" in ed.columns else pd.DataFrame()
 
         # ==========================================
         # NUEVO DISEÑO: EXPERIENCIA LABORAL Y CÁLCULOS
