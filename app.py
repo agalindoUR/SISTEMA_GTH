@@ -2031,7 +2031,7 @@ for i, tab in enumerate(tabs):
                     <div style='margin: 2px 0; color: #000000;'><strong>Estado:</strong> <span style='color: #D84315; font-weight: bold;'>{estado}</span> | <strong>Año:</strong> {anio}</div>
                 </div>
                 """, unsafe_allow_html=True)
-    
+
         # --- 3. ESPECIALIZACIONES ---
         st.markdown("<h4 style='color: #FFD700; font-weight: bold; margin-top: 15px; border-bottom: 2px solid #FFD700; padding-bottom: 5px;'>🔬 Especializaciones</h4>", unsafe_allow_html=True)
         if df_especi.empty:
@@ -2050,7 +2050,7 @@ for i, tab in enumerate(tabs):
                     <div style='margin: 2px 0; color: #000000;'><strong>Horas Ac.:</strong> {horas} hrs | <strong>Año:</strong> {anio}</div>
                 </div>
                 """, unsafe_allow_html=True)
-    
+
     with col_der_acad:
         # --- 4. DIPLOMADOS ---
         st.markdown("<h4 style='color: #FFD700; font-weight: bold; margin-top: 15px; border-bottom: 2px solid #FFD700; padding-bottom: 5px;'>🏅 Diplomados</h4>", unsafe_allow_html=True)
@@ -2070,7 +2070,7 @@ for i, tab in enumerate(tabs):
                     <div style='margin: 2px 0; color: #000000;'><strong>Horas Ac.:</strong> {horas} hrs | <strong>Año:</strong> {anio}</div>
                 </div>
                 """, unsafe_allow_html=True)
-    
+
         # --- 5. CURSOS ---
         st.markdown("<h4 style='color: #FFD700; font-weight: bold; margin-top: 15px; border-bottom: 2px solid #FFD700; padding-bottom: 5px;'>📚 Cursos</h4>", unsafe_allow_html=True)
         if df_cursos.empty:
@@ -2089,7 +2089,7 @@ for i, tab in enumerate(tabs):
                     <div style='margin: 2px 0; color: #000000;'><strong>Horas Ac.:</strong> {horas} hrs | <strong>Año:</strong> {anio}</div>
                 </div>
                 """, unsafe_allow_html=True)
-    
+
     # --- TABLA DE SELECCIÓN PARA EDITAR/ELIMINAR ---
     st.markdown("<br>", unsafe_allow_html=True)
     with st.expander("⚙️ Clic aquí para Editar o Eliminar Formación Académica"):
