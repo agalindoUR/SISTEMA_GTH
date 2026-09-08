@@ -1866,16 +1866,16 @@ else:
                                 sel = ed[ed["SEL"] == True] if "SEL" in ed.columns else pd.DataFrame()
                         
                         # ==========================================
-                        # NUEVO DISEÑO: FORMACIÓN ACADÉMICA
+                        # MÓDULO: FORMACIÓN ACADÉMICA
                         # ==========================================
-                        elif h_name == "FORM. ACADEMICA":
-                            vst_df = vst if 'vst' in locals() and isinstance(vst, pd.DataFrame) else pd.DataFrame()
+                        elif h_name.upper().replace("É", "E") in ["FORM. ACADEMICA", "FORMACION ACADEMICA"]:
+                            vst_df = vst.copy() if 'vst' in locals() and isinstance(vst, pd.DataFrame) else pd.DataFrame()
                             
                             st.markdown("<h3 style='color: #FFD700; margin-bottom: 20px;'>🎓 Resumen de Formación Académica</h3>", unsafe_allow_html=True)
                             
-                            col_tipo = "TIPO DE ESTUDIO" if "TIPO DE ESTUDIO" in vst_df.columns else "tipo de estudio"
+                            col_tipo = "TIPO DE ESTUDIO" if "TIPO DE ESTUDIO" in vst_df.columns else ("tipo de estudio" if "tipo de estudio" in vst_df.columns else None)
                             
-                            if not vst_df.empty and col_tipo in vst_df.columns:
+                            if not vst_df.empty and col_tipo:
                                 mask_estudios = vst_df[col_tipo].astype(str).str.contains("Terminados|Inconclusos|Sin grado", case=False, na=False)
                                 df_estudios = vst_df[mask_estudios]
                                 
@@ -1887,7 +1887,7 @@ else:
                                 df_cursos = vst_df[vst_df[col_tipo].astype(str).str.contains("Curso", case=False, na=False)]
                             else:
                                 df_grados = df_estudios = df_especi = df_diplo = df_cursos = pd.DataFrame()
-                        
+                            
                             def get_val(r, opciones):
                                 for op in opciones:
                                     if op in r:
@@ -1895,17 +1895,17 @@ else:
                                         if pd.notna(val) and str(val).strip() != "":
                                             return str(val)
                                 return "N/A"
-                        
+                            
                             # --- 1. GRADOS Y TÍTULOS ---
                             st.markdown("<h4 style='color: #FFD700; font-weight: bold; border-bottom: 2px solid #FFD700; padding-bottom: 5px;'>📜 Grados y Títulos</h4>", unsafe_allow_html=True)
                             if df_grados.empty:
                                 st.markdown("<p style='color:#DDDDDD;'>No hay grados o títulos registrados.</p>", unsafe_allow_html=True)
                             else:
                                 for _, row in df_grados.iterrows():
-                                    grado = get_val(row, ['grado o titulo obtenido', 'GRADO O TITULO OBTENIDO', 'grado o título obtenido'])
-                                    inst = get_val(row, ['institucion educativa', 'INSTITUCION EDUCATIVA', 'institución educativa'])
-                                    mencion = get_val(row, ['mencion (especialidad / carrera / etc)', 'MENCION (ESPECIALIDAD / CARRERA / ETC)', 'mención'])
-                                    anio = get_val(row, ['AÑO', 'año'])
+                                    grado = get_val(row, ['grado o titulo obtenido', 'GRADO O TITULO OBTENIDO', 'grado o título obtenido', 'grado'])
+                                    inst = get_val(row, ['institucion educativa', 'INSTITUCION EDUCATIVA', 'institución educativa', 'institucion'])
+                                    mencion = get_val(row, ['mencion (especialidad / carrera / etc)', 'MENCION (ESPECIALIDAD / CARRERA / ETC)', 'mención', 'mencion'])
+                                    anio = get_val(row, ['AÑO', 'año', 'anio'])
                                     
                                     st.markdown(f"""
                                     <div style='background-color: #FFFFFF; padding: 15px; border-radius: 8px; border: 1px solid #CCCCCC; border-left: 6px solid #FFC107; margin-bottom: 10px;'>
@@ -1915,7 +1915,7 @@ else:
                                         <div style='margin: 2px 0; color: #000000;'><strong>Año:</strong> {anio}</div>
                                     </div>
                                     """, unsafe_allow_html=True)
-                        
+                            
                             # --- 2. COLUMNAS SECUNDARIAS ---
                             col_izq_acad, col_der_acad = st.columns(2)
                             
@@ -1933,7 +1933,7 @@ else:
                                             <small style='color:#444;'>{inst}</small>
                                         </div>
                                         """, unsafe_allow_html=True)
-                    
+                                
                                 st.markdown("<h5 style='color: #FFD700; font-weight: bold; margin-top: 15px;'>🎖️ Especializaciones</h5>", unsafe_allow_html=True)
                                 if df_especi.empty:
                                     st.markdown("<p style='color:#DDDDDD;'>Sin especializaciones.</p>", unsafe_allow_html=True)
@@ -1947,7 +1947,7 @@ else:
                                             <small style='color:#444;'>{inst}</small>
                                         </div>
                                         """, unsafe_allow_html=True)
-                    
+                            
                             with col_der_acad:
                                 st.markdown("<h5 style='color: #FFD700; font-weight: bold;'>📑 Diplomados</h5>", unsafe_allow_html=True)
                                 if df_diplo.empty:
@@ -1962,7 +1962,7 @@ else:
                                             <small style='color:#444;'>{inst}</small>
                                         </div>
                                         """, unsafe_allow_html=True)
-                    
+                                
                                 st.markdown("<h5 style='color: #FFD700; font-weight: bold; margin-top: 15px;'>📚 Cursos</h5>", unsafe_allow_html=True)
                                 if df_cursos.empty:
                                     st.markdown("<p style='color:#DDDDDD;'>Sin cursos registrados.</p>", unsafe_allow_html=True)
@@ -1976,8 +1976,10 @@ else:
                                             <small style='color:#444;'>{inst}</small>
                                         </div>
                                         """, unsafe_allow_html=True)
-                    
+                            
                             st.markdown("<br>", unsafe_allow_html=True)
+                            
+                            # --- 3. EDITOR Y EDICIÓN ---
                             with st.expander("⚙️ Clic aquí para Editar o Eliminar Formación Académica"):
                                 st.markdown("<p style='color:#DDDDDD;'>Activa la casilla <b>SEL</b> para modificar o eliminar un registro.</p>", unsafe_allow_html=True)
                                 st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 8px !important; }</style>""", unsafe_allow_html=True)
