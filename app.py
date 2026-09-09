@@ -602,7 +602,7 @@ def gen_papeleta_vac(
 
 
 # ==========================================
-# 3. ESTILOS CSS
+# 3. ESTILOS CSS GENERALES
 # ==========================================
 st.markdown(
     """
@@ -684,7 +684,7 @@ st.markdown(
     
     thead tr th { background-color: #FFF9C4 !important; color: #000000 !important; font-weight: bold !important; text-transform: uppercase !important; border: 1px solid #f0f0f0 !important; }
     
-    /* SUBTÍTULOS (LABELS DE LOS FORMULARIOS) */
+    /* SUBTÍTULOS */
     label p, label span, .stApp label p { 
         color: #FFD700 !important; 
         font-weight: bold !important; 
@@ -694,6 +694,21 @@ st.markdown(
     [data-testid="stExpander"] label p, [data-testid="stExpander"] label span { 
         color: #4a0000 !important; 
         font-weight: bold !important; 
+    }
+
+    .foto-perfil-large {
+        width: 110px;
+        height: 110px;
+        border-radius: 50%; 
+        object-fit: cover; 
+        object-position: center;
+        border: 4px solid #FFD700;
+        margin-right: 20px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        transition: transform 0.2s ease-in-out;
+    }
+    .foto-perfil-large:hover {
+        transform: scale(1.08);
     }
 </style>
 """,
@@ -707,8 +722,9 @@ if "rol" not in st.session_state:
     st.session_state.rol = None
 if "usuario_actual" not in st.session_state:
     st.session_state.usuario_actual = None
+if "menu_activo" not in st.session_state:
+    st.session_state.menu_activo = "🔍 Consulta"
 
-# ---> CARGAMOS LOS DATOS ANTES DEL LOGIN <---
 dfs = load_data()
 
 if st.session_state.rol is None:
@@ -747,13 +763,10 @@ if st.session_state.rol is None:
                         .strip()
                     )
                     if estado == "Inactivo":
-                        st.error(
-                            "⚠️ Tu cuenta está inactiva. Contacta al administrador."
-                        )
+                        st.error("⚠️ Tu cuenta está inactiva. Contacta al administrador.")
                     else:
                         st.session_state.rol = (
-                            user_match.iloc[0]
-                            .get("rol", "Lector")
+                            str(user_match.iloc[0].get("rol", "Lector"))
                             .strip()
                             .capitalize()
                         )
@@ -791,24 +804,8 @@ else:
         )
         st.markdown("<br>", unsafe_allow_html=True)
 
-        if "menu_p" not in st.session_state:
-            st.session_state.menu_p = "🔍 Consulta"
-        if "menu_r" not in st.session_state:
-            st.session_state.menu_r = None
-        if "menu_activo" not in st.session_state:
-            st.session_state.menu_activo = "🔍 Consulta"
-
-        def click_menu_p():
-            st.session_state.menu_activo = st.session_state.menu_p
-            st.session_state.menu_r = None
-
-        def click_menu_r():
-            if st.session_state.menu_r is not None:
-                st.session_state.menu_activo = st.session_state.menu_r
-                st.session_state.menu_p = None
-
         st.markdown("### 🛠️ MENÚ PRINCIPAL")
-        st.radio(
+        sel_p = st.radio(
             "Menú Principal",
             [
                 "🔍 Consulta",
@@ -819,36 +816,39 @@ else:
                 "📋 Evaluaciones",
                 "📈 Dashboard Desempeño",
             ],
-            key="menu_p",
-            on_change=click_menu_p,
-            index=None,
+            key="radio_p",
+            index=0 if st.session_state.menu_activo in [
+                "🔍 Consulta", "➕ Registro", "⏰ Horarios Administrativos", 
+                "📊 Nómina General", "🏢 Estructura", "📋 Evaluaciones", "📈 Dashboard Desempeño"
+            ] else None,
             label_visibility="collapsed",
         )
 
-        st.markdown(
-            "<h3 style='color: #FFD700;'>📊 REPORTES</h3>",
-            unsafe_allow_html=True,
-        )
-        st.radio(
+        st.markdown("<h3 style='color: #FFD700;'>📊 REPORTES</h3>", unsafe_allow_html=True)
+        sel_r = st.radio(
             "Reportes",
             ["Reporte General", "Cumpleañeros", "Vacaciones", "Vencimientos"],
-            key="menu_r",
-            on_change=click_menu_r,
-            index=None,
+            key="radio_r",
+            index=0 if st.session_state.menu_activo in [
+                "Reporte General", "Cumpleañeros", "Vacaciones", "Vencimientos"
+            ] else None,
             label_visibility="collapsed",
         )
 
-        def click_usuarios():
-            st.session_state.menu_activo = "🔐 Usuarios y Seguridad"
-            st.session_state.menu_p = None
-            st.session_state.menu_r = None
+        # Control seguro de cambio de menú
+        if sel_p and st.session_state.menu_activo != sel_p and st.session_state.get("last_radio") != "p":
+            st.session_state.menu_activo = sel_p
+            st.session_state.last_radio = "p"
+            st.rerun()
+        elif sel_r and st.session_state.menu_activo != sel_r and st.session_state.get("last_radio") != "r":
+            st.session_state.menu_activo = sel_r
+            st.session_state.last_radio = "r"
+            st.rerun()
 
         st.markdown("---")
-        st.button(
-            "🔐 Usuarios y Seguridad",
-            use_container_width=True,
-            on_click=click_usuarios,
-        )
+        if st.button("🔐 Usuarios y Seguridad", use_container_width=True):
+            st.session_state.menu_activo = "🔐 Usuarios y Seguridad"
+            st.rerun()
 
         m = st.session_state.menu_activo
 
@@ -866,143 +866,111 @@ else:
             unsafe_allow_html=True,
         )
 
-        df_per_consulta = dfs["PERSONAL"].copy()
+        df_per_consulta = dfs.get("PERSONAL", pd.DataFrame()).copy()
 
-        df_per_consulta["dni_str"] = (
-            df_per_consulta.get("dni", pd.Series([""] * len(df_per_consulta)))
-            .astype(str)
-            .str.strip()
-        )
-        apellidos_col = (
-            df_per_consulta.get(
-                "apellidos", pd.Series([""] * len(df_per_consulta))
+        if not df_per_consulta.empty:
+            df_per_consulta["dni_str"] = (
+                df_per_consulta.get("dni", pd.Series([""] * len(df_per_consulta)))
+                .astype(str)
+                .str.replace(r"\.0$", "", regex=True)
+                .str.strip()
             )
-            .fillna("")
-            .astype(str)
-            .str.strip()
-        )
-        nombres_col = (
-            df_per_consulta.get(
-                "nombres", pd.Series([""] * len(df_per_consulta))
+            apellidos_col = (
+                df_per_consulta.get("apellidos", pd.Series([""] * len(df_per_consulta)))
+                .fillna("")
+                .astype(str)
+                .str.strip()
             )
-            .fillna("")
-            .astype(str)
-            .str.strip()
-        )
+            nombres_col = (
+                df_per_consulta.get("nombres", pd.Series([""] * len(df_per_consulta)))
+                .fillna("")
+                .astype(str)
+                .str.strip()
+            )
 
-        df_per_consulta["nom_str"] = (
-            apellidos_col + " " + nombres_col
-        ).str.strip()
-        df_per_consulta["search_str"] = (
-            df_per_consulta["dni_str"] + " - " + df_per_consulta["nom_str"]
-        )
+            df_per_consulta["nom_str"] = (apellidos_col + " " + nombres_col).str.strip()
+            df_per_consulta["search_str"] = (
+                df_per_consulta["dni_str"] + " - " + df_per_consulta["nom_str"]
+            )
 
-        opciones_buscador = [""] + [
-            x
-            for x in df_per_consulta["search_str"].tolist()
-            if x != " - "
-        ]
-
-        selected_search = st.selectbox(
-            "🔍 Escriba el DNI o Apellidos y Nombres:", opciones_buscador
-        )
-
-        if selected_search:
-            dni_buscado = selected_search.split(" - ")[0].strip()
-
-            fila_pers = df_per_consulta[
-                df_per_consulta["dni_str"] == dni_buscado
+            opciones_buscador = [""] + [
+                x for x in df_per_consulta["search_str"].tolist() if x != " - "
             ]
-            if not fila_pers.empty:
-                nom_c = fila_pers.iloc[0]["nom_str"]
-                ape_c = str(fila_pers.iloc[0].get("apellidos", "")).strip()
-                nom_p_c = str(fila_pers.iloc[0].get("nombres", "")).strip()
 
-                link_foto_raw = fila_pers.iloc[0].get(
-                    "foto", fila_pers.iloc[0].get("FOTO", "")
-                )
+            selected_search = st.selectbox(
+                "🔍 Escriba el DNI o Apellidos y Nombres:", opciones_buscador
+            )
 
-                if pd.notnull(link_foto_raw) and str(link_foto_raw).strip() != "":
-                    foto_directa = obtener_link_directo_drive(
-                        str(link_foto_raw).strip()
-                    )
-                else:
-                    foto_directa = None
+            if selected_search:
+                dni_buscado = selected_search.split(" - ")[0].strip()
 
-                if foto_directa:
-                    st.markdown(
-                        f"""
-                        <style>
-                        .foto-perfil-large {{
-                            width: 110px;
-                            height: 110px;
-                            border-radius: 50%; 
-                            object-fit: cover; 
-                            object-position: center;
-                            border: 4px solid #FFD700;
-                            margin-right: 20px;
-                            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-                            transition: transform 0.2s ease-in-out;
-                        }}
-                        .foto-perfil-large:hover {{
-                            transform: scale(1.08);
-                        }}
-                        </style>
-                        <div style='border-bottom: 2px solid #FFD700; padding-bottom: 15px; margin-bottom: 25px; display: flex; align-items: center;'>
-                            <img src='{foto_directa}' class='foto-perfil-large' onerror="this.style.display='none'; document.getElementById('avatar-{dni_buscado}').style.display='block';">
-                            <h1 id='avatar-{dni_buscado}' style='color: white; margin: 0; margin-right: 15px; font-size: 3em; display: none;'>👤</h1>
-                            <h1 style='color: #FFD700; margin: 0; font-size: 2.5em;'>{nom_c}</h1>
-                        </div>
-                    """,
-                        unsafe_allow_html=True,
-                    )
-                else:
-                    st.markdown(
-                        f"""
-                        <div style='border-bottom: 2px solid #FFD700; padding-bottom: 10px; margin-bottom: 20px; display: flex; align-items: center;'>
-                            <h1 style='color: white; margin: 0; margin-right: 15px; font-size: 3em;'>👤</h1>
-                            <h1 style='color: #FFD700; margin: 0; font-size: 2.5em;'>{nom_c}</h1>
-                        </div>
-                    """,
-                        unsafe_allow_html=True,
+                fila_pers = df_per_consulta[df_per_consulta["dni_str"] == dni_buscado]
+                if not fila_pers.empty:
+                    nom_c = fila_pers.iloc[0]["nom_str"]
+                    link_foto_raw = fila_pers.iloc[0].get("foto", fila_pers.iloc[0].get("FOTO", ""))
+
+                    foto_directa = (
+                        obtener_link_directo_drive(str(link_foto_raw).strip())
+                        if pd.notnull(link_foto_raw) and str(link_foto_raw).strip() != ""
+                        else None
                     )
 
-                t_noms = [
-                    "Datos Generales",
-                    "Exp. Laboral",
-                    "Form. Académica",
-                    "Investigación",
-                    "Datos Familiares",
-                    "Contratos",
-                    "Vacaciones",
-                    "Otros Beneficios",
-                    "Méritos/Demer.",
-                    "Evaluación",
-                    "Liquidaciones",
-                ]
-                h_keys = [
-                    "DATOS GENERALES",
-                    "EXP. LABORAL",
-                    "FORM. ACADEMICA",
-                    "INVESTIGACION",
-                    "DATOS FAMILIARES",
-                    "CONTRATOS",
-                    "VACACIONES",
-                    "OTROS BENEFICIOS",
-                    "MERITOS Y DEMERITOS",
-                    "EVALUACION DEL DESEMPEÑO",
-                    "LIQUIDACIONES",
-                ]
+                    if foto_directa:
+                        st.markdown(
+                            f"""
+                            <div style='border-bottom: 2px solid #FFD700; padding-bottom: 15px; margin-bottom: 25px; display: flex; align-items: center;'>
+                                <img src='{foto_directa}' class='foto-perfil-large' onerror="this.style.display='none'; document.getElementById('avatar-{dni_buscado}').style.display='block';">
+                                <h1 id='avatar-{dni_buscado}' style='color: white; margin: 0; margin-right: 15px; font-size: 3em; display: none;'>👤</h1>
+                                <h1 style='color: #FFD700; margin: 0; font-size: 2.5em;'>{nom_c}</h1>
+                            </div>
+                            """,
+                            unsafe_allow_html=True,
+                        )
+                    else:
+                        st.markdown(
+                            f"""
+                            <div style='border-bottom: 2px solid #FFD700; padding-bottom: 10px; margin-bottom: 20px; display: flex; align-items: center;'>
+                                <h1 style='color: white; margin: 0; margin-right: 15px; font-size: 3em;'>👤</h1>
+                                <h1 style='color: #FFD700; margin: 0; font-size: 2.5em;'>{nom_c}</h1>
+                            </div>
+                            """,
+                            unsafe_allow_html=True,
+                        )
 
-                tabs = st.tabs(t_noms)
+                    t_noms = [
+                        "Datos Generales", "Exp. Laboral", "Form. Académica", 
+                        "Investigación", "Datos Familiares", "Contratos", 
+                        "Vacaciones", "Otros Beneficios", "Méritos/Demer.", 
+                        "Evaluación", "Liquidaciones"
+                    ]
+                    h_keys = [
+                        "DATOS GENERALES", "EXP. LABORAL", "FORM. ACADEMICA", 
+                        "INVESTIGACION", "DATOS FAMILIARES", "CONTRATOS", 
+                        "VACACIONES", "OTROS BENEFICIOS", "MERITOS Y DEMERITOS", 
+                        "EVALUACION DEL DESEMPEÑO", "LIQUIDACIONES"
+                    ]
 
-                for i, tab in enumerate(tabs):
-                    h_name = h_keys[i]
-                    with tab:
-                        if h_name in dfs and "dni" in dfs[h_name].columns:
-                            c_df = dfs[h_name][dfs[h_name]["dni"] == dni_buscado]
-                        else:
-                            c_df = pd.DataFrame(columns=COLUMNAS.get(h_name, []))
+                    tabs = st.tabs(t_noms)
+
+                    for i, tab in enumerate(tabs):
+                        h_name = h_keys[i]
+                        with tab:
+                            if h_name in dfs and not dfs[h_name].empty and "dni" in dfs[h_name].columns:
+                                df_modulo = dfs[h_name].copy()
+                                df_modulo["dni_clean"] = (
+                                    df_modulo["dni"]
+                                    .astype(str)
+                                    .str.replace(r"\.0$", "", regex=True)
+                                    .str.strip()
+                                )
+                                c_df = df_modulo[df_modulo["dni_clean"] == dni_buscado].drop(columns=["dni_clean"])
+                            else:
+                                c_df = pd.DataFrame()
+
+                            if not c_df.empty:
+                                st.dataframe(c_df, use_container_width=True, key=f"tbl_{h_name}_{dni_buscado}")
+                            else:
+                                st.info(f"No hay registros cargados en {t_noms[i]}.")
 
                         # =========================================================================
                         # 📄 PESTAÑA: CONTRATOS
