@@ -2056,31 +2056,31 @@ else:
                     st.success("✅ ¡Formación académica registrada correctamente!")
                     st.rerun()
 
-    # =========================================================
-    # SECCIÓN: TABLA DE SELECCIÓN PARA EDITAR / ELIMINAR
-    # =========================================================
-    with st.expander("⚙️ Clic aquí para Editar o Eliminar Formación Académica"):
-        st.markdown("<span style='color:#A0A0A0; font-size:14px;'>Activa la casilla <b>SEL</b> en la tabla de abajo para modificar o eliminar un registro.</span>", unsafe_allow_html=True)
-        
-        # Protección contra KeyError DNI
-        if h_name in dfs and not dfs[h_name].empty and "dni" in dfs[h_name].columns:
-            df_fa = dfs[h_name][dfs[h_name]["dni"].astype(str) == str(dni_buscado)].copy()
-        else:
-            df_fa = pd.DataFrame()
-        
-        if not df_fa.empty:
-            df_fa.insert(0, "SEL", False)
-            ed = st.data_editor(
-                df_fa,
-                hide_index=True,
-                use_container_width=True,
-                disabled=[c for c in df_fa.columns if c != "SEL"],
-                key="editor_form_acad"
-            )
-            sel = ed[ed["SEL"] == True]
-        else:
-            st.info("No hay registros para mostrar.")
-            sel = pd.DataFrame()
+                    # =========================================================
+                    # SECCIÓN: TABLA DE SELECCIÓN PARA EDITAR / ELIMINAR
+                    # =========================================================
+                    with st.expander("⚙️ Clic aquí para Editar o Eliminar Formación Académica"):
+                        st.markdown("<span style='color:#A0A0A0; font-size:14px;'>Activa la casilla <b>SEL</b> en la tabla de abajo para modificar o eliminar un registro.</span>", unsafe_allow_html=True)
+                        
+                        # Protección contra KeyError DNI
+                        if h_name in dfs and not dfs[h_name].empty and "dni" in dfs[h_name].columns:
+                            df_fa = dfs[h_name][dfs[h_name]["dni"].astype(str) == str(dni_buscado)].copy()
+                        else:
+                            df_fa = pd.DataFrame()
+                        
+                        if not df_fa.empty:
+                            df_fa.insert(0, "SEL", False)
+                            ed = st.data_editor(
+                                df_fa,
+                                hide_index=True,
+                                use_container_width=True,
+                                disabled=[c for c in df_fa.columns if c != "SEL"],
+                                key="editor_form_acad"
+                            )
+                            sel = ed[ed["SEL"] == True]
+                        else:
+                            st.info("No hay registros para mostrar.")
+                            sel = pd.DataFrame()
                     
                         # =========================================================
                         # 📋 PESTAÑAS ESTÁNDAR (TABLA INTERACTIVA GENERAL / DEFAULT)
