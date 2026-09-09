@@ -1400,10 +1400,12 @@ else:
                         
                                 st.markdown("<br>", unsafe_allow_html=True)
                         
-                                # 2. TABLA DE SELECCIÓN
+                                # 2. SELECCIÓN DE REGISTRO
                                 with st.expander("⚙️ Clic aquí para seleccionar el registro a editar", expanded=True):
                                     if "SEL" not in vst.columns:
-                                        vst.insert(0, "SEL", False)
+                                        vst.insert(0, "SEL", True)
+                                    else:
+                                        vst["SEL"] = True
                         
                                     ed = st.data_editor(
                                         vst,
@@ -1413,7 +1415,7 @@ else:
                                     )
                                     sel = ed[ed["SEL"] == True] if "SEL" in ed.columns else pd.DataFrame()
                         
-                                # 3. FORMULARIO DE EDICIÓN (SE MUESTRA AL MARCAR 'SEL')
+                                # 3. FORMULARIO DE EDICIÓN Y GUARDADO REAL
                                 if not sel.empty:
                                     row = sel.iloc[0]
                                     st.markdown("### ✏️ Modificar Datos del Colaborador")
@@ -1421,7 +1423,6 @@ else:
                                     with st.form(key="form_editar_datos_generales"):
                                         c1, c2, c3 = st.columns(3)
                         
-                                        # Rango de fechas permitido para nacimientos
                                         min_f = date(1930, 1, 1)
                                         max_f = date.today()
                                         fecha_fallback = date(1990, 1, 1)
@@ -1446,7 +1447,6 @@ else:
                                             edit_est_civil = st.text_input("💍 Estado Civil", value=str(row.get("estado civil", row.get("ESTADO CIVIL", ""))))
                         
                                         with c2:
-                                            # 'st.date_input' configurado con límites de fecha seguros
                                             edit_fnac = st.date_input(
                                                 "🎂 Fecha de Nacimiento",
                                                 value=fecha_val,
@@ -1460,14 +1460,49 @@ else:
                                         with c3:
                                             edit_direccion = st.text_area("🏠 Dirección de Domicilio", value=str(row.get("direccion", row.get("DIRECCION", ""))))
                         
-                                        btn_guardar = st.form_submit_button("💾 Guardar Cambios Modificados")
+                                        btn_guardar = st.form_submit_button("💾 Guardar Cambios Modificados", type="primary")
                         
                                         if btn_guardar:
-                                            # Lógica para actualizar los datos en tu DataFrame / Excel / Google Sheets
-                                            st.success("¡Datos generales actualizados con éxito!")
-                                            st.rerun()
+                                            # A. Recalcular edad exacta
+                                            hoy = date.today()
+                                            edad_calc = hoy.year - edit_fnac.year - ((hoy.month, hoy.day) < (edit_fnac.month, edit_fnac.day))
+                        
+                                            # B. Ubicar el índice correspondiente en la tabla principal
+                                            dni_colab = str(row.get("dni", row.get("DNI", "")))
+                                            idx = dfs["DATOS GENERALES"][dfs["DATOS GENERALES"]["dni"].astype(str) == dni_colab].index
+                        
+                                            if not idx.empty:
+                                                i = idx[0]
+                                                # C. Actualizar columnas en el DataFrame global
+                                                for col in dfs["DATOS GENERALES"].columns:
+                                                    c_norm = str(col).lower().replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u").replace("_", " ")
+                                                    if c_norm in ["sede"]:
+                                                        dfs["DATOS GENERALES"].at[i, col] = edit_sede
+                                                    elif c_norm in ["sexo"]:
+                                                        dfs["DATOS GENERALES"].at[i, col] = edit_sexo
+                                                    elif c_norm in ["estado civil"]:
+                                                        dfs["DATOS GENERALES"].at[i, col] = edit_est_civil
+                                                    elif c_norm in ["fecha de nacimiento", "nacimiento"]:
+                                                        dfs["DATOS GENERALES"].at[i, col] = str(edit_fnac)
+                                                    elif c_norm in ["edad"]:
+                                                        dfs["DATOS GENERALES"].at[i, col] = edad_calc
+                                                    elif c_norm in ["celular", "telefono", "telefono / celular"]:
+                                                        dfs["DATOS GENERALES"].at[i, col] = edit_telefono
+                                                    elif c_norm in ["correo", "email", "correo electronico"]:
+                                                        dfs["DATOS GENERALES"].at[i, col] = edit_correo
+                                                    elif c_norm in ["direccion", "domicilio"]:
+                                                        dfs["DATOS GENERALES"].at[i, col] = edit_direccion
+                        
+                                                # D. Persistir cambios de forma permanente
+                                                if "save_data" in globals():
+                                                    save_data(dfs)
+                                                elif "exportar_df_a_sheets" in globals():
+                                                    exportar_df_a_sheets(dfs)
+                        
+                                                st.success("✅ ¡Datos actualizados y guardados correctamente!")
+                                                st.rerun()
                                 else:
-                                    st.warning("📌 Marca la casilla **SEL** en la tabla de arriba para desplegar el formulario con los campos a modificar.")
+                                    st.warning("📌 Marca la casilla **SEL** para habilitar la modificación de campos.")
                         
                             else:
                                 st.info(f"Sin información registrada en {h_name}.")
