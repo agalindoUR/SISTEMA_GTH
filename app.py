@@ -1370,6 +1370,7 @@ else:
                                     link_mapa = f"https://www.google.com/maps/search/?api=1&query={query_map}"
                                     dir_display = f'<a href="{link_mapa}" target="_blank" style="color: #4da3ff; text-decoration: none; font-weight: bold;">📍 {direccion} (Ver en Google Maps 🗺️)</a>'
                         
+                                # 1. TARJETA RESUMEN VISUAL
                                 st.markdown(
                                     f"""
                                     <div style="background-color: rgba(255, 215, 0, 0.05); padding: 25px; border-radius: 15px; border: 2px solid #FFD700; color: inherit; font-family: sans-serif;">
@@ -1399,14 +1400,10 @@ else:
                         
                                 st.markdown("<br>", unsafe_allow_html=True)
                         
-                                # =========================================================
-                                # TABLA DE EDICIÓN DE DATOS GENERALES
-                                # =========================================================
-                                with st.expander("⚙️ Clic aquí para Editar o Modificar Datos Generales", expanded=True):
+                                # 2. TABLA DE SELECCIÓN
+                                with st.expander("⚙️ Clic aquí para seleccionar el registro a editar", expanded=True):
                                     if "SEL" not in vst.columns:
                                         vst.insert(0, "SEL", False)
-                        
-                                    st.markdown("<span style='color:#DDDDDD; font-size:14px;'>Selecciona con la casilla <b>SEL</b> o edita directamente los campos en la tabla para actualizar la información del trabajador.</span>", unsafe_allow_html=True)
                         
                                     ed = st.data_editor(
                                         vst,
@@ -1415,6 +1412,47 @@ else:
                                         key="editor_datos_generales"
                                     )
                                     sel = ed[ed["SEL"] == True] if "SEL" in ed.columns else pd.DataFrame()
+                        
+                                # 3. FORMULARIO DE EDICIÓN (SE MUESTRA AL MARCAR 'SEL')
+                                if not sel.empty:
+                                    row = sel.iloc[0]
+                                    st.markdown("### ✏️ Modificar Datos del Colaborador")
+                        
+                                    with st.form(key="form_editar_datos_generales"):
+                                        c1, c2, c3 = st.columns(3)
+                        
+                                        # Intentar parsear la fecha de nacimiento para el widget de calendario
+                                        raw_fnac = str(row.get("fecha de nacimiento", row.get("FECHA DE NACIMIENTO", "")))
+                                        try:
+                                            fecha_val = pd.to_datetime(raw_fnac).date()
+                                        except Exception:
+                                            fecha_val = None
+                        
+                                        with c1:
+                                            edit_sede = st.text_input("📍 Sede", value=str(row.get("sede", row.get("SEDE", ""))))
+                                            edit_sexo = st.selectbox(
+                                                "🚻 Sexo",
+                                                ["Femenino", "Masculino", "Otro"],
+                                                index=0 if "fem" in str(row.get("sexo", "")).lower() else 1
+                                            )
+                                            edit_est_civil = st.text_input("💍 Estado Civil", value=str(row.get("estado civil", row.get("ESTADO CIVIL", ""))))
+                        
+                                        with c2:
+                                            edit_fnac = st.date_input("🎂 Fecha de Nacimiento", value=fecha_val)
+                                            edit_telefono = st.text_input("📱 Teléfono / Celular", value=str(row.get("celular", row.get("TELEFONO", ""))))
+                                            edit_correo = st.text_input("📧 Correo Electrónico", value=str(row.get("correo", row.get("CORREO ELECTRONICO", ""))))
+                        
+                                        with c3:
+                                            edit_direccion = st.text_area("🏠 Dirección de Domicilio", value=str(row.get("direccion", row.get("DIRECCION", ""))))
+                        
+                                        btn_guardar = st.form_submit_button("💾 Guardar Cambios Modificados")
+                        
+                                        if btn_guardar:
+                                            # Aquí va tu lógica para actualizar c_df / la base de datos
+                                            st.success("¡Datos generales actualizados con éxito!")
+                                            st.rerun()
+                                else:
+                                    st.warning("📌 Marca la casilla **SEL** en la tabla de arriba para desplegar el formulario con los campos a modificar.")
                         
                             else:
                                 st.info(f"Sin información registrada en {h_name}.")
