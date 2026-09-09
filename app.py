@@ -1415,7 +1415,7 @@ else:
                                     )
                                     sel = ed[ed["SEL"] == True] if "SEL" in ed.columns else pd.DataFrame()
                         
-                                # 3. FORMULARIO DE EDICIÓN Y GUARDADO REAL
+                                # 3. FORMULARIO DE EDICIÓN
                                 if not sel.empty:
                                     row = sel.iloc[0]
                                     st.markdown("### ✏️ Modificar Datos del Colaborador")
@@ -1463,17 +1463,14 @@ else:
                                         btn_guardar = st.form_submit_button("💾 Guardar Cambios Modificados", type="primary")
                         
                                         if btn_guardar:
-                                            # A. Recalcular edad exacta
                                             hoy = date.today()
                                             edad_calc = hoy.year - edit_fnac.year - ((hoy.month, hoy.day) < (edit_fnac.month, edit_fnac.day))
                         
-                                            # B. Ubicar el índice correspondiente en la tabla principal
                                             dni_colab = str(row.get("dni", row.get("DNI", "")))
                                             idx = dfs["DATOS GENERALES"][dfs["DATOS GENERALES"]["dni"].astype(str) == dni_colab].index
                         
                                             if not idx.empty:
                                                 i = idx[0]
-                                                # C. Actualizar columnas en el DataFrame global
                                                 for col in dfs["DATOS GENERALES"].columns:
                                                     c_norm = str(col).lower().replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u").replace("_", " ")
                                                     if c_norm in ["sede"]:
@@ -1493,7 +1490,6 @@ else:
                                                     elif c_norm in ["direccion", "domicilio"]:
                                                         dfs["DATOS GENERALES"].at[i, col] = edit_direccion
                         
-                                                # D. Persistir cambios de forma permanente
                                                 if "save_data" in globals():
                                                     save_data(dfs)
                                                 elif "exportar_df_a_sheets" in globals():
@@ -1501,6 +1497,21 @@ else:
                         
                                                 st.success("✅ ¡Datos actualizados y guardados correctamente!")
                                                 st.rerun()
+                        
+                                    # 4. ACCIÓN ÚNICA DE ELIMINACIÓN (SIN BOTÓN REDUNDANTE DE GUARDAR)
+                                    st.markdown("<br>", unsafe_allow_html=True)
+                                    if st.button("🗑️ Eliminar Registro Seleccionado", use_container_width=True):
+                                        dni_colab = str(row.get("dni", row.get("DNI", "")))
+                                        dfs["DATOS GENERALES"] = dfs["DATOS GENERALES"][dfs["DATOS GENERALES"]["dni"].astype(str) != dni_colab]
+                                        
+                                        if "save_data" in globals():
+                                            save_data(dfs)
+                                        elif "exportar_df_a_sheets" in globals():
+                                            exportar_df_a_sheets(dfs)
+                        
+                                        st.success("🗑️ Registro eliminado correctamente.")
+                                        st.rerun()
+                        
                                 else:
                                     st.warning("📌 Marca la casilla **SEL** para habilitar la modificación de campos.")
                         
