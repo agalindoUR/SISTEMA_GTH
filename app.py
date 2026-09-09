@@ -1678,9 +1678,44 @@ else:
                         # NUEVO DISEÑO: EXPERIENCIA LABORAL Y CÁLCULOS
                         # ==========================================
                         elif h_name == "EXP. LABORAL":
-                            vst_df = c_df.copy() if not c_df.empty else pd.DataFrame()
+                            # --- Encabezados Exactos de la Hoja Google Sheets ---
+                            HEADERS_EXP = ["DNI", "PUESTO", "LUGAR", "TIPO DE EXPERIENCIA", "FECHA DE INICIO", "FECHA DE FIN", "MOTIVO DE CESE"]
+                        
+                            def normalizar_df_exp(df_in):
+                                """Asegura que el DataFrame tenga únicamente las columnas exactas de Google Sheets en el orden correcto."""
+                                if df_in is None or df_in.empty:
+                                    return pd.DataFrame(columns=HEADERS_EXP)
+                                
+                                df_out = df_in.copy()
+                                
+                                # Mapeo para corregir variaciones de minúsculas o guiones
+                                renombres = {
+                                    'dni': 'DNI', 'puesto': 'PUESTO', 'lugar': 'LUGAR',
+                                    'tipo de experiencia': 'TIPO DE EXPERIENCIA', 'tipo_experiencia': 'TIPO DE EXPERIENCIA',
+                                    'fecha de inicio': 'FECHA DE INICIO', 'fecha_inicio': 'FECHA DE INICIO',
+                                    'fecha de fin': 'FECHA DE FIN', 'fecha_fin': 'FECHA DE FIN',
+                                    'motivo de cese': 'MOTIVO DE CESE', 'motivo_cese': 'MOTIVO DE CESE'
+                                }
+                                df_out = df_out.rename(columns=renombres)
+                                
+                                # Eliminar columnas de selección interactivas si existen
+                                df_out = df_out.drop(columns=['SEL', 'sel'], errors='ignore')
+                                
+                                # Eliminar columnas duplicadas si surgieron durante la edición
+                                df_out = df_out.loc[:, ~df_out.columns.duplicated()]
+                                
+                                # Garantizar que existan todas las columnas requeridas
+                                for col in HEADERS_EXP:
+                                    if col not in df_out.columns:
+                                        df_out[col] = ""
+                                        
+                                return df_out[HEADERS_EXP].fillna("").astype(str)
+                        
+                            # --- Cargar y filtrar DataFrame de Experiencia Externa para la vista ---
+                            df_exp_general = normalizar_df_exp(dfs.get("EXP. LABORAL", pd.DataFrame()))
+                            vst_df = df_exp_general[df_exp_general["DNI"].astype(str) == str(dni_buscado)].copy()
                             
-                            if not vst_df.empty and "SEL" not in vst_df.columns:
+                            if "SEL" not in vst_df.columns:
                                 vst_df.insert(0, "SEL", False)
                                 
                             # --- Funciones Auxiliares ---
@@ -1714,7 +1749,7 @@ else:
                                 else: 
                                     return "0 meses"
                         
-                            # --- Función para Agrupar Contratos Continuos (Mismo puesto y sin interrupción) ---
+                            # --- Función para Agrupar Contratos Continuos ---
                             def agrupar_contratos_continuos(df_c):
                                 if df_c.empty:
                                     return pd.DataFrame()
@@ -1761,7 +1796,6 @@ else:
                                         mismo_puesto = (str(puesto).strip().lower() == str(actual['puesto']).strip().lower())
                                         mismo_tipo = (tipo_exp == actual['tipo_exp'])
                         
-                                        # Si es el mismo puesto y no hay interrupción significativa (diferencia <= 2 días)
                                         if mismo_puesto and mismo_tipo and dias_diferencia <= 2:
                                             if fin_dt > actual['f_fin_dt']:
                                                 actual['f_fin_dt'] = fin_dt
@@ -1838,13 +1872,13 @@ else:
                                     st.markdown("<p style='color:#DDDDDD;'>No hay experiencia externa registrada.</p>", unsafe_allow_html=True)
                                 else:
                                     for idx, row in vst_df.iterrows():
-                                        f_ini = row.get('FECHA DE INICIO', row.get('fecha de inicio', 'N/A'))
-                                        f_fin = row.get('FECHA DE FIN', row.get('fecha de fin', 'N/A'))
+                                        f_ini = row.get('FECHA DE INICIO', 'N/A')
+                                        f_fin = row.get('FECHA DE FIN', 'N/A')
                                         
                                         f_ini_str = dar_formato_fecha(f_ini)
                                         f_fin_str = dar_formato_fecha(f_fin)
                                         
-                                        tipo_exp_raw = str(row.get('TIPO DE EXPERIENCIA', row.get('tipo de experiencia', 'Administrativo')))
+                                        tipo_exp_raw = str(row.get('TIPO DE EXPERIENCIA', 'Administrativo'))
                                         tipo_exp = "Docente" if "docente" in tipo_exp_raw.lower() else "Administrativo"
                                         
                                         meses_calc = calcular_meses(f_ini, f_fin)
@@ -1853,9 +1887,9 @@ else:
                                         else: 
                                             meses_admin += meses_calc
                                         
-                                        puesto_ext = row.get('PUESTO', row.get('puesto', 'N/A'))
-                                        lugar_ext = row.get('LUGAR', row.get('lugar', 'N/A'))
-                                        motivo_ext = row.get('MOTIVO DE CESE', row.get('motivo de cese', 'N/A'))
+                                        puesto_ext = row.get('PUESTO', 'N/A')
+                                        lugar_ext = row.get('LUGAR', 'N/A')
+                                        motivo_ext = row.get('MOTIVO DE CESE', 'N/A')
                                         
                                         st.markdown(f"""
                                         <div style='background-color: #F9F6EE; padding: 15px; border-radius: 8px; border-left: 6px solid #004A80; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #CCCCCC;'>
@@ -1947,29 +1981,21 @@ else:
                                             
                                             df_nueva_fila = pd.DataFrame([nueva_fila])
                                             
-                                            if "EXP. LABORAL" not in dfs or dfs["EXP. LABORAL"].empty:
-                                                dfs["EXP. LABORAL"] = df_nueva_fila
-                                            else:
-                                                dfs["EXP. LABORAL"] = pd.concat([dfs["EXP. LABORAL"], df_nueva_fila], ignore_index=True)
+                                            # Cargar base completa actual y unificar con la nueva fila
+                                            df_base_actual = normalizar_df_exp(dfs.get("EXP. LABORAL", pd.DataFrame()))
+                                            df_actualizado = pd.concat([df_base_actual, df_nueva_fila], ignore_index=True)
+                                            df_actualizado = normalizar_df_exp(df_actualizado)
                                             
-                                            dfs["EXP. LABORAL"] = dfs["EXP. LABORAL"].loc[:, ~dfs["EXP. LABORAL"].columns.duplicated()]
-                                            dfs["EXP. LABORAL"] = dfs["EXP. LABORAL"].fillna("").astype(str)
-                                            
-                                            # 1. Actualizar session_state
+                                            # Actualizar en memoria y session_state
+                                            dfs["EXP. LABORAL"] = df_actualizado
                                             if "dfs" in st.session_state:
-                                                st.session_state["dfs"]["EXP. LABORAL"] = dfs["EXP. LABORAL"]
+                                                st.session_state["dfs"]["EXP. LABORAL"] = df_actualizado
                                             
-                                            # 2. Exportar a Google Sheets y limpiar caché
+                                            # Exportar directamente el DataFrame estructurado a Google Sheets
                                             try:
-                                                cols_exportar = ["DNI", "PUESTO", "LUGAR", "TIPO DE EXPERIENCIA", "FECHA DE INICIO", "FECHA DE FIN", "MOTIVO DE CESE"]
-                                                cols_existentes = [c for c in cols_exportar if c in dfs["EXP. LABORAL"].columns]
-                                                df_a_exportar = dfs["EXP. LABORAL"][cols_existentes].copy()
-                                                
-                                                exportar_df_a_sheets(df_a_exportar, "EXP. LABORAL")
-                                                
+                                                exportar_df_a_sheets(df_actualizado, "EXP. LABORAL")
                                                 if hasattr(st, "cache_data"):
                                                     st.cache_data.clear()
-                                                    
                                             except Exception as e:
                                                 st.error(f"⚠️ Error al guardar en Google Sheets: {e}")
                                                 
@@ -1992,32 +2018,21 @@ else:
                                 
                                 with col_b1:
                                     if st.button("✏️ Guardar Cambios Editados en Tabla", type="secondary", use_container_width=True, key=f"btn_save_table_{dni_buscado}"):
-                                        for col in ed.columns:
-                                            if "fecha" in col.lower() or "f_" in col.lower():
-                                                ed[col] = ed[col].astype(str).replace(["NaT", "None"], "")
+                                        ed_normalizado = normalizar_df_exp(ed)
+                                        ed_normalizado["DNI"] = str(dni_buscado)
                                         
-                                        ed_sin_sel = ed.drop(columns=["SEL"], errors="ignore").copy()
-                                        ed_sin_sel["dni"] = str(dni_buscado)
-                                        ed_sin_sel["DNI"] = str(dni_buscado)
+                                        df_base_actual = normalizar_df_exp(dfs.get("EXP. LABORAL", pd.DataFrame()))
+                                        df_otros = df_base_actual[df_base_actual["DNI"].astype(str) != str(dni_buscado)]
                                         
-                                        if "EXP. LABORAL" in dfs and not dfs["EXP. LABORAL"].empty:
-                                            df_exp = dfs["EXP. LABORAL"]
-                                            col_dni_exp = "DNI" if "DNI" in df_exp.columns else ("dni" if "dni" in df_exp.columns else None)
-                                            if col_dni_exp:
-                                                df_otros = df_exp[df_exp[col_dni_exp].astype(str) != str(dni_buscado)]
-                                            else:
-                                                df_otros = pd.DataFrame()
-                                            dfs["EXP. LABORAL"] = pd.concat([df_otros, ed_sin_sel], ignore_index=True)
-                                        else:
-                                            dfs["EXP. LABORAL"] = ed_sin_sel
+                                        df_final = pd.concat([df_otros, ed_normalizado], ignore_index=True)
+                                        df_final = normalizar_df_exp(df_final)
                                         
-                                        dfs["EXP. LABORAL"] = dfs["EXP. LABORAL"].fillna("").astype(str)
-                                        
+                                        dfs["EXP. LABORAL"] = df_final
                                         if "dfs" in st.session_state:
-                                            st.session_state["dfs"]["EXP. LABORAL"] = dfs["EXP. LABORAL"]
+                                            st.session_state["dfs"]["EXP. LABORAL"] = df_final
                                         
                                         try:
-                                            exportar_df_a_sheets(dfs["EXP. LABORAL"], "EXP. LABORAL")
+                                            exportar_df_a_sheets(df_final, "EXP. LABORAL")
                                             if hasattr(st, "cache_data"):
                                                 st.cache_data.clear()
                                         except Exception as e:
@@ -2031,28 +2046,22 @@ else:
                                         if not sel.empty:
                                             if st.button("🗑️ Eliminar Seleccionados", type="primary", use_container_width=True, key=f"btn_del_table_{dni_buscado}"):
                                                 indices_a_borrar = sel.index
-                                                ed_filtrado = ed.drop(indices_a_borrar, errors='ignore').drop(columns=["SEL"], errors="ignore").copy()
-                                                ed_filtrado["dni"] = str(dni_buscado)
-                                                ed_filtrado["DNI"] = str(dni_buscado)
+                                                ed_filtrado = ed.drop(indices_a_borrar, errors='ignore').copy()
+                                                ed_normalizado = normalizar_df_exp(ed_filtrado)
+                                                ed_normalizado["DNI"] = str(dni_buscado)
                                                 
-                                                if "EXP. LABORAL" in dfs and not dfs["EXP. LABORAL"].empty:
-                                                    df_exp = dfs["EXP. LABORAL"]
-                                                    col_dni_exp = "DNI" if "DNI" in df_exp.columns else ("dni" if "dni" in df_exp.columns else None)
-                                                    if col_dni_exp:
-                                                        df_otros = df_exp[df_exp[col_dni_exp].astype(str) != str(dni_buscado)]
-                                                    else:
-                                                        df_otros = pd.DataFrame()
-                                                    dfs["EXP. LABORAL"] = pd.concat([df_otros, ed_filtrado], ignore_index=True)
-                                                else:
-                                                    dfs["EXP. LABORAL"] = ed_filtrado
+                                                df_base_actual = normalizar_df_exp(dfs.get("EXP. LABORAL", pd.DataFrame()))
+                                                df_otros = df_base_actual[df_base_actual["DNI"].astype(str) != str(dni_buscado)]
                                                 
-                                                dfs["EXP. LABORAL"] = dfs["EXP. LABORAL"].fillna("").astype(str)
+                                                df_final = pd.concat([df_otros, ed_normalizado], ignore_index=True)
+                                                df_final = normalizar_df_exp(df_final)
                                                 
+                                                dfs["EXP. LABORAL"] = df_final
                                                 if "dfs" in st.session_state:
-                                                    st.session_state["dfs"]["EXP. LABORAL"] = dfs["EXP. LABORAL"]
+                                                    st.session_state["dfs"]["EXP. LABORAL"] = df_final
                                                 
                                                 try:
-                                                    exportar_df_a_sheets(dfs["EXP. LABORAL"], "EXP. LABORAL")
+                                                    exportar_df_a_sheets(df_final, "EXP. LABORAL")
                                                     if hasattr(st, "cache_data"):
                                                         st.cache_data.clear()
                                                 except Exception as e:
