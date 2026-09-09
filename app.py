@@ -1714,13 +1714,82 @@ else:
                                 else: 
                                     return "0 meses"
                         
+                            # --- Función para Agrupar Contratos Continuos (Mismo puesto y sin interrupción) ---
+                            def agrupar_contratos_continuos(df_c):
+                                if df_c.empty:
+                                    return pd.DataFrame()
+                                
+                                df = df_c.copy()
+                                col_ini = 'f_inicio' if 'f_inicio' in df.columns else ('F_INICIO' if 'F_INICIO' in df.columns else None)
+                                col_fin = 'f_fin' if 'f_fin' in df.columns else ('F_FIN' if 'F_FIN' in df.columns else None)
+                                
+                                if not col_ini:
+                                    return df_c
+                                    
+                                df['f_ini_dt'] = pd.to_datetime(df[col_ini], errors='coerce')
+                                df['f_fin_dt'] = pd.to_datetime(df[col_fin], errors='coerce') if col_fin else pd.NaT
+                                
+                                df = df.dropna(subset=['f_ini_dt']).sort_values('f_ini_dt').reset_index(drop=True)
+                                
+                                if df.empty:
+                                    return df_c
+                        
+                                grupos = []
+                                actual = None
+                        
+                                for idx, row in df.iterrows():
+                                    puesto = row.get('cargo', row.get('CARGO', row.get('PUESTO', 'N/A')))
+                                    tipo_raw = str(row.get('TIPO DE TRABAJADOR', row.get('tipo de trabajador', 'Administrativo')))
+                                    tipo_exp = "Docente" if "docente" in tipo_raw.lower() else "Administrativo"
+                                    tipo_contrato = row.get('tipo contrato', row.get('TIPO CONTRATO', 'N/A'))
+                                    
+                                    ini_dt = row['f_ini_dt']
+                                    fin_dt = row['f_fin_dt'] if pd.notna(row['f_fin_dt']) else ini_dt
+                        
+                                    if actual is None:
+                                        actual = {
+                                            'puesto': puesto,
+                                            'tipo_exp': tipo_exp,
+                                            'tipo_contrato': tipo_contrato,
+                                            'f_inicio': row[col_ini],
+                                            'f_fin': row[col_fin] if col_fin else row[col_ini],
+                                            'f_ini_dt': ini_dt,
+                                            'f_fin_dt': fin_dt
+                                        }
+                                    else:
+                                        dias_diferencia = (ini_dt - actual['f_fin_dt']).days
+                                        mismo_puesto = (str(puesto).strip().lower() == str(actual['puesto']).strip().lower())
+                                        mismo_tipo = (tipo_exp == actual['tipo_exp'])
+                        
+                                        # Si es el mismo puesto y no hay interrupción significativa (diferencia <= 2 días)
+                                        if mismo_puesto and mismo_tipo and dias_diferencia <= 2:
+                                            if fin_dt > actual['f_fin_dt']:
+                                                actual['f_fin_dt'] = fin_dt
+                                                actual['f_fin'] = row[col_fin] if col_fin else row[col_ini]
+                                        else:
+                                            grupos.append(actual)
+                                            actual = {
+                                                'puesto': puesto,
+                                                'tipo_exp': tipo_exp,
+                                                'tipo_contrato': tipo_contrato,
+                                                'f_inicio': row[col_ini],
+                                                'f_fin': row[col_fin] if col_fin else row[col_ini],
+                                                'f_ini_dt': ini_dt,
+                                                'f_fin_dt': fin_dt
+                                            }
+                                if actual is not None:
+                                    grupos.append(actual)
+                                    
+                                return pd.DataFrame(grupos)
+                        
                             # --- Cargar datos de Contratos ---
                             df_contratos = dfs.get("CONTRATOS", pd.DataFrame())
                             col_dni_contratos = "DNI" if "DNI" in df_contratos.columns else ("dni" if "dni" in df_contratos.columns else None)
                             
                             contratos_empleado = pd.DataFrame()
                             if not df_contratos.empty and col_dni_contratos:
-                                contratos_empleado = df_contratos[df_contratos[col_dni_contratos].astype(str) == str(dni_buscado)]
+                                contratos_raw = df_contratos[df_contratos[col_dni_contratos].astype(str) == str(dni_buscado)]
+                                contratos_empleado = agrupar_contratos_continuos(contratos_raw)
                             
                             meses_docente = 0
                             meses_admin = 0
@@ -1737,15 +1806,15 @@ else:
                                     st.markdown("<p style='color:#DDDDDD;'>No hay contratos internos registrados.</p>", unsafe_allow_html=True)
                                 else:
                                     for idx, row in contratos_empleado.iterrows():
-                                        f_ini = row.get('f_inicio', row.get('F_INICIO', 'N/A'))
-                                        f_fin = row.get('f_fin', row.get('F_FIN', 'N/A'))
+                                        f_ini = row['f_inicio']
+                                        f_fin = row['f_fin']
                                         
                                         f_ini_str = dar_formato_fecha(f_ini)
                                         f_fin_str = dar_formato_fecha(f_fin)
                                         
-                                        puesto = row.get('cargo', row.get('CARGO', row.get('PUESTO', 'N/A')))
-                                        tipo_trabajador_raw = str(row.get('TIPO DE TRABAJADOR', row.get('tipo de trabajador', 'Administrativo')))
-                                        tipo_exp = "Docente" if "docente" in tipo_trabajador_raw.lower() else "Administrativo"
+                                        puesto = row['puesto']
+                                        tipo_exp = row['tipo_exp']
+                                        tipo_contrato = row['tipo_contrato']
                                         
                                         meses_calc = calcular_meses(f_ini, f_fin)
                                         if tipo_exp == "Docente": 
@@ -1759,7 +1828,7 @@ else:
                                             <div style='color: #222222; font-size: 0.95em;'>
                                                 <strong>Lugar:</strong> Universidad Roosevelt <br>
                                                 <strong>Periodo:</strong> {f_ini_str} hasta {f_fin_str} <br>
-                                                <strong>Tipo de Contrato:</strong> {row.get('tipo contrato', row.get('TIPO CONTRATO', 'N/A'))}
+                                                <strong>Tipo de Contrato:</strong> {tipo_contrato}
                                             </div>
                                         </div>
                                         """, unsafe_allow_html=True)
@@ -1866,7 +1935,6 @@ else:
                                         if not puesto_clean or not lugar_clean:
                                             st.error("⚠️ Debes escribir un Puesto y un Lugar válidos.")
                                         else:
-                                            # Fila estructurada exactamente igual a las columnas de Google Sheets
                                             nueva_fila = {
                                                 "DNI": str(dni_buscado),
                                                 "PUESTO": puesto_clean,
@@ -1877,7 +1945,6 @@ else:
                                                 "MOTIVO DE CESE": motivo_cese.strip()
                                             }
                                             
-                                            # Integrar nueva fila a la memoria local
                                             df_nueva_fila = pd.DataFrame([nueva_fila])
                                             
                                             if "EXP. LABORAL" not in dfs or dfs["EXP. LABORAL"].empty:
@@ -1885,21 +1952,24 @@ else:
                                             else:
                                                 dfs["EXP. LABORAL"] = pd.concat([dfs["EXP. LABORAL"], df_nueva_fila], ignore_index=True)
                                             
-                                            # Eliminar columnas duplicadas o no deseadas si existieran
                                             dfs["EXP. LABORAL"] = dfs["EXP. LABORAL"].loc[:, ~dfs["EXP. LABORAL"].columns.duplicated()]
+                                            dfs["EXP. LABORAL"] = dfs["EXP. LABORAL"].fillna("").astype(str)
                                             
-                                            # 1. Guardar en session_state
+                                            # 1. Actualizar session_state
                                             if "dfs" in st.session_state:
                                                 st.session_state["dfs"]["EXP. LABORAL"] = dfs["EXP. LABORAL"]
                                             
-                                            # 2. Exportar a Google Sheets
+                                            # 2. Exportar a Google Sheets y limpiar caché
                                             try:
-                                                # Aseguramos enviar solo el dataframe con las columnas limpias de la pestaña
                                                 cols_exportar = ["DNI", "PUESTO", "LUGAR", "TIPO DE EXPERIENCIA", "FECHA DE INICIO", "FECHA DE FIN", "MOTIVO DE CESE"]
-                                                df_a_exportar = dfs["EXP. LABORAL"][[c for c in cols_exportar if c in dfs["EXP. LABORAL"].columns]]
+                                                cols_existentes = [c for c in cols_exportar if c in dfs["EXP. LABORAL"].columns]
+                                                df_a_exportar = dfs["EXP. LABORAL"][cols_existentes].copy()
                                                 
                                                 exportar_df_a_sheets(df_a_exportar, "EXP. LABORAL")
-                                                st.success("✅ ¡Experiencia externa guardada con éxito!")
+                                                
+                                                if hasattr(st, "cache_data"):
+                                                    st.cache_data.clear()
+                                                    
                                             except Exception as e:
                                                 st.error(f"⚠️ Error al guardar en Google Sheets: {e}")
                                                 
@@ -1941,19 +2011,20 @@ else:
                                         else:
                                             dfs["EXP. LABORAL"] = ed_sin_sel
                                         
-                                        # 1. Actualizar memoria
+                                        dfs["EXP. LABORAL"] = dfs["EXP. LABORAL"].fillna("").astype(str)
+                                        
                                         if "dfs" in st.session_state:
                                             st.session_state["dfs"]["EXP. LABORAL"] = dfs["EXP. LABORAL"]
                                         
-                                        # 2. Sincronizar edición con Google Sheets
                                         try:
                                             exportar_df_a_sheets(dfs["EXP. LABORAL"], "EXP. LABORAL")
-                                            st.success("✅ Cambios actualizados en Google Sheets.")
+                                            if hasattr(st, "cache_data"):
+                                                st.cache_data.clear()
                                         except Exception as e:
                                             st.warning(f"⚠️ Cambios locales guardados, pero falló el envío a Google Sheets: {e}")
                                             
                                         st.rerun()
-                        
+                                
                                 with col_b2:
                                     if "SEL" in ed.columns:
                                         sel = ed[ed["SEL"] == True]
@@ -1975,14 +2046,15 @@ else:
                                                 else:
                                                     dfs["EXP. LABORAL"] = ed_filtrado
                                                 
-                                                # 1. Actualizar memoria
+                                                dfs["EXP. LABORAL"] = dfs["EXP. LABORAL"].fillna("").astype(str)
+                                                
                                                 if "dfs" in st.session_state:
                                                     st.session_state["dfs"]["EXP. LABORAL"] = dfs["EXP. LABORAL"]
                                                 
-                                                # 2. Sincronizar eliminación con Google Sheets
                                                 try:
                                                     exportar_df_a_sheets(dfs["EXP. LABORAL"], "EXP. LABORAL")
-                                                    st.success("✅ Registros eliminados en Google Sheets.")
+                                                    if hasattr(st, "cache_data"):
+                                                        st.cache_data.clear()
                                                 except Exception as e:
                                                     st.warning(f"⚠️ Eliminado en pantalla, pero falló la sincronización con Google Sheets: {e}")
                                                     
