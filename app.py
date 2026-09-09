@@ -1421,12 +1421,20 @@ else:
                                     with st.form(key="form_editar_datos_generales"):
                                         c1, c2, c3 = st.columns(3)
                         
-                                        # Intentar parsear la fecha de nacimiento para el widget de calendario
+                                        # Rango de fechas permitido para nacimientos
+                                        min_f = date(1930, 1, 1)
+                                        max_f = date.today()
+                                        fecha_fallback = date(1990, 1, 1)
+                        
                                         raw_fnac = str(row.get("fecha de nacimiento", row.get("FECHA DE NACIMIENTO", "")))
                                         try:
-                                            fecha_val = pd.to_datetime(raw_fnac).date()
+                                            parsed_date = pd.to_datetime(raw_fnac).date()
+                                            if min_f <= parsed_date <= max_f:
+                                                fecha_val = parsed_date
+                                            else:
+                                                fecha_val = fecha_fallback
                                         except Exception:
-                                            fecha_val = None
+                                            fecha_val = fecha_fallback
                         
                                         with c1:
                                             edit_sede = st.text_input("📍 Sede", value=str(row.get("sede", row.get("SEDE", ""))))
@@ -1438,7 +1446,14 @@ else:
                                             edit_est_civil = st.text_input("💍 Estado Civil", value=str(row.get("estado civil", row.get("ESTADO CIVIL", ""))))
                         
                                         with c2:
-                                            edit_fnac = st.date_input("🎂 Fecha de Nacimiento", value=fecha_val)
+                                            # 'st.date_input' configurado con límites de fecha seguros
+                                            edit_fnac = st.date_input(
+                                                "🎂 Fecha de Nacimiento",
+                                                value=fecha_val,
+                                                min_value=min_f,
+                                                max_value=max_f,
+                                                format="YYYY-MM-DD"
+                                            )
                                             edit_telefono = st.text_input("📱 Teléfono / Celular", value=str(row.get("celular", row.get("TELEFONO", ""))))
                                             edit_correo = st.text_input("📧 Correo Electrónico", value=str(row.get("correo", row.get("CORREO ELECTRONICO", ""))))
                         
@@ -1448,7 +1463,7 @@ else:
                                         btn_guardar = st.form_submit_button("💾 Guardar Cambios Modificados")
                         
                                         if btn_guardar:
-                                            # Aquí va tu lógica para actualizar c_df / la base de datos
+                                            # Lógica para actualizar los datos en tu DataFrame / Excel / Google Sheets
                                             st.success("¡Datos generales actualizados con éxito!")
                                             st.rerun()
                                 else:
