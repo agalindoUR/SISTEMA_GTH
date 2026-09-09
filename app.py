@@ -1800,7 +1800,7 @@ else:
                                         """, unsafe_allow_html=True)
                         
                             # -------------------------------------------------------------
-                            # COLUMNA DERECHA: Resumen y Plan de Carrera
+                            # COLUMNA DERECHA: Resumen
                             # -------------------------------------------------------------
                             with col_der:
                                 st.markdown("<h3 style='color: #FFD700;'>📊 Resumen</h3>", unsafe_allow_html=True)
@@ -1831,21 +1831,21 @@ else:
                             
                             # 1. FORMULARIO PARA INGRESAR NUEVO REGISTRO
                             with st.expander("➕ Nuevo Registro de Experiencia Externa", expanded=True):
-                                with st.form(key="form_nueva_exp_externa", clear_on_submit=True):
+                                with st.form(key=f"form_nueva_exp_{dni_buscado}", clear_on_submit=True):
                                     st.markdown("<h4 style='color: #4A0000;'>Ingresa los datos de la nueva experiencia laboral</h4>", unsafe_allow_html=True)
                                     
                                     c_f1, c_f2 = st.columns(2)
                                     with c_f1:
-                                        nuevo_puesto = st.text_input("Puesto / Cargo *", placeholder="Ej. Jefe de Recursos Humanos")
-                                        nuevo_lugar = st.text_input("Lugar / Empresa / Institución *", placeholder="Ej. Empresa XYZ S.A.C.")
-                                        tipo_exp_opt = st.selectbox("Tipo de Experiencia *", ["Administrativo", "Docente"])
+                                        nuevo_puesto = st.text_input("Puesto / Cargo *", placeholder="Ej. Jefe de Recursos Humanos", key=f"inp_puesto_{dni_buscado}")
+                                        nuevo_lugar = st.text_input("Lugar / Empresa / Institución *", placeholder="Ej. Empresa XYZ S.A.C.", key=f"inp_lugar_{dni_buscado}")
+                                        tipo_exp_opt = st.selectbox("Tipo de Experiencia *", ["Administrativo", "Docente"], key=f"inp_tipo_{dni_buscado}")
                                         
                                     with c_f2:
-                                        f_inicio = st.date_input("Fecha de Inicio")
-                                        f_fin = st.date_input("Fecha de Fin")
-                                        motivo_cese = st.text_input("Motivo de Cese", placeholder="Ej. Renuncia voluntaria / Fin de contrato")
+                                        f_inicio = st.date_input("Fecha de Inicio", key=f"inp_fini_{dni_buscado}")
+                                        f_fin = st.date_input("Fecha de Fin", key=f"inp_ffin_{dni_buscado}")
+                                        motivo_cese = st.text_input("Motivo de Cese", placeholder="Ej. Renuncia voluntaria / Fin de contrato", key=f"inp_motivo_{dni_buscado}")
                                     
-                                    btn_guardar = st.form_submit_button("💾 Guardar Registro en EXP. LABORAL", use_container_width=True)
+                                    btn_guardar = st.form_submit_button("💾 Registrar en EXP. LABORAL", use_container_width=True)
                                     
                                     if btn_guardar:
                                         if not nuevo_puesto or not nuevo_lugar:
@@ -1872,32 +1872,48 @@ else:
                         
                             # 2. EDICIÓN / ELIMINACIÓN DE REGISTROS EXISTENTES
                             with st.expander("⚙️ Clic aquí para Editar o Eliminar Experiencia Externa"):
-                                if vst_df.empty:
-                                    st.info("No hay registros para modificar o eliminar.")
-                                else:
-                                    st.markdown("<p style='color:#DDDDDD;'>Marca la casilla <b>SEL</b> para eliminar los registros seleccionados.</p>", unsafe_allow_html=True)
-                                    col_conf_exp = col_conf if 'col_conf' in locals() else {}
-                                    
-                                    ed = st.data_editor(
-                                        vst_df, 
-                                        hide_index=True, 
-                                        use_container_width=True, 
-                                        column_config=col_conf_exp, 
-                                        key=f"ed_{h_name}_oculta"
-                                    )
-                                    
+                                st.markdown("<p style='color:#DDDDDD;'>Modifica los valores en la tabla o marca la casilla <b>SEL</b> para eliminar.</p>", unsafe_allow_html=True)
+                                col_conf_exp = col_conf if 'col_conf' in locals() else {}
+                                
+                                ed = st.data_editor(
+                                    vst_df, 
+                                    hide_index=True, 
+                                    use_container_width=True, 
+                                    column_config=col_conf_exp, 
+                                    key=f"data_editor_exp_{dni_buscado}"
+                                )
+                                
+                                col_b1, col_b2 = st.columns(2)
+                                
+                                with col_b1:
+                                    if st.button("✏️ Guardar Cambios Editados en Tabla", type="secondary", use_container_width=True, key=f"btn_save_table_{dni_buscado}"):
+                                        for col in ed.columns:
+                                            if "fecha" in col.lower() or "f_" in col.lower():
+                                                ed[col] = ed[col].astype(str).replace(["NaT", "None"], "")
+                                        
+                                        ed_sin_sel = ed.drop(columns=["SEL"], errors="ignore")
+                                        
+                                        if "EXP. LABORAL" in dfs and not dfs["EXP. LABORAL"].empty:
+                                            df_otros = dfs["EXP. LABORAL"][dfs["EXP. LABORAL"]["dni"].astype(str) != str(dni_buscado)]
+                                            dfs["EXP. LABORAL"] = pd.concat([df_otros, ed_sin_sel], ignore_index=True)
+                                        else:
+                                            dfs["EXP. LABORAL"] = ed_sin_sel
+                                            
+                                        st.success("✅ Cambios de la tabla guardados.")
+                                        st.rerun()
+                        
+                                with col_b2:
                                     if "SEL" in ed.columns:
                                         sel = ed[ed["SEL"] == True]
                                         if not sel.empty:
-                                            st.warning(f"Has seleccionado {len(sel)} registro(s).")
-                                            if st.button("🗑️ Eliminar Seleccionados", key=f"btn_del_{h_name}"):
-                                                # Excluir registros seleccionados de la base global
+                                            if st.button("🗑️ Eliminar Seleccionados", type="primary", use_container_width=True, key=f"btn_del_table_{dni_buscado}"):
                                                 indices_a_borrar = sel.index
-                                                c_df_filtrado = c_df.drop(indices_a_borrar, errors='ignore')
-                                                dfs["EXP. LABORAL"] = dfs["EXP. LABORAL"][dfs["EXP. LABORAL"]["dni"].astype(str) != str(dni_buscado)]
-                                                dfs["EXP. LABORAL"] = pd.concat([dfs["EXP. LABORAL"], c_df_filtrado], ignore_index=True)
+                                                ed_filtrado = ed.drop(indices_a_borrar, errors='ignore').drop(columns=["SEL"], errors="ignore")
                                                 
-                                                st.success("Registros eliminados correctamente.")
+                                                df_otros = dfs["EXP. LABORAL"][dfs["EXP. LABORAL"]["dni"].astype(str) != str(dni_buscado)]
+                                                dfs["EXP. LABORAL"] = pd.concat([df_otros, ed_filtrado], ignore_index=True)
+                                                
+                                                st.success("✅ Registros eliminados correctamente.")
                                                 st.rerun()
                     
                         # ==========================================
