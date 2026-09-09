@@ -602,375 +602,810 @@ def gen_papeleta_vac(
 
 
 # ==========================================
-# 3. ESTILOS CSS GENERALES
+
+# 3. ESTILOS CSS
+
 # ==========================================
+
 st.markdown(
+
     """
+
 <style>
+
     .stApp { background-color: #4a0000 !important; }
+
     [data-testid="stHeader"] { display: none !important; }
+
     
+
     .stApp p, .stMarkdown p { color: #FFFFFF; } 
+
     .stApp h1, .stApp h2, .stApp h3 { color: #FFD700 !important; }
+
     
+
     [data-testid="stSidebar"] { background-color: #4a0000 !important; }
+
     [data-testid="stSidebar"] h3 { color: #FFD700 !important; font-weight: bold !important; }
+
     [data-testid="stSidebar"] [data-testid="stImage"] { background-color: #FFF9C4 !important; border: 4px solid #FFD700 !important; border-radius: 15px !important; padding: 10px !important; }
+
     div[role="radiogroup"] label { background-color: transparent !important; }
+
     div[role="radiogroup"] label p { color: #FFFFFF !important; font-weight: bold !important; font-size: 16px !important; }
+
     
+
     /* BOTONES CON MEJOR CONTRASTE */
+
     div.stButton > button, [data-testid="stFormSubmitButton"] > button { 
+
         background-color: #FFD700 !important; 
+
         border: 2px solid #4a0000 !important; 
+
         border-radius: 10px !important; 
+
     }
+
+
 
     div.stButton > button *, [data-testid="stFormSubmitButton"] > button *,
+
     div.stButton > button p, [data-testid="stFormSubmitButton"] > button p { 
+
         color: #4a0000 !important; 
+
         font-weight: bold !important; 
+
         font-size: 16px !important; 
+
     }
+
+
 
     div.stButton > button:hover, [data-testid="stFormSubmitButton"] > button:hover { 
+
         background-color: #ffffff !important; 
+
         border-color: #FFD700 !important; 
+
     }
+
+
 
     /* FONDOS Y CAJAS DE TEXTO */
+
     [data-testid="stExpander"] { 
+
         background-color: #FFF9C4 !important; 
+
         border: 2px solid #FFD700 !important; 
+
         border-radius: 10px !important; 
+
     }
+
     
+
     [data-testid="stExpander"] details { background-color: transparent !important; }
+
     [data-testid="stExpander"] summary { background-color: #FFD700 !important; padding: 10px !important; border-radius: 8px 8px 0 0 !important; }
+
     [data-testid="stExpander"] summary p { color: #4a0000 !important; font-weight: bold !important; font-size: 16px !important; }
 
+
+
     [data-baseweb="input"], [data-baseweb="select"], [data-baseweb="textarea"] { 
+
         background-color: #FFFFFF !important; 
+
         border: 1px solid #4a0000 !important; 
+
         border-radius: 5px !important; 
+
     }
+
     
+
     .stApp input, .stApp select, .stApp textarea, [data-baseweb="select"] span { 
+
         color: #000000 !important; 
+
         font-weight: bold !important; 
+
         -webkit-text-fill-color: #000000 !important;
+
     }
+
+
 
     [data-testid="stAlert"] { 
+
         background-color: #FFF9C4 !important; 
+
         border: 2px solid #FFD700 !important; 
+
         border-radius: 10px !important;
+
     }
+
     [data-testid="stAlert"] p, [data-testid="stAlert"] span, [data-testid="stAlert"] svg { 
+
         color: #4a0000 !important; 
+
         font-weight: bold !important; 
+
         font-size: 16px !important; 
+
     }
+
+
 
     /* TABLAS INTERACTIVAS */
+
     [data-testid="stDataEditor"], [data-testid="stTable"], .stTable { background-color: white !important; border-radius: 10px !important; overflow: hidden !important; }
+
     
+
     [data-testid="stDataEditor"] .react-grid-HeaderCell span { 
+
         color: #000000 !important; 
+
         font-weight: 900 !important; 
+
         font-size: 15px !important; 
+
         text-transform: uppercase !important; 
-    }
-    
-    thead tr th { background-color: #FFF9C4 !important; color: #000000 !important; font-weight: bold !important; text-transform: uppercase !important; border: 1px solid #f0f0f0 !important; }
-    
-    /* SUBTÍTULOS */
-    label p, label span, .stApp label p { 
-        color: #FFD700 !important; 
-        font-weight: bold !important; 
-        font-size: 16px !important; 
-    }
-    
-    [data-testid="stExpander"] label p, [data-testid="stExpander"] label span { 
-        color: #4a0000 !important; 
-        font-weight: bold !important; 
+
     }
 
-    .foto-perfil-large {
-        width: 110px;
-        height: 110px;
-        border-radius: 50%; 
-        object-fit: cover; 
-        object-position: center;
-        border: 4px solid #FFD700;
-        margin-right: 20px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        transition: transform 0.2s ease-in-out;
+    
+
+    thead tr th { background-color: #FFF9C4 !important; color: #000000 !important; font-weight: bold !important; text-transform: uppercase !important; border: 1px solid #f0f0f0 !important; }
+
+    
+
+    /* SUBTÍTULOS (LABELS DE LOS FORMULARIOS) */
+
+    label p, label span, .stApp label p { 
+
+        color: #FFD700 !important; 
+
+        font-weight: bold !important; 
+
+        font-size: 16px !important; 
+
     }
-    .foto-perfil-large:hover {
-        transform: scale(1.08);
+
+    
+
+    [data-testid="stExpander"] label p, [data-testid="stExpander"] label span { 
+
+        color: #4a0000 !important; 
+
+        font-weight: bold !important; 
+
     }
+
 </style>
+
 """,
+
     unsafe_allow_html=True,
+
 )
 
+
+
 # ==========================================
+
 # 4. LÓGICA DE DATOS Y SESIÓN
+
 # ==========================================
+
 if "rol" not in st.session_state:
+
     st.session_state.rol = None
+
 if "usuario_actual" not in st.session_state:
+
     st.session_state.usuario_actual = None
-if "menu_activo" not in st.session_state:
-    st.session_state.menu_activo = "🔍 Consulta"
+
+
+
+# ---> CARGAMOS LOS DATOS ANTES DEL LOGIN <---
 
 dfs = load_data()
 
+
+
 if st.session_state.rol is None:
+
     st.markdown(
+
         "<h3 style='text-align: center; color: #FFD700;'>¡Tu talento es importante! :)</h3>",
+
         unsafe_allow_html=True,
+
     )
 
+
+
     col_logo1, col_logo2, col_logo3 = st.columns([1, 1.2, 1])
+
     with col_logo2:
+
         if os.path.exists("Logo_amarillo.png"):
+
             st.image("Logo_amarillo.png", use_container_width=True)
 
+
+
     col1, col2, col3 = st.columns([1, 1.5, 1])
+
     with col2:
+
         u = st.text_input("USUARIO").lower().strip()
+
         p = st.text_input("CONTRASEÑA", type="password")
+
         st.markdown(
+
             '<p style="color:white; text-align:center; font-weight:bold; margin-top:15px;">Bienvenido (a) al sistema de gestión de datos de los colaboradores</p>',
+
             unsafe_allow_html=True,
+
         )
+
+
 
         if st.button("INGRESAR"):
+
             df_usuarios = dfs.get("USUARIOS", pd.DataFrame())
 
+
+
             if not df_usuarios.empty and "usuario" in df_usuarios.columns:
+
                 user_match = df_usuarios[
+
                     (df_usuarios["usuario"].astype(str).str.lower() == u)
+
                     & (df_usuarios["password"].astype(str) == p)
+
                 ]
 
+
+
                 if not user_match.empty:
+
                     estado = (
+
                         str(user_match.iloc[0].get("estado", "Activo"))
+
                         .title()
+
                         .strip()
+
                     )
+
                     if estado == "Inactivo":
-                        st.error("⚠️ Tu cuenta está inactiva. Contacta al administrador.")
-                    else:
-                        st.session_state.rol = (
-                            str(user_match.iloc[0].get("rol", "Lector"))
-                            .strip()
-                            .capitalize()
+
+                        st.error(
+
+                            "⚠️ Tu cuenta está inactiva. Contacta al administrador."
+
                         )
-                        st.session_state.usuario_actual = u
-                        st.rerun()
-                else:
-                    if u == "admin" and p == "12345":
-                        st.session_state.rol = "Admin"
-                        st.session_state.usuario_actual = "admin"
-                        st.rerun()
+
                     else:
-                        st.error("❌ Credenciales incorrectas.")
-            else:
-                if u == "admin" and p == "12345":
-                    st.session_state.rol = "Admin"
-                    st.session_state.usuario_actual = "admin"
-                    st.rerun()
+
+                        st.session_state.rol = (
+
+                            user_match.iloc[0]
+
+                            .get("rol", "Lector")
+
+                            .strip()
+
+                            .capitalize()
+
+                        )
+
+                        st.session_state.usuario_actual = u
+
+                        st.rerun()
+
                 else:
+
+                    if u == "admin" and p == "12345":
+
+                        st.session_state.rol = "Admin"
+
+                        st.session_state.usuario_actual = "admin"
+
+                        st.rerun()
+
+                    else:
+
+                        st.error("❌ Credenciales incorrectas.")
+
+            else:
+
+                if u == "admin" and p == "12345":
+
+                    st.session_state.rol = "Admin"
+
+                    st.session_state.usuario_actual = "admin"
+
+                    st.rerun()
+
+                else:
+
                     st.error("❌ No hay base de usuarios. Usa admin / 12345.")
 
+
+
 else:
+
     es_lector = st.session_state.rol == "Lector"
 
+
+
     with st.sidebar:
+
         st.markdown("<br>", unsafe_allow_html=True)
+
         col_logo_1, col_logo_2, col_logo_3 = st.columns([1, 2, 1])
+
         with col_logo_2:
+
             if os.path.exists("Logo_guindo.png"):
+
                 st.image("Logo_guindo.png", use_container_width=True)
+
         st.markdown("<br>", unsafe_allow_html=True)
+
+
 
         st.markdown(
+
             f"<div style='text-align: center; color:#FFD700;'>Hola, <b>{st.session_state.usuario_actual}</b><br><small>Rol: {st.session_state.rol}</small></div>",
+
             unsafe_allow_html=True,
+
         )
+
         st.markdown("<br>", unsafe_allow_html=True)
 
+
+
+        if "menu_p" not in st.session_state:
+
+            st.session_state.menu_p = "🔍 Consulta"
+
+        if "menu_r" not in st.session_state:
+
+            st.session_state.menu_r = None
+
+        if "menu_activo" not in st.session_state:
+
+            st.session_state.menu_activo = "🔍 Consulta"
+
+
+
+        def click_menu_p():
+
+            st.session_state.menu_activo = st.session_state.menu_p
+
+            st.session_state.menu_r = None
+
+
+
+        def click_menu_r():
+
+            if st.session_state.menu_r is not None:
+
+                st.session_state.menu_activo = st.session_state.menu_r
+
+                st.session_state.menu_p = None
+
+
+
         st.markdown("### 🛠️ MENÚ PRINCIPAL")
-        sel_p = st.radio(
+
+        st.radio(
+
             "Menú Principal",
+
             [
+
                 "🔍 Consulta",
+
                 "➕ Registro",
+
                 "⏰ Horarios Administrativos",
+
                 "📊 Nómina General",
+
                 "🏢 Estructura",
+
                 "📋 Evaluaciones",
+
                 "📈 Dashboard Desempeño",
+
             ],
-            key="radio_p",
-            index=0 if st.session_state.menu_activo in [
-                "🔍 Consulta", "➕ Registro", "⏰ Horarios Administrativos", 
-                "📊 Nómina General", "🏢 Estructura", "📋 Evaluaciones", "📈 Dashboard Desempeño"
-            ] else None,
+
+            key="menu_p",
+
+            on_change=click_menu_p,
+
+            index=None,
+
             label_visibility="collapsed",
+
         )
 
-        st.markdown("<h3 style='color: #FFD700;'>📊 REPORTES</h3>", unsafe_allow_html=True)
-        sel_r = st.radio(
+
+
+        st.markdown(
+
+            "<h3 style='color: #FFD700;'>📊 REPORTES</h3>",
+
+            unsafe_allow_html=True,
+
+        )
+
+        st.radio(
+
             "Reportes",
+
             ["Reporte General", "Cumpleañeros", "Vacaciones", "Vencimientos"],
-            key="radio_r",
-            index=0 if st.session_state.menu_activo in [
-                "Reporte General", "Cumpleañeros", "Vacaciones", "Vencimientos"
-            ] else None,
+
+            key="menu_r",
+
+            on_change=click_menu_r,
+
+            index=None,
+
             label_visibility="collapsed",
+
         )
 
-        # Control seguro de cambio de menú
-        if sel_p and st.session_state.menu_activo != sel_p and st.session_state.get("last_radio") != "p":
-            st.session_state.menu_activo = sel_p
-            st.session_state.last_radio = "p"
-            st.rerun()
-        elif sel_r and st.session_state.menu_activo != sel_r and st.session_state.get("last_radio") != "r":
-            st.session_state.menu_activo = sel_r
-            st.session_state.last_radio = "r"
-            st.rerun()
+
+
+        def click_usuarios():
+
+            st.session_state.menu_activo = "🔐 Usuarios y Seguridad"
+
+            st.session_state.menu_p = None
+
+            st.session_state.menu_r = None
+
+
 
         st.markdown("---")
-        if st.button("🔐 Usuarios y Seguridad", use_container_width=True):
-            st.session_state.menu_activo = "🔐 Usuarios y Seguridad"
-            st.rerun()
+
+        st.button(
+
+            "🔐 Usuarios y Seguridad",
+
+            use_container_width=True,
+
+            on_click=click_usuarios,
+
+        )
+
+
 
         m = st.session_state.menu_activo
 
+
+
         st.markdown("---")
+
         if st.button("🚪 Cerrar Sesión", key="btn_logout"):
+
             st.session_state.rol = None
+
             st.session_state.usuario_actual = None
+
             st.session_state.menu_activo = "🔍 Consulta"
+
             st.rerun()
 
+
+
     # === SECCIÓN DE MÓDULOS ===
+
     if m == "🔍 Consulta":
+
         st.markdown(
+
             "<h2 style='color: #FFD700;'>Búsqueda de Colaborador</h2>",
+
             unsafe_allow_html=True,
+
         )
 
-        df_per_consulta = dfs.get("PERSONAL", pd.DataFrame()).copy()
 
-        if not df_per_consulta.empty:
-            df_per_consulta["dni_str"] = (
-                df_per_consulta.get("dni", pd.Series([""] * len(df_per_consulta)))
-                .astype(str)
-                .str.replace(r"\.0$", "", regex=True)
-                .str.strip()
-            )
-            apellidos_col = (
-                df_per_consulta.get("apellidos", pd.Series([""] * len(df_per_consulta)))
-                .fillna("")
-                .astype(str)
-                .str.strip()
-            )
-            nombres_col = (
-                df_per_consulta.get("nombres", pd.Series([""] * len(df_per_consulta)))
-                .fillna("")
-                .astype(str)
-                .str.strip()
-            )
 
-            df_per_consulta["nom_str"] = (apellidos_col + " " + nombres_col).str.strip()
-            df_per_consulta["search_str"] = (
-                df_per_consulta["dni_str"] + " - " + df_per_consulta["nom_str"]
+        df_per_consulta = dfs["PERSONAL"].copy()
+
+
+
+        df_per_consulta["dni_str"] = (
+
+            df_per_consulta.get("dni", pd.Series([""] * len(df_per_consulta)))
+
+            .astype(str)
+
+            .str.strip()
+
+        )
+
+        apellidos_col = (
+
+            df_per_consulta.get(
+
+                "apellidos", pd.Series([""] * len(df_per_consulta))
+
             )
 
-            opciones_buscador = [""] + [
-                x for x in df_per_consulta["search_str"].tolist() if x != " - "
+            .fillna("")
+
+            .astype(str)
+
+            .str.strip()
+
+        )
+
+        nombres_col = (
+
+            df_per_consulta.get(
+
+                "nombres", pd.Series([""] * len(df_per_consulta))
+
+            )
+
+            .fillna("")
+
+            .astype(str)
+
+            .str.strip()
+
+        )
+
+
+
+        df_per_consulta["nom_str"] = (
+
+            apellidos_col + " " + nombres_col
+
+        ).str.strip()
+
+        df_per_consulta["search_str"] = (
+
+            df_per_consulta["dni_str"] + " - " + df_per_consulta["nom_str"]
+
+        )
+
+
+
+        opciones_buscador = [""] + [
+
+            x
+
+            for x in df_per_consulta["search_str"].tolist()
+
+            if x != " - "
+
+        ]
+
+
+
+        selected_search = st.selectbox(
+
+            "🔍 Escriba el DNI o Apellidos y Nombres:", opciones_buscador
+
+        )
+
+
+
+        if selected_search:
+
+            dni_buscado = selected_search.split(" - ")[0].strip()
+
+
+
+            fila_pers = df_per_consulta[
+
+                df_per_consulta["dni_str"] == dni_buscado
+
             ]
 
-            selected_search = st.selectbox(
-                "🔍 Escriba el DNI o Apellidos y Nombres:", opciones_buscador
-            )
+            if not fila_pers.empty:
 
-            if selected_search:
-                dni_buscado = selected_search.split(" - ")[0].strip()
+                nom_c = fila_pers.iloc[0]["nom_str"]
 
-                fila_pers = df_per_consulta[df_per_consulta["dni_str"] == dni_buscado]
-                if not fila_pers.empty:
-                    nom_c = fila_pers.iloc[0]["nom_str"]
-                    link_foto_raw = fila_pers.iloc[0].get("foto", fila_pers.iloc[0].get("FOTO", ""))
+                ape_c = str(fila_pers.iloc[0].get("apellidos", "")).strip()
 
-                    foto_directa = (
-                        obtener_link_directo_drive(str(link_foto_raw).strip())
-                        if pd.notnull(link_foto_raw) and str(link_foto_raw).strip() != ""
-                        else None
+                nom_p_c = str(fila_pers.iloc[0].get("nombres", "")).strip()
+
+
+
+                link_foto_raw = fila_pers.iloc[0].get(
+
+                    "foto", fila_pers.iloc[0].get("FOTO", "")
+
+                )
+
+
+
+                if pd.notnull(link_foto_raw) and str(link_foto_raw).strip() != "":
+
+                    foto_directa = obtener_link_directo_drive(
+
+                        str(link_foto_raw).strip()
+
                     )
 
-                    if foto_directa:
-                        st.markdown(
-                            f"""
-                            <div style='border-bottom: 2px solid #FFD700; padding-bottom: 15px; margin-bottom: 25px; display: flex; align-items: center;'>
-                                <img src='{foto_directa}' class='foto-perfil-large' onerror="this.style.display='none'; document.getElementById('avatar-{dni_buscado}').style.display='block';">
-                                <h1 id='avatar-{dni_buscado}' style='color: white; margin: 0; margin-right: 15px; font-size: 3em; display: none;'>👤</h1>
-                                <h1 style='color: #FFD700; margin: 0; font-size: 2.5em;'>{nom_c}</h1>
-                            </div>
-                            """,
-                            unsafe_allow_html=True,
-                        )
-                    else:
-                        st.markdown(
-                            f"""
-                            <div style='border-bottom: 2px solid #FFD700; padding-bottom: 10px; margin-bottom: 20px; display: flex; align-items: center;'>
-                                <h1 style='color: white; margin: 0; margin-right: 15px; font-size: 3em;'>👤</h1>
-                                <h1 style='color: #FFD700; margin: 0; font-size: 2.5em;'>{nom_c}</h1>
-                            </div>
-                            """,
-                            unsafe_allow_html=True,
-                        )
+                else:
 
-                    t_noms = [
-                        "Datos Generales", "Exp. Laboral", "Form. Académica", 
-                        "Investigación", "Datos Familiares", "Contratos", 
-                        "Vacaciones", "Otros Beneficios", "Méritos/Demer.", 
-                        "Evaluación", "Liquidaciones"
-                    ]
-                    h_keys = [
-                        "DATOS GENERALES", "EXP. LABORAL", "FORM. ACADEMICA", 
-                        "INVESTIGACION", "DATOS FAMILIARES", "CONTRATOS", 
-                        "VACACIONES", "OTROS BENEFICIOS", "MERITOS Y DEMERITOS", 
-                        "EVALUACION DEL DESEMPEÑO", "LIQUIDACIONES"
-                    ]
+                    foto_directa = None
 
-                    tabs = st.tabs(t_noms)
 
-                    for i, tab in enumerate(tabs):
-                        h_name = h_keys[i]
-                        with tab:
-                            if h_name in dfs and not dfs[h_name].empty and "dni" in dfs[h_name].columns:
-                                df_modulo = dfs[h_name].copy()
-                                df_modulo["dni_clean"] = (
-                                    df_modulo["dni"]
-                                    .astype(str)
-                                    .str.replace(r"\.0$", "", regex=True)
-                                    .str.strip()
-                                )
-                                c_df = df_modulo[df_modulo["dni_clean"] == dni_buscado].drop(columns=["dni_clean"])
-                            else:
-                                c_df = pd.DataFrame()
 
-                            if not c_df.empty:
-                                st.dataframe(c_df, use_container_width=True, key=f"tbl_{h_name}_{dni_buscado}")
-                            else:
-                                st.info(f"No hay registros cargados en {t_noms[i]}.")
+                if foto_directa:
+
+                    st.markdown(
+
+                        f"""
+
+                        <style>
+
+                        .foto-perfil-large {{
+
+                            width: 110px;
+
+                            height: 110px;
+
+                            border-radius: 50%; 
+
+                            object-fit: cover; 
+
+                            object-position: center;
+
+                            border: 4px solid #FFD700;
+
+                            margin-right: 20px;
+
+                            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+
+                            transition: transform 0.2s ease-in-out;
+
+                        }}
+
+                        .foto-perfil-large:hover {{
+
+                            transform: scale(1.08);
+
+                        }}
+
+                        </style>
+
+                        <div style='border-bottom: 2px solid #FFD700; padding-bottom: 15px; margin-bottom: 25px; display: flex; align-items: center;'>
+
+                            <img src='{foto_directa}' class='foto-perfil-large' onerror="this.style.display='none'; document.getElementById('avatar-{dni_buscado}').style.display='block';">
+
+                            <h1 id='avatar-{dni_buscado}' style='color: white; margin: 0; margin-right: 15px; font-size: 3em; display: none;'>👤</h1>
+
+                            <h1 style='color: #FFD700; margin: 0; font-size: 2.5em;'>{nom_c}</h1>
+
+                        </div>
+
+                    """,
+
+                        unsafe_allow_html=True,
+
+                    )
+
+                else:
+
+                    st.markdown(
+
+                        f"""
+
+                        <div style='border-bottom: 2px solid #FFD700; padding-bottom: 10px; margin-bottom: 20px; display: flex; align-items: center;'>
+
+                            <h1 style='color: white; margin: 0; margin-right: 15px; font-size: 3em;'>👤</h1>
+
+                            <h1 style='color: #FFD700; margin: 0; font-size: 2.5em;'>{nom_c}</h1>
+
+                        </div>
+
+                    """,
+
+                        unsafe_allow_html=True,
+
+                    )
+
+
+
+                t_noms = [
+
+                    "Datos Generales",
+
+                    "Exp. Laboral",
+
+                    "Form. Académica",
+
+                    "Investigación",
+
+                    "Datos Familiares",
+
+                    "Contratos",
+
+                    "Vacaciones",
+
+                    "Otros Beneficios",
+
+                    "Méritos/Demer.",
+
+                    "Evaluación",
+
+                    "Liquidaciones",
+
+                ]
+
+                h_keys = [
+
+                    "DATOS GENERALES",
+
+                    "EXP. LABORAL",
+
+                    "FORM. ACADEMICA",
+
+                    "INVESTIGACION",
+
+                    "DATOS FAMILIARES",
+
+                    "CONTRATOS",
+
+                    "VACACIONES",
+
+                    "OTROS BENEFICIOS",
+
+                    "MERITOS Y DEMERITOS",
+
+                    "EVALUACION DEL DESEMPEÑO",
+
+                    "LIQUIDACIONES",
+
+                ]
+
+
+
+                tabs = st.tabs(t_noms)
+
+
+
+                for i, tab in enumerate(tabs):
+
+                    h_name = h_keys[i]
+
+                    with tab:
+
+                        if h_name in dfs and "dni" in dfs[h_name].columns:
+
+                            c_df = dfs[h_name][dfs[h_name]["dni"] == dni_buscado]
+
+                        else:
+
+                            c_df = pd.DataFrame(columns=COLUMNAS.get(h_name, [])) 
+
+
 
                         # =========================================================================
                         # 📄 PESTAÑA: CONTRATOS
