@@ -1866,8 +1866,8 @@ else:
                                         if not puesto_clean or not lugar_clean:
                                             st.error("⚠️ Debes escribir un Puesto y un Lugar válidos.")
                                         else:
+                                            # Fila estructurada exactamente igual a las columnas de Google Sheets
                                             nueva_fila = {
-                                                "dni": str(dni_buscado),
                                                 "DNI": str(dni_buscado),
                                                 "PUESTO": puesto_clean,
                                                 "LUGAR": lugar_clean,
@@ -1877,21 +1877,31 @@ else:
                                                 "MOTIVO DE CESE": motivo_cese.strip()
                                             }
                                             
-                                            if "EXP. LABORAL" not in dfs or dfs["EXP. LABORAL"].empty:
-                                                dfs["EXP. LABORAL"] = pd.DataFrame([nueva_fila])
-                                            else:
-                                                dfs["EXP. LABORAL"] = pd.concat([dfs["EXP. LABORAL"], pd.DataFrame([nueva_fila])], ignore_index=True)
+                                            # Integrar nueva fila a la memoria local
+                                            df_nueva_fila = pd.DataFrame([nueva_fila])
                                             
-                                            # 1. Guardar en memoria de Streamlit
+                                            if "EXP. LABORAL" not in dfs or dfs["EXP. LABORAL"].empty:
+                                                dfs["EXP. LABORAL"] = df_nueva_fila
+                                            else:
+                                                dfs["EXP. LABORAL"] = pd.concat([dfs["EXP. LABORAL"], df_nueva_fila], ignore_index=True)
+                                            
+                                            # Eliminar columnas duplicadas o no deseadas si existieran
+                                            dfs["EXP. LABORAL"] = dfs["EXP. LABORAL"].loc[:, ~dfs["EXP. LABORAL"].columns.duplicated()]
+                                            
+                                            # 1. Guardar en session_state
                                             if "dfs" in st.session_state:
                                                 st.session_state["dfs"]["EXP. LABORAL"] = dfs["EXP. LABORAL"]
                                             
-                                            # 2. Guardar permanentemente en Google Sheets (DB_SISTEMA_GTH)
+                                            # 2. Exportar a Google Sheets
                                             try:
-                                                exportar_df_a_sheets(dfs["EXP. LABORAL"], "EXP. LABORAL")
-                                                st.success("✅ ¡Experiencia externa guardada con éxito en la base de datos!")
+                                                # Aseguramos enviar solo el dataframe con las columnas limpias de la pestaña
+                                                cols_exportar = ["DNI", "PUESTO", "LUGAR", "TIPO DE EXPERIENCIA", "FECHA DE INICIO", "FECHA DE FIN", "MOTIVO DE CESE"]
+                                                df_a_exportar = dfs["EXP. LABORAL"][[c for c in cols_exportar if c in dfs["EXP. LABORAL"].columns]]
+                                                
+                                                exportar_df_a_sheets(df_a_exportar, "EXP. LABORAL")
+                                                st.success("✅ ¡Experiencia externa guardada con éxito!")
                                             except Exception as e:
-                                                st.warning(f"⚠️ Guardado en pantalla, pero hubo un problema al sincronizar con Google Sheets: {e}")
+                                                st.error(f"⚠️ Error al guardar en Google Sheets: {e}")
                                                 
                                             st.rerun()
                         
