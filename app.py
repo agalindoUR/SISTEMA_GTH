@@ -1831,17 +1831,16 @@ else:
                             
                             # 1. FORMULARIO PARA INGRESAR NUEVO REGISTRO
                             with st.expander("➕ Nuevo Registro de Experiencia Externa", expanded=True):
-                                with st.form(key=f"form_nueva_exp_{dni_buscado}", clear_on_submit=True):
+                                with st.form(key=f"form_nueva_exp_{dni_buscado}", clear_on_submit=False):
                                     st.markdown("<h4 style='color: #4A0000;'>Ingresa los datos de la nueva experiencia laboral</h4>", unsafe_allow_html=True)
                                     
                                     c_f1, c_f2 = st.columns(2)
                                     with c_f1:
-                                        nuevo_puesto = st.text_input("Puesto / Cargo *", placeholder="Ej. Jefe de Recursos Humanos", key=f"inp_puesto_{dni_buscado}")
-                                        nuevo_lugar = st.text_input("Lugar / Empresa / Institución *", placeholder="Ej. Empresa XYZ S.A.C.", key=f"inp_lugar_{dni_buscado}")
+                                        nuevo_puesto = st.text_input("Puesto / Cargo *", placeholder="Escribe el puesto aquí", key=f"inp_puesto_{dni_buscado}")
+                                        nuevo_lugar = st.text_input("Lugar / Empresa / Institución *", placeholder="Escribe la empresa aquí", key=f"inp_lugar_{dni_buscado}")
                                         tipo_exp_opt = st.selectbox("Tipo de Experiencia *", ["Administrativo", "Docente"], key=f"inp_tipo_{dni_buscado}")
                                         
                                     with c_f2:
-                                        # SE PERMITEN FECHAS DESDE EL AÑO 1950
                                         f_inicio = st.date_input(
                                             "Fecha de Inicio", 
                                             value=date.today(),
@@ -1856,31 +1855,44 @@ else:
                                             max_value=date(2050, 12, 31),
                                             key=f"inp_ffin_{dni_buscado}"
                                         )
-                                        motivo_cese = st.text_input("Motivo de Cese", placeholder="Ej. Renuncia voluntaria / Fin de contrato", key=f"inp_motivo_{dni_buscado}")
+                                        motivo_cese = st.text_input("Motivo de Cese", placeholder="Motivo de salida", key=f"inp_motivo_{dni_buscado}")
                                     
                                     btn_guardar = st.form_submit_button("💾 Registrar en EXP. LABORAL", use_container_width=True)
                                     
                                     if btn_guardar:
-                                        if not nuevo_puesto or not nuevo_lugar:
-                                            st.error("⚠️ Los campos 'Puesto' y 'Lugar' son obligatorios.")
+                                        puesto_clean = nuevo_puesto.strip()
+                                        lugar_clean = nuevo_lugar.strip()
+                                        
+                                        if not puesto_clean or not lugar_clean:
+                                            st.error("⚠️ Debes escribir un Puesto y un Lugar válidos.")
                                         else:
                                             nueva_fila = {
                                                 "dni": str(dni_buscado),
                                                 "DNI": str(dni_buscado),
-                                                "PUESTO": nuevo_puesto,
-                                                "LUGAR": nuevo_lugar,
+                                                "PUESTO": puesto_clean,
+                                                "LUGAR": lugar_clean,
                                                 "TIPO DE EXPERIENCIA": tipo_exp_opt,
                                                 "FECHA DE INICIO": f_inicio.strftime('%Y-%m-%d') if f_inicio else "",
                                                 "FECHA DE FIN": f_fin.strftime('%Y-%m-%d') if f_fin else "",
-                                                "MOTIVO DE CESE": motivo_cese
+                                                "MOTIVO DE CESE": motivo_cese.strip()
                                             }
                                             
                                             if "EXP. LABORAL" not in dfs or dfs["EXP. LABORAL"].empty:
                                                 dfs["EXP. LABORAL"] = pd.DataFrame([nueva_fila])
                                             else:
                                                 dfs["EXP. LABORAL"] = pd.concat([dfs["EXP. LABORAL"], pd.DataFrame([nueva_fila])], ignore_index=True)
+                                            
+                                            # 1. Guardar en memoria de Streamlit
+                                            if "dfs" in st.session_state:
+                                                st.session_state["dfs"]["EXP. LABORAL"] = dfs["EXP. LABORAL"]
+                                            
+                                            # 2. Guardar permanentemente en Google Sheets (DB_SISTEMA_GTH)
+                                            try:
+                                                exportar_df_a_sheets(dfs["EXP. LABORAL"], "EXP. LABORAL")
+                                                st.success("✅ ¡Experiencia externa guardada con éxito en la base de datos!")
+                                            except Exception as e:
+                                                st.warning(f"⚠️ Guardado en pantalla, pero hubo un problema al sincronizar con Google Sheets: {e}")
                                                 
-                                            st.success("✅ ¡Experiencia externa registrada con éxito!")
                                             st.rerun()
                         
                             # 2. EDICIÓN / ELIMINACIÓN DE REGISTROS EXISTENTES
@@ -1918,8 +1930,18 @@ else:
                                             dfs["EXP. LABORAL"] = pd.concat([df_otros, ed_sin_sel], ignore_index=True)
                                         else:
                                             dfs["EXP. LABORAL"] = ed_sin_sel
+                                        
+                                        # 1. Actualizar memoria
+                                        if "dfs" in st.session_state:
+                                            st.session_state["dfs"]["EXP. LABORAL"] = dfs["EXP. LABORAL"]
+                                        
+                                        # 2. Sincronizar edición con Google Sheets
+                                        try:
+                                            exportar_df_a_sheets(dfs["EXP. LABORAL"], "EXP. LABORAL")
+                                            st.success("✅ Cambios actualizados en Google Sheets.")
+                                        except Exception as e:
+                                            st.warning(f"⚠️ Cambios locales guardados, pero falló el envío a Google Sheets: {e}")
                                             
-                                        st.success("✅ Cambios de la tabla guardados.")
                                         st.rerun()
                         
                                 with col_b2:
@@ -1943,7 +1965,17 @@ else:
                                                 else:
                                                     dfs["EXP. LABORAL"] = ed_filtrado
                                                 
-                                                st.success("✅ Registros eliminados correctamente.")
+                                                # 1. Actualizar memoria
+                                                if "dfs" in st.session_state:
+                                                    st.session_state["dfs"]["EXP. LABORAL"] = dfs["EXP. LABORAL"]
+                                                
+                                                # 2. Sincronizar eliminación con Google Sheets
+                                                try:
+                                                    exportar_df_a_sheets(dfs["EXP. LABORAL"], "EXP. LABORAL")
+                                                    st.success("✅ Registros eliminados en Google Sheets.")
+                                                except Exception as e:
+                                                    st.warning(f"⚠️ Eliminado en pantalla, pero falló la sincronización con Google Sheets: {e}")
+                                                    
                                                 st.rerun()
                     
                         # ==========================================
