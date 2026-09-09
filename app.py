@@ -1823,148 +1823,81 @@ else:
                                 </div>
                                 """
                                 st.markdown(html_resumen, unsafe_allow_html=True)
-                                
-                                st.markdown("<br>", unsafe_allow_html=True)
-                                st.markdown("<h4 style='color: #4A0000;'>🎯 Plan de Carrera (Análisis SUNEDU/Estatuto)</h4>", unsafe_allow_html=True)
-                                
-                                es_doctor = False
-                                es_maestro = False
-                                tiene_renacyt = False
-                                total_publicaciones = 0
-                                anios_docencia = meses_docente // 12
-                                
-                                df_acad = dfs.get("FORM. ACADEMICA", pd.DataFrame())
-                                acad_emp = pd.DataFrame()
-                                if not df_acad.empty and "dni" in df_acad.columns:
-                                    acad_emp = df_acad[df_acad["dni"].astype(str) == str(dni_buscado)]
-                                    for idx, row in acad_emp.iterrows():
-                                        grado = str(row.get('grado o titulo obtenido', '')).upper()
-                                        if "DOCTOR" in grado: 
-                                            es_doctor = True
-                                        if any(kw in grado for kw in ["MAGISTER", "MAESTRO", "MAESTRIA"]): 
-                                            es_maestro = True
-                                
-                                df_inv = dfs.get("INVESTIGACION", pd.DataFrame())
-                                if not df_inv.empty and "dni" in df_inv.columns:
-                                    inv_emp = df_inv[df_inv["dni"].astype(str) == str(dni_buscado)]
-                                    for idx, row in inv_emp.iterrows():
-                                        tipo = str(row.get('tipo de registro', ''))
-                                        nivel_renacyt = str(row.get('nivel renacyt', 'No tiene'))
-                                        
-                                        if "Datos Generales" in tipo and nivel_renacyt != "No tiene":
-                                            tiene_renacyt = True
-                                        if "Publicación Científica" in tipo:
-                                            total_publicaciones += 1
-                                
-                                puntos_formacion = 40 if es_doctor else (25 if es_maestro else 10)
-                                puntos_investigacion = min(30, (15 if tiene_renacyt else 0) + (total_publicaciones * 5))
-                                puntos_experiencia = min(30, anios_docencia * 2)
-                                
-                                puntaje_total = puntos_formacion + puntos_investigacion + puntos_experiencia
-                                
-                                with st.container():
-                                    st.markdown(f"""
-                                    <div style='background-color: #F9F6EE; padding: 15px; border-radius: 8px; border: 1px solid #CCCCCC;'>
-                                        <div style='color: #004A80; font-size: 1.1em; font-weight: bold; margin-bottom: 10px;'>📊 Nivel de Competitividad Institucional: {puntaje_total}/100 pts</div>
-                                        <div style='font-size: 0.85em; color: #555555; margin-bottom: 5px;'>🎓 Formación: {puntos_formacion}/40 | 💼 Exp: {puntos_experiencia}/30 | 🔬 Inv: {puntos_investigacion}/30</div>
-                                    </div>
-                                    """, unsafe_allow_html=True)
-                                    
-                                    st.progress(puntaje_total / 100)
-                                    st.markdown("<br>", unsafe_allow_html=True)
-                                    
-                                    with st.expander("🏛️ Ver Idoneidad para Cargos UPHFR (Estatuto)"):
-                                        if es_doctor and anios_docencia >= 5: 
-                                            st.success("✅ **Rector / Vicerrector:** CUMPLE (Tiene Grado de Doctor y experiencia requerida según Art. 64).")
-                                        else:
-                                            st.error("❌ **Rector / Vicerrector:** NO CUMPLE (Requiere Grado de Doctor y 5+ años de experiencia docente).")
-                                            
-                                        if es_doctor:
-                                            st.success("✅ **Director de Escuela de Posgrado:** CUMPLE (Tiene el grado máximo que otorga la unidad).")
-                                        else:
-                                            st.error("❌ **Director de Escuela de Posgrado:** NO CUMPLE (Requiere Grado de Doctor).")
-                                        
-                                        if tiene_renacyt:
-                                            st.success("✅ **Docente Investigador:** CUMPLE (Cuenta con clasificación RENACYT activa).")
-                                        else:
-                                            st.warning("⚠️ **Docente Investigador:** EN PROCESO (Requiere obtener clasificación RENACYT).")
-                                        
-                                        if es_maestro or es_doctor:
-                                            st.success("✅ **Docente Universitario (Pregrado):** CUMPLE (Cuenta con Grado de Maestro o superior).")
-                                            
-                                            st.markdown("<p style='color: #004A80; font-weight: bold; margin-top: 10px; margin-bottom: 5px;'>🔍 Análisis de Especialidad Docente:</p>", unsafe_allow_html=True)
-                                            
-                                            texto_perfil = ""
-                                            if not acad_emp.empty:
-                                                for _, row in acad_emp.iterrows():
-                                                    texto_perfil += " " + str(row.get('grado o titulo obtenido', '')).upper()
-                                                    texto_perfil += " " + str(row.get('especialidad', '')).upper()
-                                                    
-                                            if not vst_df.empty:
-                                                for _, row in vst_df.iterrows():
-                                                    texto_perfil += " " + str(row.get('PUESTO', row.get('puesto', ''))).upper()
-                                                    texto_perfil += " " + str(row.get('LUGAR', row.get('lugar', ''))).upper()
-                                            
-                                            diccionario_carreras = {
-                                                "Enfermería": ["ENFERMER", "CUIDADO", "CLINIC"],
-                                                "Medicina Humana": ["MEDICIN", "MEDICO", "CIRUJAN", "CLINIC", "HOSPITAL"],
-                                                "Obstetricia": ["OBSTETR", "MATRON", "GINECOLOG"],
-                                                "Farmacia y Bioquímica": ["FARMAC", "BIOQUIMIC", "LABORATORI", "QUIMIC"],
-                                                "Psicología": ["PSICOLOG", "SALUD MENTAL", "TERAP"],
-                                                "Estomatología": ["ESTOMATOLOG", "ODONTOLOG", "DENTIS"],
-                                                "Derecho": ["DERECHO", "ABOGAD", "LEGAL", "JURIDIC", "LEY", "MAGISTRAD", "JUEZ", "FISCAL"],
-                                                "Administración": ["ADMINISTRAC", "GERENCI", "NEGOCIO", "EMPRES", "CONTABILIDAD", "ECONOMI"]
-                                            }
-                                            
-                                            match_salud = []
-                                            match_empresariales = []
-                                            
-                                            for carrera, palabras in diccionario_carreras.items():
-                                                if any(palabra in texto_perfil for palabra in palabras):
-                                                    if carrera in ["Enfermería", "Medicina Humana", "Obstetricia", "Farmacia y Bioquímica", "Psicología", "Estomatología"]:
-                                                        match_salud.append(carrera)
-                                                    else:
-                                                        match_empresariales.append(carrera)
-                                            
-                                            if not match_salud and not match_empresariales:
-                                                st.info("ℹ️ Perfil multidisciplinario. Se requiere revisión manual para asignar cursos específicos.")
-                                            else:
-                                                if match_salud:
-                                                    st.markdown(f"**🏥 C. de la Salud:** Apto para dictar en **{', '.join(match_salud)}**.")
-                                                if match_empresariales:
-                                                    st.markdown(f"**🏢 C. Empresariales:** Apto para dictar en **{', '.join(match_empresariales)}**.")
-                                        else:
-                                            st.error("❌ **Docente Universitario (Pregrado):** NO CUMPLE (La Ley exige mínimo Grado de Maestro).")
                         
                             # -------------------------------------------------------------
-                            # PIE DE PÁGINA / EDICIÓN FULL-WIDTH (Fuera de las columnas)
+                            # SECCIÓN DE GESTIÓN: REGISTRAR, EDITAR Y ELIMINAR
                             # -------------------------------------------------------------
                             st.markdown("<br>", unsafe_allow_html=True)
+                            
+                            # 1. FORMULARIO PARA INGRESAR NUEVO REGISTRO
+                            with st.expander("➕ Nuevo Registro de Experiencia Externa", expanded=True):
+                                with st.form(key="form_nueva_exp_externa", clear_on_submit=True):
+                                    st.markdown("<h4 style='color: #4A0000;'>Ingresa los datos de la nueva experiencia laboral</h4>", unsafe_allow_html=True)
+                                    
+                                    c_f1, c_f2 = st.columns(2)
+                                    with c_f1:
+                                        nuevo_puesto = st.text_input("Puesto / Cargo *", placeholder="Ej. Jefe de Recursos Humanos")
+                                        nuevo_lugar = st.text_input("Lugar / Empresa / Institución *", placeholder="Ej. Empresa XYZ S.A.C.")
+                                        tipo_exp_opt = st.selectbox("Tipo de Experiencia *", ["Administrativo", "Docente"])
+                                        
+                                    with c_f2:
+                                        f_inicio = st.date_input("Fecha de Inicio")
+                                        f_fin = st.date_input("Fecha de Fin")
+                                        motivo_cese = st.text_input("Motivo de Cese", placeholder="Ej. Renuncia voluntaria / Fin de contrato")
+                                    
+                                    btn_guardar = st.form_submit_button("💾 Guardar Registro en EXP. LABORAL", use_container_width=True)
+                                    
+                                    if btn_guardar:
+                                        if not nuevo_puesto or not nuevo_lugar:
+                                            st.error("⚠️ Los campos 'Puesto' y 'Lugar' son obligatorios.")
+                                        else:
+                                            nueva_fila = {
+                                                "dni": str(dni_buscado),
+                                                "DNI": str(dni_buscado),
+                                                "PUESTO": nuevo_puesto,
+                                                "LUGAR": nuevo_lugar,
+                                                "TIPO DE EXPERIENCIA": tipo_exp_opt,
+                                                "FECHA DE INICIO": f_inicio.strftime('%Y-%m-%d') if f_inicio else "",
+                                                "FECHA DE FIN": f_fin.strftime('%Y-%m-%d') if f_fin else "",
+                                                "MOTIVO DE CESE": motivo_cese
+                                            }
+                                            
+                                            if "EXP. LABORAL" not in dfs or dfs["EXP. LABORAL"].empty:
+                                                dfs["EXP. LABORAL"] = pd.DataFrame([nueva_fila])
+                                            else:
+                                                dfs["EXP. LABORAL"] = pd.concat([dfs["EXP. LABORAL"], pd.DataFrame([nueva_fila])], ignore_index=True)
+                                                
+                                            st.success("✅ ¡Experiencia externa registrada con éxito!")
+                                            st.rerun()
+                        
+                            # 2. EDICIÓN / ELIMINACIÓN DE REGISTROS EXISTENTES
                             with st.expander("⚙️ Clic aquí para Editar o Eliminar Experiencia Externa"):
-                                st.markdown("<p style='color:#DDDDDD;'>Activa la casilla <b>SEL</b> para modificar o eliminar un registro.</p>", unsafe_allow_html=True)
-                                st.markdown("""<style>[data-testid="stDataEditor"] { border: 2px solid #FFD700 !important; border-radius: 10px !important; }</style>""", unsafe_allow_html=True)
-                                
-                                col_conf_exp = col_conf if 'col_conf' in locals() else {}
-                                ed = st.data_editor(vst_df, hide_index=True, use_container_width=True, column_config=col_conf_exp, key=f"ed_{h_name}_oculta")
-                                
-                                for col in ed.columns:
-                                    if "fecha" in col.lower() or "f_" in col.lower():
-                                        ed[col] = ed[col].astype(str).replace(["NaT", "None"], "")
-                                
-                                if "SEL" in ed.columns:
-                                    sel = ed[ed["SEL"] == True]
-                                    if not sel.empty:
-                                        st.warning(f"Has seleccionado {len(sel)} registro(s).")
-                                        btn_col1, btn_col2 = st.columns(2)
-                                        with btn_col1:
+                                if vst_df.empty:
+                                    st.info("No hay registros para modificar o eliminar.")
+                                else:
+                                    st.markdown("<p style='color:#DDDDDD;'>Marca la casilla <b>SEL</b> para eliminar los registros seleccionados.</p>", unsafe_allow_html=True)
+                                    col_conf_exp = col_conf if 'col_conf' in locals() else {}
+                                    
+                                    ed = st.data_editor(
+                                        vst_df, 
+                                        hide_index=True, 
+                                        use_container_width=True, 
+                                        column_config=col_conf_exp, 
+                                        key=f"ed_{h_name}_oculta"
+                                    )
+                                    
+                                    if "SEL" in ed.columns:
+                                        sel = ed[ed["SEL"] == True]
+                                        if not sel.empty:
+                                            st.warning(f"Has seleccionado {len(sel)} registro(s).")
                                             if st.button("🗑️ Eliminar Seleccionados", key=f"btn_del_{h_name}"):
-                                                # Lógica para eliminar del DataFrame base si corresponde
+                                                # Excluir registros seleccionados de la base global
+                                                indices_a_borrar = sel.index
+                                                c_df_filtrado = c_df.drop(indices_a_borrar, errors='ignore')
+                                                dfs["EXP. LABORAL"] = dfs["EXP. LABORAL"][dfs["EXP. LABORAL"]["dni"].astype(str) != str(dni_buscado)]
+                                                dfs["EXP. LABORAL"] = pd.concat([dfs["EXP. LABORAL"], c_df_filtrado], ignore_index=True)
+                                                
                                                 st.success("Registros eliminados correctamente.")
-                                                st.rerun()
-                                        with btn_col2:
-                                            if st.button("💾 Guardar Cambios", key=f"btn_sav_{h_name}"):
-                                                # Lógica para guardar las modificaciones
-                                                st.success("Cambios guardados exitosamente.")
                                                 st.rerun()
                     
                         # ==========================================
