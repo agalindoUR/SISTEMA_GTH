@@ -1716,10 +1716,10 @@ else:
                         
                             # --- Cargar datos de Contratos ---
                             df_contratos = dfs.get("CONTRATOS", pd.DataFrame())
-                            col_dni_contratos = "DNI" if "DNI" in df_contratos.columns else "dni"
+                            col_dni_contratos = "DNI" if "DNI" in df_contratos.columns else ("dni" if "dni" in df_contratos.columns else None)
                             
                             contratos_empleado = pd.DataFrame()
-                            if not df_contratos.empty and col_dni_contratos in df_contratos.columns:
+                            if not df_contratos.empty and col_dni_contratos:
                                 contratos_empleado = df_contratos[df_contratos[col_dni_contratos].astype(str) == str(dni_buscado)]
                             
                             meses_docente = 0
@@ -1841,19 +1841,19 @@ else:
                                         tipo_exp_opt = st.selectbox("Tipo de Experiencia *", ["Administrativo", "Docente"], key=f"inp_tipo_{dni_buscado}")
                                         
                                     with c_f2:
-                                        # SE PERMITEN FECHAS DESDE 1950 HASTA 2050
+                                        # SE PERMITEN FECHAS DESDE EL AÑO 1950
                                         f_inicio = st.date_input(
                                             "Fecha de Inicio", 
-                                            value=datetime.date.today(),
-                                            min_value=datetime.date(1950, 1, 1),
-                                            max_value=datetime.date(2050, 12, 31),
+                                            value=date.today(),
+                                            min_value=date(1950, 1, 1),
+                                            max_value=date(2050, 12, 31),
                                             key=f"inp_fini_{dni_buscado}"
                                         )
                                         f_fin = st.date_input(
                                             "Fecha de Fin", 
-                                            value=datetime.date.today(),
-                                            min_value=datetime.date(1950, 1, 1),
-                                            max_value=datetime.date(2050, 12, 31),
+                                            value=date.today(),
+                                            min_value=date(1950, 1, 1),
+                                            max_value=date(2050, 12, 31),
                                             key=f"inp_ffin_{dni_buscado}"
                                         )
                                         motivo_cese = st.text_input("Motivo de Cese", placeholder="Ej. Renuncia voluntaria / Fin de contrato", key=f"inp_motivo_{dni_buscado}")
@@ -1904,10 +1904,17 @@ else:
                                             if "fecha" in col.lower() or "f_" in col.lower():
                                                 ed[col] = ed[col].astype(str).replace(["NaT", "None"], "")
                                         
-                                        ed_sin_sel = ed.drop(columns=["SEL"], errors="ignore")
+                                        ed_sin_sel = ed.drop(columns=["SEL"], errors="ignore").copy()
+                                        ed_sin_sel["dni"] = str(dni_buscado)
+                                        ed_sin_sel["DNI"] = str(dni_buscado)
                                         
                                         if "EXP. LABORAL" in dfs and not dfs["EXP. LABORAL"].empty:
-                                            df_otros = dfs["EXP. LABORAL"][dfs["EXP. LABORAL"]["dni"].astype(str) != str(dni_buscado)]
+                                            df_exp = dfs["EXP. LABORAL"]
+                                            col_dni_exp = "DNI" if "DNI" in df_exp.columns else ("dni" if "dni" in df_exp.columns else None)
+                                            if col_dni_exp:
+                                                df_otros = df_exp[df_exp[col_dni_exp].astype(str) != str(dni_buscado)]
+                                            else:
+                                                df_otros = pd.DataFrame()
                                             dfs["EXP. LABORAL"] = pd.concat([df_otros, ed_sin_sel], ignore_index=True)
                                         else:
                                             dfs["EXP. LABORAL"] = ed_sin_sel
@@ -1921,10 +1928,20 @@ else:
                                         if not sel.empty:
                                             if st.button("🗑️ Eliminar Seleccionados", type="primary", use_container_width=True, key=f"btn_del_table_{dni_buscado}"):
                                                 indices_a_borrar = sel.index
-                                                ed_filtrado = ed.drop(indices_a_borrar, errors='ignore').drop(columns=["SEL"], errors="ignore")
+                                                ed_filtrado = ed.drop(indices_a_borrar, errors='ignore').drop(columns=["SEL"], errors="ignore").copy()
+                                                ed_filtrado["dni"] = str(dni_buscado)
+                                                ed_filtrado["DNI"] = str(dni_buscado)
                                                 
-                                                df_otros = dfs["EXP. LABORAL"][dfs["EXP. LABORAL"]["dni"].astype(str) != str(dni_buscado)]
-                                                dfs["EXP. LABORAL"] = pd.concat([df_otros, ed_filtrado], ignore_index=True)
+                                                if "EXP. LABORAL" in dfs and not dfs["EXP. LABORAL"].empty:
+                                                    df_exp = dfs["EXP. LABORAL"]
+                                                    col_dni_exp = "DNI" if "DNI" in df_exp.columns else ("dni" if "dni" in df_exp.columns else None)
+                                                    if col_dni_exp:
+                                                        df_otros = df_exp[df_exp[col_dni_exp].astype(str) != str(dni_buscado)]
+                                                    else:
+                                                        df_otros = pd.DataFrame()
+                                                    dfs["EXP. LABORAL"] = pd.concat([df_otros, ed_filtrado], ignore_index=True)
+                                                else:
+                                                    dfs["EXP. LABORAL"] = ed_filtrado
                                                 
                                                 st.success("✅ Registros eliminados correctamente.")
                                                 st.rerun()
