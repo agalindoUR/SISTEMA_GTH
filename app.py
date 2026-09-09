@@ -1324,10 +1324,10 @@ else:
                         # =========================================================================
                         elif h_name == "DATOS GENERALES":
                             vst = c_df.copy() if not c_df.empty else pd.DataFrame()
-                
+                        
                             if not vst.empty:
                                 ficha = vst.iloc[0]
-                
+                        
                                 def get_val(names):
                                     ficha_clean = {
                                         str(k)
@@ -1354,7 +1354,7 @@ else:
                                         if pd.notnull(val) and str(val).strip() not in ["", "-", "0", "nan"]:
                                             return str(val)
                                     return "-"
-                
+                        
                                 sede = get_val(["SEDE"])
                                 sexo = get_val(["SEXO"])
                                 est_civil = get_val(["ESTADO CIVIL", "ESTADO_CIVIL"])
@@ -1363,13 +1363,13 @@ else:
                                 telefono = get_val(["CELULAR", "TELEFONO", "TELÉFONO"])
                                 correo = get_val(["CORREO", "EMAIL", "CORREO ELECTRONICO"])
                                 direccion = get_val(["DIRECCION", "DIRECCIÓN", "DOMICILIO"])
-                
+                        
                                 dir_display = "-"
                                 if direccion != "-":
                                     query_map = direccion.replace(" ", "+")
                                     link_mapa = f"https://www.google.com/maps/search/?api=1&query={query_map}"
                                     dir_display = f'<a href="{link_mapa}" target="_blank" style="color: #4da3ff; text-decoration: none; font-weight: bold;">📍 {direccion} (Ver en Google Maps 🗺️)</a>'
-                
+                        
                                 st.markdown(
                                     f"""
                                     <div style="background-color: rgba(255, 215, 0, 0.05); padding: 25px; border-radius: 15px; border: 2px solid #FFD700; color: inherit; font-family: sans-serif;">
@@ -1396,6 +1396,26 @@ else:
                                     """,
                                     unsafe_allow_html=True,
                                 )
+                        
+                                st.markdown("<br>", unsafe_allow_html=True)
+                        
+                                # =========================================================
+                                # TABLA DE EDICIÓN DE DATOS GENERALES
+                                # =========================================================
+                                with st.expander("⚙️ Clic aquí para Editar o Modificar Datos Generales", expanded=True):
+                                    if "SEL" not in vst.columns:
+                                        vst.insert(0, "SEL", False)
+                        
+                                    st.markdown("<span style='color:#DDDDDD; font-size:14px;'>Selecciona con la casilla <b>SEL</b> o edita directamente los campos en la tabla para actualizar la información del trabajador.</span>", unsafe_allow_html=True)
+                        
+                                    ed = st.data_editor(
+                                        vst,
+                                        hide_index=True,
+                                        use_container_width=True,
+                                        key="editor_datos_generales"
+                                    )
+                                    sel = ed[ed["SEL"] == True] if "SEL" in ed.columns else pd.DataFrame()
+                        
                             else:
                                 st.info(f"Sin información registrada en {h_name}.")
                 
