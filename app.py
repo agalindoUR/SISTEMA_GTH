@@ -1841,8 +1841,21 @@ else:
                                         tipo_exp_opt = st.selectbox("Tipo de Experiencia *", ["Administrativo", "Docente"], key=f"inp_tipo_{dni_buscado}")
                                         
                                     with c_f2:
-                                        f_inicio = st.date_input("Fecha de Inicio", key=f"inp_fini_{dni_buscado}")
-                                        f_fin = st.date_input("Fecha de Fin", key=f"inp_ffin_{dni_buscado}")
+                                        # SE PERMITEN FECHAS DESDE 1950 HASTA 2050
+                                        f_inicio = st.date_input(
+                                            "Fecha de Inicio", 
+                                            value=datetime.date.today(),
+                                            min_value=datetime.date(1950, 1, 1),
+                                            max_value=datetime.date(2050, 12, 31),
+                                            key=f"inp_fini_{dni_buscado}"
+                                        )
+                                        f_fin = st.date_input(
+                                            "Fecha de Fin", 
+                                            value=datetime.date.today(),
+                                            min_value=datetime.date(1950, 1, 1),
+                                            max_value=datetime.date(2050, 12, 31),
+                                            key=f"inp_ffin_{dni_buscado}"
+                                        )
                                         motivo_cese = st.text_input("Motivo de Cese", placeholder="Ej. Renuncia voluntaria / Fin de contrato", key=f"inp_motivo_{dni_buscado}")
                                     
                                     btn_guardar = st.form_submit_button("💾 Registrar en EXP. LABORAL", use_container_width=True)
