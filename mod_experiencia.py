@@ -318,7 +318,7 @@ def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_c
             vst_df, 
             hide_index=True, 
             use_container_width=True, 
-            column_config=col_conf, 
+            # column_config=col_conf,  # <-- DESACTIVADO TEMPORALMENTE PARA LA PRUEBA
             key=f"data_editor_exp_{dni_buscado}"
         )
         
