@@ -1678,7 +1678,6 @@ else:
                         # NUEVO DISEÑO: EXPERIENCIA LABORAL Y CÁLCULOS
                         # ==========================================
                         elif h_name == "EXP. LABORAL":
-                            # --- Encabezados Exactos de la Hoja Google Sheets ---
                             HEADERS_EXP = ["DNI", "PUESTO", "LUGAR", "TIPO DE EXPERIENCIA", "FECHA DE INICIO", "FECHA DE FIN", "MOTIVO DE CESE"]
                         
                             def normalizar_df_exp(df_in):
@@ -1688,7 +1687,6 @@ else:
                                 
                                 df_out = df_in.copy()
                                 
-                                # Mapeo para corregir variaciones de minúsculas o guiones
                                 renombres = {
                                     'dni': 'DNI', 'puesto': 'PUESTO', 'lugar': 'LUGAR',
                                     'tipo de experiencia': 'TIPO DE EXPERIENCIA', 'tipo_experiencia': 'TIPO DE EXPERIENCIA',
@@ -1697,22 +1695,21 @@ else:
                                     'motivo de cese': 'MOTIVO DE CESE', 'motivo_cese': 'MOTIVO DE CESE'
                                 }
                                 df_out = df_out.rename(columns=renombres)
-                                
-                                # Eliminar columnas de selección interactivas si existen
                                 df_out = df_out.drop(columns=['SEL', 'sel'], errors='ignore')
-                                
-                                # Eliminar columnas duplicadas si surgieron durante la edición
                                 df_out = df_out.loc[:, ~df_out.columns.duplicated()]
                                 
-                                # Garantizar que existan todas las columnas requeridas
                                 for col in HEADERS_EXP:
                                     if col not in df_out.columns:
                                         df_out[col] = ""
                                         
                                 return df_out[HEADERS_EXP].fillna("").astype(str)
                         
-                            # --- Cargar y filtrar DataFrame de Experiencia Externa para la vista ---
-                            df_exp_general = normalizar_df_exp(dfs.get("EXP. LABORAL", pd.DataFrame()))
+                            # --- Sincronizar lectura con session_state ---
+                            if "dfs" in st.session_state and "EXP. LABORAL" in st.session_state["dfs"]:
+                                df_exp_general = normalizar_df_exp(st.session_state["dfs"]["EXP. LABORAL"])
+                            else:
+                                df_exp_general = normalizar_df_exp(dfs.get("EXP. LABORAL", pd.DataFrame()))
+                        
                             vst_df = df_exp_general[df_exp_general["DNI"].astype(str) == str(dni_buscado)].copy()
                             
                             if "SEL" not in vst_df.columns:
@@ -1749,7 +1746,6 @@ else:
                                 else: 
                                     return "0 meses"
                         
-                            # --- Función para Agrupar Contratos Continuos ---
                             def agrupar_contratos_continuos(df_c):
                                 if df_c.empty:
                                     return pd.DataFrame()
@@ -1763,7 +1759,6 @@ else:
                                     
                                 df['f_ini_dt'] = pd.to_datetime(df[col_ini], errors='coerce')
                                 df['f_fin_dt'] = pd.to_datetime(df[col_fin], errors='coerce') if col_fin else pd.NaT
-                                
                                 df = df.dropna(subset=['f_ini_dt']).sort_values('f_ini_dt').reset_index(drop=True)
                                 
                                 if df.empty:
@@ -1824,16 +1819,13 @@ else:
                             if not df_contratos.empty and col_dni_contratos:
                                 contratos_raw = df_contratos[df_contratos[col_dni_contratos].astype(str) == str(dni_buscado)]
                                 contratos_empleado = agrupar_contratos_continuos(contratos_raw)
-                            
+                        
                             meses_docente = 0
                             meses_admin = 0
                         
                             # --- Distribución en Columnas ---
                             col_izq, col_der = st.columns([2, 1])
                         
-                            # -------------------------------------------------------------
-                            # COLUMNA IZQUIERDA: Experiencias (Interna y Externa)
-                            # -------------------------------------------------------------
                             with col_izq:
                                 st.markdown("<h3 style='color: #FFD700;'>🏢 Experiencia Interna (Universidad Roosevelt)</h3>", unsafe_allow_html=True)
                                 if contratos_empleado.empty:
@@ -1842,7 +1834,6 @@ else:
                                     for idx, row in contratos_empleado.iterrows():
                                         f_ini = row['f_inicio']
                                         f_fin = row['f_fin']
-                                        
                                         f_ini_str = dar_formato_fecha(f_ini)
                                         f_fin_str = dar_formato_fecha(f_fin)
                                         
@@ -1874,7 +1865,6 @@ else:
                                     for idx, row in vst_df.iterrows():
                                         f_ini = row.get('FECHA DE INICIO', 'N/A')
                                         f_fin = row.get('FECHA DE FIN', 'N/A')
-                                        
                                         f_ini_str = dar_formato_fecha(f_ini)
                                         f_fin_str = dar_formato_fecha(f_fin)
                                         
@@ -1902,9 +1892,6 @@ else:
                                         </div>
                                         """, unsafe_allow_html=True)
                         
-                            # -------------------------------------------------------------
-                            # COLUMNA DERECHA: Resumen
-                            # -------------------------------------------------------------
                             with col_der:
                                 st.markdown("<h3 style='color: #FFD700;'>📊 Resumen</h3>", unsafe_allow_html=True)
                                 
@@ -1927,14 +1914,12 @@ else:
                                 """
                                 st.markdown(html_resumen, unsafe_allow_html=True)
                         
-                            # -------------------------------------------------------------
-                            # SECCIÓN DE GESTIÓN: REGISTRAR, EDITAR Y ELIMINAR
-                            # -------------------------------------------------------------
+                            # --- SECCIÓN DE GESTIÓN ---
                             st.markdown("<br>", unsafe_allow_html=True)
                             
-                            # 1. FORMULARIO PARA INGRESAR NUEVO REGISTRO
+                            # 1. FORMULARIO NUEVO REGISTRO
                             with st.expander("➕ Nuevo Registro de Experiencia Externa", expanded=True):
-                                with st.form(key=f"form_nueva_exp_{dni_buscado}", clear_on_submit=False):
+                                with st.form(key=f"form_nueva_exp_{dni_buscado}", clear_on_submit=True):
                                     st.markdown("<h4 style='color: #4A0000;'>Ingresa los datos de la nueva experiencia laboral</h4>", unsafe_allow_html=True)
                                     
                                     c_f1, c_f2 = st.columns(2)
@@ -1944,20 +1929,8 @@ else:
                                         tipo_exp_opt = st.selectbox("Tipo de Experiencia *", ["Administrativo", "Docente"], key=f"inp_tipo_{dni_buscado}")
                                         
                                     with c_f2:
-                                        f_inicio = st.date_input(
-                                            "Fecha de Inicio", 
-                                            value=date.today(),
-                                            min_value=date(1950, 1, 1),
-                                            max_value=date(2050, 12, 31),
-                                            key=f"inp_fini_{dni_buscado}"
-                                        )
-                                        f_fin = st.date_input(
-                                            "Fecha de Fin", 
-                                            value=date.today(),
-                                            min_value=date(1950, 1, 1),
-                                            max_value=date(2050, 12, 31),
-                                            key=f"inp_ffin_{dni_buscado}"
-                                        )
+                                        f_inicio = st.date_input("Fecha de Inicio", value=date.today(), min_value=date(1950, 1, 1), max_value=date(2050, 12, 31), key=f"inp_fini_{dni_buscado}")
+                                        f_fin = st.date_input("Fecha de Fin", value=date.today(), min_value=date(1950, 1, 1), max_value=date(2050, 12, 31), key=f"inp_ffin_{dni_buscado}")
                                         motivo_cese = st.text_input("Motivo de Cese", placeholder="Motivo de salida", key=f"inp_motivo_{dni_buscado}")
                                     
                                     btn_guardar = st.form_submit_button("💾 Registrar en EXP. LABORAL", use_container_width=True)
@@ -1981,27 +1954,26 @@ else:
                                             
                                             df_nueva_fila = pd.DataFrame([nueva_fila])
                                             
-                                            # Cargar base completa actual y unificar con la nueva fila
+                                            # Obtener base actual limpia
                                             df_base_actual = normalizar_df_exp(dfs.get("EXP. LABORAL", pd.DataFrame()))
                                             df_actualizado = pd.concat([df_base_actual, df_nueva_fila], ignore_index=True)
                                             df_actualizado = normalizar_df_exp(df_actualizado)
                                             
-                                            # Actualizar en memoria y session_state
+                                            # Persistir en memoria local
                                             dfs["EXP. LABORAL"] = df_actualizado
-                                            if "dfs" in st.session_state:
-                                                st.session_state["dfs"]["EXP. LABORAL"] = df_actualizado
+                                            if "dfs" not in st.session_state:
+                                                st.session_state["dfs"] = {}
+                                            st.session_state["dfs"]["EXP. LABORAL"] = df_actualizado
                                             
-                                            # Exportar directamente el DataFrame estructurado a Google Sheets
+                                            # Guardar en Google Sheets
                                             try:
                                                 exportar_df_a_sheets(df_actualizado, "EXP. LABORAL")
-                                                if hasattr(st, "cache_data"):
-                                                    st.cache_data.clear()
+                                                st.success("✅ ¡Registrado con éxito!")
+                                                st.rerun()
                                             except Exception as e:
-                                                st.error(f"⚠️ Error al guardar en Google Sheets: {e}")
-                                                
-                                            st.rerun()
+                                                st.error(f"⚠️ Guardado en pantalla pero falló la sincronización con Google Sheets: {e}")
                         
-                            # 2. EDICIÓN / ELIMINACIÓN DE REGISTROS EXISTENTES
+                            # 2. EDICIÓN / ELIMINACIÓN DE REGISTROS
                             with st.expander("⚙️ Clic aquí para Editar o Eliminar Experiencia Externa"):
                                 st.markdown("<p style='color:#DDDDDD;'>Modifica los valores en la tabla o marca la casilla <b>SEL</b> para eliminar.</p>", unsafe_allow_html=True)
                                 col_conf_exp = col_conf if 'col_conf' in locals() else {}
@@ -2028,18 +2000,15 @@ else:
                                         df_final = normalizar_df_exp(df_final)
                                         
                                         dfs["EXP. LABORAL"] = df_final
-                                        if "dfs" in st.session_state:
-                                            st.session_state["dfs"]["EXP. LABORAL"] = df_final
+                                        st.session_state["dfs"]["EXP. LABORAL"] = df_final
                                         
                                         try:
                                             exportar_df_a_sheets(df_final, "EXP. LABORAL")
-                                            if hasattr(st, "cache_data"):
-                                                st.cache_data.clear()
+                                            st.success("✅ Cambios actualizados.")
+                                            st.rerun()
                                         except Exception as e:
-                                            st.warning(f"⚠️ Cambios locales guardados, pero falló el envío a Google Sheets: {e}")
-                                            
-                                        st.rerun()
-                                
+                                            st.warning(f"⚠️ Cambios locales guardados, pero falló Google Sheets: {e}")
+                        
                                 with col_b2:
                                     if "SEL" in ed.columns:
                                         sel = ed[ed["SEL"] == True]
@@ -2057,17 +2026,14 @@ else:
                                                 df_final = normalizar_df_exp(df_final)
                                                 
                                                 dfs["EXP. LABORAL"] = df_final
-                                                if "dfs" in st.session_state:
-                                                    st.session_state["dfs"]["EXP. LABORAL"] = df_final
+                                                st.session_state["dfs"]["EXP. LABORAL"] = df_final
                                                 
                                                 try:
                                                     exportar_df_a_sheets(df_final, "EXP. LABORAL")
-                                                    if hasattr(st, "cache_data"):
-                                                        st.cache_data.clear()
+                                                    st.success("✅ Registro eliminado.")
+                                                    st.rerun()
                                                 except Exception as e:
-                                                    st.warning(f"⚠️ Eliminado en pantalla, pero falló la sincronización con Google Sheets: {e}")
-                                                    
-                                                st.rerun()
+                                                    st.warning(f"⚠️ Eliminado localmente, pero falló Google Sheets: {e}")
                     
                         # ==========================================
                         # NUEVO DISEÑO: CONTRATOS
