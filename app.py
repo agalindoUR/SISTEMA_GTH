@@ -2346,7 +2346,8 @@ else:
                                 col_act1, col_act2 = st.columns(2)
                                 
                                 with col_act1:
-                                    if st.button("✏️ Guardar Cambios Editados en Tabla", type="secondary", use_container_width=True):
+                                    # Corregido: Se agregó key único
+                                    if st.button("✏️ Guardar Cambios Editados en Tabla", type="secondary", use_container_width=True, key=f"btn_guardar_global_{h_name}_{dni_buscado}"):
                                         # Actualizar DataFrame original con las filas editadas
                                         for idx, row in ed.iterrows():
                                             if "id" in row and pd.notna(row["id"]):
@@ -2358,9 +2359,10 @@ else:
                                         st.cache_data.clear()
                                         st.success("✅ Cambios actualizados con éxito.")
                                         st.rerun()
-                        
+                                
                                 with col_act2:
-                                    if st.button("🗑️ Eliminar Registro Seleccionado", type="primary", use_container_width=True):
+                                    # Corregido: Se agregó key único
+                                    if st.button("🗑️ Eliminar Registro Seleccionado", type="primary", use_container_width=True, key=f"btn_eliminar_global_{h_name}_{dni_buscado}"):
                                         ids_to_delete = sel_rows["id"].tolist() if "id" in sel_rows.columns else []
                                         if ids_to_delete:
                                             dfs[h_name] = dfs[h_name][~dfs[h_name]["id"].isin(ids_to_delete)]
@@ -2370,7 +2372,7 @@ else:
                                             st.rerun()
                                         else:
                                             st.error("⚠️ No se encontró la columna 'id' para ejecutar la eliminación.")
-                        
+                                
                                 # ==========================================
                                 # COLUMNA B: TABLA INTERACTIVA Y EDICIÓN
                                 # ==========================================
@@ -2378,7 +2380,7 @@ else:
                                     with col_b:
                                         # Delegación del renderizado y edición al módulo externo mod_editor
                                         mod_editor.mostrar_editor(dfs, save_data, h_name, sel, cols_reales)
-                        
+                                
                             # ==========================================
                             # PIE DE PÁGINA Y ESTADO DEL EXPEDIENTE
                             # ==========================================
