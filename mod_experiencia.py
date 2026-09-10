@@ -3,10 +3,25 @@ import pandas as pd
 from datetime import date
 
 def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_conf=None):
-    if col_conf is None:
-        col_conf = {}
-
     HEADERS_EXP = ["DNI", "PUESTO", "LUGAR", "TIPO DE EXPERIENCIA", "FECHA DE INICIO", "FECHA DE FIN", "MOTIVO DE CESE"]
+
+    # Configuración por defecto de columnas para el editor (permite fechas desde 1950)
+    if col_conf is None or not col_conf:
+        col_conf = {
+            "FECHA DE INICIO": st.column_config.DateColumn(
+                "FECHA DE INICIO", 
+                format="YYYY-MM-DD", 
+                min_value=date(1950, 1, 1),
+                max_value=date(2100, 12, 31)
+            ),
+            "FECHA DE FIN": st.column_config.DateColumn(
+                "FECHA DE FIN", 
+                format="YYYY-MM-DD", 
+                min_value=date(1950, 1, 1),
+                max_value=date(2100, 12, 31)
+            ),
+            "SEL": st.column_config.CheckboxColumn("SEL", default=False)
+        }
 
     def normalizar_df_exp(df_in):
         """Asegura que el DataFrame tenga únicamente las columnas exactas de Google Sheets en el orden correcto."""
@@ -226,24 +241,31 @@ def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_c
         """
         st.markdown(html_resumen, unsafe_allow_html=True)
 
-    # --- SECCIÓN DE GESTIÓN ---
+    # --- SECCIÓN DE GESTIÓN DE BD ---
     st.markdown("<br>", unsafe_allow_html=True)
     
     def actualizar_y_guardar_bd(df_modificado_usuario):
+        df_mod_clean = normalizar_df_exp(df_modificado_usuario)
         df_otros = df_exp_general[df_exp_general["DNI"].astype(str) != str(dni_buscado)]
-        df_final = pd.concat([df_otros, df_modificado_usuario], ignore_index=True)
+        df_final = pd.concat([df_otros, df_mod_clean], ignore_index=True)
         df_final = normalizar_df_exp(df_final)
         
+        # Sincronización completa con diccionarios y Session State
         dfs["EXP. LABORAL"] = df_final
         if "dfs" not in st.session_state:
             st.session_state["dfs"] = {}
         st.session_state["dfs"]["EXP. LABORAL"] = df_final
         
         try:
+            st.cache_data.clear()
+        except Exception:
+            pass
+
+        try:
             exportar_df_a_sheets(df_final, "EXP. LABORAL")
-            return True, "✅ ¡Actualizado con éxito!"
+            return True, "✅ ¡Guardado en Google Sheets con éxito!"
         except Exception as e:
-            return False, f"⚠️ Guardado localmente, pero falló Google Sheets: {e}"
+            return False, f"⚠️ Error al guardar en Google Sheets: {e}"
 
     # 1. FORMULARIO NUEVO REGISTRO
     with st.expander("➕ Nuevo Registro de Experiencia Externa", expanded=True):
@@ -257,8 +279,9 @@ def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_c
                 tipo_exp_opt = st.selectbox("Tipo de Experiencia *", ["Administrativo", "Docente"])
                 
             with c_f2:
-                f_inicio = st.date_input("Fecha de Inicio", value=date.today())
-                f_fin = st.date_input("Fecha de Fin", value=date.today())
+                # Permitir seleccionar rango de fechas amplio desde el año 1950
+                f_inicio = st.date_input("Fecha de Inicio", value=date.today(), min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
+                f_fin = st.date_input("Fecha de Fin", value=date.today(), min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
                 motivo_cese = st.text_input("Motivo de Cese", placeholder="Motivo de salida")
             
             btn_guardar = st.form_submit_button("💾 Registrar en EXP. LABORAL", use_container_width=True)
@@ -321,6 +344,6 @@ def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_c
                         ed_normalizado["DNI"] = str(dni_buscado)
                         
                         exito, msg = actualizar_y_guardar_bd(ed_normalizado)
-                        if exito: st.success("✅ Registro eliminado.")
+                        if exito: st.success("✅ Registro eliminado de Google Sheets.")
                         else: st.warning(msg)
                         st.rerun()
