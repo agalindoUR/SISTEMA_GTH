@@ -1,30 +1,13 @@
 import streamlit as st
 import pandas as pd
 from datetime import date
+import uuid
 
 def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_conf=None):
     HEADERS_EXP = ["DNI", "PUESTO", "LUGAR", "TIPO DE EXPERIENCIA", "FECHA DE INICIO", "FECHA DE FIN", "MOTIVO DE CESE"]
 
-    # Configuración por defecto de columnas para el editor (permite fechas desde 1950)
-    if col_conf is None or not col_conf:
-        col_conf = {
-            "FECHA DE INICIO": st.column_config.DateColumn(
-                "FECHA DE INICIO", 
-                format="YYYY-MM-DD", 
-                min_value=date(1950, 1, 1),
-                max_value=date(2100, 12, 31)
-            ),
-            "FECHA DE FIN": st.column_config.DateColumn(
-                "FECHA DE FIN", 
-                format="YYYY-MM-DD", 
-                min_value=date(1950, 1, 1),
-                max_value=date(2100, 12, 31)
-            ),
-            "SEL": st.column_config.CheckboxColumn("SEL", default=False)
-        }
-
     def normalizar_df_exp(df_in):
-        """Asegura que el DataFrame tenga únicamente las columnas exactas de Google Sheets en el orden correcto."""
+        """Asegura las columnas de Google Sheets manteniendo la columna 'id' si existe."""
         if df_in is None or df_in.empty:
             return pd.DataFrame(columns=HEADERS_EXP)
         
@@ -43,8 +26,13 @@ def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_c
         for col in HEADERS_EXP:
             if col not in df_out.columns:
                 df_out[col] = ""
-                
-        return df_out[HEADERS_EXP].fillna("").astype(str)
+        
+        # Conservar 'id' si la base de datos la requiere
+        cols_retorno = list(HEADERS_EXP)
+        if "id" in df_out.columns:
+            cols_retorno.insert(0, "id")
+            
+        return df_out[cols_retorno].fillna("").astype(str)
 
     # --- Sincronizar lectura con session_state ---
     if "dfs" in st.session_state and "EXP. LABORAL" in st.session_state["dfs"]:
@@ -279,7 +267,6 @@ def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_c
                 tipo_exp_opt = st.selectbox("Tipo de Experiencia *", ["Administrativo", "Docente"])
                 
             with c_f2:
-                # Permitir seleccionar rango de fechas amplio desde el año 1950
                 f_inicio = st.date_input("Fecha de Inicio", value=date.today(), min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
                 f_fin = st.date_input("Fecha de Fin", value=date.today(), min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
                 motivo_cese = st.text_input("Motivo de Cese", placeholder="Motivo de salida")
@@ -293,7 +280,7 @@ def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_c
                 if not puesto_clean or not lugar_clean:
                     st.error("⚠️ Debes escribir un Puesto y un Lugar válidos.")
                 else:
-                    nueva_fila = pd.DataFrame([{
+                    nueva_fila_dict = {
                         "DNI": str(dni_buscado),
                         "PUESTO": puesto_clean,
                         "LUGAR": lugar_clean,
@@ -301,8 +288,11 @@ def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_c
                         "FECHA DE INICIO": f_inicio.strftime('%Y-%m-%d') if f_inicio else "",
                         "FECHA DE FIN": f_fin.strftime('%Y-%m-%d') if f_fin else "",
                         "MOTIVO DE CESE": motivo_cese.strip()
-                    }])
-                    
+                    }
+                    if "id" in vst_df.columns:
+                        nueva_fila_dict["id"] = str(uuid.uuid4())
+                        
+                    nueva_fila = pd.DataFrame([nueva_fila_dict])
                     df_actualizado_usuario = pd.concat([vst_df.drop(columns=['SEL'], errors='ignore'), nueva_fila], ignore_index=True)
                     
                     exito, msg = actualizar_y_guardar_bd(df_actualizado_usuario)
@@ -318,7 +308,6 @@ def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_c
             vst_df, 
             hide_index=True, 
             use_container_width=True, 
-            # column_config=col_conf,  # <-- DESACTIVADO TEMPORALMENTE PARA LA PRUEBA
             key=f"data_editor_exp_{dni_buscado}"
         )
         
