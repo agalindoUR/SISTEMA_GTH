@@ -759,45 +759,150 @@ else:
                         # =========================================================================
                         elif h_name == "VACACIONES":
                             df_contratos_base = dfs.get("CONTRATOS", pd.DataFrame())
+                        
+                            # Detectar dinámicamente columna DNI en Contratos
+                            col_dni_cb = (
+                                next(
+                                    (
+                                        c
+                                        for c in df_contratos_base.columns
+                                        if str(c).strip().lower() == "dni"
+                                    ),
+                                    None,
+                                )
+                                if not df_contratos_base.empty
+                                else None
+                            )
+                        
                             df_contratos = (
-                                df_contratos_base[df_contratos_base["dni"].astype(str) == str(dni_buscado)]
-                                if not df_contratos_base.empty and "dni" in df_contratos_base.columns
+                                df_contratos_base[
+                                    df_contratos_base[col_dni_cb].astype(str).str.strip()
+                                    == str(dni_buscado).strip()
+                                ]
+                                if not df_contratos_base.empty and col_dni_cb
                                 else pd.DataFrame()
                             )
-                
+                        
+                            # Detectar dinámicamente columna 'tipo contrato'
+                            col_tipo_cont = (
+                                next(
+                                    (
+                                        c
+                                        for c in df_contratos.columns
+                                        if "tipo" in str(c).strip().lower()
+                                        and "contrato" in str(c).strip().lower()
+                                    ),
+                                    None,
+                                )
+                                if not df_contratos.empty
+                                else None
+                            )
+                        
                             df_tc = (
                                 df_contratos[
-                                    df_contratos["tipo contrato"]
+                                    df_contratos[col_tipo_cont]
                                     .astype(str)
                                     .str.lower()
                                     .str.contains("planilla", na=False)
                                 ]
-                                if not df_contratos.empty and "tipo contrato" in df_contratos.columns
+                                if not df_contratos.empty and col_tipo_cont
                                 else pd.DataFrame()
                             )
-                
+                        
                             detalles = []
                             dias_generados_totales = 0
+                        
+                            # Detectar dinámicamente columnas en c_df (vacaciones del trabajador)
+                            col_gozados = (
+                                next(
+                                    (
+                                        c
+                                        for c in c_df.columns
+                                        if "gozad" in str(c).strip().lower()
+                                        or (
+                                            "dias" in str(c).strip().lower()
+                                            and "goz" in str(c).strip().lower()
+                                        )
+                                    ),
+                                    None,
+                                )
+                                if not c_df.empty
+                                else None
+                            )
+                        
+                            col_periodo = (
+                                next(
+                                    (c for c in c_df.columns if "periodo" in str(c).strip().lower()),
+                                    None,
+                                )
+                                if not c_df.empty
+                                else None
+                            )
+                        
                             dias_gozados_totales = (
-                                pd.to_numeric(c_df["dias gozados"], errors="coerce").sum()
-                                if not c_df.empty and "dias gozados" in c_df.columns
+                                pd.to_numeric(c_df[col_gozados], errors="coerce").sum()
+                                if not c_df.empty and col_gozados
                                 else 0
                             )
-                
+                        
                             if not df_tc.empty:
                                 df_tc_calc = df_tc.copy()
-                                df_tc_calc["f_inicio_dt"] = pd.to_datetime(
-                                    df_tc_calc["f_inicio"], errors="coerce"
+                        
+                                # Detectar dinámicamente columnas de inicio y fin de contrato
+                                col_ini_tc = next(
+                                    (
+                                        c
+                                        for c in df_tc_calc.columns
+                                        if any(
+                                            k in str(c).strip().lower()
+                                            for k in [
+                                                "f_inicio",
+                                                "fecha_inicio",
+                                                "fecha inicio",
+                                                "inicio",
+                                            ]
+                                        )
+                                    ),
+                                    None,
                                 )
-                                df_tc_calc["f_fin_dt"] = pd.to_datetime(
-                                    df_tc_calc["f_fin"], errors="coerce"
+                                col_fin_tc = next(
+                                    (
+                                        c
+                                        for c in df_tc_calc.columns
+                                        if any(
+                                            k in str(c).strip().lower()
+                                            for k in [
+                                                "f_fin",
+                                                "fecha_fin",
+                                                "fecha fin",
+                                                "fin",
+                                                "termino",
+                                            ]
+                                        )
+                                    ),
+                                    None,
                                 )
-                
+                        
+                                df_tc_calc["f_inicio_dt"] = (
+                                    pd.to_datetime(
+                                        df_tc_calc[col_ini_tc], errors="coerce", dayfirst=True
+                                    )
+                                    if col_ini_tc
+                                    else pd.NaT
+                                )
+                                df_tc_calc["f_fin_dt"] = (
+                                    pd.to_datetime(
+                                        df_tc_calc[col_fin_tc], errors="coerce", dayfirst=True
+                                    )
+                                    if col_fin_tc
+                                    else pd.NaT
+                                )
+                        
                                 start_global = df_tc_calc["f_inicio_dt"].min()
-                
+                        
                                 if pd.notnull(start_global):
                                     curr_start = start_global.date()
-                
+                        
                                     while curr_start <= date.today():
                                         curr_end = (
                                             pd.to_datetime(curr_start)
@@ -805,7 +910,7 @@ else:
                                             - pd.Timedelta(days=1)
                                         ).date()
                                         days_in_p = 0
-                
+                        
                                         for _, r in df_tc_calc.iterrows():
                                             c_start = (
                                                 r["f_inicio_dt"].date()
@@ -817,26 +922,26 @@ else:
                                                 if pd.notnull(r["f_fin_dt"])
                                                 else None
                                             )
-                
+                        
                                             if c_start and c_end:
                                                 o_start = max(curr_start, c_start)
                                                 o_end = min(curr_end, c_end, date.today())
                                                 if o_start <= o_end:
                                                     days_in_p += (o_end - o_start).days + 1
-                
+                        
                                         total_dias_periodo = (curr_end - curr_start).days + 1
                                         gen_p = round((days_in_p / total_dias_periodo) * 30, 2)
                                         p_name = f"{curr_start.year}-{curr_start.year + 1}"
-                
+                        
                                         goz_p = 0
-                                        if not c_df.empty and "periodo" in c_df.columns:
+                                        if not c_df.empty and col_periodo and col_gozados:
                                             goz_df = c_df[
-                                                c_df["periodo"].astype(str).str.strip() == p_name
+                                                c_df[col_periodo].astype(str).str.strip() == p_name
                                             ]
                                             goz_p = pd.to_numeric(
-                                                goz_df["dias gozados"], errors="coerce"
+                                                goz_df[col_gozados], errors="coerce"
                                             ).sum()
-                
+                        
                                         if gen_p > 0 or goz_p > 0:
                                             detalles.append(
                                                 {
@@ -848,14 +953,14 @@ else:
                                                     "Saldo": round(gen_p - goz_p, 2),
                                                 }
                                             )
-                
+                        
                                         dias_generados_totales += gen_p
                                         curr_start = (
                                             pd.to_datetime(curr_start) + pd.DateOffset(years=1)
                                         ).date()
-                
+                        
                             saldo_v = round(dias_generados_totales - dias_gozados_totales, 2)
-                
+                        
                             st.markdown(
                                 f"""
                                 <div style="display: flex; gap: 15px; margin-bottom: 20px;">
@@ -875,7 +980,7 @@ else:
                                 """,
                                 unsafe_allow_html=True,
                             )
-                
+                        
                             if detalles:
                                 st.markdown(
                                     "<h4 style='color: #FFD700;'>Desglose por Periodos</h4>",
@@ -903,21 +1008,24 @@ else:
                                     )
                                 div_table += "</div>"
                                 st.markdown(div_table, unsafe_allow_html=True)
-                
+                        
                             if not c_df.empty:
                                 vst = c_df.copy()
                                 cols_ocultar = [
                                     c
                                     for c in vst.columns
-                                    if c.lower() in ["apellidos y nombres", "apellidos", "nombres"]
+                                    if str(c).strip().lower()
+                                    in ["apellidos y nombres", "apellidos", "nombres"]
                                 ]
                                 vst = vst.drop(columns=cols_ocultar)
-                
+                        
                                 col_conf = {}
                                 for col in vst.columns:
                                     col_lower = str(col).lower()
                                     if "fecha" in col_lower or "f_" in col_lower:
-                                        vst[col] = pd.to_datetime(vst[col], errors="coerce").dt.date
+                                        vst[col] = pd.to_datetime(
+                                            vst[col], errors="coerce", dayfirst=True
+                                        ).dt.date
                                         col_conf[str(col).upper()] = st.column_config.DateColumn(
                                             format="DD/MM/YYYY",
                                             min_value=date(1950, 1, 1),
@@ -926,37 +1034,64 @@ else:
                                     elif col_lower.strip() == "periodo":
                                         vst[col] = vst[col].astype(str)
                                         col_conf[str(col).upper()] = st.column_config.TextColumn()
-                
+                        
                                 vst.columns = [str(col).upper() for col in vst.columns]
                                 vst = vst.loc[:, ~vst.columns.duplicated()]
-                
-                                st.dataframe(vst, column_config=col_conf, use_container_width=True)
-                
+                        
+                                st.dataframe(
+                                    vst, column_config=col_conf, use_container_width=True
+                                )
+                        
                             st.markdown("---")
                             st.markdown("### 📄 Generar Papeleta de Vacaciones")
-                
+                        
                             with st.form(key=f"form_papeleta_{dni_buscado}"):
                                 col_pap1, col_pap2 = st.columns(2)
+                        
+                                # Detectar dinámicamente la columna cargo/puesto
+                                col_cargo = (
+                                    next(
+                                        (
+                                            c
+                                            for c in df_contratos.columns
+                                            if any(
+                                                k in str(c).strip().lower() for k in ["cargo", "puesto"]
+                                            )
+                                        ),
+                                        None,
+                                    )
+                                    if not df_contratos.empty
+                                    else None
+                                )
+                        
                                 cargo_def = (
-                                    str(df_contratos.iloc[-1]["cargo"])
-                                    if not df_contratos.empty and "cargo" in df_contratos.columns
+                                    str(df_contratos.iloc[-1][col_cargo])
+                                    if not df_contratos.empty
+                                    and col_cargo
+                                    and pd.notna(df_contratos.iloc[-1][col_cargo])
                                     else ""
                                 )
-                
+                        
                                 with col_pap1:
-                                    p_cargo = st.text_input("Cargo del trabajador:", value=cargo_def)
+                                    p_cargo = st.text_input(
+                                        "Cargo del trabajador:", value=cargo_def
+                                    )
                                     p_f_ing = st.date_input("Fecha de Ingreso:", value=date.today())
-                                    p_per = st.text_input("Periodo Vacacional:", value=f"{date.today().year}")
-                
+                                    p_per = st.text_input(
+                                        "Periodo Vacacional:", value=f"{date.today().year}"
+                                    )
+                        
                                 with col_pap2:
-                                    p_f_ini = st.date_input("Inicio de Vacaciones:", value=date.today())
+                                    p_f_ini = st.date_input(
+                                        "Inicio de Vacaciones:", value=date.today()
+                                    )
                                     p_f_fin = st.date_input("Fin de Vacaciones:", value=date.today())
                                     p_dias = st.number_input(
                                         "Días Gozados:", min_value=1, max_value=30, value=7
                                     )
-                
+                        
                                 btn_generar_papeleta = st.form_submit_button("📄 Generar Papeleta")
-                
+                        
                             if btn_generar_papeleta:
                                 try:
                                     papeleta_doc = gen_papeleta_vac(
