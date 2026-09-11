@@ -125,16 +125,39 @@ def save_data(dfs, pestana=None):
     st.cache_data.clear()
 
 def get_consolidated_contracts(df_c):
-    if df_c.empty: return df_c
-    df_c = df_c.assign(f_inicio=pd.to_datetime(df_c["f_inicio"], errors="coerce"), f_fin=pd.to_datetime(df_c["f_fin"], errors="coerce")).dropna(subset=["f_inicio"]).sort_values("f_inicio")
-    
+    if df_c.empty:
+        return df_c
+
+    df = df_c.copy()
+
+    # Identificar dinámicamente las columnas de inicio, fin y cargo
+    col_ini = next((c for c in df.columns if any(k in str(c).strip().lower() for k in ["f_inicio", "fecha_inicio", "fecha inicio", "inicio"])), None)
+    col_fin = next((c for c in df.columns if any(k in str(c).strip().lower() for k in ["f_fin", "fecha_fin", "fecha fin", "fin", "termino"])), None)
+    col_cargo = next((c for c in df.columns if any(k in str(c).strip().lower() for k in ["cargo", "puesto"])), None)
+
+    if not col_ini:
+        return df_c
+
+    # Crear columnas estandarizadas de trabajo
+    df["f_inicio"] = pd.to_datetime(df[col_ini], errors="coerce", dayfirst=True)
+    df["f_fin"] = pd.to_datetime(df[col_fin], errors="coerce", dayfirst=True) if col_fin else pd.NaT
+
+    df = df.dropna(subset=["f_inicio"]).sort_values("f_inicio").reset_index(drop=True)
+    if df.empty:
+        return df_c
+
     merged = []
-    for _, row in df_c.iterrows():
+    for _, row in df.iterrows():
+        puesto_val = row[col_cargo] if col_cargo and pd.notna(row[col_cargo]) else row.get("cargo", "")
+
         if merged and pd.notnull(merged[-1]["f_fin"]) and row["f_inicio"] <= merged[-1]["f_fin"] + pd.Timedelta(days=1):
             merged[-1]["f_fin"] = max(merged[-1]["f_fin"], row["f_fin"]) if pd.notnull(row["f_fin"]) else row["f_fin"]
-            merged[-1]["cargo"] = row["cargo"]
+            merged[-1]["cargo"] = puesto_val
         else:
-            merged.append(row.to_dict())
+            fila_dict = row.to_dict()
+            fila_dict["cargo"] = puesto_val
+            merged.append(fila_dict)
+
     return pd.DataFrame(merged)
 
 def gen_word(nom, dni, df_c, tipo_seleccionado="Automático (Detectar por historial)"):
