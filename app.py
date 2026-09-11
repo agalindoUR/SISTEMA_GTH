@@ -2230,6 +2230,10 @@ else:
                             else:
                                 cols_reales = [c for c in dfs[h_name].columns if c.lower() not in ["id", "dni", "apellidos y nombres", "apellidos", "nombres"]]
                                 df_filtro = dfs[h_name][dfs[h_name]["dni"] == dni_buscado] if not dfs[h_name].empty else pd.DataFrame()
+                                if col_dni:
+                                    df_filtro = dfs[h_name][dfs[h_name][col_dni].astype(str) == str(dni_buscado)] if not dfs[h_name].empty else pd.DataFrame()
+                                else:
+                                    df_filtro = pd.DataFrame()
                         
                                 if h_name == "DATOS GENERALES" and len(df_filtro) > 0:
                                     st.info("📌 Los datos generales ya están registrados. Selecciona el registro en la tabla de arriba para editarlos.")
