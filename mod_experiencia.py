@@ -3,23 +3,18 @@ import pandas as pd
 from datetime import date
 import uuid
 
-def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_conf=None):
+def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets):
     HEADERS_EXP = ["DNI", "PUESTO", "LUGAR", "TIPO DE EXPERIENCIA", "FECHA DE INICIO", "FECHA DE FIN", "MOTIVO DE CESE"]
 
     def normalizar_df_exp(df_in):
         """Garantiza que el DataFrame contenga la columna 'id' y todas las columnas requeridas."""
         if df_in is None or df_in.empty:
-            df_vacío = pd.DataFrame(columns=["id"] + HEADERS_EXP)
-            return df_vacío
+            return pd.DataFrame(columns=["id"] + HEADERS_EXP)
 
         df_out = df_in.copy()
 
         # 1. Identificar o crear la columna 'id'
-        col_id_existente = None
-        for c in df_out.columns:
-            if str(c).strip().lower() == 'id':
-                col_id_existente = c
-                break
+        col_id_existente = next((c for c in df_out.columns if str(c).strip().lower() == 'id'), None)
 
         if col_id_existente:
             df_out = df_out.rename(columns={col_id_existente: 'id'})
@@ -50,13 +45,12 @@ def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_c
         cols_ordenadas = ['id'] + HEADERS_EXP
         return df_out[cols_ordenadas].fillna("").astype(str)
 
-    # --- Sincronizar e inyectar 'id' en la memoria global de Streamlit ---
+    # --- Sincronizar e inyectar 'id' en la memoria global ---
     if "dfs" in st.session_state and "EXP. LABORAL" in st.session_state["dfs"]:
         df_exp_general = normalizar_df_exp(st.session_state["dfs"]["EXP. LABORAL"])
     else:
         df_exp_general = normalizar_df_exp(dfs.get("EXP. LABORAL", pd.DataFrame()))
 
-    # Actualizamos el estado global para que exportar_df_a_sheets reconozca la columna 'id'
     dfs["EXP. LABORAL"] = df_exp_general
     if "dfs" not in st.session_state:
         st.session_state["dfs"] = {}
@@ -71,8 +65,8 @@ def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_c
     # --- Funciones Auxiliares ---
     def calcular_meses(f_ini, f_fin):
         try:
-            inicio = pd.to_datetime(f_ini, errors='coerce')
-            fin = pd.to_datetime(f_fin, errors='coerce')
+            inicio = pd.to_datetime(f_ini, errors='coerce', dayfirst=True)
+            fin = pd.to_datetime(f_fin, errors='coerce', dayfirst=True)
             if pd.isna(inicio) or pd.isna(fin): 
                 return 0
             return max(0, int((fin - inicio).days / 30.44))
@@ -83,7 +77,7 @@ def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_c
         try:
             if pd.isna(fecha_str) or str(fecha_str).strip() in ["", "NaT", "None"]: 
                 return "N/A"
-            return pd.to_datetime(fecha_str).strftime('%d/%m/%Y')
+            return pd.to_datetime(fecha_str, dayfirst=True).strftime('%d/%m/%Y')
         except Exception:
             return str(fecha_str)
 
@@ -110,8 +104,8 @@ def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_c
         if not col_ini:
             return df_c
 
-        df['f_ini_dt'] = pd.to_datetime(df[col_ini], errors='coerce')
-        df['f_fin_dt'] = pd.to_datetime(df[col_fin], errors='coerce') if col_fin else pd.NaT
+        df['f_ini_dt'] = pd.to_datetime(df[col_ini], errors='coerce', dayfirst=True)
+        df['f_fin_dt'] = pd.to_datetime(df[col_fin], errors='coerce', dayfirst=True) if col_fin else pd.NaT
         df = df.dropna(subset=['f_ini_dt']).sort_values('f_ini_dt').reset_index(drop=True)
 
         if df.empty:
@@ -261,7 +255,6 @@ def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_c
         df_final = pd.concat([df_otros, df_mod_clean], ignore_index=True)
         df_final = normalizar_df_exp(df_final)
 
-        # Actualización completa en memoria previa a la llamada de exportación
         dfs["EXP. LABORAL"] = df_final
         if "dfs" not in st.session_state:
             st.session_state["dfs"] = {}
@@ -285,14 +278,14 @@ def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_c
 
             c_f1, c_f2 = st.columns(2)
             with c_f1:
-                nuevo_puesto = st.text_input("Puesto / Cargo *", placeholder="Escribe el puesto aquí")
-                nuevo_lugar = st.text_input("Lugar / Empresa / Institución *", placeholder="Escribe la empresa aquí")
-                tipo_exp_opt = st.selectbox("Tipo de Experiencia *", ["Administrativo", "Docente"])
+                nuevo_puesto = st.text_input("Puesto / Cargo *", placeholder="Escribe el puesto aquí", key=f"inp_puesto_{dni_buscado}")
+                nuevo_lugar = st.text_input("Lugar / Empresa / Institución *", placeholder="Escribe la empresa aquí", key=f"inp_lugar_{dni_buscado}")
+                tipo_exp_opt = st.selectbox("Tipo de Experiencia *", ["Administrativo", "Docente"], key=f"inp_tipo_{dni_buscado}")
 
             with c_f2:
-                f_inicio = st.date_input("Fecha de Inicio", value=date.today(), min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
-                f_fin = st.date_input("Fecha de Fin", value=date.today(), min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
-                motivo_cese = st.text_input("Motivo de Cese", placeholder="Motivo de salida")
+                f_inicio = st.date_input("Fecha de Inicio", value=date.today(), min_value=date(1950, 1, 1), max_value=date(2100, 12, 31), key=f"inp_fini_{dni_buscado}")
+                f_fin = st.date_input("Fecha de Fin", value=date.today(), min_value=date(1950, 1, 1), max_value=date(2100, 12, 31), key=f"inp_ffin_{dni_buscado}")
+                motivo_cese = st.text_input("Motivo de Cese", placeholder="Motivo de salida", key=f"inp_motivo_{dni_buscado}")
 
             btn_guardar = st.form_submit_button("💾 Registrar en EXP. LABORAL", use_container_width=True)
 
@@ -318,8 +311,10 @@ def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_c
                     df_actualizado_usuario = pd.concat([vst_df.drop(columns=['SEL'], errors='ignore'), nueva_fila], ignore_index=True)
 
                     exito, msg = actualizar_y_guardar_bd(df_actualizado_usuario)
-                    if exito: st.success(msg)
-                    else: st.warning(msg)
+                    if exito: 
+                        st.success(msg)
+                    else: 
+                        st.warning(msg)
                     st.rerun()
 
     # 2. EDICIÓN / ELIMINACIÓN DE REGISTROS
@@ -332,7 +327,7 @@ def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_c
             use_container_width=True, 
             key=f"data_editor_exp_{dni_buscado}",
             column_config={
-                "id": None,  # Oculta la columna 'id' visualmente en la tabla
+                "id": None,
                 "SEL": st.column_config.CheckboxColumn("SEL", default=False)
             }
         )
@@ -345,8 +340,10 @@ def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_c
                 ed_normalizado["DNI"] = str(dni_buscado)
 
                 exito, msg = actualizar_y_guardar_bd(ed_normalizado)
-                if exito: st.success(msg)
-                else: st.warning(msg)
+                if exito: 
+                    st.success(msg)
+                else: 
+                    st.warning(msg)
                 st.rerun()
 
         with col_b2:
@@ -359,6 +356,8 @@ def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_c
                         ed_normalizado["DNI"] = str(dni_buscado)
 
                         exito, msg = actualizar_y_guardar_bd(ed_normalizado)
-                        if exito: st.success("✅ Registro eliminado de Google Sheets.")
-                        else: st.warning(msg)
+                        if exito: 
+                            st.success("✅ Registro eliminado de Google Sheets.")
+                        else: 
+                            st.warning(msg)
                         st.rerun()
