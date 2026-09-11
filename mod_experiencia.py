@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import date
 import uuid
 
-def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets):
+def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_conf=None):
     HEADERS_EXP = ["DNI", "PUESTO", "LUGAR", "TIPO DE EXPERIENCIA", "FECHA DE INICIO", "FECHA DE FIN", "MOTIVO DE CESE"]
 
     def normalizar_df_exp(df_in):
