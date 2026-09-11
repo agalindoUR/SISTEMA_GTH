@@ -2229,12 +2229,18 @@ else:
                                 st.error(f"⚠️ Error crítico: No se pudo cargar la pestaña '{h_name}'. Por favor, entra al Google Sheets y elimina las columnas duplicadas.")
                             else:
                                 cols_reales = [c for c in dfs[h_name].columns if c.lower() not in ["id", "dni", "apellidos y nombres", "apellidos", "nombres"]]
-                                df_filtro = dfs[h_name][dfs[h_name]["dni"] == dni_buscado] if not dfs[h_name].empty else pd.DataFrame()
-                                if col_dni:
-                                    df_filtro = dfs[h_name][dfs[h_name][col_dni].astype(str) == str(dni_buscado)] if not dfs[h_name].empty else pd.DataFrame()
+                                
+                                # --- CORRECCIÓN AQUÍ ---
+                                # Buscamos si la columna existe como "DNI" o "dni"
+                                col_dni = "DNI" if "DNI" in dfs[h_name].columns else ("dni" if "dni" in dfs[h_name].columns else None)
+                                
+                                # Filtramos de forma segura
+                                if col_dni and not dfs[h_name].empty:
+                                    df_filtro = dfs[h_name][dfs[h_name][col_dni].astype(str) == str(dni_buscado)]
                                 else:
                                     df_filtro = pd.DataFrame()
-                        
+                                # -----------------------
+                                
                                 if h_name == "DATOS GENERALES" and len(df_filtro) > 0:
                                     st.info("📌 Los datos generales ya están registrados. Selecciona el registro en la tabla de arriba para editarlos.")
                                 elif h_name == "DATOS FAMILIARES":
@@ -2252,7 +2258,7 @@ else:
                                                 opciones_periodo = ["Sin periodo calculado"]
                                                 dict_generados = {"Sin periodo calculado": 0}
                                                 dict_saldo_actual = {"Sin periodo calculado": 0}
-                        
+                                            
                                             sel_periodo = st.selectbox("Periodo Vacacional", options=opciones_periodo)
                                             
                                             col_f1, col_f2 = st.columns(2)
@@ -2260,7 +2266,7 @@ else:
                                                 f_ini_val = st.date_input("Fecha de Salida (Inicio)", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
                                             with col_f2:
                                                 f_fin_val = st.date_input("Fecha de Retorno (Último día)", min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
-                        
+                                            
                                             dias_gozar_calc = 0
                                             if f_fin_val >= f_ini_val:
                                                 dias_gozar_calc = (f_fin_val - f_ini_val).days + 1
@@ -2268,14 +2274,14 @@ else:
                                             gen_periodo = dict_generados.get(sel_periodo, 0)
                                             saldo_previo = dict_saldo_actual.get(sel_periodo, 0)
                                             nuevo_saldo = saldo_previo - dias_gozar_calc
-                        
+                                            
                                             if nuevo_saldo < 0:
                                                 txt_saldo = f":red[{nuevo_saldo:.2f} (¡Saldo Negativo!)]"
                                             elif nuevo_saldo == 0:
                                                 txt_saldo = f"{nuevo_saldo:.2f}"
                                             else:
                                                 txt_saldo = f":green[{nuevo_saldo:.2f}]"
-                        
+                                            
                                             st.markdown(f"""
                                             **Resumen:**
                                             * **Días a Gozar (Calculado):** {dias_gozar_calc}
