@@ -7,11 +7,31 @@ def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_c
     HEADERS_EXP = ["DNI", "PUESTO", "LUGAR", "TIPO DE EXPERIENCIA", "FECHA DE INICIO", "FECHA DE FIN", "MOTIVO DE CESE"]
 
     def normalizar_df_exp(df_in):
-        """Asegura las columnas de Google Sheets manteniendo la columna 'id' si existe."""
+        """Garantiza que el DataFrame contenga la columna 'id' y todas las columnas requeridas."""
         if df_in is None or df_in.empty:
-            return pd.DataFrame(columns=HEADERS_EXP)
-        
+            df_vacío = pd.DataFrame(columns=["id"] + HEADERS_EXP)
+            return df_vacío
+
         df_out = df_in.copy()
+
+        # 1. Identificar o crear la columna 'id'
+        col_id_existente = None
+        for c in df_out.columns:
+            if str(c).strip().lower() == 'id':
+                col_id_existente = c
+                break
+
+        if col_id_existente:
+            df_out = df_out.rename(columns={col_id_existente: 'id'})
+        else:
+            df_out['id'] = [str(uuid.uuid4()) for _ in range(len(df_out))]
+
+        # Asegurar que ninguna fila tenga un 'id' vacío o nulo
+        df_out['id'] = df_out['id'].apply(
+            lambda x: str(uuid.uuid4()) if pd.isna(x) or str(x).strip() in ['', 'nan', 'None'] else str(x)
+        )
+
+        # 2. Normalizar nombres de las demás columnas
         renombres = {
             'dni': 'DNI', 'puesto': 'PUESTO', 'lugar': 'LUGAR',
             'tipo de experiencia': 'TIPO DE EXPERIENCIA', 'tipo_experiencia': 'TIPO DE EXPERIENCIA',
@@ -22,29 +42,32 @@ def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_c
         df_out = df_out.rename(columns=renombres)
         df_out = df_out.drop(columns=['SEL', 'sel'], errors='ignore')
         df_out = df_out.loc[:, ~df_out.columns.duplicated()]
-        
+
         for col in HEADERS_EXP:
             if col not in df_out.columns:
                 df_out[col] = ""
-        
-        # Conservar 'id' si la base de datos la requiere
-        cols_retorno = list(HEADERS_EXP)
-        if "id" in df_out.columns:
-            cols_retorno.insert(0, "id")
-            
-        return df_out[cols_retorno].fillna("").astype(str)
 
-    # --- Sincronizar lectura con session_state ---
+        cols_ordenadas = ['id'] + HEADERS_EXP
+        return df_out[cols_ordenadas].fillna("").astype(str)
+
+    # --- Sincronizar e inyectar 'id' en la memoria global de Streamlit ---
     if "dfs" in st.session_state and "EXP. LABORAL" in st.session_state["dfs"]:
         df_exp_general = normalizar_df_exp(st.session_state["dfs"]["EXP. LABORAL"])
     else:
         df_exp_general = normalizar_df_exp(dfs.get("EXP. LABORAL", pd.DataFrame()))
 
+    # Actualizamos el estado global para que exportar_df_a_sheets reconozca la columna 'id'
+    dfs["EXP. LABORAL"] = df_exp_general
+    if "dfs" not in st.session_state:
+        st.session_state["dfs"] = {}
+    st.session_state["dfs"]["EXP. LABORAL"] = df_exp_general
+
+    # Filtrar datos del empleado
     vst_df = df_exp_general[df_exp_general["DNI"].astype(str) == str(dni_buscado)].copy()
-    
+
     if "SEL" not in vst_df.columns:
         vst_df.insert(0, "SEL", False)
-        
+
     # --- Funciones Auxiliares ---
     def calcular_meses(f_ini, f_fin):
         try:
@@ -55,7 +78,7 @@ def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_c
             return max(0, int((fin - inicio).days / 30.44))
         except Exception:
             return 0
-            
+
     def dar_formato_fecha(fecha_str):
         try:
             if pd.isna(fecha_str) or str(fecha_str).strip() in ["", "NaT", "None"]: 
@@ -79,18 +102,18 @@ def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_c
     def agrupar_contratos_continuos(df_c):
         if df_c.empty:
             return pd.DataFrame()
-        
+
         df = df_c.copy()
         col_ini = 'f_inicio' if 'f_inicio' in df.columns else ('F_INICIO' if 'F_INICIO' in df.columns else None)
         col_fin = 'f_fin' if 'f_fin' in df.columns else ('F_FIN' if 'F_FIN' in df.columns else None)
-        
+
         if not col_ini:
             return df_c
-            
+
         df['f_ini_dt'] = pd.to_datetime(df[col_ini], errors='coerce')
         df['f_fin_dt'] = pd.to_datetime(df[col_fin], errors='coerce') if col_fin else pd.NaT
         df = df.dropna(subset=['f_ini_dt']).sort_values('f_ini_dt').reset_index(drop=True)
-        
+
         if df.empty:
             return df_c
 
@@ -102,7 +125,7 @@ def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_c
             tipo_raw = str(row.get('TIPO DE TRABAJADOR', row.get('tipo de trabajador', 'Administrativo')))
             tipo_exp = "Docente" if "docente" in tipo_raw.lower() else "Administrativo"
             tipo_contrato = row.get('tipo contrato', row.get('TIPO CONTRATO', 'N/A'))
-            
+
             ini_dt = row['f_ini_dt']
             fin_dt = row['f_fin_dt'] if pd.notna(row['f_fin_dt']) else ini_dt
 
@@ -130,13 +153,13 @@ def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_c
                     }
         if actual is not None:
             grupos.append(actual)
-            
+
         return pd.DataFrame(grupos)
 
     # --- Cargar datos de Contratos ---
     df_contratos = dfs.get("CONTRATOS", pd.DataFrame())
     col_dni_contratos = "DNI" if "DNI" in df_contratos.columns else ("dni" if "dni" in df_contratos.columns else None)
-    
+
     contratos_empleado = pd.DataFrame()
     if not df_contratos.empty and col_dni_contratos:
         contratos_raw = df_contratos[df_contratos[col_dni_contratos].astype(str) == str(dni_buscado)]
@@ -157,13 +180,13 @@ def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_c
                 f_ini, f_fin = row['f_inicio'], row['f_fin']
                 f_ini_str, f_fin_str = dar_formato_fecha(f_ini), dar_formato_fecha(f_fin)
                 puesto, tipo_exp, tipo_contrato = row['puesto'], row['tipo_exp'], row['tipo_contrato']
-                
+
                 meses_calc = calcular_meses(f_ini, f_fin)
                 if tipo_exp == "Docente": 
                     meses_docente += meses_calc
                 else: 
                     meses_admin += meses_calc
-                
+
                 st.markdown(f"""
                 <div style='background-color: #F9F6EE; padding: 15px; border-radius: 8px; border-left: 6px solid #4A0000; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #CCCCCC;'>
                     <div style='color: #000000; font-size: 1.1em; font-weight: bold; margin-bottom: 5px;'>{puesto} <span style='font-size: 0.85em; color: #555555;'>(Interno - {tipo_exp})</span></div>
@@ -174,7 +197,7 @@ def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_c
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
-        
+
         st.markdown("<h3 style='color: #FFD700; margin-top: 20px;'>💼 Experiencia Externa Registrada</h3>", unsafe_allow_html=True)
         if vst_df.empty:
             st.markdown("<p style='color:#DDDDDD;'>No hay experiencia externa registrada.</p>", unsafe_allow_html=True)
@@ -182,20 +205,20 @@ def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_c
             for idx, row in vst_df.iterrows():
                 f_ini, f_fin = row.get('FECHA DE INICIO', 'N/A'), row.get('FECHA DE FIN', 'N/A')
                 f_ini_str, f_fin_str = dar_formato_fecha(f_ini), dar_formato_fecha(f_fin)
-                
+
                 tipo_exp_raw = str(row.get('TIPO DE EXPERIENCIA', 'Administrativo'))
                 tipo_exp = "Docente" if "docente" in tipo_exp_raw.lower() else "Administrativo"
-                
+
                 meses_calc = calcular_meses(f_ini, f_fin)
                 if tipo_exp == "Docente": 
                     meses_docente += meses_calc
                 else: 
                     meses_admin += meses_calc
-                
+
                 puesto_ext = row.get('PUESTO', 'N/A')
                 lugar_ext = row.get('LUGAR', 'N/A')
                 motivo_ext = row.get('MOTIVO DE CESE', 'N/A')
-                
+
                 st.markdown(f"""
                 <div style='background-color: #F9F6EE; padding: 15px; border-radius: 8px; border-left: 6px solid #004A80; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #CCCCCC;'>
                     <div style='color: #000000; font-size: 1.1em; font-weight: bold; margin-bottom: 5px;'>{puesto_ext} <span style='font-size: 0.85em; color: #555555;'>({tipo_exp.capitalize()})</span></div>
@@ -209,7 +232,7 @@ def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_c
 
     with col_der:
         st.markdown("<h3 style='color: #FFD700;'>📊 Resumen</h3>", unsafe_allow_html=True)
-        
+
         html_resumen = f"""
         <div style='background-color: #4A0000; padding: 20px; border-radius: 10px; border: 2px solid #FFD700; box-shadow: 2px 2px 10px rgba(0,0,0,0.5); position: sticky; top: 50px;'>
             <h4 style='color: #FFD700; margin-bottom: 15px; text-align: center; border-bottom: 1px solid #FFD700; padding-bottom: 10px;'>Tiempo Total Calculado</h4>
@@ -231,19 +254,19 @@ def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_c
 
     # --- SECCIÓN DE GESTIÓN DE BD ---
     st.markdown("<br>", unsafe_allow_html=True)
-    
+
     def actualizar_y_guardar_bd(df_modificado_usuario):
         df_mod_clean = normalizar_df_exp(df_modificado_usuario)
         df_otros = df_exp_general[df_exp_general["DNI"].astype(str) != str(dni_buscado)]
         df_final = pd.concat([df_otros, df_mod_clean], ignore_index=True)
         df_final = normalizar_df_exp(df_final)
-        
-        # Sincronización completa con diccionarios y Session State
+
+        # Actualización completa en memoria previa a la llamada de exportación
         dfs["EXP. LABORAL"] = df_final
         if "dfs" not in st.session_state:
             st.session_state["dfs"] = {}
         st.session_state["dfs"]["EXP. LABORAL"] = df_final
-        
+
         try:
             st.cache_data.clear()
         except Exception:
@@ -259,28 +282,29 @@ def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_c
     with st.expander("➕ Nuevo Registro de Experiencia Externa", expanded=True):
         with st.form(key=f"form_nueva_exp_{dni_buscado}", clear_on_submit=True):
             st.markdown("<h4 style='color: #4A0000;'>Ingresa los datos de la nueva experiencia laboral</h4>", unsafe_allow_html=True)
-            
+
             c_f1, c_f2 = st.columns(2)
             with c_f1:
                 nuevo_puesto = st.text_input("Puesto / Cargo *", placeholder="Escribe el puesto aquí")
                 nuevo_lugar = st.text_input("Lugar / Empresa / Institución *", placeholder="Escribe la empresa aquí")
                 tipo_exp_opt = st.selectbox("Tipo de Experiencia *", ["Administrativo", "Docente"])
-                
+
             with c_f2:
                 f_inicio = st.date_input("Fecha de Inicio", value=date.today(), min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
                 f_fin = st.date_input("Fecha de Fin", value=date.today(), min_value=date(1950, 1, 1), max_value=date(2100, 12, 31))
                 motivo_cese = st.text_input("Motivo de Cese", placeholder="Motivo de salida")
-            
+
             btn_guardar = st.form_submit_button("💾 Registrar en EXP. LABORAL", use_container_width=True)
-            
+
             if btn_guardar:
                 puesto_clean = nuevo_puesto.strip()
                 lugar_clean = nuevo_lugar.strip()
-                
+
                 if not puesto_clean or not lugar_clean:
                     st.error("⚠️ Debes escribir un Puesto y un Lugar válidos.")
                 else:
                     nueva_fila_dict = {
+                        "id": str(uuid.uuid4()),
                         "DNI": str(dni_buscado),
                         "PUESTO": puesto_clean,
                         "LUGAR": lugar_clean,
@@ -289,12 +313,10 @@ def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_c
                         "FECHA DE FIN": f_fin.strftime('%Y-%m-%d') if f_fin else "",
                         "MOTIVO DE CESE": motivo_cese.strip()
                     }
-                    if "id" in vst_df.columns:
-                        nueva_fila_dict["id"] = str(uuid.uuid4())
-                        
+
                     nueva_fila = pd.DataFrame([nueva_fila_dict])
                     df_actualizado_usuario = pd.concat([vst_df.drop(columns=['SEL'], errors='ignore'), nueva_fila], ignore_index=True)
-                    
+
                     exito, msg = actualizar_y_guardar_bd(df_actualizado_usuario)
                     if exito: st.success(msg)
                     else: st.warning(msg)
@@ -303,26 +325,30 @@ def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_c
     # 2. EDICIÓN / ELIMINACIÓN DE REGISTROS
     with st.expander("⚙️ Clic aquí para Editar o Eliminar Experiencia Externa"):
         st.markdown("<p style='color:#DDDDDD;'>Modifica los valores en la tabla o marca la casilla <b>SEL</b> para eliminar.</p>", unsafe_allow_html=True)
-        
+
         ed = st.data_editor(
             vst_df, 
             hide_index=True, 
             use_container_width=True, 
-            key=f"data_editor_exp_{dni_buscado}"
+            key=f"data_editor_exp_{dni_buscado}",
+            column_config={
+                "id": None,  # Oculta la columna 'id' visualmente en la tabla
+                "SEL": st.column_config.CheckboxColumn("SEL", default=False)
+            }
         )
-        
+
         col_b1, col_b2 = st.columns(2)
-        
+
         with col_b1:
             if st.button("✏️ Guardar Cambios Editados en Tabla", type="secondary", use_container_width=True, key=f"btn_save_table_{dni_buscado}"):
                 ed_normalizado = normalizar_df_exp(ed)
                 ed_normalizado["DNI"] = str(dni_buscado)
-                
+
                 exito, msg = actualizar_y_guardar_bd(ed_normalizado)
                 if exito: st.success(msg)
                 else: st.warning(msg)
                 st.rerun()
-                
+
         with col_b2:
             if "SEL" in ed.columns:
                 sel = ed[ed["SEL"] == True]
@@ -331,7 +357,7 @@ def renderizar_experiencia_laboral(dni_buscado, dfs, exportar_df_a_sheets, col_c
                         ed_filtrado = ed.drop(sel.index, errors='ignore').copy()
                         ed_normalizado = normalizar_df_exp(ed_filtrado)
                         ed_normalizado["DNI"] = str(dni_buscado)
-                        
+
                         exito, msg = actualizar_y_guardar_bd(ed_normalizado)
                         if exito: st.success("✅ Registro eliminado de Google Sheets.")
                         else: st.warning(msg)
