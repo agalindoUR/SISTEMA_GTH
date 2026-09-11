@@ -5,7 +5,7 @@ import sys
 import time
 from datetime import date, datetime
 from io import BytesIO
-from mod_experiencia import renderizar_experiencia_laboral
+
 # --- LIBRERÍAS EXTERNAS ---
 from google.oauth2.service_account import Credentials
 import gspread
@@ -18,15 +18,12 @@ from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Inches, Pt
 
-# Garantizar el path raíz de la aplicación
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+st.set_page_config(page_title="Gestión Roosevelt", page_icon="🎓", layout="wide")
 
-# --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(
-    page_title="Gestión Roosevelt", page_icon="🎓", layout="wide"
-)
-
-# --- IMPORTS DE MÓDULOS DEL SISTEMA ---
+# --- MÓDULOS DEL SISTEMA ---
+from mod_experiencia import renderizar_experiencia_laboral
+from mod_guardar_sheets import cargar_df_desde_sheets, exportar_df_a_sheets
 import estructura as mod_estructura
 import gestor_evaluaciones as mod_gestor_evaluaciones
 import mod_editor
@@ -41,564 +38,208 @@ import reportegeneral as mod_reportegeneral
 import repvacaciones as mod_vacaciones
 import repvencimientos as mod_vencimientos
 
-# --- IMPORTACIÓN DE MÓDULO BASE DE DATOS (GOOGLE SHEETS) ---
-from mod_guardar_sheets import cargar_df_desde_sheets, exportar_df_a_sheets
-
 # ==========================================
 # 1. CONFIGURACIÓN Y CONSTANTES
 # ==========================================
 SHEET_NAME = "DB_SISTEMA_GTH"
 F_N = "MG. ARTURO JAVIER GALINDO MARTINEZ"
 F_C = "JEFE DE GESTIÓN DEL TALENTO HUMANO"
+SCOPE = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
 
 MOTIVOS_CESE = [
-    "Término de contrato",
-    "Renuncia",
-    "Despido",
-    "Mutuo acuerdo",
-    "Fallecimiento",
-    "Otros",
+    "Término de contrato", "Renuncia", "Despido", "Mutuo acuerdo", "Fallecimiento", "Otros"
 ]
 
 COLUMNAS = {
     "PERSONAL": ["dni", "apellidos y nombres", "link"],
-    "DATOS GENERALES": [
-        "dni",
-        "sede",
-        "sexo",
-        "apellidos y nombres",
-        "dirección",
-        "estado civil",
-        "fecha de nacimiento",
-        "edad",
-    ],
-    "DATOS FAMILIARES": [
-        "parentesco",
-        "apellidos y nombres",
-        "dni",
-        "fecha de nacimiento",
-        "edad",
-        "estudios",
-        "telefono",
-    ],
-    "EXP. LABORAL": [
-        "dni",
-        "tipo de experiencia",
-        "lugar",
-        "puesto",
-        "fecha de inicio",
-        "fecha de fin",
-        "motivo de cese",
-    ],
-    "FORM. ACADEMICA": [
-        "dni",
-        "tipo de estudio",
-        "institución educativa",
-        "mención (especialidad / carrera / etc)",
-        "año",
-        "estado",
-        "horas académicas",
-        "grado o título obtenido",
-    ],
-    "INVESTIGACION": [
-        "id",
-        "dni",
-        "tipo de registro",
-        "enlace cti vitae",
-        "codigo renacyt",
-        "nivel renacyt",
-        "titulo de publicacion",
-        "base de datos",
-        "nombre de revista",
-        "cuartil",
-        "año de publicacion",
-        "doi o url",
-        "nombre del proyecto",
-        "entidad financiadora",
-        "rol en el proyecto",
-        "monto adjudicado",
-        "estado del proyecto",
-        "nombre del semillero",
-        "resolucion",
-        "rol en el semillero",
-        "estado del semillero",
-    ],
-    "CONTRATOS": [
-        "dni",
-        "cargo",
-        "AREA",
-        "f_inicio",
-        "f_fin",
-        "tipo de trabajador",
-        "modalidad",
-        "temporalidad",
-        "tipo contrato",
-        "estado",
-        "LINK",
-    ],
-    "VACACIONES": [
-        "periodo",
-        "fecha de inicio",
-        "fecha de fin",
-        "días generados",
-        "dias gozados",
-        "saldo",
-        "link",
-    ],
+    "DATOS GENERALES": ["dni", "sede", "sexo", "apellidos y nombres", "dirección", "estado civil", "fecha de nacimiento", "edad"],
+    "DATOS FAMILIARES": ["parentesco", "apellidos y nombres", "dni", "fecha de nacimiento", "edad", "estudios", "telefono"],
+    "EXP. LABORAL": ["dni", "tipo de experiencia", "lugar", "puesto", "fecha de inicio", "fecha de fin", "motivo de cese"],
+    "FORM. ACADEMICA": ["dni", "tipo de estudio", "institución educativa", "mención (especialidad / carrera / etc)", "año", "estado", "horas académicas", "grado o título obtenido"],
+    "INVESTIGACION": ["id", "dni", "tipo de registro", "enlace cti vitae", "codigo renacyt", "nivel renacyt", "titulo de publicacion", "base de datos", "nombre de revista", "cuartil", "año de publicacion", "doi o url", "nombre del proyecto", "entidad financiadora", "rol en el proyecto", "monto adjudicado", "estado del proyecto", "nombre del semillero", "resolucion", "rol en el semillero", "estado del semillero"],
+    "CONTRATOS": ["dni", "cargo", "AREA", "f_inicio", "f_fin", "tipo de trabajador", "modalidad", "temporalidad", "tipo contrato", "estado", "LINK"],
+    "VACACIONES": ["periodo", "fecha de inicio", "fecha de fin", "días generados", "dias gozados", "saldo", "link"],
     "OTROS BENEFICIOS": ["periodo", "tipo de beneficio", "link"],
     "MERITOS Y DEMERITOS": ["periodo", "merito o demerito", "motivo", "link"],
-    "EVALUACION DEL DESEMPEÑO": [
-        "periodo",
-        "merito o demerito",
-        "motivo",
-        "link",
-    ],
+    "EVALUACION DEL DESEMPEÑO": ["periodo", "merito o demerito", "motivo", "link"],
     "LIQUIDACIONES": ["periodo", "firmo", "link"],
 }
 
+# --- FUNCIONES CORE ---
 def obtener_link_directo_drive(url):
-    """Convierte un link de compartir de Google Drive en un link directo de imagen."""
-    if not isinstance(url, str) or not url.strip():
-        return None
-    if "drive.google.com" in url and "/d/" in url:
-        try:
-            file_id = url.split("/d/")[1].split("/")[0]
-            return f"https://drive.google.com/uc?export=view&id={file_id}"
-        except Exception:
-            return url
+    if isinstance(url, str) and "/d/" in url:
+        return f"https://drive.google.com/uc?export=view&id={url.split('/d/')[1].split('/')[0]}"
     return url
 
-# ==========================================
-# 2. FUNCIONES DE DATOS (VERSIÓN ACTUALIZADA)
-# ==========================================
-
-SCOPE = [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive",
-]
-
 def obtener_credenciales():
-    """Autentica con Google APIs sin usar libraries obsoletas."""
-    if "gcp_service_account" in st.secrets:
-        return Credentials.from_service_account_info(
-            dict(st.secrets["gcp_service_account"]), scopes=SCOPE
-        )
-    elif "google_json" in st.secrets:
-        creds_dict = json.loads(st.secrets["google_json"])
-        return Credentials.from_service_account_info(
-            creds_dict, scopes=SCOPE
-        )
-    else:
-        return Credentials.from_service_account_file(
-            "credenciales.json", scopes=SCOPE
-        )
+    if "gcp_service_account" in st.secrets: return Credentials.from_service_account_info(dict(st.secrets["gcp_service_account"]), scopes=SCOPE)
+    if "google_json" in st.secrets: return Credentials.from_service_account_info(json.loads(st.secrets["google_json"]), scopes=SCOPE)
+    return Credentials.from_service_account_file("credenciales.json", scopes=SCOPE)
 
 @st.cache_data(ttl=240)
 def load_data():
-    creds = obtener_credenciales()
-    client = gspread.authorize(creds)
-    spreadsheet = client.open(SHEET_NAME)
-    worksheets = spreadsheet.worksheets()
-
+    client = gspread.authorize(obtener_credenciales())
     dfs = {}
-    for worksheet in worksheets:
+    
+    for ws in client.open(SHEET_NAME).worksheets():
         try:
             time.sleep(0.6)
-
-            data = worksheet.get_all_records()
-            df = pd.DataFrame(data)
+            df = pd.DataFrame(ws.get_all_records())
             if not df.empty:
-                df.columns = [
-                    str(c)
-                    .strip()
-                    .lower()
-                    .replace("á", "a")
-                    .replace("é", "e")
-                    .replace("í", "i")
-                    .replace("ó", "o")
-                    .replace("ú", "u")
-                    .replace("_", " ")
-                    for c in df.columns
-                ]
+                # Limpieza rápida de columnas
+                df.columns = df.columns.str.strip().str.lower().str.replace(r'[áéíóú]', lambda m: 'aeiou'['áéíóú'.index(m.group())], regex=True).str.replace("_", " ")
+                df = df.loc[:, ~df.columns.duplicated()]
 
-                df = df.loc[:, ~df.columns.duplicated()].copy()
-
-                if worksheet.title == "CONTRATOS":
-                    for col in df.columns:
-                        if "inicio" in col:
-                            df.rename(columns={col: "f_inicio"}, inplace=True)
-                        if "termino" in col or "fin" in col:
-                            df.rename(columns={col: "f_fin"}, inplace=True)
-
+                if ws.title == "CONTRATOS":
+                    df.columns = [c.replace("termino", "f_fin").replace("fin", "f_fin") if "fin" in c or "termino" in c else c.replace("inicio", "f_inicio") if "inicio" in c else c for c in df.columns]
+                
                 if "dni" in df.columns:
-                    df["dni"] = (
-                        df["dni"]
-                        .astype(str)
-                        .str.strip()
-                        .str.replace(r"\.0$", "", regex=True)
-                        .str.zfill(8)
-                    )
+                    df["dni"] = df["dni"].astype(str).str.strip().str.replace(r"\.0$", "", regex=True).str.zfill(8)
 
-                col_fecha = next(
-                    (
-                        c
-                        for c in df.columns
-                        if "fecha de nacimiento" in c or "fecha nacimiento" in c
-                    ),
-                    None,
-                )
-
+                # Cálculo de edad vectorizado
+                col_fecha = next((c for c in df.columns if "fecha de nacimiento" in c or "fecha nacimiento" in c), None)
                 if col_fecha:
-                    def calcular_edad_viva(fecha_str):
-                        if (
-                            pd.isna(fecha_str)
-                            or str(fecha_str).strip() == ""
-                        ):
-                            return 0
-                        try:
-                            if isinstance(fecha_str, str):
-                                fnac_date = pd.to_datetime(
-                                    fecha_str, dayfirst=True
-                                ).date()
-                            else:
-                                fnac_date = (
-                                    fecha_str.date()
-                                    if hasattr(fecha_str, "date")
-                                    else fecha_str
-                                )
+                    hoy = date.today()
+                    fechas_dt = pd.to_datetime(df[col_fecha], dayfirst=True, errors="coerce")
+                    df["edad"] = fechas_dt.apply(lambda x: hoy.year - x.year - ((hoy.month, hoy.day) < (x.month, x.day)) if pd.notna(x) else 0)
 
-                            hoy = date.today()
-                            return (
-                                hoy.year
-                                - fnac_date.year
-                                - (
-                                    (hoy.month, hoy.day)
-                                    < (fnac_date.month, fnac_date.day)
-                                )
-                            )
-                        except Exception:
-                            return 0
-
-                    df["edad"] = df[col_fecha].apply(calcular_edad_viva)
-
-                dfs[worksheet.title] = df
-            else:
-                dfs[worksheet.title] = pd.DataFrame()
+            dfs[ws.title] = df if not df.empty else pd.DataFrame()
         except Exception as e:
-            st.error(f"Error en {worksheet.title}: {e}")
-            dfs[worksheet.title] = pd.DataFrame()
+            st.error(f"Error en {ws.title}: {e}")
+            dfs[ws.title] = pd.DataFrame()
             time.sleep(2)
-
     return dfs
 
-def save_data(dfs, pestana_especifica=None):
-    creds = obtener_credenciales()
-    client = gspread.authorize(creds)
-    sheet = client.open(SHEET_NAME)
-
-    listado_pestanas = (
-        [pestana_especifica] if pestana_especifica else dfs.keys()
-    )
-
-    for h in listado_pestanas:
-        if h not in dfs:
-            continue
-
-        df = dfs[h]
-        if df.empty or len(df.columns) == 0:
-            continue
-
-        worksheet = sheet.worksheet(h)
-        df_s = df.copy()
-
-        df_s = df_s.loc[:, ~df_s.columns.duplicated()]
-        df_s = df_s.fillna("")
-        df_s = df_s.astype(str)
-
-        fantasmas = ["nan", "NaN", "NaT", "nat", "None", "<NA>"]
-        for fantasma in fantasmas:
-            df_s = df_s.replace(fantasma, "")
-
-        df_s.columns = [str(c).upper() for c in df_s.columns]
-
-        if not pestana_especifica:
-            time.sleep(0.6)
-
-        worksheet.clear()
-        datos_a_guardar = (
-            [df_s.columns.values.tolist()] + df_s.values.tolist()
-        )
-        worksheet.update(datos_a_guardar)
-
+def save_data(dfs, pestana=None):
+    sheet = gspread.authorize(obtener_credenciales()).open(SHEET_NAME)
+    for h in ([pestana] if pestana else dfs.keys()):
+        if h not in dfs or dfs[h].empty: continue
+        df_s = dfs[h].loc[:, ~dfs[h].columns.duplicated()].fillna("").astype(str)
+        df_s.replace(["nan", "NaN", "NaT", "nat", "None", "<NA>"], "", inplace=True)
+        df_s.columns = df_s.columns.str.upper()
+        
+        ws = sheet.worksheet(h)
+        if not pestana: time.sleep(0.6)
+        ws.clear()
+        ws.update([df_s.columns.tolist()] + df_s.values.tolist())
     st.cache_data.clear()
 
 def get_consolidated_contracts(df_c):
-    if df_c.empty:
-        return df_c
-    df_c = df_c.copy()
-    df_c["f_inicio"] = pd.to_datetime(df_c["f_inicio"], errors="coerce")
-    df_c["f_fin"] = pd.to_datetime(df_c["f_fin"], errors="coerce")
-    df_c = df_c.sort_values("f_inicio").dropna(subset=["f_inicio"])
-
+    if df_c.empty: return df_c
+    df_c = df_c.assign(f_inicio=pd.to_datetime(df_c["f_inicio"], errors="coerce"), f_fin=pd.to_datetime(df_c["f_fin"], errors="coerce")).dropna(subset=["f_inicio"]).sort_values("f_inicio")
+    
     merged = []
     for _, row in df_c.iterrows():
-        if not merged:
-            merged.append(row.to_dict())
+        if merged and pd.notnull(merged[-1]["f_fin"]) and row["f_inicio"] <= merged[-1]["f_fin"] + pd.Timedelta(days=1):
+            merged[-1]["f_fin"] = max(merged[-1]["f_fin"], row["f_fin"]) if pd.notnull(row["f_fin"]) else row["f_fin"]
+            merged[-1]["cargo"] = row["cargo"]
         else:
-            last = merged[-1]
-            if pd.notnull(last["f_fin"]) and row[
-                "f_inicio"
-            ] <= last["f_fin"] + pd.Timedelta(days=1):
-                last["f_fin"] = (
-                    max(last["f_fin"], row["f_fin"])
-                    if pd.notnull(row["f_fin"])
-                    else row["f_fin"]
-                )
-                last["cargo"] = row["cargo"]
-            else:
-                merged.append(row.to_dict())
+            merged.append(row.to_dict())
     return pd.DataFrame(merged)
 
-def gen_word(
-    nom, dni, df_c, tipo_seleccionado="Automático (Detectar por historial)"
-):
+def gen_word(nom, dni, df_c, tipo_seleccionado="Automático (Detectar por historial)"):
     doc = Document()
-    section = doc.sections[0]
-    section.page_height, section.page_width = Inches(11.69), Inches(8.27)
-    section.top_margin, section.bottom_margin = Inches(1.6), Inches(1.2)
+    sec = doc.sections[0]
+    sec.page_height, sec.page_width, sec.top_margin, sec.bottom_margin = Inches(11.69), Inches(8.27), Inches(1.6), Inches(1.2)
 
-    if os.path.exists("header.png"):
-        p_h = section.header.paragraphs[0]
-        p_h.paragraph_format.left_indent = Inches(-1.0)
-        p_h.add_run().add_picture("header.png", width=Inches(8.27))
+    for img, pos in [("header.png", sec.header), ("footer.png", sec.footer)]:
+        if os.path.exists(img):
+            p = pos.paragraphs[0]
+            p.paragraph_format.left_indent = Inches(-1.0)
+            p.add_run().add_picture(img, width=Inches(8.27))
 
-    if os.path.exists("footer.png"):
-        p_f = section.footer.paragraphs[0]
-        p_f.paragraph_format.left_indent = Inches(-1.0)
-        p_f.add_run().add_picture("footer.png", width=Inches(8.27))
+    tipo_u = tipo_seleccionado.upper()
+    hist_txt = " ".join(df_c.astype(str).agg(" ".join, axis=1).str.lower().tolist()) if not df_c.empty else ""
+    es_doc = "DOCENTE" in tipo_u or ("AUTOM" in tipo_u and any(w in hist_txt for w in ["docente", "catedra"]))
+    es_loc = any(w in tipo_u for w in ["LOCACI", "SERVICIO", "HONORARIO"]) or ("AUTOM" in tipo_u and any(w in hist_txt for w in ["honorario", "locaci"]))
 
-    es_docente = False
-    es_locacion = False
-    tipo_upper = tipo_seleccionado.upper()
+    mask_loc = df_c.astype(str).agg(" ".join, axis=1).str.lower().str.contains("honorario|locaci|tercero", na=False)
+    df_tabla = get_consolidated_contracts(df_c[mask_loc if es_loc else ~mask_loc])
 
-    if "AUTOM" in tipo_upper:
-        if not df_c.empty:
-            texto_historial = " ".join(
-                df_c.astype(str).agg(" ".join, axis=1).str.lower().tolist()
-            )
-            if "docente" in texto_historial or "catedra" in texto_historial:
-                es_docente = True
-            if "honorario" in texto_historial or "locaci" in texto_historial:
-                es_locacion = True
-    else:
-        if "DOCENTE" in tipo_upper:
-            es_docente = True
-        if (
-            "LOCACI" in tipo_upper
-            or "SERVICIO" in tipo_upper
-            or "HONORARIO" in tipo_upper
-        ):
-            es_locacion = True
+    # Textos dinámicos
+    titulo = "CONSTANCIA DE LOCACIÓN DE SERVICIOS DOCENTES" if (es_doc and es_loc) else "CONSTANCIA DE PRESTACIÓN DE SERVICIOS" if es_loc else "CERTIFICADO DE TRABAJO"
+    intro = "La oficina de Gestión de Talento Humano De La Universidad Privada De Huancayo “Franklin Roosevelt”, hace constar que:" if es_loc else "La oficina de Gestión de Talento Humano De La Universidad Privada De Huancayo “Franklin Roosevelt”, certifica que:"
+    cargo_col = "CÁTEDRA / ASIGNATURA" if (es_doc and es_loc) else "ACTIVIDAD / SERVICIO" if es_loc else "CARGO / FUNCIÓN"
+    
+    cuerpo = f"El(la) {'profesional' if (es_doc and es_loc) else 'docente' if es_doc else 'señor(a)' if es_loc else 'ex-servidor(a) administrativo(a)'} {nom.upper()}, identificado(a) con DNI N° {dni}, ha "
+    cuerpo += "prestado servicios profesionales independientes de docencia universitaria bajo el régimen civil de Locación de Servicios, dictando asignaturas académicas" if (es_doc and es_loc) else "prestado servicios autónomos e independientes de naturaleza civil bajo la modalidad de Locación de Servicios, realizando actividades de índole administrativa" if es_loc else "laborado en nuestra casa de estudios superiores ejerciendo funciones pedagógicas y de cátedra universitaria, bajo el régimen laboral correspondiente" if es_doc else "laborado en nuestra institución bajo el régimen laboral de la actividad privada, desempeñando funciones de manera subordinada"
+    cuerpo += " de acuerdo al siguiente detalle:"
 
-    filas_texto = df_c.astype(str).agg(" ".join, axis=1).str.lower()
-    mask_locacion = filas_texto.str.contains(
-        "honorario|locaci|tercero", na=False
-    )
+    # Generación de Word
+    def add_para(texto, align=WD_ALIGN_PARAGRAPH.JUSTIFY, bold=False, size=None):
+        p = doc.add_paragraph(texto)
+        p.alignment = align
+        if p.runs:
+            r = p.runs[0]
+            r.font.name = "Arial"
+            if bold: r.bold = True
+            if size: r.font.size = Pt(size)
+        return p
 
-    if es_locacion:
-        df_c_filtrado = df_c[mask_locacion]
-    else:
-        df_c_filtrado = df_c[~mask_locacion]
-
-    df_merged = get_consolidated_contracts(df_c_filtrado)
-    df_tabla = df_merged
-
-    titulo_certificado = "CERTIFICADO DE TRABAJO"
-    texto_introduccion = "La oficina de Gestión de Talento Humano De La Universidad Privada De Huancayo “Franklin Roosevelt”, certifica que:"
-    texto_cuerpo_identificacion = ""
-    columna_tabla_cargo = "CARGO / FUNCIÓN"
-
-    if not es_docente and not es_locacion:
-        titulo_certificado = "CERTIFICADO DE TRABAJO"
-        texto_cuerpo_identificacion = f"El(la) ex-servidor(a) administrativo(a) {nom.upper()}, identificado(a) con DNI N° {dni}, ha laborado en nuestra institución bajo el régimen laboral de la actividad privada, desempeñando funciones de manera subordinada de acuerdo al siguiente detalle:"
-
-    elif not es_docente and es_locacion:
-        titulo_certificado = "CONSTANCIA DE PRESTACIÓN DE SERVICIOS"
-        texto_introduccion = "La oficina de Gestión de Talento Humano De La Universidad Privada De Huancayo “Franklin Roosevelt”, hace constar que:"
-        texto_cuerpo_identificacion = f"El(la) señor(a) {nom.upper()}, identificado(a) con DNI N° {dni}, ha prestado servicios autónomos e independientes de naturaleza civil bajo la modalidad de Locación de Servicios, realizando actividades de índole administrativa según el siguiente detalle:"
-        columna_tabla_cargo = "ACTIVIDAD / SERVICIO"
-
-    elif es_docente and not es_locacion:
-        titulo_certificado = "CERTIFICADO DE TRABAJO"
-        texto_cuerpo_identificacion = f"El(la) docente {nom.upper()}, identificado(a) con DNI N° {dni}, ha laborado en nuestra casa de estudios superiores ejerciendo funciones pedagógicas y de cátedra universitaria, bajo el régimen laboral correspondiente, de acuerdo al siguiente detalle:"
-
-    elif es_docente and es_locacion:
-        titulo_certificado = "CONSTANCIA DE LOCACIÓN DE SERVICIOS DOCENTES"
-        texto_introduccion = "La oficina de Gestión de Talento Humano De La Universidad Privada De Huancayo “Franklin Roosevelt”, hace constar que:"
-        texto_cuerpo_identificacion = f"El(la) profesional {nom.upper()}, identificado(a) con DNI N° {dni}, ha prestado servicios profesionales independientes de docencia universitaria bajo el régimen civil de Locación de Servicios, dictando asignaturas académicas de acuerdo al siguiente detalle:"
-        columna_tabla_cargo = "CÁTEDRA / ASIGNATURA"
-
-    p_tit = doc.add_paragraph()
-    p_tit.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r_tit = p_tit.add_run(titulo_certificado)
-    r_tit.bold, r_tit.font.name, r_tit.font.size = True, "Arial", Pt(18)
-
-    p_intro = doc.add_paragraph(f"\n{texto_introduccion}")
-    p_intro.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-    p_intro.paragraph_format.line_spacing = 1.15
-
-    p_inf = doc.add_paragraph()
-    p_inf.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-    p_inf.paragraph_format.line_spacing = 1.15
-    p_inf.add_run(texto_cuerpo_identificacion)
+    add_para(titulo, WD_ALIGN_PARAGRAPH.CENTER, True, 18)
+    doc.add_paragraph(f"\n{intro}").alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    doc.add_paragraph(cuerpo).alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
 
     t = doc.add_table(rows=1, cols=3)
     t.style = "Table Grid"
-
-    for i, h in enumerate([columna_tabla_cargo, "FECHA INICIO", "FECHA FIN"]):
-        celda = t.rows[0].cells[i]
-        celda.text = h
-        celda.paragraphs[0].runs[0].font.bold = True
-        celda.paragraphs[0].runs[0].font.name = "Arial"
+    for i, h in enumerate([cargo_col, "FECHA INICIO", "FECHA FIN"]):
+        t.rows[0].cells[i].text = h
+        t.rows[0].cells[i].paragraphs[0].runs[0].font.bold = True
 
     for _, fila in df_tabla.iterrows():
         celdas = t.add_row().cells
-        celdas[0].text = str(
-            fila.get("cargo", fila.get("puesto", ""))
-        ).upper()
-        celdas[1].text = (
-            pd.to_datetime(fila["f_inicio"]).strftime("%d/%m/%Y")
-            if pd.notnull(fila["f_inicio"])
-            else ""
-        )
-        celdas[2].text = (
-            pd.to_datetime(fila["f_fin"]).strftime("%d/%m/%Y")
-            if pd.notnull(fila["f_fin"])
-            else "EN LA ACTUALIDAD"
-        )
+        celdas[0].text = str(fila.get("cargo", fila.get("puesto", ""))).upper()
+        celdas[1].text = pd.to_datetime(fila["f_inicio"]).strftime("%d/%m/%Y") if pd.notnull(fila["f_inicio"]) else ""
+        celdas[2].text = pd.to_datetime(fila["f_fin"]).strftime("%d/%m/%Y") if pd.notnull(fila["f_fin"]) else "EN LA ACTUALIDAD"
+        for c in celdas: 
+            if c.paragraphs[0].runs: c.paragraphs[0].runs[0].font.size = Pt(10)
 
-        for celda in celdas:
-            if celda.paragraphs[0].runs:
-                celda.paragraphs[0].runs[0].font.name = "Arial"
-                celda.paragraphs[0].runs[0].font.size = Pt(10)
-
-    p_cierre = doc.add_paragraph(
-        "\nSe expide el presente a solicitud del interesado para los fines que considere convenientes."
-    )
-    p_cierre.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-
-    p_fecha = doc.add_paragraph(
-        f"\nHuancayo, {date.today().strftime('%d/%m/%Y')}"
-    )
-    p_fecha.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    p_fecha.runs[0].font.name = "Arial"
-
-    f = doc.add_paragraph()
-    f.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    f_run = f.add_run("\n\n__________________________\n" + F_N + "\n" + F_C)
-    f_run.bold = True
-    f_run.font.name = "Arial"
+    add_para("\nSe expide el presente a solicitud del interesado para los fines que considere convenientes.")
+    add_para(f"\nHuancayo, {date.today().strftime('%d/%m/%Y')}", WD_ALIGN_PARAGRAPH.RIGHT)
+    add_para(f"\n\n__________________________\n{F_N}\n{F_C}", WD_ALIGN_PARAGRAPH.CENTER, True)
 
     buf = BytesIO()
     doc.save(buf)
     buf.seek(0)
     return buf
 
+def gen_papeleta_vac(apellidos, nombres, dni_b, position, f_ingreso, period, start_d, end_d, days):
+    if not os.path.exists("Template_Papeleta.docx"):
+        return st.error("⚠️ No se encontró la plantilla 'Template_Papeleta.docx'.")
 
-def gen_papeleta_vac(
-    apellidos,
-    nombres,
-    dni_b,
-    position,
-    f_ingreso,
-    period,
-    start_d,
-    end_d,
-    days,
-):
-    template_path = "Template_Papeleta.docx"
-
-    if not os.path.exists(template_path):
-        st.error(
-            f"⚠️ No se encontró la plantilla en: {template_path}. Por favor crea el archivo Word."
-        )
-        return None
-
-    doc = Document(template_path)
-
-    hoy = date.today()
-    meses = [
-        "enero",
-        "febrero",
-        "marzo",
-        "abril",
-        "mayo",
-        "junio",
-        "julio",
-        "agosto",
-        "septiembre",
-        "octubre",
-        "noviembre",
-        "diciembre",
-    ]
-    txt_firma = (
-        f"Huancayo, {hoy.day} de {meses[hoy.month-1]} de {hoy.year}"
-    )
-
+    doc = Document("Template_Papeleta.docx")
     fin_dt = pd.to_datetime(end_d, errors="coerce")
-    if pd.notnull(fin_dt):
-        retorno_dt = fin_dt + pd.Timedelta(days=1)
-        if retorno_dt.weekday() == 6:
-            retorno_dt += pd.Timedelta(days=1)
-        str_retorno = retorno_dt.strftime("%d/%m/%Y")
-    else:
-        str_retorno = ""
-
-    replacements = {
-        "{{APELLIDOS}}": str(apellidos).upper(),
-        "{{NOMBRES}}": str(nombres).upper(),
-        "{{DNI}}": str(dni_b),
-        "{{CARGO}}": str(position).upper(),
-        "{{F_INGRESO}}": (
-            f_ingreso.strftime("%d/%m/%Y")
-            if isinstance(f_ingreso, (date, datetime))
-            else str(f_ingreso)
-        ),
-        "{{PERIODO}}": str(period),
-        "{{F_INICIO}}": (
-            start_d.strftime("%d/%m/%Y")
-            if isinstance(start_d, (date, datetime))
-            else str(start_d)
-        ),
-        "{{F_FIN}}": (
-            end_d.strftime("%d/%m/%Y")
-            if isinstance(end_d, (date, datetime))
-            else str(end_d)
-        ),
-        "{{F_RETORNO}}": str_retorno,
-        "{{DIAS}}": str(days),
-        "{{FECHA_FIRMA}}": txt_firma,
+    retorno_dt = (fin_dt + pd.Timedelta(days=1 if fin_dt.weekday() < 5 else (2 if fin_dt.weekday() == 5 else 1))) if pd.notna(fin_dt) else None
+    
+    hoy = date.today()
+    meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+    
+    reps = {
+        "{{APELLIDOS}}": str(apellidos).upper(), "{{NOMBRES}}": str(nombres).upper(),
+        "{{DNI}}": str(dni_b), "{{CARGO}}": str(position).upper(),
+        "{{F_INGRESO}}": f_ingreso.strftime("%d/%m/%Y") if isinstance(f_ingreso, (date, datetime)) else str(f_ingreso),
+        "{{PERIODO}}": str(period), "{{DIAS}}": str(days),
+        "{{F_INICIO}}": start_d.strftime("%d/%m/%Y") if isinstance(start_d, (date, datetime)) else str(start_d),
+        "{{F_FIN}}": end_d.strftime("%d/%m/%Y") if isinstance(end_d, (date, datetime)) else str(end_d),
+        "{{F_RETORNO}}": retorno_dt.strftime("%d/%m/%Y") if retorno_dt else "",
+        "{{FECHA_FIRMA}}": f"Huancayo, {hoy.day} de {meses[hoy.month-1]} de {hoy.year}"
     }
 
-    def replace_in_element(element, reps):
+    def replace_text(element):
         for run in element.runs:
-            for key, value in reps.items():
-                if key in run.text:
-                    run.text = run.text.replace(key, value)
+            for k, v in reps.items():
+                if k in run.text: run.text = run.text.replace(k, v)
 
-    for paragraph in doc.paragraphs:
-        replace_in_element(paragraph, replacements)
+    for p in doc.paragraphs: replace_text(p)
+    for t in doc.tables:
+        for r in t.rows:
+            for c in r.cells:
+                for p in c.paragraphs: replace_text(p)
 
-    for table in doc.tables:
-        for row in table.rows:
-            for cell in row.cells:
-                for paragraph in cell.paragraphs:
-                    replace_in_element(paragraph, replacements)
-
-    docx_stream = BytesIO()
-    doc.save(docx_stream)
-    docx_stream.seek(0)
-    return docx_stream
+    buf = BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+    return buf
 
 
 # ==========================================
